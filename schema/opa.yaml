@@ -6219,7 +6219,7 @@ classes:
     class_uri: openpolicyagent:Operand
 metamodel_version: 1.11.0
 source_file: opa.yaml
-source_file_date: '2026-06-12T22:39:42'
+source_file_date: '2026-06-12T22:56:42'
 source_file_size: 1272
-generation_date: '2026-06-12T22:39:52'
+generation_date: '2026-06-12T22:56:53'
 
