@@ -1,0 +1,32 @@
+# mapping_set_id: https://w3id.org/lmodel/opa/mappings/opa_to_iso27001
+# mapping_set_version: 0.1.0
+# mapping_set_title: Open Policy Agent (OPA) to ISO/IEC 27001:2022 Mappings
+# mapping_set_description: Schema-level mappings between Open Policy Agent (OPA)
+#   LinkML classes and ISO/IEC 27001:2022 ISMS LinkML classes. OPA policies
+#   are frequently the executable form of an information-security policy or
+#   topic-specific policy, and OPA bundles function as documented information
+#   subject to the ISO 27001 documented-information lifecycle. Predicates -
+#   skos:closeMatch where the OPA class is a direct executable analogue of an
+#   ISO 27001 governance artefact (e.g. a Rego Policy implementing an
+#   InformationSecurityPolicy or TopicSpecificPolicy); skos:relatedMatch where
+#   the OPA class only partially overlaps (e.g. an AuthorizationInput as an
+#   evaluation invocation of a SecurityControl, or a BuiltinMetadataCatalog
+#   grouped under a ControlCategory); skos:broadMatch where the OPA class is
+#   a broader container that subsumes multiple ISO 27001 documents (e.g. a
+#   bundle Manifest aggregating many documented-information items).
+# license: https://creativecommons.org/licenses/by/4.0/
+# subject_source: https://w3id.org/lmodel/opa
+# object_source: https://w3id.org/lmodel/iso27001
+# mapping_date: 2026-06-12
+# curie_map:
+#   openpolicyagent: https://w3id.org/lmodel/opa/
+#   iso27001: https://w3id.org/lmodel/iso27001/
+#   owl: http://www.w3.org/2002/07/owl#
+#   semapv: https://w3id.org/semapv/vocab/
+#   skos: http://www.w3.org/2004/02/skos/core#
+subject_id	subject_label	subject_category	predicate_id	predicate_label	object_id	object_label	object_category	mapping_justification	comment
+openpolicyagent:Policy	Policy	owl:Class	skos:closeMatch	close match	iso27001:InformationSecurityPolicy	InformationSecurityPolicy	owl:Class	semapv:LLMBasedMatching	A Rego policy compiled to an IR Policy is the executable expression of an ISO 27001 information-security policy when used in that governance frame
+openpolicyagent:Policy	Policy	owl:Class	skos:closeMatch	close match	iso27001:TopicSpecificPolicy	TopicSpecificPolicy	owl:Class	semapv:LLMBasedMatching	A Rego policy is most often a topic-specific policy (access control, admission, data sharing) executable form
+openpolicyagent:AuthorizationInput	AuthorizationInput	owl:Class	skos:relatedMatch	related match	iso27001:SecurityControl	SecurityControl	owl:Class	semapv:LLMBasedMatching	An AuthorizationInput captures the runtime invocation context of an access-control SecurityControl from Annex A
+openpolicyagent:Manifest	Manifest	owl:Class	skos:broadMatch	broad match	iso27001:DocumentedInformation	DocumentedInformation	owl:Class	semapv:LLMBasedMatching	A bundle Manifest packages signed, versioned policy artefacts that are documented-information instances in the ISO 27001 sense
+openpolicyagent:BuiltinMetadataCatalog	BuiltinMetadataCatalog	owl:Class	skos:relatedMatch	related match	iso27001:ControlCategory	ControlCategory	owl:Class	semapv:LLMBasedMatching	The catalog of built-in categories groups primitives by domain, analogous to grouping controls by category at the schema-level

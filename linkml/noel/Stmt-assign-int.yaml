@@ -1,0 +1,7 @@
+type: AssignIntStmt
+stmt:
+  col: 1
+  file: 0
+  row: 1
+  value: 1
+  target: 2

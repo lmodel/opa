@@ -1,0 +1,8 @@
+identity: alice
+client_certificates: []
+path:
+  - v1
+  - data
+params: {}
+headers: {}
+body: {}

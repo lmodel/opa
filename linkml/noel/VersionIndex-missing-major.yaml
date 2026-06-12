@@ -1,0 +1,7 @@
+builtins:
+  abs:
+    name: abs
+    minor: 0
+    patch: 0
+features: {}
+keywords: {}

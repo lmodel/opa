@@ -1,0 +1,492 @@
+{
+   "@context": {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "d3fend": "https://w3id.org/lmodel/d3fend/",
+      "dcterms": "http://purl.org/dc/terms/",
+      "dpv": "https://w3id.org/lmodel/dpv/",
+      "iso27001": "https://w3id.org/lmodel/iso27001/",
+      "linkml": "https://w3id.org/linkml/",
+      "openpolicyagent": "https://w3id.org/lmodel/opa/",
+      "oscal": "https://w3id.org/lmodel/oscal/",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "schema": "http://schema.org/",
+      "skos": "http://www.w3.org/2004/02/skos/core#",
+      "slsa": "https://w3id.org/lmodel/slsa/",
+      "@vocab": "https://w3id.org/lmodel/opa/",
+      "array": {
+         "@type": "xsd:integer",
+         "@id": "array"
+      },
+      "col": {
+         "@type": "xsd:integer",
+         "@id": "col"
+      },
+      "file": {
+         "@type": "xsd:integer",
+         "@id": "file"
+      },
+      "row": {
+         "@type": "xsd:integer",
+         "@id": "row"
+      },
+      "value": {
+         "@type": "@id",
+         "@id": "value"
+      },
+      "target": {
+         "@type": "xsd:integer",
+         "@id": "target"
+      },
+      "source": {
+         "@type": "xsd:integer",
+         "@id": "source"
+      },
+      "body": {
+         "@type": "@id",
+         "@id": "body"
+      },
+      "client_certificates": {
+         "@type": "@id",
+         "@id": "client_certificates"
+      },
+      "headers": {
+         "@type": "@id",
+         "@id": "headers"
+      },
+      "identity": {
+         "@id": "identity"
+      },
+      "method": {
+         "@id": "method"
+      },
+      "params": {
+         "@type": "xsd:integer",
+         "@id": "params"
+      },
+      "path": {
+         "@type": "xsd:integer",
+         "@id": "path"
+      },
+      "stmts": {
+         "@type": "@id",
+         "@id": "stmts"
+      },
+      "blocks": {
+         "@type": "@id",
+         "@id": "blocks"
+      },
+      "index": {
+         "@type": "xsd:integer",
+         "@id": "index"
+      },
+      "decl": {
+         "@type": "@id",
+         "@id": "decl"
+      },
+      "deprecated": {
+         "@type": "xsd:boolean",
+         "@id": "deprecated"
+      },
+      "infix": {
+         "@id": "infix"
+      },
+      "name": {
+         "@id": "rdfs:label"
+      },
+      "nondeterministic": {
+         "@type": "xsd:boolean",
+         "@id": "nondeterministic"
+      },
+      "relation": {
+         "@type": "xsd:boolean",
+         "@id": "relation"
+      },
+      "description": {
+         "@id": "schema:description"
+      },
+      "type": {
+         "@context": {
+            "text": "skos:notation",
+            "description": "skos:prefLabel",
+            "meaning": "@id"
+         },
+         "@id": "type"
+      },
+      "builtins": {
+         "@type": "@id",
+         "@id": "builtins"
+      },
+      "category": {
+         "@context": {
+            "text": "skos:notation",
+            "description": "skos:prefLabel",
+            "meaning": "@id"
+         },
+         "@id": "category"
+      },
+      "args": {
+         "@type": "@id",
+         "@id": "args"
+      },
+      "result": {
+         "@type": "xsd:integer",
+         "@id": "result"
+      },
+      "variadic": {
+         "@type": "@id",
+         "@id": "variadic"
+      },
+      "available": {
+         "@id": "available"
+      },
+      "introduced": {
+         "@id": "introduced"
+      },
+      "wasm": {
+         "@type": "@id",
+         "@id": "wasm"
+      },
+      "categories": {
+         "@type": "@id",
+         "@id": "categories"
+      },
+      "func": {
+         "@id": "func"
+      },
+      "allow_net": {
+         "@id": "allow_net"
+      },
+      "features": {
+         "@type": "@id",
+         "@id": "features"
+      },
+      "future_keywords": {
+         "@context": {
+            "text": "skos:notation",
+            "description": "skos:prefLabel",
+            "meaning": "@id"
+         },
+         "@id": "future_keywords"
+      },
+      "wasm_abi_versions": {
+         "@type": "@id",
+         "@id": "wasm_abi_versions"
+      },
+      "key": {
+         "@type": "@id",
+         "@id": "key"
+      },
+      "major": {
+         "@type": "xsd:integer",
+         "@id": "major"
+      },
+      "minor": {
+         "@type": "xsd:integer",
+         "@id": "minor"
+      },
+      "patch": {
+         "@type": "xsd:integer",
+         "@id": "patch"
+      },
+      "a": {
+         "@type": "xsd:integer",
+         "@id": "a"
+      },
+      "b": {
+         "@type": "xsd:integer",
+         "@id": "b"
+      },
+      "version": {
+         "@type": "xsd:integer",
+         "@id": "version"
+      },
+      "return_value": {
+         "@type": "xsd:integer",
+         "@id": "return_value"
+      },
+      "funcs": {
+         "@type": "@id",
+         "@id": "funcs"
+      },
+      "capacity": {
+         "@type": "xsd:integer",
+         "@id": "capacity"
+      },
+      "Index": {
+         "@type": "xsd:integer",
+         "@id": "Index"
+      },
+      "file_rego_versions": {
+         "@type": "@id",
+         "@id": "file_rego_versions"
+      },
+      "metadata": {
+         "@type": "@id",
+         "@id": "metadata"
+      },
+      "rego_version": {
+         "@type": "xsd:integer",
+         "@id": "rego_version"
+      },
+      "revision": {
+         "@id": "revision"
+      },
+      "roots": {
+         "@id": "roots"
+      },
+      "block": {
+         "@id": "block"
+      },
+      "object": {
+         "@type": "xsd:integer",
+         "@id": "object"
+      },
+      "plans": {
+         "@type": "@id",
+         "@id": "plans"
+      },
+      "static": {
+         "@type": "@id",
+         "@id": "static"
+      },
+      "set": {
+         "@type": "xsd:integer",
+         "@id": "set"
+      },
+      "builtin_funcs": {
+         "@type": "@id",
+         "@id": "builtin_funcs"
+      },
+      "files": {
+         "@type": "@id",
+         "@id": "files"
+      },
+      "strings": {
+         "@type": "@id",
+         "@id": "strings"
+      },
+      "stmt": {
+         "@type": "@id",
+         "@id": "stmt"
+      },
+      "dynamic": {
+         "@type": "@id",
+         "@id": "dynamic"
+      },
+      "of": {
+         "@type": "@id",
+         "@id": "of"
+      },
+      "keywords": {
+         "@type": "@id",
+         "@id": "keywords"
+      },
+      "minor_version": {
+         "@type": "xsd:integer",
+         "@id": "minor_version"
+      },
+      "annotations": {
+         "@type": "@id",
+         "@id": "annotations"
+      },
+      "entrypoint": {
+         "@id": "entrypoint"
+      },
+      "module": {
+         "@id": "module"
+      },
+      "local": {
+         "@type": "xsd:integer",
+         "@id": "local"
+      },
+      "Any": {
+         "@id": "linkml:Any"
+      },
+      "ArrayAppendStmt": {
+         "@id": "ArrayAppendStmt"
+      },
+      "AssignIntStmt": {
+         "@id": "AssignIntStmt"
+      },
+      "AssignVarOnceStmt": {
+         "@id": "AssignVarOnceStmt"
+      },
+      "AssignVarStmt": {
+         "@id": "AssignVarStmt"
+      },
+      "AuthorizationInput": {
+         "@id": "AuthorizationInput"
+      },
+      "Block": {
+         "@id": "Block"
+      },
+      "BlockStmt": {
+         "@id": "BlockStmt"
+      },
+      "BreakStmt": {
+         "@id": "BreakStmt"
+      },
+      "Builtin": {
+         "@id": "Builtin"
+      },
+      "BuiltinArg": {
+         "@id": "BuiltinArg"
+      },
+      "BuiltinCategoryGroup": {
+         "@id": "BuiltinCategoryGroup"
+      },
+      "BuiltinDecl": {
+         "@id": "BuiltinDecl"
+      },
+      "BuiltinFunc": {
+         "@id": "BuiltinFunc"
+      },
+      "BuiltinMetadata": {
+         "@id": "BuiltinMetadata"
+      },
+      "BuiltinMetadataCatalog": {
+         "@id": "BuiltinMetadataCatalog"
+      },
+      "BuiltinResult": {
+         "@id": "BuiltinResult"
+      },
+      "CallDynamicStmt": {
+         "@id": "CallDynamicStmt"
+      },
+      "CallStmt": {
+         "@id": "CallStmt"
+      },
+      "Capabilities": {
+         "@id": "Capabilities"
+      },
+      "DotStmt": {
+         "@id": "DotStmt"
+      },
+      "ElementVersion": {
+         "@id": "ElementVersion"
+      },
+      "EqualStmt": {
+         "@id": "EqualStmt"
+      },
+      "FileRegoVersion": {
+         "@id": "FileRegoVersion"
+      },
+      "Func": {
+         "@id": "Func"
+      },
+      "Funcs": {
+         "@id": "Funcs"
+      },
+      "IsArrayStmt": {
+         "@id": "IsArrayStmt"
+      },
+      "IsDefinedStmt": {
+         "@id": "IsDefinedStmt"
+      },
+      "IsObjectStmt": {
+         "@id": "IsObjectStmt"
+      },
+      "IsSetStmt": {
+         "@id": "IsSetStmt"
+      },
+      "IsUndefinedStmt": {
+         "@id": "IsUndefinedStmt"
+      },
+      "LenStmt": {
+         "@id": "LenStmt"
+      },
+      "MakeArrayStmt": {
+         "@id": "MakeArrayStmt"
+      },
+      "MakeNullStmt": {
+         "@id": "MakeNullStmt"
+      },
+      "MakeNumberIntStmt": {
+         "@id": "MakeNumberIntStmt"
+      },
+      "MakeNumberRefStmt": {
+         "@id": "MakeNumberRefStmt"
+      },
+      "MakeObjectStmt": {
+         "@id": "MakeObjectStmt"
+      },
+      "MakeSetStmt": {
+         "@id": "MakeSetStmt"
+      },
+      "Manifest": {
+         "@id": "Manifest"
+      },
+      "NopStmt": {
+         "@id": "NopStmt"
+      },
+      "NotEqualStmt": {
+         "@id": "NotEqualStmt"
+      },
+      "NotStmt": {
+         "@id": "NotStmt"
+      },
+      "ObjectInsertOnceStmt": {
+         "@id": "ObjectInsertOnceStmt"
+      },
+      "ObjectInsertStmt": {
+         "@id": "ObjectInsertStmt"
+      },
+      "ObjectMergeStmt": {
+         "@id": "ObjectMergeStmt"
+      },
+      "Operand": {
+         "@id": "Operand"
+      },
+      "Plan": {
+         "@id": "Plan"
+      },
+      "Plans": {
+         "@id": "Plans"
+      },
+      "Policy": {
+         "@id": "Policy"
+      },
+      "ResetLocalStmt": {
+         "@id": "ResetLocalStmt"
+      },
+      "ResultSetAddStmt": {
+         "@id": "ResultSetAddStmt"
+      },
+      "ReturnLocalStmt": {
+         "@id": "ReturnLocalStmt"
+      },
+      "ScanStmt": {
+         "@id": "ScanStmt"
+      },
+      "SetAddStmt": {
+         "@id": "SetAddStmt"
+      },
+      "Static": {
+         "@id": "Static"
+      },
+      "Stmt": {
+         "@id": "Stmt"
+      },
+      "StringConst": {
+         "@id": "StringConst"
+      },
+      "TypeDecl": {
+         "@id": "TypeDecl"
+      },
+      "Val": {
+         "@id": "Val"
+      },
+      "VersionIndex": {
+         "@id": "VersionIndex"
+      },
+      "WasmABIVersion": {
+         "@id": "WasmABIVersion"
+      },
+      "WasmResolver": {
+         "@id": "WasmResolver"
+      },
+      "WithStmt": {
+         "@id": "WithStmt"
+      }
+   }
+}

@@ -1,0 +1,40 @@
+# mapping_set_id: https://w3id.org/lmodel/opa/mappings/opa_to_d3fend
+# mapping_set_version: 0.1.0
+# mapping_set_title: Open Policy Agent (OPA) to MITRE D3FEND Mappings
+# mapping_set_description: Schema-level mappings between Open Policy Agent (OPA)
+#   LinkML classes (Rego policy language, bundle manifest, authorization input,
+#   capabilities, intermediate representation plan) and MITRE D3FEND defensive
+#   technique classes. D3FEND is the highest-confidence interoperability target
+#   for OPA because D3FEND already models the exact authorization / access
+#   control concepts that OPA implements at runtime (AuthorizationService,
+#   AccessControlConfiguration, AccessControlList, ContentPolicy,
+#   AccessPolicyAdministration). Predicates - skos:closeMatch where the OPA
+#   class and D3FEND technique class describe the same operational artefact
+#   (e.g. a policy decision input or an access-control configuration document);
+#   skos:relatedMatch where the OPA class is one ingredient or implementation
+#   path of a broader D3FEND technique (e.g. a Rego built-in administering
+#   policy); skos:broadMatch where the OPA class is a delivery container that
+#   subsumes multiple D3FEND artefacts (e.g. a bundle Manifest carrying many
+#   policies).
+# license: https://creativecommons.org/licenses/by/4.0/
+# subject_source: https://w3id.org/lmodel/opa
+# object_source: https://w3id.org/lmodel/d3fend
+# mapping_date: 2026-06-12
+# curie_map:
+#   openpolicyagent: https://w3id.org/lmodel/opa/
+#   d3fend: https://w3id.org/lmodel/d3fend/
+#   owl: http://www.w3.org/2002/07/owl#
+#   semapv: https://w3id.org/semapv/vocab/
+#   skos: http://www.w3.org/2004/02/skos/core#
+subject_id	subject_label	subject_category	predicate_id	predicate_label	object_id	object_label	object_category	mapping_justification	comment
+openpolicyagent:AuthorizationInput	AuthorizationInput	owl:Class	skos:closeMatch	close match	d3fend:Authorization	Authorization	owl:Class	semapv:LLMBasedMatching	OPA AuthorizationInput is the canonical input document evaluated by an authorization decision; semantically equivalent to D3FEND Authorization as a defensive artefact representing a single authorization act
+openpolicyagent:AuthorizationInput	AuthorizationInput	owl:Class	skos:relatedMatch	related match	d3fend:AuthorizationService	AuthorizationService	owl:Class	semapv:LLMBasedMatching	An AuthorizationInput is consumed by an authorization service; related but not identical (one is the request payload, the other is the service)
+openpolicyagent:AuthorizationInput	AuthorizationInput	owl:Class	skos:relatedMatch	related match	d3fend:AccessControlList	AccessControlList	owl:Class	semapv:LLMBasedMatching	An AuthorizationInput frequently carries or references an ACL-style permission set; partial overlap with the ACL data structure itself
+openpolicyagent:Policy	Policy	owl:Class	skos:closeMatch	close match	d3fend:AccessControlConfiguration	AccessControlConfiguration	owl:Class	semapv:LLMBasedMatching	A compiled OPA Policy (IR plan) configures the authorization decisions performed at evaluation time, matching the D3FEND notion of an access-control configuration artefact
+openpolicyagent:Policy	Policy	owl:Class	skos:relatedMatch	related match	d3fend:ContentPolicy	ContentPolicy	owl:Class	semapv:LLMBasedMatching	Rego policies are commonly used to enforce content-policy decisions (e.g. admission control payloads, HTTP request bodies) although Policy is more general
+openpolicyagent:Policy	Policy	owl:Class	skos:relatedMatch	related match	d3fend:ControlFlowPolicy	ControlFlowPolicy	owl:Class	semapv:LLMBasedMatching	Rego policies are evaluated via a control-flow-style IR (blocks, statements, breaks) and govern downstream control flow of host applications
+openpolicyagent:Manifest	Manifest	owl:Class	skos:broadMatch	broad match	d3fend:AccessControlConfiguration	AccessControlConfiguration	owl:Class	semapv:LLMBasedMatching	A bundle Manifest is a versioned container that packages one or more access-control configurations (compiled Rego policies, data, wasm resolvers)
+openpolicyagent:Builtin	Builtin	owl:Class	skos:relatedMatch	related match	d3fend:AccessPolicyAdministration	AccessPolicyAdministration	owl:Class	semapv:LLMBasedMatching	A capability-declared built-in describes an administrative primitive available to policies (regex, http.send, crypto), partially overlapping access-policy administration
+openpolicyagent:BuiltinDecl	BuiltinDecl	owl:Class	skos:relatedMatch	related match	d3fend:AccessPolicyAdministration	AccessPolicyAdministration	owl:Class	semapv:LLMBasedMatching	A built-in's declared type signature documents an administrative primitive surface; related to access-policy administration metadata
+openpolicyagent:Capabilities	Capabilities	owl:Class	skos:relatedMatch	related match	d3fend:LocalAuthorizationService	LocalAuthorizationService	owl:Class	semapv:LLMBasedMatching	OPA Capabilities describe what the local authorization engine supports; relates to D3FEND LocalAuthorizationService when OPA is embedded in-process
+openpolicyagent:WasmResolver	WasmResolver	owl:Class	skos:relatedMatch	related match	d3fend:LocalAuthorizationService	LocalAuthorizationService	owl:Class	semapv:LLMBasedMatching	A WasmResolver dispatches a path to a wasm-embedded entrypoint; commonly used to expose policy decisions as a local authorization service

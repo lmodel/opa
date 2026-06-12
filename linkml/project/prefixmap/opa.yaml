@@ -1,0 +1,15 @@
+{
+   "d3fend": "https://w3id.org/lmodel/d3fend/",
+   "dcterms": "http://purl.org/dc/terms/",
+   "dpv": "https://w3id.org/lmodel/dpv/",
+   "iso27001": "https://w3id.org/lmodel/iso27001/",
+   "linkml": "https://w3id.org/linkml/",
+   "openpolicyagent": "https://w3id.org/lmodel/opa/",
+   "oscal": "https://w3id.org/lmodel/oscal/",
+   "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+   "schema": "http://schema.org/",
+   "slsa": "https://w3id.org/lmodel/slsa/",
+   "Any": {
+      "@id": "linkml:Any"
+   }
+}

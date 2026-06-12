@@ -1,0 +1,9 @@
+roots:
+  - policy
+rego_version: 1
+file_rego_versions:
+  - path: policy/awesome.rego
+    version: 1
+metadata:
+  signatures:
+    - some_signature;policy/awesome.rego;policy/bundle.tar.gz

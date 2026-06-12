@@ -1,0 +1,33 @@
+# mapping_set_id: https://w3id.org/lmodel/opa/mappings/opa_to_dpv
+# mapping_set_version: 0.1.0
+# mapping_set_title: Open Policy Agent (OPA) to W3C Data Privacy Vocabulary (DPV) Mappings
+# mapping_set_description: Schema-level mappings between Open Policy Agent (OPA)
+#   LinkML classes and the W3C Data Privacy Vocabulary (DPV). OPA is widely
+#   deployed for privacy and consent decisions on personal data, and DPV
+#   already provides the canonical vocabulary for policies, authorisation
+#   procedures, access control methods, decision-making, and enforcement of
+#   access control. Predicates - skos:closeMatch where the two classes name
+#   the same conceptual artefact (most notably openpolicyagent:Policy and
+#   dpv:Policy, both denoting a normative ruleset over data processing);
+#   skos:relatedMatch where the OPA class realises only part of a DPV concept
+#   (e.g. an AuthorizationInput as a specific Access processing event);
+#   skos:broadMatch where the OPA class wraps multiple DPV concerns (e.g. a
+#   bundle Manifest packaging many policies).
+# license: https://creativecommons.org/licenses/by/4.0/
+# subject_source: https://w3id.org/lmodel/opa
+# object_source: https://w3id.org/lmodel/dpv
+# mapping_date: 2026-06-12
+# curie_map:
+#   openpolicyagent: https://w3id.org/lmodel/opa/
+#   dpv: https://w3id.org/lmodel/dpv/
+#   owl: http://www.w3.org/2002/07/owl#
+#   semapv: https://w3id.org/semapv/vocab/
+#   skos: http://www.w3.org/2004/02/skos/core#
+subject_id	subject_label	subject_category	predicate_id	predicate_label	object_id	object_label	object_category	mapping_justification	comment
+openpolicyagent:Policy	Policy	owl:Class	skos:closeMatch	close match	dpv:Policy	Policy	owl:Class	semapv:LLMBasedMatching	An OPA IR Policy is a normative ruleset governing what is or is not permitted on data; semantically and lexically aligned with dpv:Policy
+openpolicyagent:Policy	Policy	owl:Class	skos:relatedMatch	related match	dpv:AccessControlMethod	AccessControlMethod	owl:Class	semapv:LLMBasedMatching	When a Rego policy decides access to personal data it functions as a concrete realisation of a DPV AccessControlMethod
+openpolicyagent:AuthorizationInput	AuthorizationInput	owl:Class	skos:closeMatch	close match	dpv:AuthorisationProcedure	AuthorisationProcedure	owl:Class	semapv:LLMBasedMatching	An AuthorizationInput is the documented input to an authorization procedure - aligned with the DPV AuthorisationProcedure technical/organisational measure
+openpolicyagent:AuthorizationInput	AuthorizationInput	owl:Class	skos:relatedMatch	related match	dpv:Access	Access	owl:Class	semapv:LLMBasedMatching	Each authorization decision corresponds to a dpv:Access processing event over the targeted resource
+openpolicyagent:WasmResolver	WasmResolver	owl:Class	skos:relatedMatch	related match	dpv:EnforceAccessControl	EnforceAccessControl	owl:Class	semapv:LLMBasedMatching	A WasmResolver exposes a policy-decision entrypoint that operationally enforces access control over the runtime data
+openpolicyagent:Manifest	Manifest	owl:Class	skos:broadMatch	broad match	dpv:Policy	Policy	owl:Class	semapv:LLMBasedMatching	A bundle Manifest is a delivery container for one or many dpv:Policy artefacts; broader than any single policy
+openpolicyagent:BuiltinFunc	BuiltinFunc	owl:Class	skos:relatedMatch	related match	dpv:DecisionMaking	DecisionMaking	owl:Class	semapv:LLMBasedMatching	A built-in function invoked during policy evaluation contributes to the decision-making processing operation
