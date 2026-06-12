@@ -1,0 +1,14 @@
+client_certificates: []
+method: CREATE
+path:
+  - ""
+  - v1
+  - pods
+params: {}
+headers: {}
+body:
+  apiVersion: admission.k8s.io/v1beta1
+  kind: AdmissionReview
+  request:
+    operation: CREATE
+    namespace: opa

@@ -6,6 +6,10 @@ Open Policy Agent (OPA) is an open source, general-purpose policy engine that en
 
 OPA is proud to be a graduated project in the [Cloud Native Computing Foundation](https://www.cncf.io/) (CNCF) landscape. For details read the CNCF [announcement](https://www.cncf.io/announcements/2021/02/04/cloud-native-computing-foundation-announces-open-policy-agent-graduation/).
 
+## Linked Data Sidecar
+
+See [solution design](./linkml/docs/about.md) and [https://w3id.org/lmodel/opa](https://w3id.org/lmodel/opa).
+
 ## Get started with OPA
 
 - Write your first Rego policy with the [Rego Playground](https://play.openpolicyagent.org) or use it to share your work with others for feedback and support. Have a look at the [Access Control examples](https://play.openpolicyagent.org/?example-group=access-control) if you're not sure where to start.

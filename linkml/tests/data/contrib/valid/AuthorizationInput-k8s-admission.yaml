@@ -1,0 +1,29 @@
+identity: minikube-user
+client_certificates: []
+method: CREATE
+path:
+  - core
+  - v1
+  - pods
+params: {}
+headers: {}
+body:
+  apiVersion: admission.k8s.io/v1beta1
+  kind: AdmissionReview
+  request:
+    operation: CREATE
+    namespace: opa
+    uid: bbfeef88-d98d-11e8-b280-080027868e77
+    userInfo:
+      username: minikube-user
+      groups:
+        - system:masters
+        - system:authenticated
+    resource:
+      group: ""
+      version: v1
+      resource: pods
+    kind:
+      group: ""
+      version: v1
+      kind: Pod

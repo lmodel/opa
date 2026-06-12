@@ -1,0 +1,34 @@
+# mapping_set_id: https://w3id.org/lmodel/opa/mappings/opa_to_slsa
+# mapping_set_version: 0.1.0
+# mapping_set_title: Open Policy Agent (OPA) to SLSA Mappings
+# mapping_set_description: Schema-level mappings between Open Policy Agent (OPA)
+#   LinkML classes and the SLSA (Supply-chain Levels for Software Artifacts)
+#   LinkML schema. OPA bundles are signed, versioned policy artefacts whose
+#   delivery and verification semantics map directly onto SLSA's provenance
+#   and verification primitives (in-toto Statement, ResourceDescriptor,
+#   BuildProvenance, VerificationSummaryAttestation, DigestSet). Predicates -
+#   skos:closeMatch where the two classes describe the same provenance
+#   artefact (e.g. WasmResolver as a ResourceDescriptor for a wasm-compiled
+#   policy entrypoint, or the signed Manifest envelope as an in-toto
+#   Statement); skos:relatedMatch where the OPA class carries metadata of a
+#   SLSA concern (e.g. Manifest digests for VSA verification, Policy as the
+#   built Package); skos:broadMatch where the OPA class is a container that
+#   subsumes multiple SLSA artefacts.
+# license: https://creativecommons.org/licenses/by/4.0/
+# subject_source: https://w3id.org/lmodel/opa
+# object_source: https://w3id.org/lmodel/slsa
+# mapping_date: 2026-06-12
+# curie_map:
+#   openpolicyagent: https://w3id.org/lmodel/opa/
+#   slsa: https://w3id.org/lmodel/slsa/
+#   owl: http://www.w3.org/2002/07/owl#
+#   semapv: https://w3id.org/semapv/vocab/
+#   skos: http://www.w3.org/2004/02/skos/core#
+subject_id	subject_label	subject_category	predicate_id	predicate_label	object_id	object_label	object_category	mapping_justification	comment
+openpolicyagent:Manifest	Manifest	owl:Class	skos:closeMatch	close match	slsa:Statement	Statement	owl:Class	semapv:LLMBasedMatching	A signed bundle Manifest is the equivalent of an in-toto Statement envelope binding subject(s) to a predicate (here, the bundle contents and roots)
+openpolicyagent:Manifest	Manifest	owl:Class	skos:relatedMatch	related match	slsa:BuildProvenance	BuildProvenance	owl:Class	semapv:LLMBasedMatching	A Manifest carries the equivalent of build provenance about a bundle - revision, signing, roots - aligning with the SLSA BuildProvenance predicate type
+openpolicyagent:Manifest	Manifest	owl:Class	skos:relatedMatch	related match	slsa:VerificationSummaryAttestation	VerificationSummaryAttestation	owl:Class	semapv:LLMBasedMatching	Manifest signing data and verification metadata parallel a SLSA verification summary attestation
+openpolicyagent:Manifest	Manifest	owl:Class	skos:relatedMatch	related match	slsa:DigestSet	DigestSet	owl:Class	semapv:LLMBasedMatching	A Manifest carries (or is signed against) a digest set covering the bundle's payload files
+openpolicyagent:WasmResolver	WasmResolver	owl:Class	skos:closeMatch	close match	slsa:ResourceDescriptor	ResourceDescriptor	owl:Class	semapv:LLMBasedMatching	A WasmResolver binds a logical policy path to a concrete wasm artefact - the same role as a SLSA ResourceDescriptor identifying a named resource
+openpolicyagent:Manifest	Manifest	owl:Class	skos:broadMatch	broad match	slsa:ResourceDescriptor	ResourceDescriptor	owl:Class	semapv:LLMBasedMatching	A Manifest is a container that describes many resources (roots, wasm modules); broader than any single ResourceDescriptor
+openpolicyagent:Policy	Policy	owl:Class	skos:relatedMatch	related match	slsa:Package	Package	owl:Class	semapv:LLMBasedMatching	A compiled IR Policy is the built artefact produced from Rego source code, parallel to a SLSA Package as the unit of build output

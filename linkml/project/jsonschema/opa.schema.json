@@ -1,0 +1,2649 @@
+{
+    "$defs": {
+        "Any": {
+            "additionalProperties": true,
+            "description": "Free-form value placeholder (scalar, list, or object). Used to model source slots whose representation is heterogeneous or intentionally open (e.g. ``TypeDecl.key``, ``AuthorizationInput.body``).",
+            "title": "Any",
+            "type": [
+                "null",
+                "boolean",
+                "object",
+                "number",
+                "string"
+            ]
+        },
+        "ArrayAppendStmt": {
+            "additionalProperties": false,
+            "description": "``ArrayAppendStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "array": {
+                    "description": "``array`` field of ``ArrayAppendStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "col": {
+                    "description": "``col`` field of ``ArrayAppendStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``ArrayAppendStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``ArrayAppendStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "value": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``value`` field of ``ArrayAppendStmt`` (from upstream JSON Schema)."
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "array",
+                "value"
+            ],
+            "title": "ArrayAppendStmt",
+            "type": "object"
+        },
+        "AssignIntStmt": {
+            "additionalProperties": false,
+            "description": "``AssignIntStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``AssignIntStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``AssignIntStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``AssignIntStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "target": {
+                    "description": "``target`` field of ``AssignIntStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "value": {
+                    "description": "``value`` field of ``AssignIntStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "target",
+                "value"
+            ],
+            "title": "AssignIntStmt",
+            "type": "object"
+        },
+        "AssignVarOnceStmt": {
+            "additionalProperties": false,
+            "description": "``AssignVarOnceStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``AssignVarOnceStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``AssignVarOnceStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``AssignVarOnceStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "source": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``source`` field of ``AssignVarOnceStmt`` (from upstream JSON Schema)."
+                },
+                "target": {
+                    "description": "``target`` field of ``AssignVarOnceStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "source",
+                "target"
+            ],
+            "title": "AssignVarOnceStmt",
+            "type": "object"
+        },
+        "AssignVarStmt": {
+            "additionalProperties": false,
+            "description": "``AssignVarStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``AssignVarStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``AssignVarStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``AssignVarStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "source": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``source`` field of ``AssignVarStmt`` (from upstream JSON Schema)."
+                },
+                "target": {
+                    "description": "``target`` field of ``AssignVarStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "source",
+                "target"
+            ],
+            "title": "AssignVarStmt",
+            "type": "object"
+        },
+        "AuthorizationInput": {
+            "additionalProperties": false,
+            "description": "Input document the example HTTP API Authorization policy receives. Mirrors the OPA-provided JSON Schema at ``v1/schemas/authorizationPolicy.json``.",
+            "properties": {
+                "body": {
+                    "$ref": "#/$defs/Any",
+                    "description": "Decoded request body as a free-form object."
+                },
+                "client_certificates": {
+                    "description": "Client certificates presented during the TLS handshake. The example schema leaves the item shape opaque (free-form objects).",
+                    "items": {
+                        "$ref": "#/$defs/Any"
+                    },
+                    "type": "array"
+                },
+                "headers": {
+                    "$ref": "#/$defs/Any",
+                    "description": "Request headers as a free-form object (case insensitive in HTTP)."
+                },
+                "identity": {
+                    "description": "Caller identity, typically extracted from an authentication token.",
+                    "type": "string"
+                },
+                "method": {
+                    "description": "HTTP method of the request being authorized (e.g. ``GET``, ``POST``).",
+                    "type": "string"
+                },
+                "params": {
+                    "$ref": "#/$defs/Any",
+                    "description": "Query-string parameters as a free-form object."
+                },
+                "path": {
+                    "description": "Request URL path split on ``/`` and decoded into a list of path segments.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "identity",
+                "client_certificates",
+                "method",
+                "path",
+                "params",
+                "headers",
+                "body"
+            ],
+            "title": "AuthorizationInput",
+            "type": "object"
+        },
+        "Block": {
+            "additionalProperties": false,
+            "description": "``Block`` definition from upstream JSON Schema.",
+            "properties": {
+                "stmts": {
+                    "description": "``stmts`` field of ``Block`` (from upstream JSON Schema).",
+                    "items": {
+                        "$ref": "#/$defs/Stmt"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "stmts"
+            ],
+            "title": "Block",
+            "type": "object"
+        },
+        "BlockStmt": {
+            "additionalProperties": false,
+            "description": "``BlockStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "blocks": {
+                    "description": "``blocks`` field of ``BlockStmt`` (from upstream JSON Schema).",
+                    "items": {
+                        "$ref": "#/$defs/Block"
+                    },
+                    "type": "array"
+                },
+                "col": {
+                    "description": "``col`` field of ``BlockStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``BlockStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``BlockStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "blocks"
+            ],
+            "title": "BlockStmt",
+            "type": "object"
+        },
+        "BreakStmt": {
+            "additionalProperties": false,
+            "description": "``BreakStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``BreakStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``BreakStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "index": {
+                    "description": "``index`` field of ``BreakStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``BreakStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "index"
+            ],
+            "title": "BreakStmt",
+            "type": "object"
+        },
+        "Builtin": {
+            "additionalProperties": false,
+            "description": "A Rego built-in function exposed by the OPA runtime.",
+            "properties": {
+                "decl": {
+                    "$ref": "#/$defs/BuiltinDecl",
+                    "description": "Type declaration: signature plus return type."
+                },
+                "deprecated": {
+                    "description": "True when the built-in is scheduled for removal.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "infix": {
+                    "description": "Optional infix operator symbol (e.g. ``&``, ``==``).",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Built-in identifier (dotted path, e.g. ``array.concat``).",
+                    "type": "string"
+                },
+                "nondeterministic": {
+                    "description": "True when invocations may produce different results across runs.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "relation": {
+                    "description": "True when the built-in is a relation (binds output variables).",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "name",
+                "decl"
+            ],
+            "title": "Builtin",
+            "type": "object"
+        },
+        "BuiltinArg": {
+            "additionalProperties": false,
+            "description": "Documentation for one positional argument of a built-in.",
+            "properties": {
+                "description": {
+                    "description": "Markdown description of the argument.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Argument identifier as documented (often single-letter).",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "type": {
+                    "description": "Compact textual form of the argument type (e.g. ``number``, ``set[any]``, ``any<string, number>``).",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "title": "BuiltinArg",
+            "type": "object"
+        },
+        "BuiltinCategory": {
+            "description": "Documentation category a built-in belongs to. Permissible values are seeded from ``builtin_metadata.json._categories`` at generation time. Enum symbols follow LinkML's snake_case convention; each permissible value carries the upstream label (e.g. ``providers.aws``) in both its description and its ``meaning`` mapping.",
+            "enum": [
+                "aggregates",
+                "array",
+                "bits",
+                "comparison",
+                "conversions",
+                "crypto",
+                "encoding",
+                "glob",
+                "graph",
+                "graphql",
+                "http",
+                "internal",
+                "net",
+                "numbers",
+                "object",
+                "opa",
+                "providers_aws",
+                "regex",
+                "rego",
+                "semver",
+                "sets",
+                "strings",
+                "time",
+                "tokens",
+                "tokensign",
+                "tracing",
+                "types",
+                "units",
+                "uri",
+                "uuid"
+            ],
+            "title": "BuiltinCategory",
+            "type": "string"
+        },
+        "BuiltinCategoryGroup": {
+            "additionalProperties": false,
+            "description": "Membership of built-ins in a documentation category.",
+            "properties": {
+                "builtins": {
+                    "description": "Names of the built-ins belonging to this category.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "category": {
+                    "$ref": "#/$defs/BuiltinCategory",
+                    "description": "Same value as ``name``, typed against the BuiltinCategory enum for downstream consumers."
+                },
+                "name": {
+                    "description": "Category identifier. Plain string (not the BuiltinCategory enum) so gen-python's identifier-slot machinery does not forward-reference the enum class.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "builtins"
+            ],
+            "title": "BuiltinCategoryGroup",
+            "type": "object"
+        },
+        "BuiltinCategoryGroup__identifier_optional": {
+            "additionalProperties": false,
+            "description": "Membership of built-ins in a documentation category.",
+            "properties": {
+                "builtins": {
+                    "description": "Names of the built-ins belonging to this category.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "category": {
+                    "$ref": "#/$defs/BuiltinCategory",
+                    "description": "Same value as ``name``, typed against the BuiltinCategory enum for downstream consumers."
+                },
+                "name": {
+                    "description": "Category identifier. Plain string (not the BuiltinCategory enum) so gen-python's identifier-slot machinery does not forward-reference the enum class.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "builtins"
+            ],
+            "title": "BuiltinCategoryGroup",
+            "type": "object"
+        },
+        "BuiltinDecl": {
+            "additionalProperties": false,
+            "description": "Type declaration of a built-in: function signature and return type.",
+            "properties": {
+                "args": {
+                    "description": "Positional argument types in declaration order.",
+                    "items": {
+                        "$ref": "#/$defs/TypeDecl"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "result": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/TypeDecl"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Type of the result returned by the built-in."
+                },
+                "type": {
+                    "const": "function",
+                    "description": "Always the literal string ``function``.",
+                    "type": "string"
+                },
+                "variadic": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/TypeDecl"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "When present, indicates the built-in accepts any number of trailing arguments of this type."
+                }
+            },
+            "required": [
+                "type"
+            ],
+            "title": "BuiltinDecl",
+            "type": "object"
+        },
+        "BuiltinFunc": {
+            "additionalProperties": false,
+            "description": "``BuiltinFunc`` definition from upstream JSON Schema.",
+            "properties": {
+                "decl": {
+                    "$ref": "#/$defs/Any",
+                    "description": "BuiltinFunc declaration; opaque in this schema."
+                },
+                "name": {
+                    "description": "``name`` field of ``BuiltinFunc`` (from upstream JSON Schema).",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "decl",
+                "name"
+            ],
+            "title": "BuiltinFunc",
+            "type": "object"
+        },
+        "BuiltinMetadata": {
+            "additionalProperties": false,
+            "description": "Human-readable metadata for a single Rego built-in function.",
+            "properties": {
+                "args": {
+                    "description": "Positional argument descriptors in declaration order.",
+                    "items": {
+                        "$ref": "#/$defs/BuiltinArg"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "available": {
+                    "description": "Every OPA release tag in which the built-in is available.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "deprecated": {
+                    "description": "True when the built-in is scheduled for removal.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "description": {
+                    "description": "Markdown description of the built-in.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "infix": {
+                    "description": "Optional infix operator symbol.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "introduced": {
+                    "description": "Earliest OPA release tag in which the built-in was available.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Built-in identifier (dotted path).",
+                    "type": "string"
+                },
+                "relation": {
+                    "description": "True when the built-in is a relation.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "result": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/BuiltinResult"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Descriptor for the value returned by the built-in."
+                },
+                "wasm": {
+                    "description": "True if the built-in is implemented for the Wasm target.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "BuiltinMetadata",
+            "type": "object"
+        },
+        "BuiltinMetadataCatalog": {
+            "additionalProperties": false,
+            "description": "Wrapper class for the contents of ``builtin_metadata.json``. The source document is a flat map keyed by built-in name plus a ``_categories`` map; the generator script reshapes it so ``categories`` and ``builtins`` are explicit, inlined-as-dict slots on this wrapper.",
+            "properties": {
+                "builtins": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/BuiltinMetadata__identifier_optional"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "All documented built-ins keyed by name.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "categories": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/BuiltinCategoryGroup__identifier_optional"
+                            },
+                            {
+                                "description": "Names of the built-ins belonging to this category.",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            }
+                        ]
+                    },
+                    "description": "Category name -> list of built-in names belonging to it.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                }
+            },
+            "title": "BuiltinMetadataCatalog",
+            "type": "object"
+        },
+        "BuiltinMetadata__identifier_optional": {
+            "additionalProperties": false,
+            "description": "Human-readable metadata for a single Rego built-in function.",
+            "properties": {
+                "args": {
+                    "description": "Positional argument descriptors in declaration order.",
+                    "items": {
+                        "$ref": "#/$defs/BuiltinArg"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "available": {
+                    "description": "Every OPA release tag in which the built-in is available.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "deprecated": {
+                    "description": "True when the built-in is scheduled for removal.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "description": {
+                    "description": "Markdown description of the built-in.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "infix": {
+                    "description": "Optional infix operator symbol.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "introduced": {
+                    "description": "Earliest OPA release tag in which the built-in was available.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Built-in identifier (dotted path).",
+                    "type": "string"
+                },
+                "relation": {
+                    "description": "True when the built-in is a relation.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "result": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/BuiltinResult"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Descriptor for the value returned by the built-in."
+                },
+                "wasm": {
+                    "description": "True if the built-in is implemented for the Wasm target.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                }
+            },
+            "required": [],
+            "title": "BuiltinMetadata",
+            "type": "object"
+        },
+        "BuiltinResult": {
+            "additionalProperties": false,
+            "description": "Documentation for the value returned by a built-in.",
+            "properties": {
+                "description": {
+                    "description": "Markdown description of the result.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Result identifier as documented.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "type": {
+                    "description": "Compact textual form of the result type.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "title": "BuiltinResult",
+            "type": "object"
+        },
+        "BuiltinTypeKind": {
+            "description": "Kinds of value that a TypeDecl can describe.",
+            "enum": [
+                "string",
+                "number",
+                "boolean",
+                "null",
+                "any",
+                "array",
+                "set",
+                "object",
+                "function"
+            ],
+            "title": "BuiltinTypeKind",
+            "type": "string"
+        },
+        "CallDynamicStmt": {
+            "additionalProperties": false,
+            "description": "``CallDynamicStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "args": {
+                    "description": "``args`` field of ``CallDynamicStmt`` (from upstream JSON Schema).",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "type": "array"
+                },
+                "col": {
+                    "description": "``col`` field of ``CallDynamicStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``CallDynamicStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "path": {
+                    "description": "``path`` field of ``CallDynamicStmt`` (from upstream JSON Schema).",
+                    "items": {
+                        "$ref": "#/$defs/Operand"
+                    },
+                    "type": "array"
+                },
+                "result": {
+                    "description": "``result`` field of ``CallDynamicStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``CallDynamicStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "args",
+                "path",
+                "result"
+            ],
+            "title": "CallDynamicStmt",
+            "type": "object"
+        },
+        "CallStmt": {
+            "additionalProperties": false,
+            "description": "``CallStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "args": {
+                    "description": "``args`` field of ``CallStmt`` (from upstream JSON Schema).",
+                    "items": {
+                        "$ref": "#/$defs/Operand"
+                    },
+                    "type": "array"
+                },
+                "col": {
+                    "description": "``col`` field of ``CallStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``CallStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "func": {
+                    "description": "``func`` field of ``CallStmt`` (from upstream JSON Schema).",
+                    "type": "string"
+                },
+                "result": {
+                    "description": "``result`` field of ``CallStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``CallStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "args",
+                "func",
+                "result"
+            ],
+            "title": "CallStmt",
+            "type": "object"
+        },
+        "Capabilities": {
+            "additionalProperties": false,
+            "description": "Top-level capabilities document published by an OPA build. Lists every built-in function the runtime supports along with Wasm ABI compatibility, future keywords and feature flags.",
+            "properties": {
+                "allow_net": {
+                    "description": "Network destinations the built-ins are allowed to contact. Absent or empty means unrestricted; an empty list means no network access.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "builtins": {
+                    "description": "All built-in functions supported by this OPA build.",
+                    "items": {
+                        "$ref": "#/$defs/Builtin"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "features": {
+                    "description": "Optional language / runtime features enabled in this build.",
+                    "items": {
+                        "$ref": "#/$defs/FeatureName"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "future_keywords": {
+                    "description": "Keywords reserved for future Rego releases.",
+                    "items": {
+                        "$ref": "#/$defs/FutureKeyword"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "wasm_abi_versions": {
+                    "description": "Wasm ABI versions the runtime can host.",
+                    "items": {
+                        "$ref": "#/$defs/WasmABIVersion"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                }
+            },
+            "title": "Capabilities",
+            "type": "object"
+        },
+        "DotStmt": {
+            "additionalProperties": false,
+            "description": "``DotStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``DotStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``DotStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "key": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``key`` field of ``DotStmt`` (from upstream JSON Schema)."
+                },
+                "row": {
+                    "description": "``row`` field of ``DotStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "source": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``source`` field of ``DotStmt`` (from upstream JSON Schema)."
+                },
+                "target": {
+                    "description": "``target`` field of ``DotStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "key",
+                "source",
+                "target"
+            ],
+            "title": "DotStmt",
+            "type": "object"
+        },
+        "ElementVersion": {
+            "additionalProperties": false,
+            "description": "Semantic version triple identifying when an element was introduced.",
+            "properties": {
+                "major": {
+                    "description": "Major version number (source field ``Major``).",
+                    "minimum": 0,
+                    "type": "integer"
+                },
+                "minor": {
+                    "description": "Minor version number (source field ``Minor``).",
+                    "minimum": 0,
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "Name of the language element (built-in, keyword, or feature).",
+                    "type": "string"
+                },
+                "patch": {
+                    "description": "Patch version number (source field ``Patch``).",
+                    "minimum": 0,
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "name",
+                "major",
+                "minor",
+                "patch"
+            ],
+            "title": "ElementVersion",
+            "type": "object"
+        },
+        "ElementVersion__identifier_optional": {
+            "additionalProperties": false,
+            "description": "Semantic version triple identifying when an element was introduced.",
+            "properties": {
+                "major": {
+                    "description": "Major version number (source field ``Major``).",
+                    "minimum": 0,
+                    "type": "integer"
+                },
+                "minor": {
+                    "description": "Minor version number (source field ``Minor``).",
+                    "minimum": 0,
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "Name of the language element (built-in, keyword, or feature).",
+                    "type": "string"
+                },
+                "patch": {
+                    "description": "Patch version number (source field ``Patch``).",
+                    "minimum": 0,
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "major",
+                "minor",
+                "patch"
+            ],
+            "title": "ElementVersion",
+            "type": "object"
+        },
+        "EqualStmt": {
+            "additionalProperties": false,
+            "description": "``EqualStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "a": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``a`` field of ``EqualStmt`` (from upstream JSON Schema)."
+                },
+                "b": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``b`` field of ``EqualStmt`` (from upstream JSON Schema)."
+                },
+                "col": {
+                    "description": "``col`` field of ``EqualStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``EqualStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``EqualStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "a",
+                "b"
+            ],
+            "title": "EqualStmt",
+            "type": "object"
+        },
+        "FeatureName": {
+            "description": "Optional features advertised by the OPA build. The permissible values below are seeded from the upstream capabilities.json snapshot at generation time; future releases may introduce new flags.",
+            "enum": [
+                "keywords_in_refs",
+                "rego_v1",
+                "template_strings"
+            ],
+            "title": "FeatureName",
+            "type": "string"
+        },
+        "FileRegoVersion": {
+            "additionalProperties": false,
+            "description": "Typed override record for ``Manifest.file_rego_versions``. Provides stronger validation than a free-form map while keeping the same semantics.",
+            "properties": {
+                "path": {
+                    "description": "Bundle-relative file path receiving a Rego version override.",
+                    "type": "string"
+                },
+                "version": {
+                    "description": "Rego version for this file: ``0`` (v0) or ``1`` (v1).",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "path",
+                "version"
+            ],
+            "title": "FileRegoVersion",
+            "type": "object"
+        },
+        "Func": {
+            "additionalProperties": false,
+            "description": "``Func`` definition from upstream JSON Schema.",
+            "properties": {
+                "blocks": {
+                    "description": "``blocks`` field of ``Func`` (from upstream JSON Schema).",
+                    "items": {
+                        "$ref": "#/$defs/Block"
+                    },
+                    "type": "array"
+                },
+                "name": {
+                    "description": "``name`` field of ``Func`` (from upstream JSON Schema).",
+                    "type": "string"
+                },
+                "params": {
+                    "description": "``params`` field of ``Func`` (from upstream JSON Schema).",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "type": "array"
+                },
+                "path": {
+                    "description": "``path`` field of ``Func`` (from upstream JSON Schema).",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "return_value": {
+                    "description": "``return`` field of ``Func`` (from upstream JSON Schema). (Renamed from upstream wire-format key ``return`` to avoid the Python reserved word.)",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "blocks",
+                "name",
+                "params",
+                "return_value"
+            ],
+            "title": "Func",
+            "type": "object"
+        },
+        "Funcs": {
+            "additionalProperties": false,
+            "description": "``Funcs`` definition from upstream JSON Schema.",
+            "properties": {
+                "funcs": {
+                    "description": "``funcs`` field of ``Funcs`` (from upstream JSON Schema).",
+                    "items": {
+                        "$ref": "#/$defs/Func"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "funcs"
+            ],
+            "title": "Funcs",
+            "type": "object"
+        },
+        "FutureKeyword": {
+            "description": "Identifiers reserved for upcoming Rego releases.",
+            "enum": [
+                "not"
+            ],
+            "title": "FutureKeyword",
+            "type": "string"
+        },
+        "IsArrayStmt": {
+            "additionalProperties": false,
+            "description": "``IsArrayStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``IsArrayStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``IsArrayStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``IsArrayStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "source": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``source`` field of ``IsArrayStmt`` (from upstream JSON Schema)."
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "source"
+            ],
+            "title": "IsArrayStmt",
+            "type": "object"
+        },
+        "IsDefinedStmt": {
+            "additionalProperties": false,
+            "description": "``IsDefinedStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``IsDefinedStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``IsDefinedStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``IsDefinedStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "source": {
+                    "description": "``source`` field of ``IsDefinedStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "source"
+            ],
+            "title": "IsDefinedStmt",
+            "type": "object"
+        },
+        "IsObjectStmt": {
+            "additionalProperties": false,
+            "description": "``IsObjectStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``IsObjectStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``IsObjectStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``IsObjectStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "source": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``source`` field of ``IsObjectStmt`` (from upstream JSON Schema)."
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "source"
+            ],
+            "title": "IsObjectStmt",
+            "type": "object"
+        },
+        "IsSetStmt": {
+            "additionalProperties": false,
+            "description": "``IsSetStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``IsSetStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``IsSetStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``IsSetStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "source": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``source`` field of ``IsSetStmt`` (from upstream JSON Schema)."
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "source"
+            ],
+            "title": "IsSetStmt",
+            "type": "object"
+        },
+        "IsUndefinedStmt": {
+            "additionalProperties": false,
+            "description": "``IsUndefinedStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``IsUndefinedStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``IsUndefinedStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``IsUndefinedStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "source": {
+                    "description": "``source`` field of ``IsUndefinedStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "source"
+            ],
+            "title": "IsUndefinedStmt",
+            "type": "object"
+        },
+        "LenStmt": {
+            "additionalProperties": false,
+            "description": "``LenStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``LenStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``LenStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``LenStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "source": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``source`` field of ``LenStmt`` (from upstream JSON Schema)."
+                },
+                "target": {
+                    "description": "``target`` field of ``LenStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "source",
+                "target"
+            ],
+            "title": "LenStmt",
+            "type": "object"
+        },
+        "MakeArrayStmt": {
+            "additionalProperties": false,
+            "description": "``MakeArrayStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "capacity": {
+                    "description": "``capacity`` field of ``MakeArrayStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "col": {
+                    "description": "``col`` field of ``MakeArrayStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``MakeArrayStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``MakeArrayStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "target": {
+                    "description": "``target`` field of ``MakeArrayStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "capacity",
+                "target"
+            ],
+            "title": "MakeArrayStmt",
+            "type": "object"
+        },
+        "MakeNullStmt": {
+            "additionalProperties": false,
+            "description": "``MakeNullStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``MakeNullStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``MakeNullStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``MakeNullStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "target": {
+                    "description": "``target`` field of ``MakeNullStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "target"
+            ],
+            "title": "MakeNullStmt",
+            "type": "object"
+        },
+        "MakeNumberIntStmt": {
+            "additionalProperties": false,
+            "description": "``MakeNumberIntStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``MakeNumberIntStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``MakeNumberIntStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``MakeNumberIntStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "target": {
+                    "description": "``target`` field of ``MakeNumberIntStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "value": {
+                    "description": "``value`` field of ``MakeNumberIntStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "target",
+                "value"
+            ],
+            "title": "MakeNumberIntStmt",
+            "type": "object"
+        },
+        "MakeNumberRefStmt": {
+            "additionalProperties": false,
+            "description": "``MakeNumberRefStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "Index": {
+                    "description": "Deprecated alias for `index`. Both keys are emitted by current OPA versions for backwards compatibility; will be removed in a future major release. Read `index` instead.",
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "col": {
+                    "description": "``col`` field of ``MakeNumberRefStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``MakeNumberRefStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "index": {
+                    "description": "``index`` field of ``MakeNumberRefStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``MakeNumberRefStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "target": {
+                    "description": "``target`` field of ``MakeNumberRefStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "index",
+                "target"
+            ],
+            "title": "MakeNumberRefStmt",
+            "type": "object"
+        },
+        "MakeObjectStmt": {
+            "additionalProperties": false,
+            "description": "``MakeObjectStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``MakeObjectStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``MakeObjectStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``MakeObjectStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "target": {
+                    "description": "``target`` field of ``MakeObjectStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "target"
+            ],
+            "title": "MakeObjectStmt",
+            "type": "object"
+        },
+        "MakeSetStmt": {
+            "additionalProperties": false,
+            "description": "``MakeSetStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``MakeSetStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``MakeSetStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``MakeSetStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "target": {
+                    "description": "``target`` field of ``MakeSetStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "target"
+            ],
+            "title": "MakeSetStmt",
+            "type": "object"
+        },
+        "Manifest": {
+            "additionalProperties": false,
+            "description": "``Manifest`` definition from upstream JSON Schema.",
+            "properties": {
+                "file_rego_versions": {
+                    "description": "Per-file Rego language version overrides. Each record maps a bundle file path to ``version`` where ``0`` = Rego v0 and ``1`` = Rego v1.",
+                    "items": {
+                        "$ref": "#/$defs/FileRegoVersion"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "metadata": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Any"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "``metadata`` field of ``Manifest`` (from upstream JSON Schema)."
+                },
+                "rego_version": {
+                    "description": "Rego language version pinned for files in this bundle. ``0`` = Rego v0 (legacy); ``1`` = Rego v1 (default since OPA 1.0). See ``v1/bundle/bundle.go`` for the canonical mapping.",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "revision": {
+                    "description": "``revision`` field of ``Manifest`` (from upstream JSON Schema).",
+                    "type": "string"
+                },
+                "roots": {
+                    "description": "``roots`` field of ``Manifest`` (from upstream JSON Schema).",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "wasm": {
+                    "description": "``wasm`` field of ``Manifest`` (from upstream JSON Schema).",
+                    "items": {
+                        "$ref": "#/$defs/WasmResolver"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "revision"
+            ],
+            "title": "Manifest",
+            "type": "object"
+        },
+        "NopStmt": {
+            "additionalProperties": false,
+            "description": "``NopStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``NopStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``NopStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``NopStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row"
+            ],
+            "title": "NopStmt",
+            "type": "object"
+        },
+        "NotEqualStmt": {
+            "additionalProperties": false,
+            "description": "``NotEqualStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "a": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``a`` field of ``NotEqualStmt`` (from upstream JSON Schema)."
+                },
+                "b": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``b`` field of ``NotEqualStmt`` (from upstream JSON Schema)."
+                },
+                "col": {
+                    "description": "``col`` field of ``NotEqualStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``NotEqualStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``NotEqualStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "a",
+                "b"
+            ],
+            "title": "NotEqualStmt",
+            "type": "object"
+        },
+        "NotStmt": {
+            "additionalProperties": false,
+            "description": "``NotStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "block": {
+                    "description": "``block`` field of ``NotStmt`` (from upstream JSON Schema).",
+                    "type": "string"
+                },
+                "col": {
+                    "description": "``col`` field of ``NotStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``NotStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``NotStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "block"
+            ],
+            "title": "NotStmt",
+            "type": "object"
+        },
+        "ObjectInsertOnceStmt": {
+            "additionalProperties": false,
+            "description": "``ObjectInsertOnceStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``ObjectInsertOnceStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``ObjectInsertOnceStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "key": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``key`` field of ``ObjectInsertOnceStmt`` (from upstream JSON Schema)."
+                },
+                "object": {
+                    "description": "``object`` field of ``ObjectInsertOnceStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``ObjectInsertOnceStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "value": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``value`` field of ``ObjectInsertOnceStmt`` (from upstream JSON Schema)."
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "key",
+                "object",
+                "value"
+            ],
+            "title": "ObjectInsertOnceStmt",
+            "type": "object"
+        },
+        "ObjectInsertStmt": {
+            "additionalProperties": false,
+            "description": "``ObjectInsertStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``ObjectInsertStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``ObjectInsertStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "key": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``key`` field of ``ObjectInsertStmt`` (from upstream JSON Schema)."
+                },
+                "object": {
+                    "description": "``object`` field of ``ObjectInsertStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``ObjectInsertStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "value": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``value`` field of ``ObjectInsertStmt`` (from upstream JSON Schema)."
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "key",
+                "object",
+                "value"
+            ],
+            "title": "ObjectInsertStmt",
+            "type": "object"
+        },
+        "ObjectMergeStmt": {
+            "additionalProperties": false,
+            "description": "``ObjectMergeStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "a": {
+                    "description": "``a`` field of ``ObjectMergeStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "b": {
+                    "description": "``b`` field of ``ObjectMergeStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "col": {
+                    "description": "``col`` field of ``ObjectMergeStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``ObjectMergeStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``ObjectMergeStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "target": {
+                    "description": "``target`` field of ``ObjectMergeStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "a",
+                "b",
+                "target"
+            ],
+            "title": "ObjectMergeStmt",
+            "type": "object"
+        },
+        "Operand": {
+            "additionalProperties": false,
+            "description": "Alias for ``Val`` (single-``$ref`` def in upstream JSON Schema).",
+            "properties": {
+                "type": {
+                    "$ref": "#/$defs/ValTag",
+                    "description": "Discriminator tag identifying the Val variant."
+                },
+                "value": {
+                    "$ref": "#/$defs/Any",
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "description": "Typed payload; concrete class is selected by ``type``."
+                }
+            },
+            "required": [
+                "type",
+                "value"
+            ],
+            "title": "Operand",
+            "type": "object"
+        },
+        "Plan": {
+            "additionalProperties": false,
+            "description": "``Plan`` definition from upstream JSON Schema.",
+            "properties": {
+                "blocks": {
+                    "description": "``blocks`` field of ``Plan`` (from upstream JSON Schema).",
+                    "items": {
+                        "$ref": "#/$defs/Block"
+                    },
+                    "type": "array"
+                },
+                "name": {
+                    "description": "``name`` field of ``Plan`` (from upstream JSON Schema).",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "blocks",
+                "name"
+            ],
+            "title": "Plan",
+            "type": "object"
+        },
+        "Plans": {
+            "additionalProperties": false,
+            "description": "``Plans`` definition from upstream JSON Schema.",
+            "properties": {
+                "plans": {
+                    "description": "``plans`` field of ``Plans`` (from upstream JSON Schema).",
+                    "items": {
+                        "$ref": "#/$defs/Plan"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "plans"
+            ],
+            "title": "Plans",
+            "type": "object"
+        },
+        "Policy": {
+            "additionalProperties": false,
+            "description": "``Policy`` definition from upstream JSON Schema.",
+            "properties": {
+                "funcs": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Funcs"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "``funcs`` field of ``Policy`` (from upstream JSON Schema)."
+                },
+                "plans": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Plans"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "``plans`` field of ``Policy`` (from upstream JSON Schema)."
+                },
+                "static": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Static"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "``static`` field of ``Policy`` (from upstream JSON Schema)."
+                }
+            },
+            "title": "Policy",
+            "type": "object"
+        },
+        "ResetLocalStmt": {
+            "additionalProperties": false,
+            "description": "``ResetLocalStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``ResetLocalStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``ResetLocalStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``ResetLocalStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "target": {
+                    "description": "``target`` field of ``ResetLocalStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "target"
+            ],
+            "title": "ResetLocalStmt",
+            "type": "object"
+        },
+        "ResultSetAddStmt": {
+            "additionalProperties": false,
+            "description": "``ResultSetAddStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``ResultSetAddStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``ResultSetAddStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``ResultSetAddStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "value": {
+                    "description": "``value`` field of ``ResultSetAddStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "value"
+            ],
+            "title": "ResultSetAddStmt",
+            "type": "object"
+        },
+        "ReturnLocalStmt": {
+            "additionalProperties": false,
+            "description": "``ReturnLocalStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``ReturnLocalStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``ReturnLocalStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``ReturnLocalStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "source": {
+                    "description": "``source`` field of ``ReturnLocalStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "source"
+            ],
+            "title": "ReturnLocalStmt",
+            "type": "object"
+        },
+        "ScanStmt": {
+            "additionalProperties": false,
+            "description": "``ScanStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "block": {
+                    "description": "``block`` field of ``ScanStmt`` (from upstream JSON Schema).",
+                    "type": "string"
+                },
+                "col": {
+                    "description": "``col`` field of ``ScanStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``ScanStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "key": {
+                    "description": "``key`` field of ``ScanStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``ScanStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "source": {
+                    "description": "``source`` field of ``ScanStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "value": {
+                    "description": "``value`` field of ``ScanStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "block",
+                "key",
+                "source",
+                "value"
+            ],
+            "title": "ScanStmt",
+            "type": "object"
+        },
+        "SetAddStmt": {
+            "additionalProperties": false,
+            "description": "``SetAddStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "col": {
+                    "description": "``col`` field of ``SetAddStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``SetAddStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "row": {
+                    "description": "``row`` field of ``SetAddStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "set": {
+                    "description": "``set`` field of ``SetAddStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "value": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``value`` field of ``SetAddStmt`` (from upstream JSON Schema)."
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "set",
+                "value"
+            ],
+            "title": "SetAddStmt",
+            "type": "object"
+        },
+        "Static": {
+            "additionalProperties": false,
+            "description": "``Static`` definition from upstream JSON Schema.",
+            "properties": {
+                "builtin_funcs": {
+                    "description": "``builtin_funcs`` field of ``Static`` (from upstream JSON Schema).",
+                    "items": {
+                        "$ref": "#/$defs/BuiltinFunc"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "files": {
+                    "description": "``files`` field of ``Static`` (from upstream JSON Schema).",
+                    "items": {
+                        "$ref": "#/$defs/StringConst"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "strings": {
+                    "description": "``strings`` field of ``Static`` (from upstream JSON Schema).",
+                    "items": {
+                        "$ref": "#/$defs/StringConst"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                }
+            },
+            "title": "Static",
+            "type": "object"
+        },
+        "Stmt": {
+            "additionalProperties": false,
+            "description": "Tagged-wrapper class for the ``Stmt`` discriminated union from\nthe upstream JSON Schema.\n\nThe ``type`` slot carries the discriminator tag and the\n``stmt`` slot carries the typed payload. Because the\npayload class varies by tag, ``stmt`` is typed as\n``Any`` with an ``any_of`` union over the known payload classes;\nconsumers select the concrete class using the table below.\n\n* ``ArrayAppendStmt`` -- payload class ``ArrayAppendStmt``\n* ``AssignIntStmt`` -- payload class ``AssignIntStmt``\n* ``AssignVarOnceStmt`` -- payload class ``AssignVarOnceStmt``\n* ``AssignVarStmt`` -- payload class ``AssignVarStmt``\n* ``BlockStmt`` -- payload class ``BlockStmt``\n* ``BreakStmt`` -- payload class ``BreakStmt``\n* ``CallDynamicStmt`` -- payload class ``CallDynamicStmt``\n* ``CallStmt`` -- payload class ``CallStmt``\n* ``DotStmt`` -- payload class ``DotStmt``\n* ``EqualStmt`` -- payload class ``EqualStmt``\n* ``IsArrayStmt`` -- payload class ``IsArrayStmt``\n* ``IsDefinedStmt`` -- payload class ``IsDefinedStmt``\n* ``IsObjectStmt`` -- payload class ``IsObjectStmt``\n* ``IsSetStmt`` -- payload class ``IsSetStmt``\n* ``IsUndefinedStmt`` -- payload class ``IsUndefinedStmt``\n* ``LenStmt`` -- payload class ``LenStmt``\n* ``MakeArrayStmt`` -- payload class ``MakeArrayStmt``\n* ``MakeNullStmt`` -- payload class ``MakeNullStmt``\n* ``MakeNumberIntStmt`` -- payload class ``MakeNumberIntStmt``\n* ``MakeNumberRefStmt`` -- payload class ``MakeNumberRefStmt``\n* ``MakeObjectStmt`` -- payload class ``MakeObjectStmt``\n* ``MakeSetStmt`` -- payload class ``MakeSetStmt``\n* ``NopStmt`` -- payload class ``NopStmt``\n* ``NotEqualStmt`` -- payload class ``NotEqualStmt``\n* ``NotStmt`` -- payload class ``NotStmt``\n* ``ObjectInsertOnceStmt`` -- payload class ``ObjectInsertOnceStmt``\n* ``ObjectInsertStmt`` -- payload class ``ObjectInsertStmt``\n* ``ObjectMergeStmt`` -- payload class ``ObjectMergeStmt``\n* ``ResetLocalStmt`` -- payload class ``ResetLocalStmt``\n* ``ResultSetAddStmt`` -- payload class ``ResultSetAddStmt``\n* ``ReturnLocalStmt`` -- payload class ``ReturnLocalStmt``\n* ``ScanStmt`` -- payload class ``ScanStmt``\n* ``SetAddStmt`` -- payload class ``SetAddStmt``\n* ``WithStmt`` -- payload class ``WithStmt``",
+            "properties": {
+                "stmt": {
+                    "$ref": "#/$defs/Any",
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ArrayAppendStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/AssignIntStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/AssignVarOnceStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/AssignVarStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/BlockStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/BreakStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/CallDynamicStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/CallStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/DotStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/EqualStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/IsArrayStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/IsDefinedStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/IsObjectStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/IsSetStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/IsUndefinedStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/LenStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/MakeArrayStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/MakeNullStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/MakeNumberIntStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/MakeNumberRefStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/MakeObjectStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/MakeSetStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/NopStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/NotEqualStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/NotStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/ObjectInsertOnceStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/ObjectInsertStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/ObjectMergeStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/ResetLocalStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/ResultSetAddStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/ReturnLocalStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/ScanStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/SetAddStmt"
+                        },
+                        {
+                            "$ref": "#/$defs/WithStmt"
+                        }
+                    ],
+                    "description": "Typed payload; concrete class is selected by ``type``."
+                },
+                "type": {
+                    "$ref": "#/$defs/StmtTag",
+                    "description": "Discriminator tag identifying the Stmt variant."
+                }
+            },
+            "required": [
+                "type",
+                "stmt"
+            ],
+            "title": "Stmt",
+            "type": "object"
+        },
+        "StmtTag": {
+            "description": "Permissible discriminator tags for the ``Stmt`` union.",
+            "enum": [
+                "ArrayAppendStmt",
+                "AssignIntStmt",
+                "AssignVarOnceStmt",
+                "AssignVarStmt",
+                "BlockStmt",
+                "BreakStmt",
+                "CallDynamicStmt",
+                "CallStmt",
+                "DotStmt",
+                "EqualStmt",
+                "IsArrayStmt",
+                "IsDefinedStmt",
+                "IsObjectStmt",
+                "IsSetStmt",
+                "IsUndefinedStmt",
+                "LenStmt",
+                "MakeArrayStmt",
+                "MakeNullStmt",
+                "MakeNumberIntStmt",
+                "MakeNumberRefStmt",
+                "MakeObjectStmt",
+                "MakeSetStmt",
+                "NopStmt",
+                "NotEqualStmt",
+                "NotStmt",
+                "ObjectInsertOnceStmt",
+                "ObjectInsertStmt",
+                "ObjectMergeStmt",
+                "ResetLocalStmt",
+                "ResultSetAddStmt",
+                "ReturnLocalStmt",
+                "ScanStmt",
+                "SetAddStmt",
+                "WithStmt"
+            ],
+            "title": "StmtTag",
+            "type": "string"
+        },
+        "StringConst": {
+            "additionalProperties": false,
+            "description": "``StringConst`` definition from upstream JSON Schema.",
+            "properties": {
+                "value": {
+                    "description": "``value`` field of ``StringConst`` (from upstream JSON Schema).",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "value"
+            ],
+            "title": "StringConst",
+            "type": "object"
+        },
+        "TypeDecl": {
+            "additionalProperties": false,
+            "description": "Recursive type expression used throughout Capabilities declarations.\n\nAll slots are optional because TypeDecl doubles as the structural envelope\nfor the various heterogeneous shapes the source JSON uses:\n* ``string|number|boolean|null|function`` -- atomic; only ``type`` is set.\n* ``any`` -- ``of`` is a list of alternative TypeDecls.\n* ``set`` -- ``of`` holds the (single) element TypeDecl.\n* ``array`` -- ``dynamic`` is the homogeneous element TypeDecl, or\n  ``static`` is an ordered list describing a fixed-length tuple.\n* ``object`` -- ``static`` lists named property pairs (TypeDecls with\n  ``key`` and ``value`` populated); ``dynamic`` is a TypeDecl whose\n  ``key``/``value`` describe additional property typing.\n* Inside an ``object``'s ``dynamic`` value, the TypeDecl has only\n  ``key`` and ``value`` populated -- ``type`` is absent.",
+            "properties": {
+                "dynamic": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/TypeDecl"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "For ``array`` types this is the element TypeDecl; for ``object`` types it is a TypeDecl with ``key`` and ``value`` populated."
+                },
+                "key": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/Any"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Key of an object's dynamic-property mapping or static-property entry. When the parent TypeDecl is an object's ``dynamic`` slot, this is itself a TypeDecl (e.g. ``{type: string}``); when the parent is an object's ``static`` entry, it is a string literal naming the property."
+                },
+                "of": {
+                    "description": "Element type(s). For ``set`` it is the (single) element type; for ``any`` it is a union of alternative types. Always represented as a list -- the instance generator wraps source scalar values for shape uniformity.",
+                    "items": {
+                        "$ref": "#/$defs/TypeDecl"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "static": {
+                    "description": "Either named property pairs of an ``object`` TypeDecl (each entry has ``key`` and ``value`` populated) or positional tuple element TypeDecls of a fixed-length ``array`` TypeDecl. Same recursive TypeDecl shape.",
+                    "items": {
+                        "$ref": "#/$defs/TypeDecl"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "type": {
+                    "$ref": "#/$defs/BuiltinTypeKind",
+                    "description": "Discriminator: the kind of value this TypeDecl describes."
+                },
+                "value": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/TypeDecl"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Value type of an object's dynamic property mapping or static property entry. Always a TypeDecl."
+                }
+            },
+            "title": "TypeDecl",
+            "type": "object"
+        },
+        "Val": {
+            "additionalProperties": false,
+            "description": "Tagged-wrapper class for the ``Val`` discriminated union from\nthe upstream JSON Schema.\n\nThe ``type`` slot carries the discriminator tag and the\n``value`` slot carries the typed payload. Because the\npayload class varies by tag, ``value`` is typed as\n``Any`` with an ``any_of`` union over the known payload classes;\nconsumers select the concrete class using the table below.\n\n* ``bool`` -- payload class ``boolean``\n* ``local`` -- payload class ``integer``\n* ``string_index`` -- payload class ``integer``",
+            "properties": {
+                "type": {
+                    "$ref": "#/$defs/ValTag",
+                    "description": "Discriminator tag identifying the Val variant."
+                },
+                "value": {
+                    "$ref": "#/$defs/Any",
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "description": "Typed payload; concrete class is selected by ``type``."
+                }
+            },
+            "required": [
+                "type",
+                "value"
+            ],
+            "title": "Val",
+            "type": "object"
+        },
+        "ValTag": {
+            "description": "Permissible discriminator tags for the ``Val`` union.",
+            "enum": [
+                "bool",
+                "local",
+                "string_index"
+            ],
+            "title": "ValTag",
+            "type": "string"
+        },
+        "VersionIndex": {
+            "additionalProperties": false,
+            "description": "Mapping from language-element names to the OPA semantic version that first introduced them. Grouped into built-ins, future-keywords, and features.",
+            "properties": {
+                "builtins": {
+                    "additionalProperties": {
+                        "$ref": "#/$defs/ElementVersion__identifier_optional"
+                    },
+                    "description": "Built-in name -> introduction version.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "features": {
+                    "additionalProperties": {
+                        "$ref": "#/$defs/ElementVersion__identifier_optional"
+                    },
+                    "description": "Feature flag -> introduction version.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "keywords": {
+                    "additionalProperties": {
+                        "$ref": "#/$defs/ElementVersion__identifier_optional"
+                    },
+                    "description": "Future keyword -> introduction version.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                }
+            },
+            "title": "VersionIndex",
+            "type": "object"
+        },
+        "WasmABIVersion": {
+            "additionalProperties": false,
+            "description": "A supported Wasm ABI version pair.",
+            "properties": {
+                "minor_version": {
+                    "description": "Minor ABI version.",
+                    "type": "integer"
+                },
+                "version": {
+                    "description": "Major ABI version.",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "version",
+                "minor_version"
+            ],
+            "title": "WasmABIVersion",
+            "type": "object"
+        },
+        "WasmResolver": {
+            "additionalProperties": false,
+            "description": "``WasmResolver`` definition from upstream JSON Schema.",
+            "properties": {
+                "annotations": {
+                    "description": "``annotations`` field of ``WasmResolver`` (from upstream JSON Schema).",
+                    "items": {
+                        "$ref": "#/$defs/Any"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "entrypoint": {
+                    "description": "``entrypoint`` field of ``WasmResolver`` (from upstream JSON Schema).",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "module": {
+                    "description": "``module`` field of ``WasmResolver`` (from upstream JSON Schema).",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "title": "WasmResolver",
+            "type": "object"
+        },
+        "WithStmt": {
+            "additionalProperties": false,
+            "description": "``WithStmt`` definition from upstream JSON Schema.",
+            "properties": {
+                "block": {
+                    "description": "``block`` field of ``WithStmt`` (from upstream JSON Schema).",
+                    "type": "string"
+                },
+                "col": {
+                    "description": "``col`` field of ``WithStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "file": {
+                    "description": "``file`` field of ``WithStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "local": {
+                    "description": "``local`` field of ``WithStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "path": {
+                    "description": "``path`` field of ``WithStmt`` (from upstream JSON Schema).",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "type": "array"
+                },
+                "row": {
+                    "description": "``row`` field of ``WithStmt`` (from upstream JSON Schema).",
+                    "type": "integer"
+                },
+                "value": {
+                    "$ref": "#/$defs/Operand",
+                    "description": "``value`` field of ``WithStmt`` (from upstream JSON Schema)."
+                }
+            },
+            "required": [
+                "col",
+                "file",
+                "row",
+                "block",
+                "local",
+                "path",
+                "value"
+            ],
+            "title": "WithStmt",
+            "type": "object"
+        }
+    },
+    "$id": "https://w3id.org/lmodel/opa",
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
+    "additionalProperties": true,
+    "description": "Top-level capabilities document published by an OPA build. Lists every built-in function the runtime supports along with Wasm ABI compatibility, future keywords and feature flags.",
+    "metamodel_version": "1.11.0",
+    "properties": {
+        "allow_net": {
+            "description": "Network destinations the built-ins are allowed to contact. Absent or empty means unrestricted; an empty list means no network access.",
+            "items": {
+                "type": "string"
+            },
+            "type": [
+                "array",
+                "null"
+            ]
+        },
+        "builtins": {
+            "description": "All built-in functions supported by this OPA build.",
+            "items": {
+                "$ref": "#/$defs/Builtin"
+            },
+            "type": [
+                "array",
+                "null"
+            ]
+        },
+        "features": {
+            "description": "Optional language / runtime features enabled in this build.",
+            "items": {
+                "$ref": "#/$defs/FeatureName"
+            },
+            "type": [
+                "array",
+                "null"
+            ]
+        },
+        "future_keywords": {
+            "description": "Keywords reserved for future Rego releases.",
+            "items": {
+                "$ref": "#/$defs/FutureKeyword"
+            },
+            "type": [
+                "array",
+                "null"
+            ]
+        },
+        "wasm_abi_versions": {
+            "description": "Wasm ABI versions the runtime can host.",
+            "items": {
+                "$ref": "#/$defs/WasmABIVersion"
+            },
+            "type": [
+                "array",
+                "null"
+            ]
+        }
+    },
+    "required": [
+        "identity",
+        "client_certificates",
+        "method",
+        "path",
+        "params",
+        "headers",
+        "body"
+    ],
+    "title": "opa",
+    "type": "object",
+    "version": "0.1.0"
+}

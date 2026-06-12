@@ -1,0 +1,39 @@
+# mapping_set_id: https://w3id.org/lmodel/opa/mappings/opa_to_oscal
+# mapping_set_version: 0.1.0
+# mapping_set_title: Open Policy Agent (OPA) to NIST OSCAL Mappings
+# mapping_set_description: Schema-level mappings between Open Policy Agent (OPA)
+#   LinkML classes and NIST OSCAL (Open Security Controls Assessment Language)
+#   document model classes (catalog, profile, component, system-security-plan).
+#   OSCAL is the canonical machine-readable language for control catalogs,
+#   profiles, and component-level control implementations; OPA bundles are a
+#   natural fit for OSCAL component-definition and implemented-requirement
+#   semantics because they package executable policies that implement
+#   controls. Predicates - skos:closeMatch where the two classes describe the
+#   same governance artefact (e.g. bundle Manifest as an OSCAL DefinedComponent,
+#   engine Capabilities as an OSCAL Capability); skos:relatedMatch where the
+#   OPA class realises only one part of an OSCAL concept (e.g. WasmResolver as
+#   one possible implementation path for an OSCAL ImplementedRequirement);
+#   skos:broadMatch where the OPA class is a container that wraps multiple
+#   OSCAL artefacts (e.g. Manifest carrying many component definitions, or
+#   BuiltinMetadataCatalog grouping multiple built-in function descriptions).
+# license: https://creativecommons.org/licenses/by/4.0/
+# subject_source: https://w3id.org/lmodel/opa
+# object_source: https://w3id.org/lmodel/oscal
+# mapping_date: 2026-06-12
+# curie_map:
+#   openpolicyagent: https://w3id.org/lmodel/opa/
+#   oscal: https://w3id.org/lmodel/oscal/
+#   owl: http://www.w3.org/2002/07/owl#
+#   semapv: https://w3id.org/semapv/vocab/
+#   skos: http://www.w3.org/2004/02/skos/core#
+subject_id	subject_label	subject_category	predicate_id	predicate_label	object_id	object_label	object_category	mapping_justification	comment
+openpolicyagent:Manifest	Manifest	owl:Class	skos:closeMatch	close match	oscal:DefinedComponent	DefinedComponent	owl:Class	semapv:LLMBasedMatching	A signed OPA bundle Manifest packages a discrete, deployable policy capability - semantically the same governance artefact as an OSCAL DefinedComponent
+openpolicyagent:Manifest	Manifest	owl:Class	skos:broadMatch	broad match	oscal:ComponentDefinition	ComponentDefinition	owl:Class	semapv:LLMBasedMatching	A Manifest may bundle multiple roots and wasm resolvers, each representing a defined component; the manifest container broadly subsumes a ComponentDefinition document
+openpolicyagent:WasmResolver	WasmResolver	owl:Class	skos:relatedMatch	related match	oscal:ImplementedRequirement	ImplementedRequirement	owl:Class	semapv:LLMBasedMatching	A WasmResolver binds a policy path to a wasm-compiled entrypoint - one realisation path for an OSCAL implemented-requirement, but only one of many delivery vehicles
+openpolicyagent:WasmResolver	WasmResolver	owl:Class	skos:relatedMatch	related match	oscal:ImplementedControlStatement	ImplementedControlStatement	owl:Class	semapv:LLMBasedMatching	A resolver entrypoint implements an executable statement of a control's enforcement logic, parallel to an OSCAL implemented-control-statement
+openpolicyagent:Policy	Policy	owl:Class	skos:relatedMatch	related match	oscal:Profile	Profile	owl:Class	semapv:LLMBasedMatching	An IR Policy is a curated selection of evaluation rules akin to an OSCAL Profile selecting and tailoring controls from a catalog
+openpolicyagent:AuthorizationInput	AuthorizationInput	owl:Class	skos:relatedMatch	related match	oscal:AuthorizationBoundary	AuthorizationBoundary	owl:Class	semapv:LLMBasedMatching	Each AuthorizationInput defines the subject/action/resource frame that the engine evaluates - the runtime analogue of an OSCAL system authorization boundary
+openpolicyagent:Capabilities	Capabilities	owl:Class	skos:closeMatch	close match	oscal:Capability	Capability	owl:Class	semapv:LLMBasedMatching	OPA Capabilities describe the engine's supported features and built-ins - directly comparable to an OSCAL Capability describing a component's offered capability surface
+openpolicyagent:BuiltinMetadataCatalog	BuiltinMetadataCatalog	owl:Class	skos:broadMatch	broad match	oscal:Catalog	Catalog	owl:Class	semapv:LLMBasedMatching	A built-in metadata catalog is a structured, versioned catalog of capability descriptions; broadly aligned with the OSCAL Catalog document type
+openpolicyagent:BuiltinCategoryGroup	BuiltinCategoryGroup	owl:Class	skos:relatedMatch	related match	oscal:Group	Group	owl:Class	semapv:LLMBasedMatching	A BuiltinCategoryGroup organises built-ins under a thematic heading (crypto, http, regex) - parallel to an OSCAL Group organising controls under a family heading
+openpolicyagent:Builtin	Builtin	owl:Class	skos:relatedMatch	related match	oscal:Control	Control	owl:Class	semapv:LLMBasedMatching	A Rego built-in is an atomic, named primitive available to policies; partially analogous to an OSCAL Control as a named, addressable governance unit

@@ -1,0 +1,578 @@
+ syntax="proto3";
+ package
+// metamodel_version: 1.11.0
+// version: 0.1.0
+// ``ArrayAppendStmt`` definition from upstream JSON Schema.
+message ArrayAppendStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer array = 0
+  operand value = 0
+ }
+// ``AssignIntStmt`` definition from upstream JSON Schema.
+message AssignIntStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer target = 0
+  integer value = 0
+ }
+// ``AssignVarOnceStmt`` definition from upstream JSON Schema.
+message AssignVarOnceStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  operand source = 0
+  integer target = 0
+ }
+// ``AssignVarStmt`` definition from upstream JSON Schema.
+message AssignVarStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  operand source = 0
+  integer target = 0
+ }
+// Input document the example HTTP API Authorization policy receives. Mirrors the OPA-provided JSON Schema at ``v1/schemas/authorizationPolicy.json``.
+message AuthorizationInput
+ {
+  string identity = 0
+ repeated  any clientCertificates = 0
+  string method = 0
+ repeated  string path = 0
+  any params = 0
+  any headers = 0
+  any body = 0
+ }
+// ``Block`` definition from upstream JSON Schema.
+message Block
+ {
+ repeated  stmt stmts = 0
+ }
+// ``BlockStmt`` definition from upstream JSON Schema.
+message BlockStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+ repeated  block blocks = 0
+ }
+// ``BreakStmt`` definition from upstream JSON Schema.
+message BreakStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer index = 0
+ }
+// A Rego built-in function exposed by the OPA runtime.
+message Builtin
+ {
+  string name = 0
+  builtinDecl decl = 0
+  string infix = 0
+  boolean deprecated = 0
+  boolean nondeterministic = 0
+  boolean relation = 0
+ }
+// Documentation for one positional argument of a built-in.
+message BuiltinArg
+ {
+  string name = 0
+  string description = 0
+  string type = 0
+ }
+// Membership of built-ins in a documentation category.
+message BuiltinCategoryGroup
+ {
+  string name = 0
+  builtinCategory category = 0
+ repeated  string builtins = 0
+ }
+// Type declaration of a built-in: function signature and return type.
+message BuiltinDecl
+ {
+  string type = 0
+ repeated  typeDecl args = 0
+  typeDecl result = 0
+  typeDecl variadic = 0
+ }
+// ``BuiltinFunc`` definition from upstream JSON Schema.
+message BuiltinFunc
+ {
+  any decl = 0
+  string name = 0
+ }
+// Human-readable metadata for a single Rego built-in function.
+message BuiltinMetadata
+ {
+  string name = 0
+  string description = 0
+  string introduced = 0
+ repeated  string available = 0
+  boolean wasm = 0
+  string infix = 0
+  boolean deprecated = 0
+  boolean relation = 0
+ repeated  builtinArg args = 0
+  builtinResult result = 0
+ }
+// Wrapper class for the contents of ``builtin_metadata.json``. The source document is a flat map keyed by built-in name plus a ``_categories`` map; the generator script reshapes it so ``categories`` and ``builtins`` are explicit, inlined-as-dict slots on this wrapper.
+message BuiltinMetadataCatalog
+ {
+ repeated  builtinCategoryGroup categories = 0
+ repeated  builtinMetadata builtins = 0
+ }
+// Documentation for the value returned by a built-in.
+message BuiltinResult
+ {
+  string name = 0
+  string description = 0
+  string type = 0
+ }
+// ``CallDynamicStmt`` definition from upstream JSON Schema.
+message CallDynamicStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+ repeated  integer args = 0
+ repeated  operand path = 0
+  integer result = 0
+ }
+// ``CallStmt`` definition from upstream JSON Schema.
+message CallStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+ repeated  operand args = 0
+  string func = 0
+  integer result = 0
+ }
+// Top-level capabilities document published by an OPA build. Lists every built-in function the runtime supports along with Wasm ABI compatibility, future keywords and feature flags.
+message Capabilities
+ {
+ repeated  builtin builtins = 0
+ repeated  futureKeyword futureKeywords = 0
+ repeated  wasmABIVersion wasmAbiVersions = 0
+ repeated  featureName features = 0
+ repeated  string allowNet = 0
+ }
+// ``DotStmt`` definition from upstream JSON Schema.
+message DotStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  operand key = 0
+  operand source = 0
+  integer target = 0
+ }
+// Semantic version triple identifying when an element was introduced.
+message ElementVersion
+ {
+  string name = 0
+  integer major = 0
+  integer minor = 0
+  integer patch = 0
+ }
+// ``EqualStmt`` definition from upstream JSON Schema.
+message EqualStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  operand a = 0
+  operand b = 0
+ }
+// Typed override record for ``Manifest.file_rego_versions``. Provides stronger validation than a free-form map while keeping the same semantics.
+message FileRegoVersion
+ {
+  string path = 0
+  integer version = 0
+ }
+// ``Func`` definition from upstream JSON Schema.
+message Func
+ {
+ repeated  block blocks = 0
+  string name = 0
+ repeated  integer params = 0
+ repeated  string path = 0
+  integer returnValue = 0
+ }
+// ``Funcs`` definition from upstream JSON Schema.
+message Funcs
+ {
+ repeated  func funcs = 0
+ }
+// ``IsArrayStmt`` definition from upstream JSON Schema.
+message IsArrayStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  operand source = 0
+ }
+// ``IsDefinedStmt`` definition from upstream JSON Schema.
+message IsDefinedStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer source = 0
+ }
+// ``IsObjectStmt`` definition from upstream JSON Schema.
+message IsObjectStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  operand source = 0
+ }
+// ``IsSetStmt`` definition from upstream JSON Schema.
+message IsSetStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  operand source = 0
+ }
+// ``IsUndefinedStmt`` definition from upstream JSON Schema.
+message IsUndefinedStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer source = 0
+ }
+// ``LenStmt`` definition from upstream JSON Schema.
+message LenStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  operand source = 0
+  integer target = 0
+ }
+// ``MakeArrayStmt`` definition from upstream JSON Schema.
+message MakeArrayStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer capacity = 0
+  integer target = 0
+ }
+// ``MakeNullStmt`` definition from upstream JSON Schema.
+message MakeNullStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer target = 0
+ }
+// ``MakeNumberIntStmt`` definition from upstream JSON Schema.
+message MakeNumberIntStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer target = 0
+  integer value = 0
+ }
+// ``MakeNumberRefStmt`` definition from upstream JSON Schema.
+message MakeNumberRefStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer index = 0
+  integer index = 0
+  integer target = 0
+ }
+// ``MakeObjectStmt`` definition from upstream JSON Schema.
+message MakeObjectStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer target = 0
+ }
+// ``MakeSetStmt`` definition from upstream JSON Schema.
+message MakeSetStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer target = 0
+ }
+// ``Manifest`` definition from upstream JSON Schema.
+message Manifest
+ {
+ repeated  fileRegoVersion fileRegoVersions = 0
+  any metadata = 0
+  integer regoVersion = 0
+  string revision = 0
+ repeated  string roots = 0
+ repeated  wasmResolver wasm = 0
+ }
+// ``NopStmt`` definition from upstream JSON Schema.
+message NopStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+ }
+// ``NotEqualStmt`` definition from upstream JSON Schema.
+message NotEqualStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  operand a = 0
+  operand b = 0
+ }
+// ``NotStmt`` definition from upstream JSON Schema.
+message NotStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  string block = 0
+ }
+// ``ObjectInsertOnceStmt`` definition from upstream JSON Schema.
+message ObjectInsertOnceStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  operand key = 0
+  integer object = 0
+  operand value = 0
+ }
+// ``ObjectInsertStmt`` definition from upstream JSON Schema.
+message ObjectInsertStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  operand key = 0
+  integer object = 0
+  operand value = 0
+ }
+// ``ObjectMergeStmt`` definition from upstream JSON Schema.
+message ObjectMergeStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer a = 0
+  integer b = 0
+  integer target = 0
+ }
+// Alias for ``Val`` (single-``$ref`` def in upstream JSON Schema).
+message Operand
+ {
+  valTag type = 0
+  any value = 0
+ }
+// ``Plan`` definition from upstream JSON Schema.
+message Plan
+ {
+ repeated  block blocks = 0
+  string name = 0
+ }
+// ``Plans`` definition from upstream JSON Schema.
+message Plans
+ {
+ repeated  plan plans = 0
+ }
+// ``Policy`` definition from upstream JSON Schema.
+message Policy
+ {
+  funcs funcs = 0
+  plans plans = 0
+  static static = 0
+ }
+// ``ResetLocalStmt`` definition from upstream JSON Schema.
+message ResetLocalStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer target = 0
+ }
+// ``ResultSetAddStmt`` definition from upstream JSON Schema.
+message ResultSetAddStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer value = 0
+ }
+// ``ReturnLocalStmt`` definition from upstream JSON Schema.
+message ReturnLocalStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer source = 0
+ }
+// ``ScanStmt`` definition from upstream JSON Schema.
+message ScanStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  string block = 0
+  integer key = 0
+  integer source = 0
+  integer value = 0
+ }
+// ``SetAddStmt`` definition from upstream JSON Schema.
+message SetAddStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  integer set = 0
+  operand value = 0
+ }
+// ``Static`` definition from upstream JSON Schema.
+message Static
+ {
+ repeated  builtinFunc builtinFuncs = 0
+ repeated  stringConst files = 0
+ repeated  stringConst strings = 0
+ }
+// Tagged-wrapper class for the ``Stmt`` discriminated union from
+// the upstream JSON Schema.
+// 
+// The ``type`` slot carries the discriminator tag and the
+// ``stmt`` slot carries the typed payload. Because the
+// payload class varies by tag, ``stmt`` is typed as
+// ``Any`` with an ``any_of`` union over the known payload classes;
+// consumers select the concrete class using the table below.
+// 
+// * ``ArrayAppendStmt`` -- payload class ``ArrayAppendStmt``
+// * ``AssignIntStmt`` -- payload class ``AssignIntStmt``
+// * ``AssignVarOnceStmt`` -- payload class ``AssignVarOnceStmt``
+// * ``AssignVarStmt`` -- payload class ``AssignVarStmt``
+// * ``BlockStmt`` -- payload class ``BlockStmt``
+// * ``BreakStmt`` -- payload class ``BreakStmt``
+// * ``CallDynamicStmt`` -- payload class ``CallDynamicStmt``
+// * ``CallStmt`` -- payload class ``CallStmt``
+// * ``DotStmt`` -- payload class ``DotStmt``
+// * ``EqualStmt`` -- payload class ``EqualStmt``
+// * ``IsArrayStmt`` -- payload class ``IsArrayStmt``
+// * ``IsDefinedStmt`` -- payload class ``IsDefinedStmt``
+// * ``IsObjectStmt`` -- payload class ``IsObjectStmt``
+// * ``IsSetStmt`` -- payload class ``IsSetStmt``
+// * ``IsUndefinedStmt`` -- payload class ``IsUndefinedStmt``
+// * ``LenStmt`` -- payload class ``LenStmt``
+// * ``MakeArrayStmt`` -- payload class ``MakeArrayStmt``
+// * ``MakeNullStmt`` -- payload class ``MakeNullStmt``
+// * ``MakeNumberIntStmt`` -- payload class ``MakeNumberIntStmt``
+// * ``MakeNumberRefStmt`` -- payload class ``MakeNumberRefStmt``
+// * ``MakeObjectStmt`` -- payload class ``MakeObjectStmt``
+// * ``MakeSetStmt`` -- payload class ``MakeSetStmt``
+// * ``NopStmt`` -- payload class ``NopStmt``
+// * ``NotEqualStmt`` -- payload class ``NotEqualStmt``
+// * ``NotStmt`` -- payload class ``NotStmt``
+// * ``ObjectInsertOnceStmt`` -- payload class ``ObjectInsertOnceStmt``
+// * ``ObjectInsertStmt`` -- payload class ``ObjectInsertStmt``
+// * ``ObjectMergeStmt`` -- payload class ``ObjectMergeStmt``
+// * ``ResetLocalStmt`` -- payload class ``ResetLocalStmt``
+// * ``ResultSetAddStmt`` -- payload class ``ResultSetAddStmt``
+// * ``ReturnLocalStmt`` -- payload class ``ReturnLocalStmt``
+// * ``ScanStmt`` -- payload class ``ScanStmt``
+// * ``SetAddStmt`` -- payload class ``SetAddStmt``
+// * ``WithStmt`` -- payload class ``WithStmt``
+message Stmt
+ {
+  stmtTag type = 0
+  any stmt = 0
+ }
+// ``StringConst`` definition from upstream JSON Schema.
+message StringConst
+ {
+  string value = 0
+ }
+// Recursive type expression used throughout Capabilities declarations.
+// 
+// All slots are optional because TypeDecl doubles as the structural envelope
+// for the various heterogeneous shapes the source JSON uses:
+// * ``string|number|boolean|null|function`` -- atomic; only ``type`` is set.
+// * ``any`` -- ``of`` is a list of alternative TypeDecls.
+// * ``set`` -- ``of`` holds the (single) element TypeDecl.
+// * ``array`` -- ``dynamic`` is the homogeneous element TypeDecl, or
+//   ``static`` is an ordered list describing a fixed-length tuple.
+// * ``object`` -- ``static`` lists named property pairs (TypeDecls with
+//   ``key`` and ``value`` populated); ``dynamic`` is a TypeDecl whose
+//   ``key``/``value`` describe additional property typing.
+// * Inside an ``object``'s ``dynamic`` value, the TypeDecl has only
+//   ``key`` and ``value`` populated -- ``type`` is absent.
+// 
+message TypeDecl
+ {
+  builtinTypeKind type = 0
+ repeated  typeDecl of = 0
+  typeDecl dynamic = 0
+ repeated  typeDecl static = 0
+  any key = 0
+  typeDecl value = 0
+ }
+// Tagged-wrapper class for the ``Val`` discriminated union from
+// the upstream JSON Schema.
+// 
+// The ``type`` slot carries the discriminator tag and the
+// ``value`` slot carries the typed payload. Because the
+// payload class varies by tag, ``value`` is typed as
+// ``Any`` with an ``any_of`` union over the known payload classes;
+// consumers select the concrete class using the table below.
+// 
+// * ``bool`` -- payload class ``boolean``
+// * ``local`` -- payload class ``integer``
+// * ``string_index`` -- payload class ``integer``
+message Val
+ {
+  valTag type = 0
+  any value = 0
+ }
+// Mapping from language-element names to the OPA semantic version that first introduced them. Grouped into built-ins, future-keywords, and features.
+message VersionIndex
+ {
+ repeated  elementVersion builtins = 0
+ repeated  elementVersion features = 0
+ repeated  elementVersion keywords = 0
+ }
+// A supported Wasm ABI version pair.
+message WasmABIVersion
+ {
+  integer version = 0
+  integer minorVersion = 0
+ }
+// ``WasmResolver`` definition from upstream JSON Schema.
+message WasmResolver
+ {
+ repeated  any annotations = 0
+  string entrypoint = 0
+  string module = 0
+ }
+// ``WithStmt`` definition from upstream JSON Schema.
+message WithStmt
+ {
+  integer col = 0
+  integer file = 0
+  integer row = 0
+  string block = 0
+  integer local = 0
+ repeated  integer path = 0
+  operand value = 0
+ }

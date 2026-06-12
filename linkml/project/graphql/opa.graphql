@@ -1,0 +1,614 @@
+# metamodel_version: 1.11.0
+# version: 0.1.0
+enum BuiltinCategory
+  {
+    aggregates
+    array
+    bits
+    comparison
+    conversions
+    crypto
+    encoding
+    glob
+    graph
+    graphql
+    http
+    internal
+    net
+    numbers
+    object
+    opa
+    providers_aws
+    regex
+    rego
+    semver
+    sets
+    strings
+    time
+    tokens
+    tokensign
+    tracing
+    types
+    units
+    uri
+    uuid
+  }
+
+enum BuiltinTypeKind
+  {
+    string
+    number
+    boolean
+    null
+    any
+    array
+    set
+    object
+    function
+  }
+
+enum FeatureName
+  {
+    keywords_in_refs
+    rego_v1
+    template_strings
+  }
+
+enum FutureKeyword
+  {
+    not
+  }
+
+enum StmtTag
+  {
+    ArrayAppendStmt
+    AssignIntStmt
+    AssignVarOnceStmt
+    AssignVarStmt
+    BlockStmt
+    BreakStmt
+    CallDynamicStmt
+    CallStmt
+    DotStmt
+    EqualStmt
+    IsArrayStmt
+    IsDefinedStmt
+    IsObjectStmt
+    IsSetStmt
+    IsUndefinedStmt
+    LenStmt
+    MakeArrayStmt
+    MakeNullStmt
+    MakeNumberIntStmt
+    MakeNumberRefStmt
+    MakeObjectStmt
+    MakeSetStmt
+    NopStmt
+    NotEqualStmt
+    NotStmt
+    ObjectInsertOnceStmt
+    ObjectInsertStmt
+    ObjectMergeStmt
+    ResetLocalStmt
+    ResultSetAddStmt
+    ReturnLocalStmt
+    ScanStmt
+    SetAddStmt
+    WithStmt
+  }
+
+enum ValTag
+  {
+    bool
+    local
+    string_index
+  }
+
+scalar Any
+
+type ArrayAppendStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    array: Int!
+    value: Operand!
+  }
+
+type AssignIntStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    target: Int!
+    value: Int!
+  }
+
+type AssignVarOnceStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    source: Operand!
+    target: Int!
+  }
+
+type AssignVarStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    source: Operand!
+    target: Int!
+  }
+
+type AuthorizationInput
+  {
+    identity: String!
+    clientCertificates: [Any]!
+    method: String!
+    path: [String]!
+    params: Any!
+    headers: Any!
+    body: Any!
+  }
+
+type Block
+  {
+    stmts: [Stmt]!
+  }
+
+type BlockStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    blocks: [Block]!
+  }
+
+type BreakStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    index: Int!
+  }
+
+type Builtin
+  {
+    name: String!
+    decl: BuiltinDecl!
+    infix: String
+    deprecated: Boolean
+    nondeterministic: Boolean
+    relation: Boolean
+  }
+
+type BuiltinArg
+  {
+    name: String
+    description: String
+    type: String
+  }
+
+type BuiltinCategoryGroup
+  {
+    name: String!
+    category: BuiltinCategory
+    builtins: [String]!
+  }
+
+type BuiltinDecl
+  {
+    type: String!
+    args: [TypeDecl]
+    result: TypeDecl
+    variadic: TypeDecl
+  }
+
+type BuiltinFunc
+  {
+    decl: Any!
+    name: String!
+  }
+
+type BuiltinMetadata
+  {
+    name: String!
+    description: String
+    introduced: String
+    available: [String]
+    wasm: Boolean
+    infix: String
+    deprecated: Boolean
+    relation: Boolean
+    args: [BuiltinArg]
+    result: BuiltinResult
+  }
+
+type BuiltinMetadataCatalog
+  {
+    categories: [BuiltinCategoryGroup]
+    builtins: [BuiltinMetadata]
+  }
+
+type BuiltinResult
+  {
+    name: String
+    description: String
+    type: String
+  }
+
+type CallDynamicStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    args: [Int]!
+    path: [Operand]!
+    result: Int!
+  }
+
+type CallStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    args: [Operand]!
+    func: String!
+    result: Int!
+  }
+
+type Capabilities
+  {
+    builtins: [Builtin]
+    futureKeywords: [FutureKeyword]
+    wasmAbiVersions: [WasmABIVersion]
+    features: [FeatureName]
+    allowNet: [String]
+  }
+
+type DotStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    key: Operand!
+    source: Operand!
+    target: Int!
+  }
+
+type ElementVersion
+  {
+    name: String!
+    major: Int!
+    minor: Int!
+    patch: Int!
+  }
+
+type EqualStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    a: Operand!
+    b: Operand!
+  }
+
+type FileRegoVersion
+  {
+    path: String!
+    version: Int!
+  }
+
+type Func
+  {
+    blocks: [Block]!
+    name: String!
+    params: [Int]!
+    path: [String]
+    returnValue: Int!
+  }
+
+type Funcs
+  {
+    funcs: [Func]!
+  }
+
+type IsArrayStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    source: Operand!
+  }
+
+type IsDefinedStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    source: Int!
+  }
+
+type IsObjectStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    source: Operand!
+  }
+
+type IsSetStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    source: Operand!
+  }
+
+type IsUndefinedStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    source: Int!
+  }
+
+type LenStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    source: Operand!
+    target: Int!
+  }
+
+type MakeArrayStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    capacity: Int!
+    target: Int!
+  }
+
+type MakeNullStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    target: Int!
+  }
+
+type MakeNumberIntStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    target: Int!
+    value: Int!
+  }
+
+type MakeNumberRefStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    index: Int!
+    index: Int
+    target: Int!
+  }
+
+type MakeObjectStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    target: Int!
+  }
+
+type MakeSetStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    target: Int!
+  }
+
+type Manifest
+  {
+    fileRegoVersions: [FileRegoVersion]
+    metadata: Any
+    regoVersion: Int
+    revision: String!
+    roots: [String]
+    wasm: [WasmResolver]
+  }
+
+type NopStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+  }
+
+type NotEqualStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    a: Operand!
+    b: Operand!
+  }
+
+type NotStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    block: String!
+  }
+
+type ObjectInsertOnceStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    key: Operand!
+    object: Int!
+    value: Operand!
+  }
+
+type ObjectInsertStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    key: Operand!
+    object: Int!
+    value: Operand!
+  }
+
+type ObjectMergeStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    a: Int!
+    b: Int!
+    target: Int!
+  }
+
+type Operand
+  {
+    type: ValTag!
+    value: Any!
+  }
+
+type Plan
+  {
+    blocks: [Block]!
+    name: String!
+  }
+
+type Plans
+  {
+    plans: [Plan]!
+  }
+
+type Policy
+  {
+    funcs: Funcs
+    plans: Plans
+    static: Static
+  }
+
+type ResetLocalStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    target: Int!
+  }
+
+type ResultSetAddStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    value: Int!
+  }
+
+type ReturnLocalStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    source: Int!
+  }
+
+type ScanStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    block: String!
+    key: Int!
+    source: Int!
+    value: Int!
+  }
+
+type SetAddStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    set: Int!
+    value: Operand!
+  }
+
+type Static
+  {
+    builtinFuncs: [BuiltinFunc]
+    files: [StringConst]
+    strings: [StringConst]
+  }
+
+type Stmt
+  {
+    type: StmtTag!
+    stmt: Any!
+  }
+
+type StringConst
+  {
+    value: String!
+  }
+
+type TypeDecl
+  {
+    type: BuiltinTypeKind
+    of: [TypeDecl]
+    dynamic: TypeDecl
+    static: [TypeDecl]
+    key: Any
+    value: TypeDecl
+  }
+
+type Val
+  {
+    type: ValTag!
+    value: Any!
+  }
+
+type VersionIndex
+  {
+    builtins: [ElementVersion]
+    features: [ElementVersion]
+    keywords: [ElementVersion]
+  }
+
+type WasmABIVersion
+  {
+    version: Int!
+    minorVersion: Int!
+  }
+
+type WasmResolver
+  {
+    annotations: [Any]
+    entrypoint: String
+    module: String
+  }
+
+type WithStmt
+  {
+    col: Int!
+    file: Int!
+    row: Int!
+    block: String!
+    local: Int!
+    path: [Int]!
+    value: Operand!
+  }

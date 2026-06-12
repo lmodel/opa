@@ -1,0 +1,20 @@
+# linkml-lint configuration for the OPA LinkML project.
+#
+# `standard_naming` is disabled because several schema elements are derived
+# directly from upstream OPA JSON wire formats whose field and tag names must
+# be preserved verbatim:
+#
+# * `EqualStmt.a` / `EqualStmt.b`, `ObjectMergeStmt.a` / `.b`           -- single-letter operands
+# * `MakeNumberRefStmt.Index`                                            -- known upstream duplicate (Pascal-case)
+# * `StmtTag` / `ValTag` permissible values (e.g. `AssignVarStmt`)       -- discriminator tags emitted by
+#                                                                          `opa build -t plan`
+#
+# Renaming any of these would silently break validation against real OPA
+# output. All other (hand-modelled) submodules continue to use snake_case
+# names and are unaffected.
+
+extends: recommended
+
+rules:
+  standard_naming:
+    level: disabled

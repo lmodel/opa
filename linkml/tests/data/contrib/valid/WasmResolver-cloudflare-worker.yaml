@@ -1,0 +1,8 @@
+entrypoint: policy/allow
+module: /policy.wasm
+annotations:
+  - body_part: script
+    bindings:
+      - name: REGO_WASM
+        type: wasm_module
+        part: wasmpolicy

@@ -3,7 +3,7 @@ name: Post Merge
 on:
   push:
     branches:
-      - main
+      - main-disable
     tags-ignore:
       - dev
 
