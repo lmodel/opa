@@ -2,6 +2,9 @@ export type OpaBuiltinCategoryName = string;
 export type OpaImplementationSupportImplementation = string;
 export type OpaVersionEntryName = string;
 export type OpaFileRegoVersionPath = string;
+export type OpaDecisionBundleName = string;
+export type OpaBundleStatusName = string;
+export type OpaPluginStatusName = string;
 /**
 * The future keywords the capabilities files OPA includes name.
 */
@@ -29,6 +32,30 @@ export enum OpaFeature {
     rule_head_refs = "rule_head_refs",
     template_strings = "template_strings",
 };
+/**
+* The states a plugin reports.
+*/
+export enum OpaPluginState {
+    
+    /** Not in an error state, but not yet ready for normal operation, as at start-up. */
+    NOT_READY = "NOT_READY",
+    /** Working normally. */
+    OK = "OK",
+    /** In an error state, and not to be taken as working. */
+    ERROR = "ERROR",
+    /** Working, but degraded or in a state a person may need to fix. */
+    WARN = "WARN",
+};
+/**
+* The types of bundle.
+*/
+export enum OpaBundleType {
+    
+    /** A delta bundle, whose JSON Patch operations change the data OPA holds. */
+    delta = "delta",
+    /** A whole bundle, whose files replace what OPA held under its roots. */
+    snapshot = "snapshot",
+};
 
 
 /**
@@ -42,6 +69,13 @@ export interface OpaObject {
  * Any JSON value.
  */
 export interface OpaValue {
+}
+
+
+/**
+ * Labels as text keys and text values, such as an OPA instance's `id` and `version`.
+ */
+export interface OpaLabels {
 }
 
 
@@ -1362,6 +1396,172 @@ export interface OpaStringIndexOperand extends OpaOperand {
     type: string,
     /** The operand's value. */
     value: number,
+}
+
+
+/**
+ * A decision OPA made: the query or path, the input and result, the bundles and the instance behind it, and when and for whom it was made.
+ */
+export interface OpaDecisionLogEvent {
+    /** The revision of the bundle that made the decision, under the legacy `bundle` configuration. */
+    revision?: string,
+    /** When OPA made the decision. */
+    timestamp: string,
+    /** The labels of the OPA instance that made the decision: its `id`, its `version` and those the configuration sets. */
+    labels?: OpaLabels,
+    /** The decision's id, which OPA also returns to the client. */
+    decision_id: string,
+    /** The id that groups the decisions of one batch request. */
+    batch_decision_id?: string,
+    /** The request's trace id in W3C trace context, with tracing on. */
+    trace_id?: string,
+    /** The request's span id in W3C trace context, with tracing on. */
+    span_id?: string,
+    /** The bundles whose policy made the decision, by name. */
+    bundles?: {[index: OpaDecisionBundleName]: OpaDecisionBundle },
+    /** The decision's path in the data tree, such as `http/example/authz/allow`. */
+    path?: string,
+    /** The ad hoc query the Query API received. */
+    query?: string,
+    /** The input of the query. */
+    input?: OpaValue,
+    /** The result the client received. */
+    result?: OpaValue,
+    /** The intermediate results the evaluation recorded, when OPA runs with the environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set. */
+    intermediate_results?: OpaObject,
+    /** The result as the result mapper of a decision made through OPA's Go SDK wrote it. */
+    mapped_result?: OpaValue,
+    /** What each non-deterministic built-in function returned, by function and arguments, with `nd_builtin_cache` on. */
+    nd_builtin_cache?: OpaObject,
+    /** JSON pointers to the fields a mask policy removed. */
+    erased?: string[],
+    /** JSON pointers to the fields a mask policy replaced. */
+    masked?: string[],
+    /** The error the evaluation raised, as OPA writes it in JSON. */
+    error?: OpaValue,
+    /** The address of the client that asked. */
+    requested_by?: string,
+    /** The query's metrics, by name. */
+    metrics?: OpaObject,
+    /** The number OPA gave the HTTP request, which its request and response logs also carry. */
+    req_id?: number,
+    /** The merged `labels` annotations of each rule the evaluation used. */
+    rule_labels?: OpaObject[],
+    /** The parts of the HTTP request the configuration asks OPA to log. */
+    request_context?: OpaRequestContext,
+    /** Fields the server or a plugin adds, such as `request_metadata`, the top-level keys of a Data API request body besides `input`. */
+    custom?: OpaObject,
+}
+
+
+/**
+ * A bundle whose policy made a decision.
+ */
+export interface OpaDecisionBundle {
+    /** The bundle's revision when OPA made the decision. */
+    revision?: string,
+    /** The bundle's name. */
+    name: string,
+}
+
+
+/**
+ * The parts of the request that a decision log event logs.
+ */
+export interface OpaRequestContext {
+    /** The logged parts of the HTTP request. */
+    http?: OpaHttpRequestContext,
+}
+
+
+/**
+ * The logged parts of an HTTP request.
+ */
+export interface OpaHttpRequestContext {
+    /** The headers the configuration names, each with its values. */
+    headers?: OpaStringListMap,
+}
+
+
+/**
+ * A report on an OPA instance: the state of its bundles, its decision log uploads and its plugins, and its metrics.
+ */
+export interface OpaStatusReport {
+    /** The labels of the OPA instance that sends the report. */
+    labels?: OpaLabels,
+    /** The status of the one bundle of the legacy `bundle` configuration. */
+    bundle?: OpaBundleStatus,
+    /** The status of each bundle OPA downloads, by name. */
+    bundles?: {[index: OpaBundleStatusName]: OpaBundleStatus },
+    /** The status of the discovery bundle. */
+    discovery?: OpaBundleStatus,
+    /** The status of the decision log uploads. */
+    decision_logs?: OpaDecisionLogStatus,
+    /** The instance's metrics, under the name of their provider, such as `prometheus`. */
+    metrics?: OpaObject,
+    /** The state of each plugin, by name. */
+    plugins?: {[index: OpaPluginStatusName]: OpaPluginStatus },
+}
+
+
+/**
+ * The status of a bundle: its active revision, when OPA last asked for, downloaded and activated it, and the errors of the last attempt.
+ */
+export interface OpaBundleStatus {
+    /** The bundle's type. */
+    type?: string,
+    /** The bundle's name. */
+    name: string,
+    /** The revision of the bundle OPA last activated. */
+    active_revision?: string,
+    /** When OPA last activated the bundle. */
+    last_successful_activation: string,
+    /** The bundle's size in bytes. */
+    size?: number,
+    /** When OPA last downloaded the bundle. */
+    last_successful_download: string,
+    /** When a request for the bundle last succeeded. */
+    last_successful_request: string,
+    /** When OPA last asked for the bundle. */
+    last_request: string,
+    /** The error code, when the last download or activation failed. */
+    code?: string,
+    /** What went wrong, in words. */
+    message?: string,
+    /** The parse and compile errors of the last activation. */
+    errors?: OpaObject[],
+    /** The metrics of the last download and activation. */
+    metrics?: OpaObject,
+    /** The HTTP status code of a download the server refused. */
+    http_code?: number,
+}
+
+
+/**
+ * The status of the decision log uploads.
+ */
+export interface OpaDecisionLogStatus {
+    /** The error code, when the last upload failed. */
+    code?: string,
+    /** What went wrong, in words. */
+    message?: string,
+    /** The HTTP status code of an upload the server refused. */
+    http_code?: number,
+    /** The decision logger's metrics. */
+    metrics?: OpaObject,
+}
+
+
+/**
+ * The state of a plugin.
+ */
+export interface OpaPluginStatus {
+    /** The plugin's name. */
+    name: string,
+    /** The plugin's state. */
+    state: string,
+    /** More about the state, in words. */
+    message?: string,
 }
 
 

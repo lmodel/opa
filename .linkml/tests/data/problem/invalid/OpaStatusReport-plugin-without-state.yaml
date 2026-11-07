@@ -1,0 +1,8 @@
+---
+# A plugin without its state, which OPA always writes.
+labels:
+  id: 75a0519a-5dc8-4cf4-82fc-cbb344a6306c
+  version: 1.22.2
+plugins:
+  bundle:
+    message: starting

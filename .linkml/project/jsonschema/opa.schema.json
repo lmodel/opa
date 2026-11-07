@@ -1159,6 +1159,226 @@
             "title": "OpaBuiltinResult",
             "type": "object"
         },
+        "OpaBundleStatus": {
+            "additionalProperties": false,
+            "description": "The status of a bundle: its active revision, when OPA last asked for, downloaded and activated it, and the errors of the last attempt.",
+            "properties": {
+                "active_revision": {
+                    "description": "The revision of the bundle OPA last activated.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "code": {
+                    "description": "The error code, when the last download or activation failed.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "errors": {
+                    "description": "The parse and compile errors of the last activation.",
+                    "items": {
+                        "$ref": "#/$defs/OpaObject"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "http_code": {
+                    "description": "The HTTP status code of a download the server refused.",
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "last_request": {
+                    "description": "When OPA last asked for the bundle.",
+                    "format": "date-time",
+                    "type": "string"
+                },
+                "last_successful_activation": {
+                    "description": "When OPA last activated the bundle.",
+                    "format": "date-time",
+                    "type": "string"
+                },
+                "last_successful_download": {
+                    "description": "When OPA last downloaded the bundle.",
+                    "format": "date-time",
+                    "type": "string"
+                },
+                "last_successful_request": {
+                    "description": "When a request for the bundle last succeeded.",
+                    "format": "date-time",
+                    "type": "string"
+                },
+                "message": {
+                    "description": "What went wrong, in words.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "metrics": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaObject"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The metrics of the last download and activation."
+                },
+                "name": {
+                    "description": "The bundle's name.",
+                    "type": "string"
+                },
+                "size": {
+                    "description": "The bundle's size in bytes.",
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "type": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaBundleType"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The bundle's type."
+                }
+            },
+            "required": [
+                "name",
+                "last_successful_activation",
+                "last_successful_download",
+                "last_successful_request",
+                "last_request"
+            ],
+            "title": "OpaBundleStatus",
+            "type": "object"
+        },
+        "OpaBundleStatus__identifier_optional": {
+            "additionalProperties": false,
+            "description": "The status of a bundle: its active revision, when OPA last asked for, downloaded and activated it, and the errors of the last attempt.",
+            "properties": {
+                "active_revision": {
+                    "description": "The revision of the bundle OPA last activated.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "code": {
+                    "description": "The error code, when the last download or activation failed.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "errors": {
+                    "description": "The parse and compile errors of the last activation.",
+                    "items": {
+                        "$ref": "#/$defs/OpaObject"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "http_code": {
+                    "description": "The HTTP status code of a download the server refused.",
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "last_request": {
+                    "description": "When OPA last asked for the bundle.",
+                    "format": "date-time",
+                    "type": "string"
+                },
+                "last_successful_activation": {
+                    "description": "When OPA last activated the bundle.",
+                    "format": "date-time",
+                    "type": "string"
+                },
+                "last_successful_download": {
+                    "description": "When OPA last downloaded the bundle.",
+                    "format": "date-time",
+                    "type": "string"
+                },
+                "last_successful_request": {
+                    "description": "When a request for the bundle last succeeded.",
+                    "format": "date-time",
+                    "type": "string"
+                },
+                "message": {
+                    "description": "What went wrong, in words.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "metrics": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaObject"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The metrics of the last download and activation."
+                },
+                "name": {
+                    "description": "The bundle's name.",
+                    "type": "string"
+                },
+                "size": {
+                    "description": "The bundle's size in bytes.",
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "type": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaBundleType"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The bundle's type."
+                }
+            },
+            "required": [
+                "last_successful_activation",
+                "last_successful_download",
+                "last_successful_request",
+                "last_request"
+            ],
+            "title": "OpaBundleStatus",
+            "type": "object"
+        },
+        "OpaBundleType": {
+            "description": "The types of bundle.",
+            "enum": [
+                "delta",
+                "snapshot"
+            ],
+            "title": "OpaBundleType",
+            "type": "string"
+        },
         "OpaCallDynamicStmt": {
             "additionalProperties": false,
             "description": "A statement of kind CallDynamicStmt, with its fields in `stmt`.",
@@ -1392,6 +1612,351 @@
                 }
             },
             "title": "OpaCapabilities",
+            "type": "object"
+        },
+        "OpaDecisionBundle": {
+            "additionalProperties": false,
+            "description": "A bundle whose policy made a decision.",
+            "properties": {
+                "name": {
+                    "description": "The bundle's name.",
+                    "type": "string"
+                },
+                "revision": {
+                    "description": "The bundle's revision when OPA made the decision.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "OpaDecisionBundle",
+            "type": "object"
+        },
+        "OpaDecisionBundle__identifier_optional": {
+            "additionalProperties": false,
+            "description": "A bundle whose policy made a decision.",
+            "properties": {
+                "name": {
+                    "description": "The bundle's name.",
+                    "type": "string"
+                },
+                "revision": {
+                    "description": "The bundle's revision when OPA made the decision.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [],
+            "title": "OpaDecisionBundle",
+            "type": "object"
+        },
+        "OpaDecisionLogEvent": {
+            "additionalProperties": false,
+            "description": "A decision OPA made: the query or path, the input and result, the bundles and the instance behind it, and when and for whom it was made.",
+            "properties": {
+                "batch_decision_id": {
+                    "description": "The id that groups the decisions of one batch request.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "bundles": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/OpaDecisionBundle__identifier_optional"
+                            },
+                            {
+                                "description": "The bundle's revision when OPA made the decision.",
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "The bundles whose policy made the decision, by name.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "custom": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaObject"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Fields the server or a plugin adds, such as `request_metadata`, the top-level keys of a Data API request body besides `input`."
+                },
+                "decision_id": {
+                    "description": "The decision's id, which OPA also returns to the client.",
+                    "type": "string"
+                },
+                "erased": {
+                    "description": "JSON pointers to the fields a mask policy removed.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "error": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaValue"
+                        },
+                        {
+                            "items": {
+                                "$ref": "#/$defs/OpaValue"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The error the evaluation raised, as OPA writes it in JSON."
+                },
+                "input": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaValue"
+                        },
+                        {
+                            "items": {
+                                "$ref": "#/$defs/OpaValue"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The input of the query."
+                },
+                "intermediate_results": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaObject"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The intermediate results the evaluation recorded, when OPA runs with the environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set."
+                },
+                "labels": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaLabels"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The labels of the OPA instance that made the decision: its `id`, its `version` and those the configuration sets."
+                },
+                "mapped_result": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaValue"
+                        },
+                        {
+                            "items": {
+                                "$ref": "#/$defs/OpaValue"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The result as the result mapper of a decision made through OPA's Go SDK wrote it."
+                },
+                "masked": {
+                    "description": "JSON pointers to the fields a mask policy replaced.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "metrics": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaObject"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The query's metrics, by name."
+                },
+                "nd_builtin_cache": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaObject"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "What each non-deterministic built-in function returned, by function and arguments, with `nd_builtin_cache` on."
+                },
+                "path": {
+                    "description": "The decision's path in the data tree, such as `http/example/authz/allow`.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "query": {
+                    "description": "The ad hoc query the Query API received.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "req_id": {
+                    "description": "The number OPA gave the HTTP request, which its request and response logs also carry.",
+                    "minimum": 0,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "request_context": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaRequestContext"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The parts of the HTTP request the configuration asks OPA to log."
+                },
+                "requested_by": {
+                    "description": "The address of the client that asked.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "result": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaValue"
+                        },
+                        {
+                            "items": {
+                                "$ref": "#/$defs/OpaValue"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The result the client received."
+                },
+                "revision": {
+                    "description": "The revision of the bundle that made the decision, under the legacy `bundle` configuration.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "rule_labels": {
+                    "description": "The merged `labels` annotations of each rule the evaluation used.",
+                    "items": {
+                        "$ref": "#/$defs/OpaObject"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "span_id": {
+                    "description": "The request's span id in W3C trace context, with tracing on.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "timestamp": {
+                    "description": "When OPA made the decision.",
+                    "format": "date-time",
+                    "type": "string"
+                },
+                "trace_id": {
+                    "description": "The request's trace id in W3C trace context, with tracing on.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "timestamp",
+                "decision_id"
+            ],
+            "title": "OpaDecisionLogEvent",
+            "type": "object"
+        },
+        "OpaDecisionLogStatus": {
+            "additionalProperties": false,
+            "description": "The status of the decision log uploads.",
+            "properties": {
+                "code": {
+                    "description": "The error code, when the last upload failed.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "http_code": {
+                    "description": "The HTTP status code of an upload the server refused.",
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "message": {
+                    "description": "What went wrong, in words.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "metrics": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaObject"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The decision logger's metrics."
+                }
+            },
+            "title": "OpaDecisionLogStatus",
             "type": "object"
         },
         "OpaDotStmt": {
@@ -1921,6 +2486,25 @@
             "title": "OpaFutureKeyword",
             "type": "string"
         },
+        "OpaHttpRequestContext": {
+            "additionalProperties": false,
+            "description": "The logged parts of an HTTP request.",
+            "properties": {
+                "headers": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaStringListMap"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The headers the configuration names, each with its values."
+                }
+            },
+            "title": "OpaHttpRequestContext",
+            "type": "object"
+        },
         "OpaImplementation": {
             "additionalProperties": false,
             "description": "An implementation of Rego besides OPA.",
@@ -2326,6 +2910,17 @@
                 "end_row"
             ],
             "title": "OpaIsUndefinedStmtBody",
+            "type": "object"
+        },
+        "OpaLabels": {
+            "additionalProperties": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "description": "Labels as text keys and text values, such as an OPA instance's `id` and `version`.",
+            "title": "OpaLabels",
             "type": "object"
         },
         "OpaLenStmt": {
@@ -3547,6 +4142,70 @@
             "title": "OpaPlans",
             "type": "object"
         },
+        "OpaPluginState": {
+            "description": "The states a plugin reports.",
+            "enum": [
+                "NOT_READY",
+                "OK",
+                "ERROR",
+                "WARN"
+            ],
+            "title": "OpaPluginState",
+            "type": "string"
+        },
+        "OpaPluginStatus": {
+            "additionalProperties": false,
+            "description": "The state of a plugin.",
+            "properties": {
+                "message": {
+                    "description": "More about the state, in words.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "The plugin's name.",
+                    "type": "string"
+                },
+                "state": {
+                    "$ref": "#/$defs/OpaPluginState",
+                    "description": "The plugin's state."
+                }
+            },
+            "required": [
+                "name",
+                "state"
+            ],
+            "title": "OpaPluginStatus",
+            "type": "object"
+        },
+        "OpaPluginStatus__identifier_optional": {
+            "additionalProperties": false,
+            "description": "The state of a plugin.",
+            "properties": {
+                "message": {
+                    "description": "More about the state, in words.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "The plugin's name.",
+                    "type": "string"
+                },
+                "state": {
+                    "$ref": "#/$defs/OpaPluginState",
+                    "description": "The plugin's state."
+                }
+            },
+            "required": [
+                "state"
+            ],
+            "title": "OpaPluginStatus",
+            "type": "object"
+        },
         "OpaPolicy": {
             "additionalProperties": false,
             "description": "Policy represents a planned policy query.",
@@ -3596,6 +4255,25 @@
                 }
             },
             "title": "OpaPolicy",
+            "type": "object"
+        },
+        "OpaRequestContext": {
+            "additionalProperties": false,
+            "description": "The parts of the request that a decision log event logs.",
+            "properties": {
+                "http": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaHttpRequestContext"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The logged parts of the HTTP request."
+                }
+            },
+            "title": "OpaRequestContext",
             "type": "object"
         },
         "OpaResetLocalStmt": {
@@ -4099,6 +4777,97 @@
                 "value"
             ],
             "title": "OpaStaticProperty",
+            "type": "object"
+        },
+        "OpaStatusReport": {
+            "additionalProperties": false,
+            "description": "A report on an OPA instance: the state of its bundles, its decision log uploads and its plugins, and its metrics.",
+            "properties": {
+                "bundle": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaBundleStatus"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The status of the one bundle of the legacy `bundle` configuration."
+                },
+                "bundles": {
+                    "additionalProperties": {
+                        "$ref": "#/$defs/OpaBundleStatus__identifier_optional"
+                    },
+                    "description": "The status of each bundle OPA downloads, by name.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "decision_logs": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaDecisionLogStatus"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The status of the decision log uploads."
+                },
+                "discovery": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaBundleStatus"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The status of the discovery bundle."
+                },
+                "labels": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaLabels"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The labels of the OPA instance that sends the report."
+                },
+                "metrics": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaObject"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The instance's metrics, under the name of their provider, such as `prometheus`."
+                },
+                "plugins": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/OpaPluginStatus__identifier_optional"
+                            },
+                            {
+                                "$ref": "#/$defs/OpaPluginState",
+                                "description": "The plugin's state."
+                            }
+                        ]
+                    },
+                    "description": "The state of each plugin, by name.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                }
+            },
+            "title": "OpaStatusReport",
             "type": "object"
         },
         "OpaStmt": {

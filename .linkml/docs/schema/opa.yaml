@@ -14,9 +14,10 @@ annotations:
     value: Apache-2.0
 description: 'A LinkML model of the JSON formats Open Policy Agent defines: the IR
   plan, the bundle manifest, the authorization policy input, the capabilities document,
-  the built-in function metadata and the version index. Each module renders one format,
-  and keeps OPA''s keys, so a document OPA writes validates against this schema unchanged.
-  The lokf adapt copy renames six keys LOKF defines with another meaning.'
+  the built-in function metadata, the version index, the decision log event and the
+  status report. Each module renders one format, and keeps OPA''s keys, so a document
+  OPA writes validates against this schema unchanged. The lokf adapt copy renames
+  seven keys LOKF defines with another meaning.'
 title: Open Policy Agent (OPA)
 source: https://github.com/open-policy-agent/opa/tree/482d9e368c2ddfed67ced59259fa6a247bb5f1e5
 see_also:
@@ -38,6 +39,8 @@ imports:
 - authorization_input
 - bundle_manifest
 - ir_plan
+- decision_log
+- status_report
 license: Apache-2.0
 prefixes:
   openpolicyagent:
@@ -363,6 +366,38 @@ enums:
         text: rule_head_refs
       template_strings:
         text: template_strings
+  OpaPluginState:
+    name: OpaPluginState
+    definition_uri: https://w3id.org/lmodel/opa/OpaPluginState
+    description: The states a plugin reports.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    permissible_values:
+      NOT_READY:
+        text: NOT_READY
+        description: Not in an error state, but not yet ready for normal operation,
+          as at start-up.
+      OK:
+        text: OK
+        description: Working normally.
+      ERROR:
+        text: ERROR
+        description: In an error state, and not to be taken as working.
+      WARN:
+        text: WARN
+        description: Working, but degraded or in a state a person may need to fix.
+  OpaBundleType:
+    name: OpaBundleType
+    definition_uri: https://w3id.org/lmodel/opa/OpaBundleType
+    description: The types of bundle.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    permissible_values:
+      delta:
+        text: delta
+        description: A delta bundle, whose JSON Patch operations change the data OPA
+          holds.
+      snapshot:
+        text: snapshot
+        description: A whole bundle, whose files replace what OPA held under its roots.
 slots:
   body:
     name: body
@@ -384,9 +419,11 @@ slots:
     mappings:
     - openpolicyagent:revision
     slot_uri: openpolicyagent:revision
-    owner: OpaManifest
+    owner: OpaDecisionBundle
     domain_of:
     - OpaManifest
+    - OpaDecisionLogEvent
+    - OpaDecisionBundle
     range: string
   source:
     name: source
@@ -434,16 +471,28 @@ slots:
     - OpaObjectMergeStmtBody
     - OpaResetLocalStmtBody
     range: string
+  timestamp:
+    name: timestamp
+    definition_uri: https://w3id.org/lmodel/opa/timestamp
+    description: When OPA made a decision.
+    from_schema: https://w3id.org/lmodel/opa/common
+    mappings:
+    - openpolicyagent:timestamp
+    slot_uri: openpolicyagent:timestamp
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: string
   type:
     name: type
     definition_uri: https://w3id.org/lmodel/opa/type
-    description: 'The kind of an object: of a Rego type, a plan statement or an operand,
-      or a type written as OPA prints types.'
+    description: 'The kind of an object: of a Rego type, a plan statement, an operand
+      or a bundle, or a type written as OPA prints types.'
     from_schema: https://w3id.org/lmodel/opa/common
     mappings:
     - openpolicyagent:type
     slot_uri: openpolicyagent:type
-    owner: OpaStringIndexOperand
+    owner: OpaBundleStatus
     domain_of:
     - OpaAnyType
     - OpaArrayType
@@ -493,6 +542,7 @@ slots:
     - OpaBoolOperand
     - OpaLocalOperand
     - OpaStringIndexOperand
+    - OpaBundleStatus
     range: string
   version:
     name: version
@@ -2694,6 +2744,614 @@ slots:
     - OpaStringIndexOperand
     range: integer
     required: true
+  opaDecisionLogEvent__labels:
+    name: opaDecisionLogEvent__labels
+    description: 'The labels of the OPA instance that made the decision: its `id`,
+      its `version` and those the configuration sets.'
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:labels
+    alias: labels
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: OpaLabels
+    inlined: true
+    inlined_as_list: true
+  opaDecisionLogEvent__decision_id:
+    name: opaDecisionLogEvent__decision_id
+    description: The decision's id, which OPA also returns to the client.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:decision_id
+    alias: decision_id
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: string
+    required: true
+  opaDecisionLogEvent__batch_decision_id:
+    name: opaDecisionLogEvent__batch_decision_id
+    description: The id that groups the decisions of one batch request.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:batch_decision_id
+    alias: batch_decision_id
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: string
+  opaDecisionLogEvent__trace_id:
+    name: opaDecisionLogEvent__trace_id
+    description: The request's trace id in W3C trace context, with tracing on.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:trace_id
+    alias: trace_id
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: string
+  opaDecisionLogEvent__span_id:
+    name: opaDecisionLogEvent__span_id
+    description: The request's span id in W3C trace context, with tracing on.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:span_id
+    alias: span_id
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: string
+  opaDecisionLogEvent__bundles:
+    name: opaDecisionLogEvent__bundles
+    description: The bundles whose policy made the decision, by name.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:bundles
+    alias: bundles
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: OpaDecisionBundle
+    multivalued: true
+    inlined: true
+    inlined_as_list: false
+  opaDecisionLogEvent__path:
+    name: opaDecisionLogEvent__path
+    description: The decision's path in the data tree, such as `http/example/authz/allow`.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:path
+    alias: path
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: string
+  opaDecisionLogEvent__query:
+    name: opaDecisionLogEvent__query
+    description: The ad hoc query the Query API received.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:query
+    alias: query
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: string
+  opaDecisionLogEvent__input:
+    name: opaDecisionLogEvent__input
+    description: The input of the query.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:input
+    alias: input
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: OpaValue
+    inlined: true
+    inlined_as_list: true
+    any_of:
+    - range: OpaValue
+    - range: OpaValue
+      multivalued: true
+  opaDecisionLogEvent__result:
+    name: opaDecisionLogEvent__result
+    description: The result the client received.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:result
+    alias: result
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: OpaValue
+    inlined: true
+    inlined_as_list: true
+    any_of:
+    - range: OpaValue
+    - range: OpaValue
+      multivalued: true
+  opaDecisionLogEvent__intermediate_results:
+    name: opaDecisionLogEvent__intermediate_results
+    description: The intermediate results the evaluation recorded, when OPA runs with
+      the environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:intermediate_results
+    alias: intermediate_results
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: OpaObject
+    inlined: true
+    inlined_as_list: true
+  opaDecisionLogEvent__mapped_result:
+    name: opaDecisionLogEvent__mapped_result
+    description: The result as the result mapper of a decision made through OPA's
+      Go SDK wrote it.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:mapped_result
+    alias: mapped_result
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: OpaValue
+    inlined: true
+    inlined_as_list: true
+    any_of:
+    - range: OpaValue
+    - range: OpaValue
+      multivalued: true
+  opaDecisionLogEvent__nd_builtin_cache:
+    name: opaDecisionLogEvent__nd_builtin_cache
+    description: What each non-deterministic built-in function returned, by function
+      and arguments, with `nd_builtin_cache` on.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:nd_builtin_cache
+    alias: nd_builtin_cache
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: OpaObject
+    inlined: true
+    inlined_as_list: true
+  opaDecisionLogEvent__erased:
+    name: opaDecisionLogEvent__erased
+    description: JSON pointers to the fields a mask policy removed.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:erased
+    alias: erased
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: string
+    multivalued: true
+  opaDecisionLogEvent__masked:
+    name: opaDecisionLogEvent__masked
+    description: JSON pointers to the fields a mask policy replaced.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:masked
+    alias: masked
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: string
+    multivalued: true
+  opaDecisionLogEvent__error:
+    name: opaDecisionLogEvent__error
+    description: The error the evaluation raised, as OPA writes it in JSON.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:error
+    alias: error
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: OpaValue
+    inlined: true
+    inlined_as_list: true
+    any_of:
+    - range: OpaValue
+    - range: OpaValue
+      multivalued: true
+  opaDecisionLogEvent__requested_by:
+    name: opaDecisionLogEvent__requested_by
+    description: The address of the client that asked.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:requested_by
+    alias: requested_by
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: string
+  opaDecisionLogEvent__metrics:
+    name: opaDecisionLogEvent__metrics
+    description: The query's metrics, by name.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:metrics
+    alias: metrics
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: OpaObject
+    inlined: true
+    inlined_as_list: true
+  opaDecisionLogEvent__req_id:
+    name: opaDecisionLogEvent__req_id
+    description: The number OPA gave the HTTP request, which its request and response
+      logs also carry.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:req_id
+    alias: req_id
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: integer
+    minimum_value: 0
+  opaDecisionLogEvent__rule_labels:
+    name: opaDecisionLogEvent__rule_labels
+    description: The merged `labels` annotations of each rule the evaluation used.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:rule_labels
+    alias: rule_labels
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: OpaObject
+    multivalued: true
+    inlined: true
+    inlined_as_list: true
+  opaDecisionLogEvent__request_context:
+    name: opaDecisionLogEvent__request_context
+    description: The parts of the HTTP request the configuration asks OPA to log.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:request_context
+    alias: request_context
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: OpaRequestContext
+    inlined: true
+    inlined_as_list: true
+  opaDecisionLogEvent__custom:
+    name: opaDecisionLogEvent__custom
+    description: Fields the server or a plugin adds, such as `request_metadata`, the
+      top-level keys of a Data API request body besides `input`.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:custom
+    alias: custom
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    range: OpaObject
+    inlined: true
+    inlined_as_list: true
+  opaDecisionBundle__name:
+    name: opaDecisionBundle__name
+    description: The bundle's name.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    mappings:
+    - schema:name
+    slot_uri: schema:name
+    key: true
+    alias: name
+    owner: OpaDecisionBundle
+    domain_of:
+    - OpaDecisionBundle
+    range: string
+    required: true
+  opaRequestContext__http:
+    name: opaRequestContext__http
+    description: The logged parts of the HTTP request.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:http
+    alias: http
+    owner: OpaRequestContext
+    domain_of:
+    - OpaRequestContext
+    range: OpaHttpRequestContext
+    inlined: true
+    inlined_as_list: true
+  opaHttpRequestContext__headers:
+    name: opaHttpRequestContext__headers
+    description: The headers the configuration names, each with its values.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slot_uri: openpolicyagent:headers
+    alias: headers
+    owner: OpaHttpRequestContext
+    domain_of:
+    - OpaHttpRequestContext
+    range: OpaStringListMap
+    inlined: true
+    inlined_as_list: true
+  opaStatusReport__labels:
+    name: opaStatusReport__labels
+    description: The labels of the OPA instance that sends the report.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:labels
+    alias: labels
+    owner: OpaStatusReport
+    domain_of:
+    - OpaStatusReport
+    range: OpaLabels
+    inlined: true
+    inlined_as_list: true
+  opaStatusReport__bundle:
+    name: opaStatusReport__bundle
+    description: The status of the one bundle of the legacy `bundle` configuration.
+    deprecated: OPA marks the key deprecated and writes `bundles` instead.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:bundle
+    alias: bundle
+    owner: OpaStatusReport
+    domain_of:
+    - OpaStatusReport
+    range: OpaBundleStatus
+    inlined: true
+    inlined_as_list: false
+  opaStatusReport__bundles:
+    name: opaStatusReport__bundles
+    description: The status of each bundle OPA downloads, by name.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:bundles
+    alias: bundles
+    owner: OpaStatusReport
+    domain_of:
+    - OpaStatusReport
+    range: OpaBundleStatus
+    multivalued: true
+    inlined: true
+    inlined_as_list: false
+  opaStatusReport__discovery:
+    name: opaStatusReport__discovery
+    description: The status of the discovery bundle.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:discovery
+    alias: discovery
+    owner: OpaStatusReport
+    domain_of:
+    - OpaStatusReport
+    range: OpaBundleStatus
+    inlined: true
+    inlined_as_list: false
+  opaStatusReport__decision_logs:
+    name: opaStatusReport__decision_logs
+    description: The status of the decision log uploads.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:decision_logs
+    alias: decision_logs
+    owner: OpaStatusReport
+    domain_of:
+    - OpaStatusReport
+    range: OpaDecisionLogStatus
+    inlined: true
+    inlined_as_list: true
+  opaStatusReport__metrics:
+    name: opaStatusReport__metrics
+    description: The instance's metrics, under the name of their provider, such as
+      `prometheus`.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:metrics
+    alias: metrics
+    owner: OpaStatusReport
+    domain_of:
+    - OpaStatusReport
+    range: OpaObject
+    inlined: true
+    inlined_as_list: true
+  opaStatusReport__plugins:
+    name: opaStatusReport__plugins
+    description: The state of each plugin, by name.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:plugins
+    alias: plugins
+    owner: OpaStatusReport
+    domain_of:
+    - OpaStatusReport
+    range: OpaPluginStatus
+    multivalued: true
+    inlined: true
+    inlined_as_list: false
+  opaBundleStatus__name:
+    name: opaBundleStatus__name
+    description: The bundle's name.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    mappings:
+    - schema:name
+    slot_uri: schema:name
+    key: true
+    alias: name
+    owner: OpaBundleStatus
+    domain_of:
+    - OpaBundleStatus
+    range: string
+    required: true
+  opaBundleStatus__active_revision:
+    name: opaBundleStatus__active_revision
+    description: The revision of the bundle OPA last activated.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:active_revision
+    alias: active_revision
+    owner: OpaBundleStatus
+    domain_of:
+    - OpaBundleStatus
+    range: string
+  opaBundleStatus__last_successful_activation:
+    name: opaBundleStatus__last_successful_activation
+    description: When OPA last activated the bundle.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:last_successful_activation
+    alias: last_successful_activation
+    owner: OpaBundleStatus
+    domain_of:
+    - OpaBundleStatus
+    range: datetime
+    required: true
+  opaBundleStatus__size:
+    name: opaBundleStatus__size
+    description: The bundle's size in bytes.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:size
+    alias: size
+    owner: OpaBundleStatus
+    domain_of:
+    - OpaBundleStatus
+    range: integer
+  opaBundleStatus__last_successful_download:
+    name: opaBundleStatus__last_successful_download
+    description: When OPA last downloaded the bundle.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:last_successful_download
+    alias: last_successful_download
+    owner: OpaBundleStatus
+    domain_of:
+    - OpaBundleStatus
+    range: datetime
+    required: true
+  opaBundleStatus__last_successful_request:
+    name: opaBundleStatus__last_successful_request
+    description: When a request for the bundle last succeeded.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:last_successful_request
+    alias: last_successful_request
+    owner: OpaBundleStatus
+    domain_of:
+    - OpaBundleStatus
+    range: datetime
+    required: true
+  opaBundleStatus__last_request:
+    name: opaBundleStatus__last_request
+    description: When OPA last asked for the bundle.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:last_request
+    alias: last_request
+    owner: OpaBundleStatus
+    domain_of:
+    - OpaBundleStatus
+    range: datetime
+    required: true
+  opaBundleStatus__code:
+    name: opaBundleStatus__code
+    description: The error code, when the last download or activation failed.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:code
+    alias: code
+    owner: OpaBundleStatus
+    domain_of:
+    - OpaBundleStatus
+    range: string
+  opaBundleStatus__message:
+    name: opaBundleStatus__message
+    description: What went wrong, in words.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:message
+    alias: message
+    owner: OpaBundleStatus
+    domain_of:
+    - OpaBundleStatus
+    range: string
+  opaBundleStatus__errors:
+    name: opaBundleStatus__errors
+    description: The parse and compile errors of the last activation.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:errors
+    alias: errors
+    owner: OpaBundleStatus
+    domain_of:
+    - OpaBundleStatus
+    range: OpaObject
+    multivalued: true
+    inlined: true
+    inlined_as_list: true
+  opaBundleStatus__metrics:
+    name: opaBundleStatus__metrics
+    description: The metrics of the last download and activation.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:metrics
+    alias: metrics
+    owner: OpaBundleStatus
+    domain_of:
+    - OpaBundleStatus
+    range: OpaObject
+    inlined: true
+    inlined_as_list: true
+  opaBundleStatus__http_code:
+    name: opaBundleStatus__http_code
+    description: The HTTP status code of a download the server refused.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:http_code
+    alias: http_code
+    owner: OpaBundleStatus
+    domain_of:
+    - OpaBundleStatus
+    range: integer
+  opaDecisionLogStatus__code:
+    name: opaDecisionLogStatus__code
+    description: The error code, when the last upload failed.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:code
+    alias: code
+    owner: OpaDecisionLogStatus
+    domain_of:
+    - OpaDecisionLogStatus
+    range: string
+  opaDecisionLogStatus__message:
+    name: opaDecisionLogStatus__message
+    description: What went wrong, in words.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:message
+    alias: message
+    owner: OpaDecisionLogStatus
+    domain_of:
+    - OpaDecisionLogStatus
+    range: string
+  opaDecisionLogStatus__http_code:
+    name: opaDecisionLogStatus__http_code
+    description: The HTTP status code of an upload the server refused.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:http_code
+    alias: http_code
+    owner: OpaDecisionLogStatus
+    domain_of:
+    - OpaDecisionLogStatus
+    range: integer
+  opaDecisionLogStatus__metrics:
+    name: opaDecisionLogStatus__metrics
+    description: The decision logger's metrics.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:metrics
+    alias: metrics
+    owner: OpaDecisionLogStatus
+    domain_of:
+    - OpaDecisionLogStatus
+    range: OpaObject
+    inlined: true
+    inlined_as_list: true
+  opaPluginStatus__name:
+    name: opaPluginStatus__name
+    description: The plugin's name.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    mappings:
+    - schema:name
+    slot_uri: schema:name
+    key: true
+    alias: name
+    owner: OpaPluginStatus
+    domain_of:
+    - OpaPluginStatus
+    range: string
+    required: true
+  opaPluginStatus__state:
+    name: opaPluginStatus__state
+    description: The plugin's state.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:state
+    alias: state
+    owner: OpaPluginStatus
+    domain_of:
+    - OpaPluginStatus
+    range: OpaPluginState
+    required: true
+  opaPluginStatus__message:
+    name: opaPluginStatus__message
+    description: More about the state, in words.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slot_uri: openpolicyagent:message
+    alias: message
+    owner: OpaPluginStatus
+    domain_of:
+    - OpaPluginStatus
+    range: string
   OpaAnyType_type:
     name: OpaAnyType_type
     definition_uri: https://w3id.org/lmodel/opa/type
@@ -4325,6 +4983,77 @@ slots:
     range: string
     required: true
     equals_string: string_index
+  OpaDecisionLogEvent_revision:
+    name: OpaDecisionLogEvent_revision
+    definition_uri: https://w3id.org/lmodel/opa/revision
+    description: The revision of the bundle that made the decision, under the legacy
+      `bundle` configuration.
+    deprecated: OPA marks the key deprecated and writes `bundles` instead.
+    from_schema: https://w3id.org/lmodel/opa/common
+    mappings:
+    - openpolicyagent:revision
+    is_a: revision
+    domain: OpaDecisionLogEvent
+    slot_uri: openpolicyagent:revision
+    alias: revision
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    is_usage_slot: true
+    usage_slot_name: revision
+    range: string
+  OpaDecisionLogEvent_timestamp:
+    name: OpaDecisionLogEvent_timestamp
+    definition_uri: https://w3id.org/lmodel/opa/timestamp
+    description: When OPA made the decision.
+    from_schema: https://w3id.org/lmodel/opa/common
+    mappings:
+    - openpolicyagent:timestamp
+    is_a: timestamp
+    domain: OpaDecisionLogEvent
+    slot_uri: openpolicyagent:timestamp
+    alias: timestamp
+    owner: OpaDecisionLogEvent
+    domain_of:
+    - OpaDecisionLogEvent
+    is_usage_slot: true
+    usage_slot_name: timestamp
+    range: datetime
+    required: true
+  OpaDecisionBundle_revision:
+    name: OpaDecisionBundle_revision
+    definition_uri: https://w3id.org/lmodel/opa/revision
+    description: The bundle's revision when OPA made the decision.
+    from_schema: https://w3id.org/lmodel/opa/common
+    mappings:
+    - openpolicyagent:revision
+    is_a: revision
+    domain: OpaDecisionBundle
+    slot_uri: openpolicyagent:revision
+    alias: revision
+    owner: OpaDecisionBundle
+    domain_of:
+    - OpaDecisionBundle
+    is_usage_slot: true
+    usage_slot_name: revision
+    range: string
+  OpaBundleStatus_type:
+    name: OpaBundleStatus_type
+    definition_uri: https://w3id.org/lmodel/opa/type
+    description: The bundle's type.
+    from_schema: https://w3id.org/lmodel/opa/common
+    mappings:
+    - openpolicyagent:type
+    is_a: type
+    domain: OpaBundleStatus
+    slot_uri: openpolicyagent:type
+    alias: type
+    owner: OpaBundleStatus
+    domain_of:
+    - OpaBundleStatus
+    is_usage_slot: true
+    usage_slot_name: type
+    range: OpaBundleType
 classes:
   OpaObject:
     name: OpaObject
@@ -4346,6 +5075,16 @@ classes:
     exact_mappings:
     - linkml:Any
     class_uri: linkml:Any
+  OpaLabels:
+    name: OpaLabels
+    definition_uri: https://w3id.org/lmodel/opa/OpaLabels
+    description: Labels as text keys and text values, such as an OPA instance's `id`
+      and `version`.
+    from_schema: https://w3id.org/lmodel/opa/common
+    class_uri: openpolicyagent:OpaLabels
+    extra_slots:
+      range_expression:
+        range: string
   OpaStringListMap:
     name: OpaStringListMap
     definition_uri: https://w3id.org/lmodel/opa/OpaStringListMap
@@ -7476,8 +8215,408 @@ classes:
         range: integer
         required: true
     class_uri: openpolicyagent:OpaStringIndexOperand
+  OpaDecisionLogEvent:
+    name: OpaDecisionLogEvent
+    definition_uri: https://w3id.org/lmodel/opa/OpaDecisionLogEvent
+    description: 'A decision OPA made: the query or path, the input and result, the
+      bundles and the instance behind it, and when and for whom it was made.'
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slots:
+    - OpaDecisionLogEvent_revision
+    - OpaDecisionLogEvent_timestamp
+    - opaDecisionLogEvent__labels
+    - opaDecisionLogEvent__decision_id
+    - opaDecisionLogEvent__batch_decision_id
+    - opaDecisionLogEvent__trace_id
+    - opaDecisionLogEvent__span_id
+    - opaDecisionLogEvent__bundles
+    - opaDecisionLogEvent__path
+    - opaDecisionLogEvent__query
+    - opaDecisionLogEvent__input
+    - opaDecisionLogEvent__result
+    - opaDecisionLogEvent__intermediate_results
+    - opaDecisionLogEvent__mapped_result
+    - opaDecisionLogEvent__nd_builtin_cache
+    - opaDecisionLogEvent__erased
+    - opaDecisionLogEvent__masked
+    - opaDecisionLogEvent__error
+    - opaDecisionLogEvent__requested_by
+    - opaDecisionLogEvent__metrics
+    - opaDecisionLogEvent__req_id
+    - opaDecisionLogEvent__rule_labels
+    - opaDecisionLogEvent__request_context
+    - opaDecisionLogEvent__custom
+    slot_usage:
+      revision:
+        name: revision
+        description: The revision of the bundle that made the decision, under the
+          legacy `bundle` configuration.
+        deprecated: OPA marks the key deprecated and writes `bundles` instead.
+      timestamp:
+        name: timestamp
+        description: When OPA made the decision.
+        range: datetime
+        required: true
+    attributes:
+      labels:
+        name: labels
+        description: 'The labels of the OPA instance that made the decision: its `id`,
+          its `version` and those the configuration sets.'
+        range: OpaLabels
+        inlined: true
+      decision_id:
+        name: decision_id
+        description: The decision's id, which OPA also returns to the client.
+        required: true
+      batch_decision_id:
+        name: batch_decision_id
+        description: The id that groups the decisions of one batch request.
+      trace_id:
+        name: trace_id
+        description: The request's trace id in W3C trace context, with tracing on.
+      span_id:
+        name: span_id
+        description: The request's span id in W3C trace context, with tracing on.
+      bundles:
+        name: bundles
+        description: The bundles whose policy made the decision, by name.
+        range: OpaDecisionBundle
+        multivalued: true
+        inlined: true
+      path:
+        name: path
+        description: The decision's path in the data tree, such as `http/example/authz/allow`.
+      query:
+        name: query
+        description: The ad hoc query the Query API received.
+      input:
+        name: input
+        description: The input of the query.
+        range: OpaValue
+        any_of:
+        - range: OpaValue
+        - range: OpaValue
+          multivalued: true
+      result:
+        name: result
+        description: The result the client received.
+        range: OpaValue
+        any_of:
+        - range: OpaValue
+        - range: OpaValue
+          multivalued: true
+      intermediate_results:
+        name: intermediate_results
+        description: The intermediate results the evaluation recorded, when OPA runs
+          with the environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set.
+        range: OpaObject
+        inlined: true
+      mapped_result:
+        name: mapped_result
+        description: The result as the result mapper of a decision made through OPA's
+          Go SDK wrote it.
+        range: OpaValue
+        any_of:
+        - range: OpaValue
+        - range: OpaValue
+          multivalued: true
+      nd_builtin_cache:
+        name: nd_builtin_cache
+        description: What each non-deterministic built-in function returned, by function
+          and arguments, with `nd_builtin_cache` on.
+        range: OpaObject
+        inlined: true
+      erased:
+        name: erased
+        description: JSON pointers to the fields a mask policy removed.
+        multivalued: true
+      masked:
+        name: masked
+        description: JSON pointers to the fields a mask policy replaced.
+        multivalued: true
+      error:
+        name: error
+        description: The error the evaluation raised, as OPA writes it in JSON.
+        range: OpaValue
+        any_of:
+        - range: OpaValue
+        - range: OpaValue
+          multivalued: true
+      requested_by:
+        name: requested_by
+        description: The address of the client that asked.
+      metrics:
+        name: metrics
+        description: The query's metrics, by name.
+        range: OpaObject
+        inlined: true
+      req_id:
+        name: req_id
+        description: The number OPA gave the HTTP request, which its request and response
+          logs also carry.
+        range: integer
+        minimum_value: 0
+      rule_labels:
+        name: rule_labels
+        description: The merged `labels` annotations of each rule the evaluation used.
+        range: OpaObject
+        multivalued: true
+        inlined: true
+        inlined_as_list: true
+      request_context:
+        name: request_context
+        description: The parts of the HTTP request the configuration asks OPA to log.
+        range: OpaRequestContext
+        inlined: true
+      custom:
+        name: custom
+        description: Fields the server or a plugin adds, such as `request_metadata`,
+          the top-level keys of a Data API request body besides `input`.
+        range: OpaObject
+        inlined: true
+    class_uri: openpolicyagent:OpaDecisionLogEvent
+    tree_root: true
+  OpaDecisionBundle:
+    name: OpaDecisionBundle
+    definition_uri: https://w3id.org/lmodel/opa/OpaDecisionBundle
+    description: A bundle whose policy made a decision.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slots:
+    - OpaDecisionBundle_revision
+    - opaDecisionBundle__name
+    slot_usage:
+      revision:
+        name: revision
+        description: The bundle's revision when OPA made the decision.
+    attributes:
+      name:
+        name: name
+        description: The bundle's name.
+        slot_uri: schema:name
+        key: true
+    class_uri: openpolicyagent:OpaDecisionBundle
+  OpaRequestContext:
+    name: OpaRequestContext
+    definition_uri: https://w3id.org/lmodel/opa/OpaRequestContext
+    description: The parts of the request that a decision log event logs.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slots:
+    - opaRequestContext__http
+    attributes:
+      http:
+        name: http
+        description: The logged parts of the HTTP request.
+        range: OpaHttpRequestContext
+        inlined: true
+    class_uri: openpolicyagent:OpaRequestContext
+  OpaHttpRequestContext:
+    name: OpaHttpRequestContext
+    definition_uri: https://w3id.org/lmodel/opa/OpaHttpRequestContext
+    description: The logged parts of an HTTP request.
+    from_schema: https://w3id.org/lmodel/opa/decision_log
+    slots:
+    - opaHttpRequestContext__headers
+    attributes:
+      headers:
+        name: headers
+        description: The headers the configuration names, each with its values.
+        range: OpaStringListMap
+        inlined: true
+    class_uri: openpolicyagent:OpaHttpRequestContext
+  OpaStatusReport:
+    name: OpaStatusReport
+    definition_uri: https://w3id.org/lmodel/opa/OpaStatusReport
+    description: 'A report on an OPA instance: the state of its bundles, its decision
+      log uploads and its plugins, and its metrics.'
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slots:
+    - opaStatusReport__labels
+    - opaStatusReport__bundle
+    - opaStatusReport__bundles
+    - opaStatusReport__discovery
+    - opaStatusReport__decision_logs
+    - opaStatusReport__metrics
+    - opaStatusReport__plugins
+    attributes:
+      labels:
+        name: labels
+        description: The labels of the OPA instance that sends the report.
+        range: OpaLabels
+        inlined: true
+      bundle:
+        name: bundle
+        description: The status of the one bundle of the legacy `bundle` configuration.
+        deprecated: OPA marks the key deprecated and writes `bundles` instead.
+        range: OpaBundleStatus
+        inlined: true
+      bundles:
+        name: bundles
+        description: The status of each bundle OPA downloads, by name.
+        range: OpaBundleStatus
+        multivalued: true
+        inlined: true
+      discovery:
+        name: discovery
+        description: The status of the discovery bundle.
+        range: OpaBundleStatus
+        inlined: true
+      decision_logs:
+        name: decision_logs
+        description: The status of the decision log uploads.
+        range: OpaDecisionLogStatus
+        inlined: true
+      metrics:
+        name: metrics
+        description: The instance's metrics, under the name of their provider, such
+          as `prometheus`.
+        range: OpaObject
+        inlined: true
+      plugins:
+        name: plugins
+        description: The state of each plugin, by name.
+        range: OpaPluginStatus
+        multivalued: true
+        inlined: true
+    class_uri: openpolicyagent:OpaStatusReport
+    tree_root: true
+  OpaBundleStatus:
+    name: OpaBundleStatus
+    definition_uri: https://w3id.org/lmodel/opa/OpaBundleStatus
+    description: 'The status of a bundle: its active revision, when OPA last asked
+      for, downloaded and activated it, and the errors of the last attempt.'
+    comments:
+    - OPA writes Go's zero time, 0001-01-01T00:00:00Z, for a time that has not come
+      yet, such as the last activation of a bundle that never activated.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slots:
+    - OpaBundleStatus_type
+    - opaBundleStatus__name
+    - opaBundleStatus__active_revision
+    - opaBundleStatus__last_successful_activation
+    - opaBundleStatus__size
+    - opaBundleStatus__last_successful_download
+    - opaBundleStatus__last_successful_request
+    - opaBundleStatus__last_request
+    - opaBundleStatus__code
+    - opaBundleStatus__message
+    - opaBundleStatus__errors
+    - opaBundleStatus__metrics
+    - opaBundleStatus__http_code
+    slot_usage:
+      type:
+        name: type
+        description: The bundle's type.
+        range: OpaBundleType
+    attributes:
+      name:
+        name: name
+        description: The bundle's name.
+        slot_uri: schema:name
+        key: true
+        required: true
+      active_revision:
+        name: active_revision
+        description: The revision of the bundle OPA last activated.
+      last_successful_activation:
+        name: last_successful_activation
+        description: When OPA last activated the bundle.
+        range: datetime
+        required: true
+      size:
+        name: size
+        description: The bundle's size in bytes.
+        range: integer
+      last_successful_download:
+        name: last_successful_download
+        description: When OPA last downloaded the bundle.
+        range: datetime
+        required: true
+      last_successful_request:
+        name: last_successful_request
+        description: When a request for the bundle last succeeded.
+        range: datetime
+        required: true
+      last_request:
+        name: last_request
+        description: When OPA last asked for the bundle.
+        range: datetime
+        required: true
+      code:
+        name: code
+        description: The error code, when the last download or activation failed.
+      message:
+        name: message
+        description: What went wrong, in words.
+      errors:
+        name: errors
+        description: The parse and compile errors of the last activation.
+        range: OpaObject
+        multivalued: true
+        inlined: true
+        inlined_as_list: true
+      metrics:
+        name: metrics
+        description: The metrics of the last download and activation.
+        range: OpaObject
+        inlined: true
+      http_code:
+        name: http_code
+        description: The HTTP status code of a download the server refused.
+        range: integer
+    class_uri: openpolicyagent:OpaBundleStatus
+  OpaDecisionLogStatus:
+    name: OpaDecisionLogStatus
+    definition_uri: https://w3id.org/lmodel/opa/OpaDecisionLogStatus
+    description: The status of the decision log uploads.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slots:
+    - opaDecisionLogStatus__code
+    - opaDecisionLogStatus__message
+    - opaDecisionLogStatus__http_code
+    - opaDecisionLogStatus__metrics
+    attributes:
+      code:
+        name: code
+        description: The error code, when the last upload failed.
+      message:
+        name: message
+        description: What went wrong, in words.
+      http_code:
+        name: http_code
+        description: The HTTP status code of an upload the server refused.
+        range: integer
+      metrics:
+        name: metrics
+        description: The decision logger's metrics.
+        range: OpaObject
+        inlined: true
+    class_uri: openpolicyagent:OpaDecisionLogStatus
+  OpaPluginStatus:
+    name: OpaPluginStatus
+    definition_uri: https://w3id.org/lmodel/opa/OpaPluginStatus
+    description: The state of a plugin.
+    from_schema: https://w3id.org/lmodel/opa/status_report
+    slots:
+    - opaPluginStatus__name
+    - opaPluginStatus__state
+    - opaPluginStatus__message
+    attributes:
+      name:
+        name: name
+        description: The plugin's name.
+        slot_uri: schema:name
+        key: true
+      state:
+        name: state
+        description: The plugin's state.
+        range: OpaPluginState
+        required: true
+      message:
+        name: message
+        description: More about the state, in words.
+    class_uri: openpolicyagent:OpaPluginStatus
 metamodel_version: 1.12.0
 source_file: opa.yaml
-source_file_date: '2026-11-07T10:25:16'
-source_file_size: 1372
+source_file_date: '2026-11-07T10:27:13'
+source_file_size: 1452
 

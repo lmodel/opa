@@ -1,7 +1,9 @@
-"""Compares the schema with OPA's JSON Schemas in three tiers.
+"""Compares the schema with OPA's JSON Schemas in three tiers, and with OPA's Go types.
 
 1. Address: every definition in OPA's plan and manifest schemas is the exact mapping of a
-   class here, and every exact mapping names a definition OPA's file holds.
+   class here, and every exact mapping names a definition OPA's file holds. Every JSON
+   key of the Go structs the decision log and status modules render is a key of the
+   class, and back.
 2. Verdicts: a corpus built from OPA's definitions gets the same verdict from the schema
    as from OPA, except in the cases parity/structural.yaml lists. The corpus holds, for
    each definition and each branch of a oneOf, a document with only the required keys,
@@ -13,6 +15,7 @@
    lists still differs.
 """
 
+import importlib.util
 import json
 from functools import lru_cache
 
@@ -24,6 +27,28 @@ import opa_parity as parity
 ROOT = parity.ROOT
 TREE = parity.TREE
 STRUCTURAL = ROOT / "parity" / "structural.yaml"
+
+# The classes that render a Go struct: the file, the struct, and the key the class
+# adds for the map that holds it, where the struct has none.
+GO_STRUCTS = {
+    "OpaDecisionLogEvent": ("v1/plugins/logs/plugin.go", "EventV1", set()),
+    "OpaDecisionBundle": ("v1/plugins/logs/plugin.go", "BundleInfoV1", {"name"}),
+    "OpaRequestContext": ("v1/plugins/logs/plugin.go", "RequestContext", set()),
+    "OpaHttpRequestContext": ("v1/plugins/logs/plugin.go", "HTTPRequestContext", set()),
+    "OpaStatusReport": ("v1/plugins/status/plugin.go", "UpdateRequestV1", set()),
+    "OpaBundleStatus": ("v1/plugins/bundle/status.go", "Status", set()),
+    "OpaDecisionLogStatus": ("v1/plugins/logs/status/status.go", "Status", set()),
+    "OpaPluginStatus": ("v1/plugins/plugins.go", "Status", {"name"}),
+}
+
+
+@lru_cache(maxsize=1)
+def _converter():
+    path = ROOT / "scripts" / "opa_to_linkml.py"
+    spec = importlib.util.spec_from_file_location("converter_for_parity", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _class_for(prefix: str, definition: str) -> str:
@@ -150,6 +175,19 @@ def test_every_mapping_names_a_definition():
             assert definition in parity.published(parity.PUBLISHED[prefix])["$defs"], (
                 name
             )
+
+
+@pytest.mark.parametrize("cls", sorted(GO_STRUCTS))
+def test_every_key_of_the_go_struct_is_a_key_of_the_class(cls):
+    rel, struct, added = GO_STRUCTS[cls]
+    assert parity.keys(cls) == set(_converter().go_struct(rel, struct)) | added
+
+
+def test_every_class_of_a_go_module_renders_a_struct():
+    for module in ("decision_log", "status_report"):
+        path = ROOT / "src" / "opa" / "schema" / f"{module}.yaml"
+        names = yaml.safe_load(path.read_text(encoding="utf-8"))["classes"]
+        assert set(names) <= set(GO_STRUCTS), module
 
 
 def test_corpus_is_large():

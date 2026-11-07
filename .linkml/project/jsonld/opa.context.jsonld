@@ -147,6 +147,47 @@
          "@type": "@id",
          "@id": "_implementations"
       },
+      "active_revision": {
+         "@id": "active_revision"
+      },
+      "code": {
+         "@id": "code"
+      },
+      "errors": {
+         "@type": "@id",
+         "@id": "errors"
+      },
+      "http_code": {
+         "@type": "xsd:integer",
+         "@id": "http_code"
+      },
+      "last_request": {
+         "@type": "xsd:dateTime",
+         "@id": "last_request"
+      },
+      "last_successful_activation": {
+         "@type": "xsd:dateTime",
+         "@id": "last_successful_activation"
+      },
+      "last_successful_download": {
+         "@type": "xsd:dateTime",
+         "@id": "last_successful_download"
+      },
+      "last_successful_request": {
+         "@type": "xsd:dateTime",
+         "@id": "last_successful_request"
+      },
+      "message": {
+         "@id": "message"
+      },
+      "metrics": {
+         "@type": "@id",
+         "@id": "metrics"
+      },
+      "size": {
+         "@type": "xsd:integer",
+         "@id": "size"
+      },
       "func": {
          "@id": "func"
       },
@@ -168,6 +209,74 @@
       "wasm_abi_versions": {
          "@type": "@id",
          "@id": "wasm_abi_versions"
+      },
+      "batch_decision_id": {
+         "@id": "batch_decision_id"
+      },
+      "bundles": {
+         "@type": "@id",
+         "@id": "bundles"
+      },
+      "custom": {
+         "@type": "@id",
+         "@id": "custom"
+      },
+      "decision_id": {
+         "@id": "decision_id"
+      },
+      "erased": {
+         "@id": "erased"
+      },
+      "error": {
+         "@type": "@id",
+         "@id": "error"
+      },
+      "input": {
+         "@type": "@id",
+         "@id": "input"
+      },
+      "intermediate_results": {
+         "@type": "@id",
+         "@id": "intermediate_results"
+      },
+      "labels": {
+         "@type": "@id",
+         "@id": "labels"
+      },
+      "mapped_result": {
+         "@type": "@id",
+         "@id": "mapped_result"
+      },
+      "masked": {
+         "@id": "masked"
+      },
+      "nd_builtin_cache": {
+         "@type": "@id",
+         "@id": "nd_builtin_cache"
+      },
+      "query": {
+         "@id": "query"
+      },
+      "req_id": {
+         "@type": "xsd:integer",
+         "@id": "req_id"
+      },
+      "request_context": {
+         "@type": "@id",
+         "@id": "request_context"
+      },
+      "requested_by": {
+         "@id": "requested_by"
+      },
+      "rule_labels": {
+         "@type": "@id",
+         "@id": "rule_labels"
+      },
+      "span_id": {
+         "@id": "span_id"
+      },
+      "trace_id": {
+         "@id": "trace_id"
       },
       "key": {
          "@type": "@id",
@@ -240,9 +349,21 @@
          "@type": "@id",
          "@id": "plans"
       },
+      "state": {
+         "@context": {
+            "text": "skos:notation",
+            "description": "skos:prefLabel",
+            "meaning": "@id"
+         },
+         "@id": "state"
+      },
       "unplanned_rules": {
          "@type": "@id",
          "@id": "unplanned_rules"
+      },
+      "http": {
+         "@type": "@id",
+         "@id": "http"
       },
       "set": {
          "@type": "xsd:integer",
@@ -259,6 +380,22 @@
       "strings": {
          "@type": "@id",
          "@id": "strings"
+      },
+      "bundle": {
+         "@type": "@id",
+         "@id": "bundle"
+      },
+      "decision_logs": {
+         "@type": "@id",
+         "@id": "decision_logs"
+      },
+      "discovery": {
+         "@type": "@id",
+         "@id": "discovery"
+      },
+      "plugins": {
+         "@type": "@id",
+         "@id": "plugins"
       },
       "location": {
          "@type": "@id",
@@ -316,6 +453,9 @@
       },
       "target": {
          "@id": "target"
+      },
+      "timestamp": {
+         "@id": "timestamp"
       },
       "type": {
          "@id": "type"
@@ -430,6 +570,9 @@
       "OpaBuiltinResult": {
          "@id": "OpaBuiltinResult"
       },
+      "OpaBundleStatus": {
+         "@id": "OpaBundleStatus"
+      },
       "OpaCallDynamicStmt": {
          "@id": "OpaCallDynamicStmt"
       },
@@ -444,6 +587,21 @@
       },
       "OpaCapabilities": {
          "@id": "OpaCapabilities"
+      },
+      "OpaDecisionBundle": {
+         "@id": "OpaDecisionBundle"
+      },
+      "OpaDecisionLogEvent": {
+         "@id": "OpaDecisionLogEvent",
+         "@context": {
+            "timestamp": {
+               "@id": "timestamp",
+               "@type": "xsd:dateTime"
+            }
+         }
+      },
+      "OpaDecisionLogStatus": {
+         "@id": "OpaDecisionLogStatus"
       },
       "OpaDotStmt": {
          "@id": "OpaDotStmt"
@@ -487,6 +645,9 @@
       },
       "OpaFunctionType": {
          "@id": "OpaFunctionType"
+      },
+      "OpaHttpRequestContext": {
+         "@id": "OpaHttpRequestContext"
       },
       "OpaImplementation": {
          "@id": "OpaImplementation"
@@ -553,6 +714,9 @@
                "@type": "xsd:integer"
             }
          }
+      },
+      "OpaLabels": {
+         "@id": "OpaLabels"
       },
       "OpaLenStmt": {
          "@id": "OpaLenStmt"
@@ -714,8 +878,14 @@
       "OpaPlans": {
          "@id": "OpaPlans"
       },
+      "OpaPluginStatus": {
+         "@id": "OpaPluginStatus"
+      },
       "OpaPolicy": {
          "@id": "OpaPolicy"
+      },
+      "OpaRequestContext": {
+         "@id": "OpaRequestContext"
       },
       "OpaResetLocalStmt": {
          "@id": "OpaResetLocalStmt"
@@ -773,6 +943,9 @@
       },
       "OpaStaticProperty": {
          "@id": "OpaStaticProperty"
+      },
+      "OpaStatusReport": {
+         "@id": "OpaStatusReport"
       },
       "OpaStmt": {
          "@id": "OpaStmt"

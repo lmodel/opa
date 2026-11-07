@@ -1,0 +1,13 @@
+---
+# A bundle of a type OPA does not have.
+labels:
+  id: 75a0519a-5dc8-4cf4-82fc-cbb344a6306c
+  version: 1.22.2
+bundles:
+  authz:
+    name: authz
+    type: full
+    last_successful_activation: '0001-01-01T00:00:00Z'
+    last_successful_download: '0001-01-01T00:00:00Z'
+    last_successful_request: '0001-01-01T00:00:00Z'
+    last_request: '2026-11-07T10:16:33.745578102Z'

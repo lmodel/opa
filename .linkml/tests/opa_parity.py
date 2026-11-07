@@ -42,6 +42,17 @@ def classes() -> dict:
     return found
 
 
+def keys(name: str) -> set[str]:
+    """The keys a document of a class carries: each attribute's and slot's alias, or
+    its name where it has none."""
+    cls = classes()[name]
+    usage = cls.get("slot_usage") or {}
+    found = {
+        (s or {}).get("alias") or k for k, s in (cls.get("attributes") or {}).items()
+    }
+    return found | {usage.get(k, {}).get("alias") or k for k in cls.get("slots") or []}
+
+
 def subclasses(name: str) -> list[str]:
     """The concrete classes under an abstract one."""
     found = []

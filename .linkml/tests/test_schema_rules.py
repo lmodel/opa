@@ -102,37 +102,50 @@ ELEMENT_KINDS = ("classes", "enums", "types", "subsets")
 # vocabulary's IRI. Each key below is OPA's own, so a new overlap fails the test.
 SHARED_WITH_NEIGHBOURS = {name: set() for name in NEIGHBOURS} | {
     "ai-governance-framework.yaml": {"label"},
-    "attack.yaml": {"key", "path", "result", "value"},
+    "attack.yaml": {"key", "labels", "path", "result", "size", "value"},
     "calm.yaml": {"metadata", "value"},
-    "cve.yaml": {"repo", "value"},
+    "cve.yaml": {"metrics", "repo", "state", "value"},
     "d3fend.yaml": {"available", "blocks", "deprecated", "label"},
     "datatype.yaml": {"value"},
     "dpv.yaml": {"value"},
     "in-toto.yaml": {"annotations", "value"},
-    "nist-nvd.yaml": {"deprecated", "id", "repo", "value"},
+    "nist-nvd.yaml": {"deprecated", "id", "metrics", "repo", "value"},
     "ocsf.yaml": {
         "args",
         "categories",
+        "code",
+        "error",
         "file",
         "files",
+        "labels",
         "location",
+        "message",
         "metadata",
+        "metrics",
         "module",
         "path",
+        "query",
         "relation",
+        "size",
+        "state",
         "value",
     },
-    "oscal.yaml": {"label", "metadata", "method", "params", "value"},
+    "oscal.yaml": {"custom", "label", "metadata", "method", "params", "state", "value"},
     "slsa.yaml": {"annotations", "value"},
     "spdx.yaml": {"key", "value"},
-    "stix.yaml": {"key", "path", "result", "value"},
+    "stix.yaml": {"key", "labels", "path", "result", "size", "value"},
     "uco.yaml": {
         "categories",
+        "error",
         "key",
+        "labels",
         "location",
         "object",
         "path",
+        "query",
         "result",
+        "size",
+        "state",
         "strings",
         "value",
     },
@@ -206,15 +219,17 @@ def test_neighbours_are_the_released_assets():
 def test_names_apart_from_lokf():
     """No class, enum, type or subset name of the copy is LOKF's, and a slot
     name the two share carries LOKF's IRI. OPA's keys that LOKF defines with
-    another meaning (body, revision, source, target, type and version) are
-    top-level slots in the source, which the copy renames with the prefix."""
+    another meaning (body, revision, source, target, timestamp, type and
+    version) are top-level slots in the source, which the copy renames with the
+    prefix."""
     elements, slots = _names(COPY)
     their_elements, their_slots = _names(LOKF)
     for kind in ELEMENT_KINDS:
         assert not elements[kind] & their_elements[kind], kind
     for name in slots.keys() & their_slots.keys():
         assert slots[name] == their_slots[name], name
-    for key in ("body", "revision", "source", "target", "type", "version"):
+    keys = ("body", "revision", "source", "target", "timestamp", "type", "version")
+    for key in keys:
         assert f"openpolicyagent_{key}" in slots, key
 
 

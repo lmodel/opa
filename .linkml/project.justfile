@@ -38,7 +38,7 @@ pin-opa-tree commit:
 lokf_cmd := env_var_or_default("LOKF_CMD", "uv run --project ../.lokf lokf")
 # Each `name` below carries the IRI of LOKF's `name` but keeps its key: folded, it would
 # become LOKF's `title`, and the copy would no longer read OPA's objects.
-lokf_adapt_keep := "--keep OpaBuiltinCategory.name --keep OpaBuiltinArgument.name --keep OpaBuiltinResult.name --keep OpaBuiltin.name --keep OpaType.name --keep OpaBuiltinFunc.name --keep OpaPlan.name --keep OpaFunc.name --keep OpaVersionEntry.name"
+lokf_adapt_keep := "--keep OpaBuiltinCategory.name --keep OpaBuiltinArgument.name --keep OpaBuiltinResult.name --keep OpaBuiltin.name --keep OpaType.name --keep OpaBuiltinFunc.name --keep OpaPlan.name --keep OpaFunc.name --keep OpaVersionEntry.name --keep OpaDecisionBundle.name --keep OpaBundleStatus.name --keep OpaPluginStatus.name"
 lokf_adapt_roots := "--root OpaManifest --root OpaCapabilities --root OpaBuiltin --root OpaPolicy --prefix openpolicyagent " + lokf_adapt_keep
 
 # Rewrite ../.lokf/schema/opa.yaml from the schema (run after every schema change)

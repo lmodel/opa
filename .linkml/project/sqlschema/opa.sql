@@ -2,7 +2,11 @@
 --     * Slot: id
 --     * Slot: OpaAuthorizationInput_id Description: Autocreated FK slot
 --     * Slot: OpaWasmResolver_id Description: Autocreated FK slot
+--     * Slot: OpaDecisionLogEvent_id Description: Autocreated FK slot
+--     * Slot: OpaBundleStatus_name Description: Autocreated FK slot
 -- # Class: OpaValue Description: Any JSON value.
+--     * Slot: id
+-- # Class: OpaLabels Description: Labels as text keys and text values, such as an OPA instance's `id` and `version`.
 --     * Slot: id
 -- # Class: OpaStringListMap Description: An object whose every value is a list of strings, as Go writes HTTP headers and query parameters.
 --     * Slot: id
@@ -660,6 +664,70 @@
 --     * Slot: id
 --     * Slot: type Description: The kind of operand.
 --     * Slot: value Description: The operand's value.
+-- # Class: OpaDecisionLogEvent Description: A decision OPA made: the query or path, the input and result, the bundles and the instance behind it, and when and for whom it was made.
+--     * Slot: id
+--     * Slot: revision Description: The revision of the bundle that made the decision, under the legacy `bundle` configuration.
+--     * Slot: timestamp Description: When OPA made the decision.
+--     * Slot: decision_id Description: The decision's id, which OPA also returns to the client.
+--     * Slot: batch_decision_id Description: The id that groups the decisions of one batch request.
+--     * Slot: trace_id Description: The request's trace id in W3C trace context, with tracing on.
+--     * Slot: span_id Description: The request's span id in W3C trace context, with tracing on.
+--     * Slot: path Description: The decision's path in the data tree, such as `http/example/authz/allow`.
+--     * Slot: query Description: The ad hoc query the Query API received.
+--     * Slot: requested_by Description: The address of the client that asked.
+--     * Slot: req_id Description: The number OPA gave the HTTP request, which its request and response logs also carry.
+--     * Slot: labels_id Description: The labels of the OPA instance that made the decision: its `id`, its `version` and those the configuration sets.
+--     * Slot: input_id Description: The input of the query.
+--     * Slot: result_id Description: The result the client received.
+--     * Slot: intermediate_results_id Description: The intermediate results the evaluation recorded, when OPA runs with the environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set.
+--     * Slot: mapped_result_id Description: The result as the result mapper of a decision made through OPA's Go SDK wrote it.
+--     * Slot: nd_builtin_cache_id Description: What each non-deterministic built-in function returned, by function and arguments, with `nd_builtin_cache` on.
+--     * Slot: error_id Description: The error the evaluation raised, as OPA writes it in JSON.
+--     * Slot: metrics_id Description: The query's metrics, by name.
+--     * Slot: request_context_id Description: The parts of the HTTP request the configuration asks OPA to log.
+--     * Slot: custom_id Description: Fields the server or a plugin adds, such as `request_metadata`, the top-level keys of a Data API request body besides `input`.
+-- # Class: OpaDecisionBundle Description: A bundle whose policy made a decision.
+--     * Slot: revision Description: The bundle's revision when OPA made the decision.
+--     * Slot: name Description: The bundle's name.
+--     * Slot: OpaDecisionLogEvent_id Description: Autocreated FK slot
+-- # Class: OpaRequestContext Description: The parts of the request that a decision log event logs.
+--     * Slot: id
+--     * Slot: http_id Description: The logged parts of the HTTP request.
+-- # Class: OpaHttpRequestContext Description: The logged parts of an HTTP request.
+--     * Slot: id
+--     * Slot: headers_id Description: The headers the configuration names, each with its values.
+-- # Class: OpaStatusReport Description: A report on an OPA instance: the state of its bundles, its decision log uploads and its plugins, and its metrics.
+--     * Slot: id
+--     * Slot: labels_id Description: The labels of the OPA instance that sends the report.
+--     * Slot: bundle_name Description: The status of the one bundle of the legacy `bundle` configuration.
+--     * Slot: discovery_name Description: The status of the discovery bundle.
+--     * Slot: decision_logs_id Description: The status of the decision log uploads.
+--     * Slot: metrics_id Description: The instance's metrics, under the name of their provider, such as `prometheus`.
+-- # Class: OpaBundleStatus Description: The status of a bundle: its active revision, when OPA last asked for, downloaded and activated it, and the errors of the last attempt.
+--     * Slot: type Description: The bundle's type.
+--     * Slot: name Description: The bundle's name.
+--     * Slot: active_revision Description: The revision of the bundle OPA last activated.
+--     * Slot: last_successful_activation Description: When OPA last activated the bundle.
+--     * Slot: size Description: The bundle's size in bytes.
+--     * Slot: last_successful_download Description: When OPA last downloaded the bundle.
+--     * Slot: last_successful_request Description: When a request for the bundle last succeeded.
+--     * Slot: last_request Description: When OPA last asked for the bundle.
+--     * Slot: code Description: The error code, when the last download or activation failed.
+--     * Slot: message Description: What went wrong, in words.
+--     * Slot: http_code Description: The HTTP status code of a download the server refused.
+--     * Slot: OpaStatusReport_id Description: Autocreated FK slot
+--     * Slot: metrics_id Description: The metrics of the last download and activation.
+-- # Class: OpaDecisionLogStatus Description: The status of the decision log uploads.
+--     * Slot: id
+--     * Slot: code Description: The error code, when the last upload failed.
+--     * Slot: message Description: What went wrong, in words.
+--     * Slot: http_code Description: The HTTP status code of an upload the server refused.
+--     * Slot: metrics_id Description: The decision logger's metrics.
+-- # Class: OpaPluginStatus Description: The state of a plugin.
+--     * Slot: name Description: The plugin's name.
+--     * Slot: state Description: The plugin's state.
+--     * Slot: message Description: More about the state, in words.
+--     * Slot: OpaStatusReport_id Description: Autocreated FK slot
 -- # Class: OpaCapabilities_future_keywords
 --     * Slot: OpaCapabilities_id Description: Autocreated FK slot
 --     * Slot: future_keywords Description: The keywords a policy may import from future.keywords.
@@ -696,14 +764,24 @@
 -- # Class: OpaWithStmtBody_path
 --     * Slot: OpaWithStmtBody_id Description: Autocreated FK slot
 --     * Slot: path Description: The path within the local's value to replace, as indices of static strings. Empty replaces the whole value.
+-- # Class: OpaDecisionLogEvent_erased
+--     * Slot: OpaDecisionLogEvent_id Description: Autocreated FK slot
+--     * Slot: erased Description: JSON pointers to the fields a mask policy removed.
+-- # Class: OpaDecisionLogEvent_masked
+--     * Slot: OpaDecisionLogEvent_id Description: Autocreated FK slot
+--     * Slot: masked Description: JSON pointers to the fields a mask policy replaced.
 
 CREATE TABLE "OpaObject" (
 	id INTEGER NOT NULL,
 	"OpaAuthorizationInput_id" INTEGER,
 	"OpaWasmResolver_id" INTEGER,
+	"OpaDecisionLogEvent_id" INTEGER,
+	"OpaBundleStatus_name" TEXT,
 	PRIMARY KEY (id),
 	FOREIGN KEY("OpaAuthorizationInput_id") REFERENCES "OpaAuthorizationInput" (id),
-	FOREIGN KEY("OpaWasmResolver_id") REFERENCES "OpaWasmResolver" (id)
+	FOREIGN KEY("OpaWasmResolver_id") REFERENCES "OpaWasmResolver" (id),
+	FOREIGN KEY("OpaDecisionLogEvent_id") REFERENCES "OpaDecisionLogEvent" (id),
+	FOREIGN KEY("OpaBundleStatus_name") REFERENCES "OpaBundleStatus" (name)
 );
 CREATE INDEX "ix_OpaObject_id" ON "OpaObject" (id);
 
@@ -712,6 +790,12 @@ CREATE TABLE "OpaValue" (
 	PRIMARY KEY (id)
 );
 CREATE INDEX "ix_OpaValue_id" ON "OpaValue" (id);
+
+CREATE TABLE "OpaLabels" (
+	id INTEGER NOT NULL,
+	PRIMARY KEY (id)
+);
+CREATE INDEX "ix_OpaLabels_id" ON "OpaLabels" (id);
 
 CREATE TABLE "OpaStringListMap" (
 	id INTEGER NOT NULL,
@@ -1135,6 +1219,103 @@ CREATE TABLE "OpaStringIndexOperand" (
 );
 CREATE INDEX "ix_OpaStringIndexOperand_id" ON "OpaStringIndexOperand" (id);
 
+CREATE TABLE "OpaDecisionLogEvent" (
+	id INTEGER NOT NULL,
+	revision TEXT,
+	timestamp DATETIME NOT NULL,
+	decision_id TEXT NOT NULL,
+	batch_decision_id TEXT,
+	trace_id TEXT,
+	span_id TEXT,
+	path TEXT,
+	"query" TEXT,
+	requested_by TEXT,
+	req_id INTEGER,
+	labels_id INTEGER,
+	input_id INTEGER,
+	result_id INTEGER,
+	intermediate_results_id INTEGER,
+	mapped_result_id INTEGER,
+	nd_builtin_cache_id INTEGER,
+	error_id INTEGER,
+	metrics_id INTEGER,
+	request_context_id INTEGER,
+	custom_id INTEGER,
+	PRIMARY KEY (id),
+	FOREIGN KEY(labels_id) REFERENCES "OpaLabels" (id),
+	FOREIGN KEY(input_id) REFERENCES "OpaValue" (id),
+	FOREIGN KEY(result_id) REFERENCES "OpaValue" (id),
+	FOREIGN KEY(intermediate_results_id) REFERENCES "OpaObject" (id),
+	FOREIGN KEY(mapped_result_id) REFERENCES "OpaValue" (id),
+	FOREIGN KEY(nd_builtin_cache_id) REFERENCES "OpaObject" (id),
+	FOREIGN KEY(error_id) REFERENCES "OpaValue" (id),
+	FOREIGN KEY(metrics_id) REFERENCES "OpaObject" (id),
+	FOREIGN KEY(request_context_id) REFERENCES "OpaRequestContext" (id),
+	FOREIGN KEY(custom_id) REFERENCES "OpaObject" (id)
+);
+CREATE INDEX "ix_OpaDecisionLogEvent_id" ON "OpaDecisionLogEvent" (id);
+
+CREATE TABLE "OpaStatusReport" (
+	id INTEGER NOT NULL,
+	labels_id INTEGER,
+	bundle_name TEXT,
+	discovery_name TEXT,
+	decision_logs_id INTEGER,
+	metrics_id INTEGER,
+	PRIMARY KEY (id),
+	FOREIGN KEY(labels_id) REFERENCES "OpaLabels" (id),
+	FOREIGN KEY(bundle_name) REFERENCES "OpaBundleStatus" (name),
+	FOREIGN KEY(discovery_name) REFERENCES "OpaBundleStatus" (name),
+	FOREIGN KEY(decision_logs_id) REFERENCES "OpaDecisionLogStatus" (id),
+	FOREIGN KEY(metrics_id) REFERENCES "OpaObject" (id)
+);
+CREATE INDEX "ix_OpaStatusReport_id" ON "OpaStatusReport" (id);
+
+CREATE TABLE "OpaBundleStatus" (
+	type VARCHAR(8),
+	name TEXT NOT NULL,
+	active_revision TEXT,
+	last_successful_activation DATETIME NOT NULL,
+	size INTEGER,
+	last_successful_download DATETIME NOT NULL,
+	last_successful_request DATETIME NOT NULL,
+	last_request DATETIME NOT NULL,
+	code TEXT,
+	message TEXT,
+	http_code INTEGER,
+	"OpaStatusReport_id" INTEGER,
+	metrics_id INTEGER,
+	PRIMARY KEY (type, name, active_revision, last_successful_activation, size, last_successful_download, last_successful_request, last_request, code, message, http_code, "OpaStatusReport_id", metrics_id),
+	UNIQUE ("OpaStatusReport_id", name),
+	FOREIGN KEY("OpaStatusReport_id") REFERENCES "OpaStatusReport" (id),
+	FOREIGN KEY(metrics_id) REFERENCES "OpaObject" (id)
+);
+CREATE INDEX "ix_OpaBundleStatus_active_revision" ON "OpaBundleStatus" (active_revision);
+CREATE INDEX "ix_OpaBundleStatus_last_successful_download" ON "OpaBundleStatus" (last_successful_download);
+CREATE INDEX "ix_OpaBundleStatus_code" ON "OpaBundleStatus" (code);
+CREATE INDEX "ix_OpaBundleStatus_http_code" ON "OpaBundleStatus" (http_code);
+CREATE INDEX "ix_OpaBundleStatus_metrics_id" ON "OpaBundleStatus" (metrics_id);
+CREATE INDEX "ix_OpaBundleStatus_name" ON "OpaBundleStatus" (name);
+CREATE INDEX "ix_OpaBundleStatus_size" ON "OpaBundleStatus" (size);
+CREATE INDEX "ix_OpaBundleStatus_last_successful_request" ON "OpaBundleStatus" (last_successful_request);
+CREATE INDEX "ix_OpaBundleStatus_message" ON "OpaBundleStatus" (message);
+CREATE INDEX "ix_OpaBundleStatus_OpaStatusReport_id" ON "OpaBundleStatus" ("OpaStatusReport_id");
+CREATE INDEX "OpaBundleStatus_OpaStatusReport_id_name_idx" ON "OpaBundleStatus" ("OpaStatusReport_id", name);
+CREATE INDEX "ix_OpaBundleStatus_type" ON "OpaBundleStatus" (type);
+CREATE INDEX "ix_OpaBundleStatus_last_successful_activation" ON "OpaBundleStatus" (last_successful_activation);
+CREATE INDEX "ix_OpaBundleStatus_last_request" ON "OpaBundleStatus" (last_request);
+
+CREATE TABLE "OpaDecisionLogStatus" (
+	id INTEGER NOT NULL,
+	code TEXT,
+	message TEXT,
+	http_code INTEGER,
+	metrics_id INTEGER,
+	PRIMARY KEY (id),
+	FOREIGN KEY(metrics_id) REFERENCES "OpaObject" (id)
+);
+CREATE INDEX "ix_OpaDecisionLogStatus_id" ON "OpaDecisionLogStatus" (id);
+
 CREATE TABLE "OpaSetType" (
 	id INTEGER NOT NULL,
 	type TEXT NOT NULL,
@@ -1189,8 +1370,8 @@ CREATE TABLE "OpaBuiltinCategory" (
 	UNIQUE ("OpaBuiltinMetadataCatalog_id", name),
 	FOREIGN KEY("OpaBuiltinMetadataCatalog_id") REFERENCES "OpaBuiltinMetadataCatalog" (id)
 );
-CREATE INDEX "ix_OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id");
 CREATE INDEX "OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id_name_idx" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id", name);
+CREATE INDEX "ix_OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id");
 CREATE INDEX "ix_OpaBuiltinCategory_name" ON "OpaBuiltinCategory" (name);
 
 CREATE TABLE "OpaImplementation" (
@@ -1231,14 +1412,14 @@ CREATE TABLE "OpaVersionEntry" (
 	UNIQUE ("OpaVersionIndex_id", name),
 	FOREIGN KEY("OpaVersionIndex_id") REFERENCES "OpaVersionIndex" (id)
 );
-CREATE INDEX "ix_OpaVersionEntry_Metadata" ON "OpaVersionEntry" ("Metadata");
-CREATE INDEX "ix_OpaVersionEntry_Major" ON "OpaVersionEntry" ("Major");
 CREATE INDEX "ix_OpaVersionEntry_name" ON "OpaVersionEntry" (name);
-CREATE INDEX "ix_OpaVersionEntry_OpaVersionIndex_id" ON "OpaVersionEntry" ("OpaVersionIndex_id");
-CREATE INDEX "OpaVersionEntry_OpaVersionIndex_id_name_idx" ON "OpaVersionEntry" ("OpaVersionIndex_id", name);
 CREATE INDEX "ix_OpaVersionEntry_Patch" ON "OpaVersionEntry" ("Patch");
+CREATE INDEX "OpaVersionEntry_OpaVersionIndex_id_name_idx" ON "OpaVersionEntry" ("OpaVersionIndex_id", name);
 CREATE INDEX "ix_OpaVersionEntry_Minor" ON "OpaVersionEntry" ("Minor");
+CREATE INDEX "ix_OpaVersionEntry_Major" ON "OpaVersionEntry" ("Major");
 CREATE INDEX "ix_OpaVersionEntry_PreRelease" ON "OpaVersionEntry" ("PreRelease");
+CREATE INDEX "ix_OpaVersionEntry_OpaVersionIndex_id" ON "OpaVersionEntry" ("OpaVersionIndex_id");
+CREATE INDEX "ix_OpaVersionEntry_Metadata" ON "OpaVersionEntry" ("Metadata");
 
 CREATE TABLE "OpaAuthorizationInput" (
 	id INTEGER NOT NULL,
@@ -1261,9 +1442,9 @@ CREATE TABLE "OpaFileRegoVersion" (
 	PRIMARY KEY (version, path, "OpaManifest_id"),
 	FOREIGN KEY("OpaManifest_id") REFERENCES "OpaManifest" (id)
 );
-CREATE INDEX "ix_OpaFileRegoVersion_path" ON "OpaFileRegoVersion" (path);
 CREATE INDEX "ix_OpaFileRegoVersion_version" ON "OpaFileRegoVersion" (version);
 CREATE INDEX "ix_OpaFileRegoVersion_OpaManifest_id" ON "OpaFileRegoVersion" ("OpaManifest_id");
+CREATE INDEX "ix_OpaFileRegoVersion_path" ON "OpaFileRegoVersion" (path);
 
 CREATE TABLE "OpaPolicy" (
 	id INTEGER NOT NULL,
@@ -1488,6 +1669,42 @@ CREATE TABLE "OpaOperand" (
 );
 CREATE INDEX "ix_OpaOperand_id" ON "OpaOperand" (id);
 
+CREATE TABLE "OpaDecisionBundle" (
+	revision TEXT,
+	name TEXT NOT NULL,
+	"OpaDecisionLogEvent_id" INTEGER,
+	PRIMARY KEY (revision, name, "OpaDecisionLogEvent_id"),
+	UNIQUE ("OpaDecisionLogEvent_id", name),
+	FOREIGN KEY("OpaDecisionLogEvent_id") REFERENCES "OpaDecisionLogEvent" (id)
+);
+CREATE INDEX "OpaDecisionBundle_OpaDecisionLogEvent_id_name_idx" ON "OpaDecisionBundle" ("OpaDecisionLogEvent_id", name);
+CREATE INDEX "ix_OpaDecisionBundle_OpaDecisionLogEvent_id" ON "OpaDecisionBundle" ("OpaDecisionLogEvent_id");
+CREATE INDEX "ix_OpaDecisionBundle_name" ON "OpaDecisionBundle" (name);
+CREATE INDEX "ix_OpaDecisionBundle_revision" ON "OpaDecisionBundle" (revision);
+
+CREATE TABLE "OpaHttpRequestContext" (
+	id INTEGER NOT NULL,
+	headers_id INTEGER,
+	PRIMARY KEY (id),
+	FOREIGN KEY(headers_id) REFERENCES "OpaStringListMap" (id)
+);
+CREATE INDEX "ix_OpaHttpRequestContext_id" ON "OpaHttpRequestContext" (id);
+
+CREATE TABLE "OpaPluginStatus" (
+	name TEXT NOT NULL,
+	state VARCHAR(9) NOT NULL,
+	message TEXT,
+	"OpaStatusReport_id" INTEGER,
+	PRIMARY KEY (name, state, message, "OpaStatusReport_id"),
+	UNIQUE ("OpaStatusReport_id", name),
+	FOREIGN KEY("OpaStatusReport_id") REFERENCES "OpaStatusReport" (id)
+);
+CREATE INDEX "ix_OpaPluginStatus_state" ON "OpaPluginStatus" (state);
+CREATE INDEX "ix_OpaPluginStatus_name" ON "OpaPluginStatus" (name);
+CREATE INDEX "ix_OpaPluginStatus_message" ON "OpaPluginStatus" (message);
+CREATE INDEX "OpaPluginStatus_OpaStatusReport_id_name_idx" ON "OpaPluginStatus" ("OpaStatusReport_id", name);
+CREATE INDEX "ix_OpaPluginStatus_OpaStatusReport_id" ON "OpaPluginStatus" ("OpaStatusReport_id");
+
 CREATE TABLE "OpaCapabilities_future_keywords" (
 	"OpaCapabilities_id" INTEGER,
 	future_keywords VARCHAR(8),
@@ -1530,8 +1747,26 @@ CREATE TABLE "OpaCallDynamicStmtBody_args" (
 	PRIMARY KEY ("OpaCallDynamicStmtBody_id", args),
 	FOREIGN KEY("OpaCallDynamicStmtBody_id") REFERENCES "OpaCallDynamicStmtBody" (id)
 );
-CREATE INDEX "ix_OpaCallDynamicStmtBody_args_args" ON "OpaCallDynamicStmtBody_args" (args);
 CREATE INDEX "ix_OpaCallDynamicStmtBody_args_OpaCallDynamicStmtBody_id" ON "OpaCallDynamicStmtBody_args" ("OpaCallDynamicStmtBody_id");
+CREATE INDEX "ix_OpaCallDynamicStmtBody_args_args" ON "OpaCallDynamicStmtBody_args" (args);
+
+CREATE TABLE "OpaDecisionLogEvent_erased" (
+	"OpaDecisionLogEvent_id" INTEGER,
+	erased TEXT,
+	PRIMARY KEY ("OpaDecisionLogEvent_id", erased),
+	FOREIGN KEY("OpaDecisionLogEvent_id") REFERENCES "OpaDecisionLogEvent" (id)
+);
+CREATE INDEX "ix_OpaDecisionLogEvent_erased_OpaDecisionLogEvent_id" ON "OpaDecisionLogEvent_erased" ("OpaDecisionLogEvent_id");
+CREATE INDEX "ix_OpaDecisionLogEvent_erased_erased" ON "OpaDecisionLogEvent_erased" (erased);
+
+CREATE TABLE "OpaDecisionLogEvent_masked" (
+	"OpaDecisionLogEvent_id" INTEGER,
+	masked TEXT,
+	PRIMARY KEY ("OpaDecisionLogEvent_id", masked),
+	FOREIGN KEY("OpaDecisionLogEvent_id") REFERENCES "OpaDecisionLogEvent" (id)
+);
+CREATE INDEX "ix_OpaDecisionLogEvent_masked_OpaDecisionLogEvent_id" ON "OpaDecisionLogEvent_masked" ("OpaDecisionLogEvent_id");
+CREATE INDEX "ix_OpaDecisionLogEvent_masked_masked" ON "OpaDecisionLogEvent_masked" (masked);
 
 CREATE TABLE "OpaObjectType" (
 	id INTEGER NOT NULL,
@@ -1563,10 +1798,10 @@ CREATE TABLE "OpaImplementationSupport" (
 	UNIQUE ("OpaBuiltinMetadata_id", implementation),
 	FOREIGN KEY("OpaBuiltinMetadata_id") REFERENCES "OpaBuiltinMetadata" (id)
 );
-CREATE INDEX "ix_OpaImplementationSupport_version" ON "OpaImplementationSupport" (version);
-CREATE INDEX "OpaImplementationSupport_OpaBuiltinMetadata_id_implementation_idx" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id", implementation);
-CREATE INDEX "ix_OpaImplementationSupport_implementation" ON "OpaImplementationSupport" (implementation);
 CREATE INDEX "ix_OpaImplementationSupport_OpaBuiltinMetadata_id" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id");
+CREATE INDEX "ix_OpaImplementationSupport_version" ON "OpaImplementationSupport" (version);
+CREATE INDEX "ix_OpaImplementationSupport_implementation" ON "OpaImplementationSupport" (implementation);
+CREATE INDEX "OpaImplementationSupport_OpaBuiltinMetadata_id_implementation_idx" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id", implementation);
 
 CREATE TABLE "OpaBlock" (
 	id INTEGER NOT NULL,
@@ -1778,14 +2013,22 @@ CREATE TABLE "OpaSetAddStmtBody" (
 );
 CREATE INDEX "ix_OpaSetAddStmtBody_id" ON "OpaSetAddStmtBody" (id);
 
+CREATE TABLE "OpaRequestContext" (
+	id INTEGER NOT NULL,
+	http_id INTEGER,
+	PRIMARY KEY (id),
+	FOREIGN KEY(http_id) REFERENCES "OpaHttpRequestContext" (id)
+);
+CREATE INDEX "ix_OpaRequestContext_id" ON "OpaRequestContext" (id);
+
 CREATE TABLE "OpaBuiltin_categories" (
 	"OpaBuiltin_id" INTEGER,
 	categories TEXT,
 	PRIMARY KEY ("OpaBuiltin_id", categories),
 	FOREIGN KEY("OpaBuiltin_id") REFERENCES "OpaBuiltin" (id)
 );
-CREATE INDEX "ix_OpaBuiltin_categories_categories" ON "OpaBuiltin_categories" (categories);
 CREATE INDEX "ix_OpaBuiltin_categories_OpaBuiltin_id" ON "OpaBuiltin_categories" ("OpaBuiltin_id");
+CREATE INDEX "ix_OpaBuiltin_categories_categories" ON "OpaBuiltin_categories" (categories);
 
 CREATE TABLE "OpaBuiltinCategory_builtins" (
 	"OpaBuiltinCategory_name" TEXT,
@@ -1820,8 +2063,8 @@ CREATE TABLE "OpaFunc_params" (
 	PRIMARY KEY ("OpaFunc_id", params),
 	FOREIGN KEY("OpaFunc_id") REFERENCES "OpaFunc" (id)
 );
-CREATE INDEX "ix_OpaFunc_params_params" ON "OpaFunc_params" (params);
 CREATE INDEX "ix_OpaFunc_params_OpaFunc_id" ON "OpaFunc_params" ("OpaFunc_id");
+CREATE INDEX "ix_OpaFunc_params_params" ON "OpaFunc_params" (params);
 
 CREATE TABLE "OpaFunc_path" (
 	"OpaFunc_id" INTEGER,
@@ -2047,5 +2290,5 @@ CREATE TABLE "OpaWithStmtBody_path" (
 	PRIMARY KEY ("OpaWithStmtBody_id", path),
 	FOREIGN KEY("OpaWithStmtBody_id") REFERENCES "OpaWithStmtBody" (id)
 );
-CREATE INDEX "ix_OpaWithStmtBody_path_path" ON "OpaWithStmtBody_path" (path);
 CREATE INDEX "ix_OpaWithStmtBody_path_OpaWithStmtBody_id" ON "OpaWithStmtBody_path" ("OpaWithStmtBody_id");
+CREATE INDEX "ix_OpaWithStmtBody_path_path" ON "OpaWithStmtBody_path" (path);

@@ -4,8 +4,9 @@ id: https://w3id.org/lmodel/opa/common
 name: common
 title: OPA common types
 description: >-
-  Types that more than one OPA format uses: open JSON objects and values, maps of HTTP headers,
-  and the Rego type declarations that capabilities and plans carry for built-in functions.
+  Types that more than one OPA format uses: open JSON objects and values, maps of labels and
+  of HTTP headers, and the Rego type declarations that capabilities and plans carry for built-in
+  functions.
 version: 1.22.2
 source: >-
   https://github.com/open-policy-agent/opa/blob/482d9e368c2ddfed67ced59259fa6a247bb5f1e5/v1/types/types.go
@@ -39,6 +40,12 @@ classes:
         an array also admits a list of values, so only an array nested directly in such a
         list fails.
     class_uri: linkml:Any
+  OpaLabels:
+    description: >-
+      Labels as text keys and text values, such as an OPA instance's `id` and `version`.
+    extra_slots:
+      range_expression:
+        range: string
   OpaStringListMap:
     description: >-
       An object whose every value is a list of strings, as Go writes HTTP headers and query
@@ -252,10 +259,13 @@ slots:
   target:
     description: The local a plan statement writes its result to.
     slot_uri: openpolicyagent:target
+  timestamp:
+    description: When OPA made a decision.
+    slot_uri: openpolicyagent:timestamp
   type:
     description: >-
-      The kind of an object: of a Rego type, a plan statement or an operand, or a type written
-      as OPA prints types.
+      The kind of an object: of a Rego type, a plan statement, an operand or a bundle, or
+      a type written as OPA prints types.
     slot_uri: openpolicyagent:type
   version:
     description: >-

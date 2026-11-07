@@ -18,7 +18,7 @@
       "value": "Apache-2.0"
     }
   ],
-  "description": "A LinkML model of the JSON formats Open Policy Agent defines: the IR plan, the bundle manifest, the authorization policy input, the capabilities document, the built-in function metadata and the version index. Each module renders one format, and keeps OPA's keys, so a document OPA writes validates against this schema unchanged. The lokf adapt copy renames six keys LOKF defines with another meaning.",
+  "description": "A LinkML model of the JSON formats Open Policy Agent defines: the IR plan, the bundle manifest, the authorization policy input, the capabilities document, the built-in function metadata, the version index, the decision log event and the status report. Each module renders one format, and keeps OPA's keys, so a document OPA writes validates against this schema unchanged. The lokf adapt copy renames seven keys LOKF defines with another meaning.",
   "title": "Open Policy Agent (OPA)",
   "source": "https://github.com/open-policy-agent/opa/tree/482d9e368c2ddfed67ced59259fa6a247bb5f1e5",
   "see_also": [
@@ -41,7 +41,9 @@
     "version_index",
     "authorization_input",
     "bundle_manifest",
-    "ir_plan"
+    "ir_plan",
+    "decision_log",
+    "status_report"
   ],
   "license": "Apache-2.0",
   "prefixes": [
@@ -431,6 +433,46 @@
           "text": "template_strings"
         }
       ]
+    },
+    {
+      "name": "OpaPluginState",
+      "definition_uri": "https://w3id.org/lmodel/opa/OpaPluginState",
+      "description": "The states a plugin reports.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "permissible_values": [
+        {
+          "text": "NOT_READY",
+          "description": "Not in an error state, but not yet ready for normal operation, as at start-up."
+        },
+        {
+          "text": "OK",
+          "description": "Working normally."
+        },
+        {
+          "text": "ERROR",
+          "description": "In an error state, and not to be taken as working."
+        },
+        {
+          "text": "WARN",
+          "description": "Working, but degraded or in a state a person may need to fix."
+        }
+      ]
+    },
+    {
+      "name": "OpaBundleType",
+      "definition_uri": "https://w3id.org/lmodel/opa/OpaBundleType",
+      "description": "The types of bundle.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "permissible_values": [
+        {
+          "text": "delta",
+          "description": "A delta bundle, whose JSON Patch operations change the data OPA holds."
+        },
+        {
+          "text": "snapshot",
+          "description": "A whole bundle, whose files replace what OPA held under its roots."
+        }
+      ]
     }
   ],
   "slots": [
@@ -459,9 +501,11 @@
         "https://w3id.org/lmodel/opa/revision"
       ],
       "slot_uri": "https://w3id.org/lmodel/opa/revision",
-      "owner": "OpaManifest",
+      "owner": "OpaDecisionBundle",
       "domain_of": [
-        "OpaManifest"
+        "OpaManifest",
+        "OpaDecisionLogEvent",
+        "OpaDecisionBundle"
       ],
       "range": "string",
       "@type": "SlotDefinition"
@@ -521,15 +565,31 @@
       "@type": "SlotDefinition"
     },
     {
+      "name": "timestamp",
+      "definition_uri": "https://w3id.org/lmodel/opa/timestamp",
+      "description": "When OPA made a decision.",
+      "from_schema": "https://w3id.org/lmodel/opa/common",
+      "mappings": [
+        "https://w3id.org/lmodel/opa/timestamp"
+      ],
+      "slot_uri": "https://w3id.org/lmodel/opa/timestamp",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
       "name": "type",
       "definition_uri": "https://w3id.org/lmodel/opa/type",
-      "description": "The kind of an object: of a Rego type, a plan statement or an operand, or a type written as OPA prints types.",
+      "description": "The kind of an object: of a Rego type, a plan statement, an operand or a bundle, or a type written as OPA prints types.",
       "from_schema": "https://w3id.org/lmodel/opa/common",
       "mappings": [
         "https://w3id.org/lmodel/opa/type"
       ],
       "slot_uri": "https://w3id.org/lmodel/opa/type",
-      "owner": "OpaStringIndexOperand",
+      "owner": "OpaBundleStatus",
       "domain_of": [
         "OpaAnyType",
         "OpaArrayType",
@@ -578,7 +638,8 @@
         "OpaWithStmt",
         "OpaBoolOperand",
         "OpaLocalOperand",
-        "OpaStringIndexOperand"
+        "OpaStringIndexOperand",
+        "OpaBundleStatus"
       ],
       "range": "string",
       "@type": "SlotDefinition"
@@ -3319,6 +3380,786 @@
       "@type": "SlotDefinition"
     },
     {
+      "name": "opaDecisionLogEvent__labels",
+      "description": "The labels of the OPA instance that made the decision: its `id`, its `version` and those the configuration sets.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/labels",
+      "alias": "labels",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "OpaLabels",
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__decision_id",
+      "description": "The decision's id, which OPA also returns to the client.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/decision_id",
+      "alias": "decision_id",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "string",
+      "required": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__batch_decision_id",
+      "description": "The id that groups the decisions of one batch request.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/batch_decision_id",
+      "alias": "batch_decision_id",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__trace_id",
+      "description": "The request's trace id in W3C trace context, with tracing on.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/trace_id",
+      "alias": "trace_id",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__span_id",
+      "description": "The request's span id in W3C trace context, with tracing on.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/span_id",
+      "alias": "span_id",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__bundles",
+      "description": "The bundles whose policy made the decision, by name.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/bundles",
+      "alias": "bundles",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "OpaDecisionBundle",
+      "multivalued": true,
+      "inlined": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__path",
+      "description": "The decision's path in the data tree, such as `http/example/authz/allow`.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/path",
+      "alias": "path",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__query",
+      "description": "The ad hoc query the Query API received.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/query",
+      "alias": "query",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__input",
+      "description": "The input of the query.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/input",
+      "alias": "input",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "OpaValue",
+      "inlined": true,
+      "inlined_as_list": true,
+      "any_of": [
+        {
+          "range": "OpaValue",
+          "@type": "AnonymousSlotExpression"
+        },
+        {
+          "range": "OpaValue",
+          "multivalued": true,
+          "@type": "AnonymousSlotExpression"
+        }
+      ],
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__result",
+      "description": "The result the client received.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/result",
+      "alias": "result",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "OpaValue",
+      "inlined": true,
+      "inlined_as_list": true,
+      "any_of": [
+        {
+          "range": "OpaValue",
+          "@type": "AnonymousSlotExpression"
+        },
+        {
+          "range": "OpaValue",
+          "multivalued": true,
+          "@type": "AnonymousSlotExpression"
+        }
+      ],
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__intermediate_results",
+      "description": "The intermediate results the evaluation recorded, when OPA runs with the environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/intermediate_results",
+      "alias": "intermediate_results",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "OpaObject",
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__mapped_result",
+      "description": "The result as the result mapper of a decision made through OPA's Go SDK wrote it.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/mapped_result",
+      "alias": "mapped_result",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "OpaValue",
+      "inlined": true,
+      "inlined_as_list": true,
+      "any_of": [
+        {
+          "range": "OpaValue",
+          "@type": "AnonymousSlotExpression"
+        },
+        {
+          "range": "OpaValue",
+          "multivalued": true,
+          "@type": "AnonymousSlotExpression"
+        }
+      ],
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__nd_builtin_cache",
+      "description": "What each non-deterministic built-in function returned, by function and arguments, with `nd_builtin_cache` on.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/nd_builtin_cache",
+      "alias": "nd_builtin_cache",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "OpaObject",
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__erased",
+      "description": "JSON pointers to the fields a mask policy removed.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/erased",
+      "alias": "erased",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "string",
+      "multivalued": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__masked",
+      "description": "JSON pointers to the fields a mask policy replaced.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/masked",
+      "alias": "masked",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "string",
+      "multivalued": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__error",
+      "description": "The error the evaluation raised, as OPA writes it in JSON.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/error",
+      "alias": "error",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "OpaValue",
+      "inlined": true,
+      "inlined_as_list": true,
+      "any_of": [
+        {
+          "range": "OpaValue",
+          "@type": "AnonymousSlotExpression"
+        },
+        {
+          "range": "OpaValue",
+          "multivalued": true,
+          "@type": "AnonymousSlotExpression"
+        }
+      ],
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__requested_by",
+      "description": "The address of the client that asked.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/requested_by",
+      "alias": "requested_by",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__metrics",
+      "description": "The query's metrics, by name.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/metrics",
+      "alias": "metrics",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "OpaObject",
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__req_id",
+      "description": "The number OPA gave the HTTP request, which its request and response logs also carry.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/req_id",
+      "alias": "req_id",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "integer",
+      "minimum_value": 0,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__rule_labels",
+      "description": "The merged `labels` annotations of each rule the evaluation used.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/rule_labels",
+      "alias": "rule_labels",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "OpaObject",
+      "multivalued": true,
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__request_context",
+      "description": "The parts of the HTTP request the configuration asks OPA to log.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/request_context",
+      "alias": "request_context",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "OpaRequestContext",
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogEvent__custom",
+      "description": "Fields the server or a plugin adds, such as `request_metadata`, the top-level keys of a Data API request body besides `input`.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/custom",
+      "alias": "custom",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "range": "OpaObject",
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionBundle__name",
+      "description": "The bundle's name.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "mappings": [
+        "http://schema.org/name"
+      ],
+      "slot_uri": "http://schema.org/name",
+      "key": true,
+      "alias": "name",
+      "owner": "OpaDecisionBundle",
+      "domain_of": [
+        "OpaDecisionBundle"
+      ],
+      "range": "string",
+      "required": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaRequestContext__http",
+      "description": "The logged parts of the HTTP request.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/http",
+      "alias": "http",
+      "owner": "OpaRequestContext",
+      "domain_of": [
+        "OpaRequestContext"
+      ],
+      "range": "OpaHttpRequestContext",
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaHttpRequestContext__headers",
+      "description": "The headers the configuration names, each with its values.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slot_uri": "https://w3id.org/lmodel/opa/headers",
+      "alias": "headers",
+      "owner": "OpaHttpRequestContext",
+      "domain_of": [
+        "OpaHttpRequestContext"
+      ],
+      "range": "OpaStringListMap",
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaStatusReport__labels",
+      "description": "The labels of the OPA instance that sends the report.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/labels",
+      "alias": "labels",
+      "owner": "OpaStatusReport",
+      "domain_of": [
+        "OpaStatusReport"
+      ],
+      "range": "OpaLabels",
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaStatusReport__bundle",
+      "description": "The status of the one bundle of the legacy `bundle` configuration.",
+      "deprecated": "OPA marks the key deprecated and writes `bundles` instead.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/bundle",
+      "alias": "bundle",
+      "owner": "OpaStatusReport",
+      "domain_of": [
+        "OpaStatusReport"
+      ],
+      "range": "OpaBundleStatus",
+      "inlined": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaStatusReport__bundles",
+      "description": "The status of each bundle OPA downloads, by name.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/bundles",
+      "alias": "bundles",
+      "owner": "OpaStatusReport",
+      "domain_of": [
+        "OpaStatusReport"
+      ],
+      "range": "OpaBundleStatus",
+      "multivalued": true,
+      "inlined": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaStatusReport__discovery",
+      "description": "The status of the discovery bundle.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/discovery",
+      "alias": "discovery",
+      "owner": "OpaStatusReport",
+      "domain_of": [
+        "OpaStatusReport"
+      ],
+      "range": "OpaBundleStatus",
+      "inlined": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaStatusReport__decision_logs",
+      "description": "The status of the decision log uploads.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/decision_logs",
+      "alias": "decision_logs",
+      "owner": "OpaStatusReport",
+      "domain_of": [
+        "OpaStatusReport"
+      ],
+      "range": "OpaDecisionLogStatus",
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaStatusReport__metrics",
+      "description": "The instance's metrics, under the name of their provider, such as `prometheus`.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/metrics",
+      "alias": "metrics",
+      "owner": "OpaStatusReport",
+      "domain_of": [
+        "OpaStatusReport"
+      ],
+      "range": "OpaObject",
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaStatusReport__plugins",
+      "description": "The state of each plugin, by name.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/plugins",
+      "alias": "plugins",
+      "owner": "OpaStatusReport",
+      "domain_of": [
+        "OpaStatusReport"
+      ],
+      "range": "OpaPluginStatus",
+      "multivalued": true,
+      "inlined": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaBundleStatus__name",
+      "description": "The bundle's name.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "mappings": [
+        "http://schema.org/name"
+      ],
+      "slot_uri": "http://schema.org/name",
+      "key": true,
+      "alias": "name",
+      "owner": "OpaBundleStatus",
+      "domain_of": [
+        "OpaBundleStatus"
+      ],
+      "range": "string",
+      "required": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaBundleStatus__active_revision",
+      "description": "The revision of the bundle OPA last activated.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/active_revision",
+      "alias": "active_revision",
+      "owner": "OpaBundleStatus",
+      "domain_of": [
+        "OpaBundleStatus"
+      ],
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaBundleStatus__last_successful_activation",
+      "description": "When OPA last activated the bundle.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/last_successful_activation",
+      "alias": "last_successful_activation",
+      "owner": "OpaBundleStatus",
+      "domain_of": [
+        "OpaBundleStatus"
+      ],
+      "range": "datetime",
+      "required": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaBundleStatus__size",
+      "description": "The bundle's size in bytes.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/size",
+      "alias": "size",
+      "owner": "OpaBundleStatus",
+      "domain_of": [
+        "OpaBundleStatus"
+      ],
+      "range": "integer",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaBundleStatus__last_successful_download",
+      "description": "When OPA last downloaded the bundle.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/last_successful_download",
+      "alias": "last_successful_download",
+      "owner": "OpaBundleStatus",
+      "domain_of": [
+        "OpaBundleStatus"
+      ],
+      "range": "datetime",
+      "required": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaBundleStatus__last_successful_request",
+      "description": "When a request for the bundle last succeeded.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/last_successful_request",
+      "alias": "last_successful_request",
+      "owner": "OpaBundleStatus",
+      "domain_of": [
+        "OpaBundleStatus"
+      ],
+      "range": "datetime",
+      "required": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaBundleStatus__last_request",
+      "description": "When OPA last asked for the bundle.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/last_request",
+      "alias": "last_request",
+      "owner": "OpaBundleStatus",
+      "domain_of": [
+        "OpaBundleStatus"
+      ],
+      "range": "datetime",
+      "required": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaBundleStatus__code",
+      "description": "The error code, when the last download or activation failed.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/code",
+      "alias": "code",
+      "owner": "OpaBundleStatus",
+      "domain_of": [
+        "OpaBundleStatus"
+      ],
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaBundleStatus__message",
+      "description": "What went wrong, in words.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/message",
+      "alias": "message",
+      "owner": "OpaBundleStatus",
+      "domain_of": [
+        "OpaBundleStatus"
+      ],
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaBundleStatus__errors",
+      "description": "The parse and compile errors of the last activation.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/errors",
+      "alias": "errors",
+      "owner": "OpaBundleStatus",
+      "domain_of": [
+        "OpaBundleStatus"
+      ],
+      "range": "OpaObject",
+      "multivalued": true,
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaBundleStatus__metrics",
+      "description": "The metrics of the last download and activation.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/metrics",
+      "alias": "metrics",
+      "owner": "OpaBundleStatus",
+      "domain_of": [
+        "OpaBundleStatus"
+      ],
+      "range": "OpaObject",
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaBundleStatus__http_code",
+      "description": "The HTTP status code of a download the server refused.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/http_code",
+      "alias": "http_code",
+      "owner": "OpaBundleStatus",
+      "domain_of": [
+        "OpaBundleStatus"
+      ],
+      "range": "integer",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogStatus__code",
+      "description": "The error code, when the last upload failed.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/code",
+      "alias": "code",
+      "owner": "OpaDecisionLogStatus",
+      "domain_of": [
+        "OpaDecisionLogStatus"
+      ],
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogStatus__message",
+      "description": "What went wrong, in words.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/message",
+      "alias": "message",
+      "owner": "OpaDecisionLogStatus",
+      "domain_of": [
+        "OpaDecisionLogStatus"
+      ],
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogStatus__http_code",
+      "description": "The HTTP status code of an upload the server refused.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/http_code",
+      "alias": "http_code",
+      "owner": "OpaDecisionLogStatus",
+      "domain_of": [
+        "OpaDecisionLogStatus"
+      ],
+      "range": "integer",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaDecisionLogStatus__metrics",
+      "description": "The decision logger's metrics.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/metrics",
+      "alias": "metrics",
+      "owner": "OpaDecisionLogStatus",
+      "domain_of": [
+        "OpaDecisionLogStatus"
+      ],
+      "range": "OpaObject",
+      "inlined": true,
+      "inlined_as_list": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaPluginStatus__name",
+      "description": "The plugin's name.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "mappings": [
+        "http://schema.org/name"
+      ],
+      "slot_uri": "http://schema.org/name",
+      "key": true,
+      "alias": "name",
+      "owner": "OpaPluginStatus",
+      "domain_of": [
+        "OpaPluginStatus"
+      ],
+      "range": "string",
+      "required": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaPluginStatus__state",
+      "description": "The plugin's state.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/state",
+      "alias": "state",
+      "owner": "OpaPluginStatus",
+      "domain_of": [
+        "OpaPluginStatus"
+      ],
+      "range": "OpaPluginState",
+      "required": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "opaPluginStatus__message",
+      "description": "More about the state, in words.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slot_uri": "https://w3id.org/lmodel/opa/message",
+      "alias": "message",
+      "owner": "OpaPluginStatus",
+      "domain_of": [
+        "OpaPluginStatus"
+      ],
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
       "name": "OpaAnyType_type",
       "definition_uri": "https://w3id.org/lmodel/opa/type",
       "description": "The kind of type.",
@@ -5293,6 +6134,92 @@
       "required": true,
       "equals_string": "string_index",
       "@type": "SlotDefinition"
+    },
+    {
+      "name": "OpaDecisionLogEvent_revision",
+      "definition_uri": "https://w3id.org/lmodel/opa/revision",
+      "description": "The revision of the bundle that made the decision, under the legacy `bundle` configuration.",
+      "deprecated": "OPA marks the key deprecated and writes `bundles` instead.",
+      "from_schema": "https://w3id.org/lmodel/opa/common",
+      "mappings": [
+        "https://w3id.org/lmodel/opa/revision"
+      ],
+      "is_a": "revision",
+      "domain": "OpaDecisionLogEvent",
+      "slot_uri": "https://w3id.org/lmodel/opa/revision",
+      "alias": "revision",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "is_usage_slot": true,
+      "usage_slot_name": "revision",
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "OpaDecisionLogEvent_timestamp",
+      "definition_uri": "https://w3id.org/lmodel/opa/timestamp",
+      "description": "When OPA made the decision.",
+      "from_schema": "https://w3id.org/lmodel/opa/common",
+      "mappings": [
+        "https://w3id.org/lmodel/opa/timestamp"
+      ],
+      "is_a": "timestamp",
+      "domain": "OpaDecisionLogEvent",
+      "slot_uri": "https://w3id.org/lmodel/opa/timestamp",
+      "alias": "timestamp",
+      "owner": "OpaDecisionLogEvent",
+      "domain_of": [
+        "OpaDecisionLogEvent"
+      ],
+      "is_usage_slot": true,
+      "usage_slot_name": "timestamp",
+      "range": "datetime",
+      "required": true,
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "OpaDecisionBundle_revision",
+      "definition_uri": "https://w3id.org/lmodel/opa/revision",
+      "description": "The bundle's revision when OPA made the decision.",
+      "from_schema": "https://w3id.org/lmodel/opa/common",
+      "mappings": [
+        "https://w3id.org/lmodel/opa/revision"
+      ],
+      "is_a": "revision",
+      "domain": "OpaDecisionBundle",
+      "slot_uri": "https://w3id.org/lmodel/opa/revision",
+      "alias": "revision",
+      "owner": "OpaDecisionBundle",
+      "domain_of": [
+        "OpaDecisionBundle"
+      ],
+      "is_usage_slot": true,
+      "usage_slot_name": "revision",
+      "range": "string",
+      "@type": "SlotDefinition"
+    },
+    {
+      "name": "OpaBundleStatus_type",
+      "definition_uri": "https://w3id.org/lmodel/opa/type",
+      "description": "The bundle's type.",
+      "from_schema": "https://w3id.org/lmodel/opa/common",
+      "mappings": [
+        "https://w3id.org/lmodel/opa/type"
+      ],
+      "is_a": "type",
+      "domain": "OpaBundleStatus",
+      "slot_uri": "https://w3id.org/lmodel/opa/type",
+      "alias": "type",
+      "owner": "OpaBundleStatus",
+      "domain_of": [
+        "OpaBundleStatus"
+      ],
+      "is_usage_slot": true,
+      "usage_slot_name": "type",
+      "range": "OpaBundleType",
+      "@type": "SlotDefinition"
     }
   ],
   "classes": [
@@ -5322,6 +6249,22 @@
       ],
       "slot_usage": {},
       "class_uri": "https://w3id.org/linkml/Any",
+      "@type": "ClassDefinition"
+    },
+    {
+      "name": "OpaLabels",
+      "definition_uri": "https://w3id.org/lmodel/opa/OpaLabels",
+      "description": "Labels as text keys and text values, such as an OPA instance's `id` and `version`.",
+      "from_schema": "https://w3id.org/lmodel/opa/common",
+      "slot_usage": {},
+      "class_uri": "https://w3id.org/lmodel/opa/OpaLabels",
+      "extra_slots": {
+        "range_expression": {
+          "range": "string",
+          "@type": "AnonymousSlotExpression"
+        },
+        "@type": "ExtraSlotsExpression"
+      },
       "@type": "ClassDefinition"
     },
     {
@@ -8788,12 +9731,552 @@
       ],
       "class_uri": "https://w3id.org/lmodel/opa/OpaStringIndexOperand",
       "@type": "ClassDefinition"
+    },
+    {
+      "name": "OpaDecisionLogEvent",
+      "definition_uri": "https://w3id.org/lmodel/opa/OpaDecisionLogEvent",
+      "description": "A decision OPA made: the query or path, the input and result, the bundles and the instance behind it, and when and for whom it was made.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slots": [
+        "OpaDecisionLogEvent_revision",
+        "OpaDecisionLogEvent_timestamp",
+        "opaDecisionLogEvent__labels",
+        "opaDecisionLogEvent__decision_id",
+        "opaDecisionLogEvent__batch_decision_id",
+        "opaDecisionLogEvent__trace_id",
+        "opaDecisionLogEvent__span_id",
+        "opaDecisionLogEvent__bundles",
+        "opaDecisionLogEvent__path",
+        "opaDecisionLogEvent__query",
+        "opaDecisionLogEvent__input",
+        "opaDecisionLogEvent__result",
+        "opaDecisionLogEvent__intermediate_results",
+        "opaDecisionLogEvent__mapped_result",
+        "opaDecisionLogEvent__nd_builtin_cache",
+        "opaDecisionLogEvent__erased",
+        "opaDecisionLogEvent__masked",
+        "opaDecisionLogEvent__error",
+        "opaDecisionLogEvent__requested_by",
+        "opaDecisionLogEvent__metrics",
+        "opaDecisionLogEvent__req_id",
+        "opaDecisionLogEvent__rule_labels",
+        "opaDecisionLogEvent__request_context",
+        "opaDecisionLogEvent__custom"
+      ],
+      "slot_usage": {},
+      "attributes": [
+        {
+          "name": "labels",
+          "description": "The labels of the OPA instance that made the decision: its `id`, its `version` and those the configuration sets.",
+          "range": "OpaLabels",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "decision_id",
+          "description": "The decision's id, which OPA also returns to the client.",
+          "required": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "batch_decision_id",
+          "description": "The id that groups the decisions of one batch request.",
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "trace_id",
+          "description": "The request's trace id in W3C trace context, with tracing on.",
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "span_id",
+          "description": "The request's span id in W3C trace context, with tracing on.",
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "bundles",
+          "description": "The bundles whose policy made the decision, by name.",
+          "range": "OpaDecisionBundle",
+          "multivalued": true,
+          "inlined": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "path",
+          "description": "The decision's path in the data tree, such as `http/example/authz/allow`.",
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "query",
+          "description": "The ad hoc query the Query API received.",
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "input",
+          "description": "The input of the query.",
+          "range": "OpaValue",
+          "any_of": [
+            {
+              "range": "OpaValue",
+              "@type": "AnonymousSlotExpression"
+            },
+            {
+              "range": "OpaValue",
+              "multivalued": true,
+              "@type": "AnonymousSlotExpression"
+            }
+          ],
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "result",
+          "description": "The result the client received.",
+          "range": "OpaValue",
+          "any_of": [
+            {
+              "range": "OpaValue",
+              "@type": "AnonymousSlotExpression"
+            },
+            {
+              "range": "OpaValue",
+              "multivalued": true,
+              "@type": "AnonymousSlotExpression"
+            }
+          ],
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "intermediate_results",
+          "description": "The intermediate results the evaluation recorded, when OPA runs with the environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set.",
+          "range": "OpaObject",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "mapped_result",
+          "description": "The result as the result mapper of a decision made through OPA's Go SDK wrote it.",
+          "range": "OpaValue",
+          "any_of": [
+            {
+              "range": "OpaValue",
+              "@type": "AnonymousSlotExpression"
+            },
+            {
+              "range": "OpaValue",
+              "multivalued": true,
+              "@type": "AnonymousSlotExpression"
+            }
+          ],
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "nd_builtin_cache",
+          "description": "What each non-deterministic built-in function returned, by function and arguments, with `nd_builtin_cache` on.",
+          "range": "OpaObject",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "erased",
+          "description": "JSON pointers to the fields a mask policy removed.",
+          "multivalued": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "masked",
+          "description": "JSON pointers to the fields a mask policy replaced.",
+          "multivalued": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "error",
+          "description": "The error the evaluation raised, as OPA writes it in JSON.",
+          "range": "OpaValue",
+          "any_of": [
+            {
+              "range": "OpaValue",
+              "@type": "AnonymousSlotExpression"
+            },
+            {
+              "range": "OpaValue",
+              "multivalued": true,
+              "@type": "AnonymousSlotExpression"
+            }
+          ],
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "requested_by",
+          "description": "The address of the client that asked.",
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "metrics",
+          "description": "The query's metrics, by name.",
+          "range": "OpaObject",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "req_id",
+          "description": "The number OPA gave the HTTP request, which its request and response logs also carry.",
+          "range": "integer",
+          "minimum_value": 0,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "rule_labels",
+          "description": "The merged `labels` annotations of each rule the evaluation used.",
+          "range": "OpaObject",
+          "multivalued": true,
+          "inlined": true,
+          "inlined_as_list": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "request_context",
+          "description": "The parts of the HTTP request the configuration asks OPA to log.",
+          "range": "OpaRequestContext",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "custom",
+          "description": "Fields the server or a plugin adds, such as `request_metadata`, the top-level keys of a Data API request body besides `input`.",
+          "range": "OpaObject",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        }
+      ],
+      "class_uri": "https://w3id.org/lmodel/opa/OpaDecisionLogEvent",
+      "tree_root": true,
+      "@type": "ClassDefinition"
+    },
+    {
+      "name": "OpaDecisionBundle",
+      "definition_uri": "https://w3id.org/lmodel/opa/OpaDecisionBundle",
+      "description": "A bundle whose policy made a decision.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slots": [
+        "OpaDecisionBundle_revision",
+        "opaDecisionBundle__name"
+      ],
+      "slot_usage": {},
+      "attributes": [
+        {
+          "name": "name",
+          "description": "The bundle's name.",
+          "slot_uri": "schema:name",
+          "key": true,
+          "@type": "SlotDefinition"
+        }
+      ],
+      "class_uri": "https://w3id.org/lmodel/opa/OpaDecisionBundle",
+      "@type": "ClassDefinition"
+    },
+    {
+      "name": "OpaRequestContext",
+      "definition_uri": "https://w3id.org/lmodel/opa/OpaRequestContext",
+      "description": "The parts of the request that a decision log event logs.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slots": [
+        "opaRequestContext__http"
+      ],
+      "slot_usage": {},
+      "attributes": [
+        {
+          "name": "http",
+          "description": "The logged parts of the HTTP request.",
+          "range": "OpaHttpRequestContext",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        }
+      ],
+      "class_uri": "https://w3id.org/lmodel/opa/OpaRequestContext",
+      "@type": "ClassDefinition"
+    },
+    {
+      "name": "OpaHttpRequestContext",
+      "definition_uri": "https://w3id.org/lmodel/opa/OpaHttpRequestContext",
+      "description": "The logged parts of an HTTP request.",
+      "from_schema": "https://w3id.org/lmodel/opa/decision_log",
+      "slots": [
+        "opaHttpRequestContext__headers"
+      ],
+      "slot_usage": {},
+      "attributes": [
+        {
+          "name": "headers",
+          "description": "The headers the configuration names, each with its values.",
+          "range": "OpaStringListMap",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        }
+      ],
+      "class_uri": "https://w3id.org/lmodel/opa/OpaHttpRequestContext",
+      "@type": "ClassDefinition"
+    },
+    {
+      "name": "OpaStatusReport",
+      "definition_uri": "https://w3id.org/lmodel/opa/OpaStatusReport",
+      "description": "A report on an OPA instance: the state of its bundles, its decision log uploads and its plugins, and its metrics.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slots": [
+        "opaStatusReport__labels",
+        "opaStatusReport__bundle",
+        "opaStatusReport__bundles",
+        "opaStatusReport__discovery",
+        "opaStatusReport__decision_logs",
+        "opaStatusReport__metrics",
+        "opaStatusReport__plugins"
+      ],
+      "slot_usage": {},
+      "attributes": [
+        {
+          "name": "labels",
+          "description": "The labels of the OPA instance that sends the report.",
+          "range": "OpaLabels",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "bundle",
+          "description": "The status of the one bundle of the legacy `bundle` configuration.",
+          "deprecated": "OPA marks the key deprecated and writes `bundles` instead.",
+          "range": "OpaBundleStatus",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "bundles",
+          "description": "The status of each bundle OPA downloads, by name.",
+          "range": "OpaBundleStatus",
+          "multivalued": true,
+          "inlined": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "discovery",
+          "description": "The status of the discovery bundle.",
+          "range": "OpaBundleStatus",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "decision_logs",
+          "description": "The status of the decision log uploads.",
+          "range": "OpaDecisionLogStatus",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "metrics",
+          "description": "The instance's metrics, under the name of their provider, such as `prometheus`.",
+          "range": "OpaObject",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "plugins",
+          "description": "The state of each plugin, by name.",
+          "range": "OpaPluginStatus",
+          "multivalued": true,
+          "inlined": true,
+          "@type": "SlotDefinition"
+        }
+      ],
+      "class_uri": "https://w3id.org/lmodel/opa/OpaStatusReport",
+      "tree_root": true,
+      "@type": "ClassDefinition"
+    },
+    {
+      "name": "OpaBundleStatus",
+      "definition_uri": "https://w3id.org/lmodel/opa/OpaBundleStatus",
+      "description": "The status of a bundle: its active revision, when OPA last asked for, downloaded and activated it, and the errors of the last attempt.",
+      "comments": [
+        "OPA writes Go's zero time, 0001-01-01T00:00:00Z, for a time that has not come yet, such as the last activation of a bundle that never activated."
+      ],
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slots": [
+        "OpaBundleStatus_type",
+        "opaBundleStatus__name",
+        "opaBundleStatus__active_revision",
+        "opaBundleStatus__last_successful_activation",
+        "opaBundleStatus__size",
+        "opaBundleStatus__last_successful_download",
+        "opaBundleStatus__last_successful_request",
+        "opaBundleStatus__last_request",
+        "opaBundleStatus__code",
+        "opaBundleStatus__message",
+        "opaBundleStatus__errors",
+        "opaBundleStatus__metrics",
+        "opaBundleStatus__http_code"
+      ],
+      "slot_usage": {},
+      "attributes": [
+        {
+          "name": "name",
+          "description": "The bundle's name.",
+          "slot_uri": "schema:name",
+          "key": true,
+          "required": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "active_revision",
+          "description": "The revision of the bundle OPA last activated.",
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "last_successful_activation",
+          "description": "When OPA last activated the bundle.",
+          "range": "datetime",
+          "required": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "size",
+          "description": "The bundle's size in bytes.",
+          "range": "integer",
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "last_successful_download",
+          "description": "When OPA last downloaded the bundle.",
+          "range": "datetime",
+          "required": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "last_successful_request",
+          "description": "When a request for the bundle last succeeded.",
+          "range": "datetime",
+          "required": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "last_request",
+          "description": "When OPA last asked for the bundle.",
+          "range": "datetime",
+          "required": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "code",
+          "description": "The error code, when the last download or activation failed.",
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "message",
+          "description": "What went wrong, in words.",
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "errors",
+          "description": "The parse and compile errors of the last activation.",
+          "range": "OpaObject",
+          "multivalued": true,
+          "inlined": true,
+          "inlined_as_list": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "metrics",
+          "description": "The metrics of the last download and activation.",
+          "range": "OpaObject",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "http_code",
+          "description": "The HTTP status code of a download the server refused.",
+          "range": "integer",
+          "@type": "SlotDefinition"
+        }
+      ],
+      "class_uri": "https://w3id.org/lmodel/opa/OpaBundleStatus",
+      "@type": "ClassDefinition"
+    },
+    {
+      "name": "OpaDecisionLogStatus",
+      "definition_uri": "https://w3id.org/lmodel/opa/OpaDecisionLogStatus",
+      "description": "The status of the decision log uploads.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slots": [
+        "opaDecisionLogStatus__code",
+        "opaDecisionLogStatus__message",
+        "opaDecisionLogStatus__http_code",
+        "opaDecisionLogStatus__metrics"
+      ],
+      "slot_usage": {},
+      "attributes": [
+        {
+          "name": "code",
+          "description": "The error code, when the last upload failed.",
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "message",
+          "description": "What went wrong, in words.",
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "http_code",
+          "description": "The HTTP status code of an upload the server refused.",
+          "range": "integer",
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "metrics",
+          "description": "The decision logger's metrics.",
+          "range": "OpaObject",
+          "inlined": true,
+          "@type": "SlotDefinition"
+        }
+      ],
+      "class_uri": "https://w3id.org/lmodel/opa/OpaDecisionLogStatus",
+      "@type": "ClassDefinition"
+    },
+    {
+      "name": "OpaPluginStatus",
+      "definition_uri": "https://w3id.org/lmodel/opa/OpaPluginStatus",
+      "description": "The state of a plugin.",
+      "from_schema": "https://w3id.org/lmodel/opa/status_report",
+      "slots": [
+        "opaPluginStatus__name",
+        "opaPluginStatus__state",
+        "opaPluginStatus__message"
+      ],
+      "slot_usage": {},
+      "attributes": [
+        {
+          "name": "name",
+          "description": "The plugin's name.",
+          "slot_uri": "schema:name",
+          "key": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "state",
+          "description": "The plugin's state.",
+          "range": "OpaPluginState",
+          "required": true,
+          "@type": "SlotDefinition"
+        },
+        {
+          "name": "message",
+          "description": "More about the state, in words.",
+          "@type": "SlotDefinition"
+        }
+      ],
+      "class_uri": "https://w3id.org/lmodel/opa/OpaPluginStatus",
+      "@type": "ClassDefinition"
     }
   ],
   "metamodel_version": "1.12.0",
   "source_file": "opa.yaml",
-  "source_file_date": "2026-11-07T10:25:16",
-  "source_file_size": 1372,
+  "source_file_date": "2026-11-07T10:27:13",
+  "source_file_size": 1452,
   "@type": "SchemaDefinition",
   "@context": [
     "project/jsonld/opa.context.jsonld",
@@ -8805,6 +10288,8 @@
     "authorization_input.context.jsonld",
     "bundle_manifest.context.jsonld",
     "ir_plan.context.jsonld",
+    "decision_log.context.jsonld",
+    "status_report.context.jsonld",
     {
       "@base": "https://w3id.org/lmodel/opa/"
     }

@@ -2,7 +2,7 @@
 # Schema: opa
 #
 # id: https://w3id.org/lmodel/opa
-# description: A LinkML model of the JSON formats Open Policy Agent defines: the IR plan, the bundle manifest, the authorization policy input, the capabilities document, the built-in function metadata and the version index. Each module renders one format, and keeps OPA's keys, so a document OPA writes validates against this schema unchanged. The lokf adapt copy renames six keys LOKF defines with another meaning.
+# description: A LinkML model of the JSON formats Open Policy Agent defines: the IR plan, the bundle manifest, the authorization policy input, the capabilities document, the built-in function metadata, the version index, the decision log event and the status report. Each module renders one format, and keeps OPA's keys, so a document OPA writes validates against this schema unchanged. The lokf adapt copy renames seven keys LOKF defines with another meaning.
 # license: Apache-2.0
 
 import dataclasses
@@ -55,8 +55,8 @@ from rdflib import (
     URIRef
 )
 
-from linkml_runtime.linkml_model.types import Boolean, Integer, String
-from linkml_runtime.utils.metamodelcore import Bool
+from linkml_runtime.linkml_model.types import Boolean, Datetime, Integer, String
+from linkml_runtime.utils.metamodelcore import Bool, XSDDateTime
 
 metamodel_version = "1.12.0"
 version = "1.22.2"
@@ -89,6 +89,18 @@ class OpaFileRegoVersionPath(extended_str):
     pass
 
 
+class OpaDecisionBundleName(extended_str):
+    pass
+
+
+class OpaBundleStatusName(extended_str):
+    pass
+
+
+class OpaPluginStatusName(extended_str):
+    pass
+
+
 class OpaObject(YAMLRoot):
     """
     A JSON object whose keys OPA leaves open.
@@ -102,6 +114,18 @@ class OpaObject(YAMLRoot):
 
 
 OpaValue = Any
+
+class OpaLabels(YAMLRoot):
+    """
+    Labels as text keys and text values, such as an OPA instance's `id` and `version`.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaLabels"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaLabels"
+    class_name: ClassVar[str] = "OpaLabels"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaLabels
+
 
 class OpaStringListMap(YAMLRoot):
     """
@@ -3659,6 +3683,417 @@ class OpaStringIndexOperand(OpaOperand):
         super().__post_init__(**kwargs)
 
 
+@dataclass(repr=False)
+class OpaDecisionLogEvent(YAMLRoot):
+    """
+    A decision OPA made: the query or path, the input and result, the bundles and the instance behind it, and when and
+    for whom it was made.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaDecisionLogEvent"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaDecisionLogEvent"
+    class_name: ClassVar[str] = "OpaDecisionLogEvent"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaDecisionLogEvent
+
+    timestamp: Union[str, XSDDateTime] = None
+    decision_id: str = None
+    revision: Optional[str] = None
+    labels: Optional[Union[dict, OpaLabels]] = None
+    batch_decision_id: Optional[str] = None
+    trace_id: Optional[str] = None
+    span_id: Optional[str] = None
+    bundles: Optional[Union[dict[Union[str, OpaDecisionBundleName], Union[dict, "OpaDecisionBundle"]], list[Union[dict, "OpaDecisionBundle"]]]] = empty_dict()
+    path: Optional[str] = None
+    query: Optional[str] = None
+    input: Optional[Union[dict, OpaValue]] = None
+    result: Optional[Union[dict, OpaValue]] = None
+    intermediate_results: Optional[Union[dict, OpaObject]] = None
+    mapped_result: Optional[Union[dict, OpaValue]] = None
+    nd_builtin_cache: Optional[Union[dict, OpaObject]] = None
+    erased: Optional[Union[str, list[str]]] = empty_list()
+    masked: Optional[Union[str, list[str]]] = empty_list()
+    error: Optional[Union[dict, OpaValue]] = None
+    requested_by: Optional[str] = None
+    metrics: Optional[Union[dict, OpaObject]] = None
+    req_id: Optional[int] = None
+    rule_labels: Optional[Union[Union[dict, OpaObject], list[Union[dict, OpaObject]]]] = empty_list()
+    request_context: Optional[Union[dict, "OpaRequestContext"]] = None
+    custom: Optional[Union[dict, OpaObject]] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.timestamp):
+            self.MissingRequiredField("timestamp")
+        if not isinstance(self.timestamp, XSDDateTime):
+            self.timestamp = XSDDateTime(self.timestamp)
+
+        if self._is_empty(self.decision_id):
+            self.MissingRequiredField("decision_id")
+        if not isinstance(self.decision_id, str):
+            self.decision_id = str(self.decision_id)
+
+        if self.revision is not None and not isinstance(self.revision, str):
+            self.revision = str(self.revision)
+
+        if self.labels is not None and not isinstance(self.labels, OpaLabels):
+            self.labels = OpaLabels()
+
+        if self.batch_decision_id is not None and not isinstance(self.batch_decision_id, str):
+            self.batch_decision_id = str(self.batch_decision_id)
+
+        if self.trace_id is not None and not isinstance(self.trace_id, str):
+            self.trace_id = str(self.trace_id)
+
+        if self.span_id is not None and not isinstance(self.span_id, str):
+            self.span_id = str(self.span_id)
+
+        self._normalize_inlined_as_dict(slot_name="bundles", slot_type=OpaDecisionBundle, key_name="name", keyed=True)
+
+        if self.path is not None and not isinstance(self.path, str):
+            self.path = str(self.path)
+
+        if self.query is not None and not isinstance(self.query, str):
+            self.query = str(self.query)
+
+        if self.input is not None and not isinstance(self.input, (OpaValue,)):
+            value = self.input
+            for _coerce in (lambda: OpaValue(),):
+                try:
+                    self.input = _coerce()
+                    break
+                except (ValueError, TypeError):
+                    continue
+            else:
+                raise ValueError(f"None of the candidate types OpaValue could be constructed from {value!r} for slot input")
+
+        if self.result is not None and not isinstance(self.result, (OpaValue,)):
+            value = self.result
+            for _coerce in (lambda: OpaValue(),):
+                try:
+                    self.result = _coerce()
+                    break
+                except (ValueError, TypeError):
+                    continue
+            else:
+                raise ValueError(f"None of the candidate types OpaValue could be constructed from {value!r} for slot result")
+
+        if self.intermediate_results is not None and not isinstance(self.intermediate_results, OpaObject):
+            self.intermediate_results = OpaObject()
+
+        if self.mapped_result is not None and not isinstance(self.mapped_result, (OpaValue,)):
+            value = self.mapped_result
+            for _coerce in (lambda: OpaValue(),):
+                try:
+                    self.mapped_result = _coerce()
+                    break
+                except (ValueError, TypeError):
+                    continue
+            else:
+                raise ValueError(f"None of the candidate types OpaValue could be constructed from {value!r} for slot mapped_result")
+
+        if self.nd_builtin_cache is not None and not isinstance(self.nd_builtin_cache, OpaObject):
+            self.nd_builtin_cache = OpaObject()
+
+        if not isinstance(self.erased, list):
+            self.erased = [self.erased] if self.erased is not None else []
+        self.erased = [v if isinstance(v, str) else str(v) for v in self.erased]
+
+        if not isinstance(self.masked, list):
+            self.masked = [self.masked] if self.masked is not None else []
+        self.masked = [v if isinstance(v, str) else str(v) for v in self.masked]
+
+        if self.error is not None and not isinstance(self.error, (OpaValue,)):
+            value = self.error
+            for _coerce in (lambda: OpaValue(),):
+                try:
+                    self.error = _coerce()
+                    break
+                except (ValueError, TypeError):
+                    continue
+            else:
+                raise ValueError(f"None of the candidate types OpaValue could be constructed from {value!r} for slot error")
+
+        if self.requested_by is not None and not isinstance(self.requested_by, str):
+            self.requested_by = str(self.requested_by)
+
+        if self.metrics is not None and not isinstance(self.metrics, OpaObject):
+            self.metrics = OpaObject()
+
+        if self.req_id is not None and not isinstance(self.req_id, int):
+            self.req_id = int(self.req_id)
+
+        if not isinstance(self.rule_labels, list):
+            self.rule_labels = [self.rule_labels] if self.rule_labels is not None else []
+        self.rule_labels = [v if isinstance(v, OpaObject) else OpaObject(**as_dict(v)) for v in self.rule_labels]
+
+        if self.request_context is not None and not isinstance(self.request_context, OpaRequestContext):
+            self.request_context = OpaRequestContext(**as_dict(self.request_context))
+
+        if self.custom is not None and not isinstance(self.custom, OpaObject):
+            self.custom = OpaObject()
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaDecisionBundle(YAMLRoot):
+    """
+    A bundle whose policy made a decision.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaDecisionBundle"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaDecisionBundle"
+    class_name: ClassVar[str] = "OpaDecisionBundle"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaDecisionBundle
+
+    name: Union[str, OpaDecisionBundleName] = None
+    revision: Optional[str] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.name):
+            self.MissingRequiredField("name")
+        if not isinstance(self.name, OpaDecisionBundleName):
+            self.name = OpaDecisionBundleName(self.name)
+
+        if self.revision is not None and not isinstance(self.revision, str):
+            self.revision = str(self.revision)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaRequestContext(YAMLRoot):
+    """
+    The parts of the request that a decision log event logs.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaRequestContext"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaRequestContext"
+    class_name: ClassVar[str] = "OpaRequestContext"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaRequestContext
+
+    http: Optional[Union[dict, "OpaHttpRequestContext"]] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self.http is not None and not isinstance(self.http, OpaHttpRequestContext):
+            self.http = OpaHttpRequestContext(**as_dict(self.http))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaHttpRequestContext(YAMLRoot):
+    """
+    The logged parts of an HTTP request.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaHttpRequestContext"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaHttpRequestContext"
+    class_name: ClassVar[str] = "OpaHttpRequestContext"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaHttpRequestContext
+
+    headers: Optional[Union[dict, OpaStringListMap]] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self.headers is not None and not isinstance(self.headers, OpaStringListMap):
+            self.headers = OpaStringListMap()
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaStatusReport(YAMLRoot):
+    """
+    A report on an OPA instance: the state of its bundles, its decision log uploads and its plugins, and its metrics.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaStatusReport"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaStatusReport"
+    class_name: ClassVar[str] = "OpaStatusReport"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaStatusReport
+
+    labels: Optional[Union[dict, OpaLabels]] = None
+    bundle: Optional[Union[dict, "OpaBundleStatus"]] = None
+    bundles: Optional[Union[dict[Union[str, OpaBundleStatusName], Union[dict, "OpaBundleStatus"]], list[Union[dict, "OpaBundleStatus"]]]] = empty_dict()
+    discovery: Optional[Union[dict, "OpaBundleStatus"]] = None
+    decision_logs: Optional[Union[dict, "OpaDecisionLogStatus"]] = None
+    metrics: Optional[Union[dict, OpaObject]] = None
+    plugins: Optional[Union[dict[Union[str, OpaPluginStatusName], Union[dict, "OpaPluginStatus"]], list[Union[dict, "OpaPluginStatus"]]]] = empty_dict()
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self.labels is not None and not isinstance(self.labels, OpaLabels):
+            self.labels = OpaLabels()
+
+        if self.bundle is not None and not isinstance(self.bundle, OpaBundleStatus):
+            self.bundle = OpaBundleStatus(**as_dict(self.bundle))
+
+        self._normalize_inlined_as_dict(slot_name="bundles", slot_type=OpaBundleStatus, key_name="name", keyed=True)
+
+        if self.discovery is not None and not isinstance(self.discovery, OpaBundleStatus):
+            self.discovery = OpaBundleStatus(**as_dict(self.discovery))
+
+        if self.decision_logs is not None and not isinstance(self.decision_logs, OpaDecisionLogStatus):
+            self.decision_logs = OpaDecisionLogStatus(**as_dict(self.decision_logs))
+
+        if self.metrics is not None and not isinstance(self.metrics, OpaObject):
+            self.metrics = OpaObject()
+
+        self._normalize_inlined_as_dict(slot_name="plugins", slot_type=OpaPluginStatus, key_name="name", keyed=True)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaBundleStatus(YAMLRoot):
+    """
+    The status of a bundle: its active revision, when OPA last asked for, downloaded and activated it, and the errors
+    of the last attempt.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBundleStatus"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBundleStatus"
+    class_name: ClassVar[str] = "OpaBundleStatus"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBundleStatus
+
+    name: Union[str, OpaBundleStatusName] = None
+    last_successful_activation: Union[str, XSDDateTime] = None
+    last_successful_download: Union[str, XSDDateTime] = None
+    last_successful_request: Union[str, XSDDateTime] = None
+    last_request: Union[str, XSDDateTime] = None
+    type: Optional[Union[str, "OpaBundleType"]] = None
+    active_revision: Optional[str] = None
+    size: Optional[int] = None
+    code: Optional[str] = None
+    message: Optional[str] = None
+    errors: Optional[Union[Union[dict, OpaObject], list[Union[dict, OpaObject]]]] = empty_list()
+    metrics: Optional[Union[dict, OpaObject]] = None
+    http_code: Optional[int] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.name):
+            self.MissingRequiredField("name")
+        if not isinstance(self.name, OpaBundleStatusName):
+            self.name = OpaBundleStatusName(self.name)
+
+        if self._is_empty(self.last_successful_activation):
+            self.MissingRequiredField("last_successful_activation")
+        if not isinstance(self.last_successful_activation, XSDDateTime):
+            self.last_successful_activation = XSDDateTime(self.last_successful_activation)
+
+        if self._is_empty(self.last_successful_download):
+            self.MissingRequiredField("last_successful_download")
+        if not isinstance(self.last_successful_download, XSDDateTime):
+            self.last_successful_download = XSDDateTime(self.last_successful_download)
+
+        if self._is_empty(self.last_successful_request):
+            self.MissingRequiredField("last_successful_request")
+        if not isinstance(self.last_successful_request, XSDDateTime):
+            self.last_successful_request = XSDDateTime(self.last_successful_request)
+
+        if self._is_empty(self.last_request):
+            self.MissingRequiredField("last_request")
+        if not isinstance(self.last_request, XSDDateTime):
+            self.last_request = XSDDateTime(self.last_request)
+
+        if self.type is not None and not isinstance(self.type, OpaBundleType):
+            self.type = OpaBundleType(self.type)
+
+        if self.active_revision is not None and not isinstance(self.active_revision, str):
+            self.active_revision = str(self.active_revision)
+
+        if self.size is not None and not isinstance(self.size, int):
+            self.size = int(self.size)
+
+        if self.code is not None and not isinstance(self.code, str):
+            self.code = str(self.code)
+
+        if self.message is not None and not isinstance(self.message, str):
+            self.message = str(self.message)
+
+        if not isinstance(self.errors, list):
+            self.errors = [self.errors] if self.errors is not None else []
+        self.errors = [v if isinstance(v, OpaObject) else OpaObject(**as_dict(v)) for v in self.errors]
+
+        if self.metrics is not None and not isinstance(self.metrics, OpaObject):
+            self.metrics = OpaObject()
+
+        if self.http_code is not None and not isinstance(self.http_code, int):
+            self.http_code = int(self.http_code)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaDecisionLogStatus(YAMLRoot):
+    """
+    The status of the decision log uploads.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaDecisionLogStatus"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaDecisionLogStatus"
+    class_name: ClassVar[str] = "OpaDecisionLogStatus"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaDecisionLogStatus
+
+    code: Optional[str] = None
+    message: Optional[str] = None
+    http_code: Optional[int] = None
+    metrics: Optional[Union[dict, OpaObject]] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self.code is not None and not isinstance(self.code, str):
+            self.code = str(self.code)
+
+        if self.message is not None and not isinstance(self.message, str):
+            self.message = str(self.message)
+
+        if self.http_code is not None and not isinstance(self.http_code, int):
+            self.http_code = int(self.http_code)
+
+        if self.metrics is not None and not isinstance(self.metrics, OpaObject):
+            self.metrics = OpaObject()
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaPluginStatus(YAMLRoot):
+    """
+    The state of a plugin.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaPluginStatus"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaPluginStatus"
+    class_name: ClassVar[str] = "OpaPluginStatus"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaPluginStatus
+
+    name: Union[str, OpaPluginStatusName] = None
+    state: Union[str, "OpaPluginState"] = None
+    message: Optional[str] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.name):
+            self.MissingRequiredField("name")
+        if not isinstance(self.name, OpaPluginStatusName):
+            self.name = OpaPluginStatusName(self.name)
+
+        if self._is_empty(self.state):
+            self.MissingRequiredField("state")
+        if not isinstance(self.state, OpaPluginState):
+            self.state = OpaPluginState(self.state)
+
+        if self.message is not None and not isinstance(self.message, str):
+            self.message = str(self.message)
+
+        super().__post_init__(**kwargs)
+
+
 # Enumerations
 class OpaFutureKeyword(EnumDefinitionImpl):
     """
@@ -3703,6 +4138,44 @@ class OpaFeature(EnumDefinitionImpl):
         description="The language features the capabilities files OPA includes name.",
     )
 
+class OpaPluginState(EnumDefinitionImpl):
+    """
+    The states a plugin reports.
+    """
+    NOT_READY = PermissibleValue(
+        text="NOT_READY",
+        description="Not in an error state, but not yet ready for normal operation, as at start-up.")
+    OK = PermissibleValue(
+        text="OK",
+        description="Working normally.")
+    ERROR = PermissibleValue(
+        text="ERROR",
+        description="In an error state, and not to be taken as working.")
+    WARN = PermissibleValue(
+        text="WARN",
+        description="Working, but degraded or in a state a person may need to fix.")
+
+    _defn = EnumDefinition(
+        name="OpaPluginState",
+        description="The states a plugin reports.",
+    )
+
+class OpaBundleType(EnumDefinitionImpl):
+    """
+    The types of bundle.
+    """
+    delta = PermissibleValue(
+        text="delta",
+        description="A delta bundle, whose JSON Patch operations change the data OPA holds.")
+    snapshot = PermissibleValue(
+        text="snapshot",
+        description="A whole bundle, whose files replace what OPA held under its roots.")
+
+    _defn = EnumDefinition(
+        name="OpaBundleType",
+        description="The types of bundle.",
+    )
+
 # Slots
 class slots:
     pass
@@ -3718,6 +4191,9 @@ slots.source = Slot(uri=OPENPOLICYAGENT.source, name="source", curie=OPENPOLICYA
 
 slots.target = Slot(uri=OPENPOLICYAGENT.target, name="target", curie=OPENPOLICYAGENT.curie('target'),
                    model_uri=OPENPOLICYAGENT.target, domain=None, range=Optional[str])
+
+slots.timestamp = Slot(uri=OPENPOLICYAGENT.timestamp, name="timestamp", curie=OPENPOLICYAGENT.curie('timestamp'),
+                   model_uri=OPENPOLICYAGENT.timestamp, domain=None, range=Optional[str])
 
 slots.type = Slot(uri=OPENPOLICYAGENT.type, name="type", curie=OPENPOLICYAGENT.curie('type'),
                    model_uri=OPENPOLICYAGENT.type, domain=None, range=Optional[str])
@@ -4259,6 +4735,159 @@ slots.opaLocalOperand__value = Slot(uri=OPENPOLICYAGENT.value, name="opaLocalOpe
 slots.opaStringIndexOperand__value = Slot(uri=OPENPOLICYAGENT.value, name="opaStringIndexOperand__value", curie=OPENPOLICYAGENT.curie('value'),
                    model_uri=OPENPOLICYAGENT.opaStringIndexOperand__value, domain=None, range=int)
 
+slots.opaDecisionLogEvent__labels = Slot(uri=OPENPOLICYAGENT.labels, name="opaDecisionLogEvent__labels", curie=OPENPOLICYAGENT.curie('labels'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__labels, domain=None, range=Optional[Union[dict, OpaLabels]])
+
+slots.opaDecisionLogEvent__decision_id = Slot(uri=OPENPOLICYAGENT.decision_id, name="opaDecisionLogEvent__decision_id", curie=OPENPOLICYAGENT.curie('decision_id'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__decision_id, domain=None, range=str)
+
+slots.opaDecisionLogEvent__batch_decision_id = Slot(uri=OPENPOLICYAGENT.batch_decision_id, name="opaDecisionLogEvent__batch_decision_id", curie=OPENPOLICYAGENT.curie('batch_decision_id'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__batch_decision_id, domain=None, range=Optional[str])
+
+slots.opaDecisionLogEvent__trace_id = Slot(uri=OPENPOLICYAGENT.trace_id, name="opaDecisionLogEvent__trace_id", curie=OPENPOLICYAGENT.curie('trace_id'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__trace_id, domain=None, range=Optional[str])
+
+slots.opaDecisionLogEvent__span_id = Slot(uri=OPENPOLICYAGENT.span_id, name="opaDecisionLogEvent__span_id", curie=OPENPOLICYAGENT.curie('span_id'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__span_id, domain=None, range=Optional[str])
+
+slots.opaDecisionLogEvent__bundles = Slot(uri=OPENPOLICYAGENT.bundles, name="opaDecisionLogEvent__bundles", curie=OPENPOLICYAGENT.curie('bundles'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__bundles, domain=None, range=Optional[Union[dict[Union[str, OpaDecisionBundleName], Union[dict, OpaDecisionBundle]], list[Union[dict, OpaDecisionBundle]]]])
+
+slots.opaDecisionLogEvent__path = Slot(uri=OPENPOLICYAGENT.path, name="opaDecisionLogEvent__path", curie=OPENPOLICYAGENT.curie('path'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__path, domain=None, range=Optional[str])
+
+slots.opaDecisionLogEvent__query = Slot(uri=OPENPOLICYAGENT.query, name="opaDecisionLogEvent__query", curie=OPENPOLICYAGENT.curie('query'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__query, domain=None, range=Optional[str])
+
+slots.opaDecisionLogEvent__input = Slot(uri=OPENPOLICYAGENT.input, name="opaDecisionLogEvent__input", curie=OPENPOLICYAGENT.curie('input'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__input, domain=None, range=Optional[Union[dict, OpaValue]])
+
+slots.opaDecisionLogEvent__result = Slot(uri=OPENPOLICYAGENT.result, name="opaDecisionLogEvent__result", curie=OPENPOLICYAGENT.curie('result'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__result, domain=None, range=Optional[Union[dict, OpaValue]])
+
+slots.opaDecisionLogEvent__intermediate_results = Slot(uri=OPENPOLICYAGENT.intermediate_results, name="opaDecisionLogEvent__intermediate_results", curie=OPENPOLICYAGENT.curie('intermediate_results'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__intermediate_results, domain=None, range=Optional[Union[dict, OpaObject]])
+
+slots.opaDecisionLogEvent__mapped_result = Slot(uri=OPENPOLICYAGENT.mapped_result, name="opaDecisionLogEvent__mapped_result", curie=OPENPOLICYAGENT.curie('mapped_result'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__mapped_result, domain=None, range=Optional[Union[dict, OpaValue]])
+
+slots.opaDecisionLogEvent__nd_builtin_cache = Slot(uri=OPENPOLICYAGENT.nd_builtin_cache, name="opaDecisionLogEvent__nd_builtin_cache", curie=OPENPOLICYAGENT.curie('nd_builtin_cache'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__nd_builtin_cache, domain=None, range=Optional[Union[dict, OpaObject]])
+
+slots.opaDecisionLogEvent__erased = Slot(uri=OPENPOLICYAGENT.erased, name="opaDecisionLogEvent__erased", curie=OPENPOLICYAGENT.curie('erased'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__erased, domain=None, range=Optional[Union[str, list[str]]])
+
+slots.opaDecisionLogEvent__masked = Slot(uri=OPENPOLICYAGENT.masked, name="opaDecisionLogEvent__masked", curie=OPENPOLICYAGENT.curie('masked'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__masked, domain=None, range=Optional[Union[str, list[str]]])
+
+slots.opaDecisionLogEvent__error = Slot(uri=OPENPOLICYAGENT.error, name="opaDecisionLogEvent__error", curie=OPENPOLICYAGENT.curie('error'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__error, domain=None, range=Optional[Union[dict, OpaValue]])
+
+slots.opaDecisionLogEvent__requested_by = Slot(uri=OPENPOLICYAGENT.requested_by, name="opaDecisionLogEvent__requested_by", curie=OPENPOLICYAGENT.curie('requested_by'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__requested_by, domain=None, range=Optional[str])
+
+slots.opaDecisionLogEvent__metrics = Slot(uri=OPENPOLICYAGENT.metrics, name="opaDecisionLogEvent__metrics", curie=OPENPOLICYAGENT.curie('metrics'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__metrics, domain=None, range=Optional[Union[dict, OpaObject]])
+
+slots.opaDecisionLogEvent__req_id = Slot(uri=OPENPOLICYAGENT.req_id, name="opaDecisionLogEvent__req_id", curie=OPENPOLICYAGENT.curie('req_id'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__req_id, domain=None, range=Optional[int])
+
+slots.opaDecisionLogEvent__rule_labels = Slot(uri=OPENPOLICYAGENT.rule_labels, name="opaDecisionLogEvent__rule_labels", curie=OPENPOLICYAGENT.curie('rule_labels'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__rule_labels, domain=None, range=Optional[Union[Union[dict, OpaObject], list[Union[dict, OpaObject]]]])
+
+slots.opaDecisionLogEvent__request_context = Slot(uri=OPENPOLICYAGENT.request_context, name="opaDecisionLogEvent__request_context", curie=OPENPOLICYAGENT.curie('request_context'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__request_context, domain=None, range=Optional[Union[dict, OpaRequestContext]])
+
+slots.opaDecisionLogEvent__custom = Slot(uri=OPENPOLICYAGENT.custom, name="opaDecisionLogEvent__custom", curie=OPENPOLICYAGENT.curie('custom'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogEvent__custom, domain=None, range=Optional[Union[dict, OpaObject]])
+
+slots.opaDecisionBundle__name = Slot(uri=SCHEMA.name, name="opaDecisionBundle__name", curie=SCHEMA.curie('name'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionBundle__name, domain=None, range=URIRef)
+
+slots.opaRequestContext__http = Slot(uri=OPENPOLICYAGENT.http, name="opaRequestContext__http", curie=OPENPOLICYAGENT.curie('http'),
+                   model_uri=OPENPOLICYAGENT.opaRequestContext__http, domain=None, range=Optional[Union[dict, OpaHttpRequestContext]])
+
+slots.opaHttpRequestContext__headers = Slot(uri=OPENPOLICYAGENT.headers, name="opaHttpRequestContext__headers", curie=OPENPOLICYAGENT.curie('headers'),
+                   model_uri=OPENPOLICYAGENT.opaHttpRequestContext__headers, domain=None, range=Optional[Union[dict, OpaStringListMap]])
+
+slots.opaStatusReport__labels = Slot(uri=OPENPOLICYAGENT.labels, name="opaStatusReport__labels", curie=OPENPOLICYAGENT.curie('labels'),
+                   model_uri=OPENPOLICYAGENT.opaStatusReport__labels, domain=None, range=Optional[Union[dict, OpaLabels]])
+
+slots.opaStatusReport__bundle = Slot(uri=OPENPOLICYAGENT.bundle, name="opaStatusReport__bundle", curie=OPENPOLICYAGENT.curie('bundle'),
+                   model_uri=OPENPOLICYAGENT.opaStatusReport__bundle, domain=None, range=Optional[Union[dict, OpaBundleStatus]])
+
+slots.opaStatusReport__bundles = Slot(uri=OPENPOLICYAGENT.bundles, name="opaStatusReport__bundles", curie=OPENPOLICYAGENT.curie('bundles'),
+                   model_uri=OPENPOLICYAGENT.opaStatusReport__bundles, domain=None, range=Optional[Union[dict[Union[str, OpaBundleStatusName], Union[dict, OpaBundleStatus]], list[Union[dict, OpaBundleStatus]]]])
+
+slots.opaStatusReport__discovery = Slot(uri=OPENPOLICYAGENT.discovery, name="opaStatusReport__discovery", curie=OPENPOLICYAGENT.curie('discovery'),
+                   model_uri=OPENPOLICYAGENT.opaStatusReport__discovery, domain=None, range=Optional[Union[dict, OpaBundleStatus]])
+
+slots.opaStatusReport__decision_logs = Slot(uri=OPENPOLICYAGENT.decision_logs, name="opaStatusReport__decision_logs", curie=OPENPOLICYAGENT.curie('decision_logs'),
+                   model_uri=OPENPOLICYAGENT.opaStatusReport__decision_logs, domain=None, range=Optional[Union[dict, OpaDecisionLogStatus]])
+
+slots.opaStatusReport__metrics = Slot(uri=OPENPOLICYAGENT.metrics, name="opaStatusReport__metrics", curie=OPENPOLICYAGENT.curie('metrics'),
+                   model_uri=OPENPOLICYAGENT.opaStatusReport__metrics, domain=None, range=Optional[Union[dict, OpaObject]])
+
+slots.opaStatusReport__plugins = Slot(uri=OPENPOLICYAGENT.plugins, name="opaStatusReport__plugins", curie=OPENPOLICYAGENT.curie('plugins'),
+                   model_uri=OPENPOLICYAGENT.opaStatusReport__plugins, domain=None, range=Optional[Union[dict[Union[str, OpaPluginStatusName], Union[dict, OpaPluginStatus]], list[Union[dict, OpaPluginStatus]]]])
+
+slots.opaBundleStatus__name = Slot(uri=SCHEMA.name, name="opaBundleStatus__name", curie=SCHEMA.curie('name'),
+                   model_uri=OPENPOLICYAGENT.opaBundleStatus__name, domain=None, range=URIRef)
+
+slots.opaBundleStatus__active_revision = Slot(uri=OPENPOLICYAGENT.active_revision, name="opaBundleStatus__active_revision", curie=OPENPOLICYAGENT.curie('active_revision'),
+                   model_uri=OPENPOLICYAGENT.opaBundleStatus__active_revision, domain=None, range=Optional[str])
+
+slots.opaBundleStatus__last_successful_activation = Slot(uri=OPENPOLICYAGENT.last_successful_activation, name="opaBundleStatus__last_successful_activation", curie=OPENPOLICYAGENT.curie('last_successful_activation'),
+                   model_uri=OPENPOLICYAGENT.opaBundleStatus__last_successful_activation, domain=None, range=Union[str, XSDDateTime])
+
+slots.opaBundleStatus__size = Slot(uri=OPENPOLICYAGENT.size, name="opaBundleStatus__size", curie=OPENPOLICYAGENT.curie('size'),
+                   model_uri=OPENPOLICYAGENT.opaBundleStatus__size, domain=None, range=Optional[int])
+
+slots.opaBundleStatus__last_successful_download = Slot(uri=OPENPOLICYAGENT.last_successful_download, name="opaBundleStatus__last_successful_download", curie=OPENPOLICYAGENT.curie('last_successful_download'),
+                   model_uri=OPENPOLICYAGENT.opaBundleStatus__last_successful_download, domain=None, range=Union[str, XSDDateTime])
+
+slots.opaBundleStatus__last_successful_request = Slot(uri=OPENPOLICYAGENT.last_successful_request, name="opaBundleStatus__last_successful_request", curie=OPENPOLICYAGENT.curie('last_successful_request'),
+                   model_uri=OPENPOLICYAGENT.opaBundleStatus__last_successful_request, domain=None, range=Union[str, XSDDateTime])
+
+slots.opaBundleStatus__last_request = Slot(uri=OPENPOLICYAGENT.last_request, name="opaBundleStatus__last_request", curie=OPENPOLICYAGENT.curie('last_request'),
+                   model_uri=OPENPOLICYAGENT.opaBundleStatus__last_request, domain=None, range=Union[str, XSDDateTime])
+
+slots.opaBundleStatus__code = Slot(uri=OPENPOLICYAGENT.code, name="opaBundleStatus__code", curie=OPENPOLICYAGENT.curie('code'),
+                   model_uri=OPENPOLICYAGENT.opaBundleStatus__code, domain=None, range=Optional[str])
+
+slots.opaBundleStatus__message = Slot(uri=OPENPOLICYAGENT.message, name="opaBundleStatus__message", curie=OPENPOLICYAGENT.curie('message'),
+                   model_uri=OPENPOLICYAGENT.opaBundleStatus__message, domain=None, range=Optional[str])
+
+slots.opaBundleStatus__errors = Slot(uri=OPENPOLICYAGENT.errors, name="opaBundleStatus__errors", curie=OPENPOLICYAGENT.curie('errors'),
+                   model_uri=OPENPOLICYAGENT.opaBundleStatus__errors, domain=None, range=Optional[Union[Union[dict, OpaObject], list[Union[dict, OpaObject]]]])
+
+slots.opaBundleStatus__metrics = Slot(uri=OPENPOLICYAGENT.metrics, name="opaBundleStatus__metrics", curie=OPENPOLICYAGENT.curie('metrics'),
+                   model_uri=OPENPOLICYAGENT.opaBundleStatus__metrics, domain=None, range=Optional[Union[dict, OpaObject]])
+
+slots.opaBundleStatus__http_code = Slot(uri=OPENPOLICYAGENT.http_code, name="opaBundleStatus__http_code", curie=OPENPOLICYAGENT.curie('http_code'),
+                   model_uri=OPENPOLICYAGENT.opaBundleStatus__http_code, domain=None, range=Optional[int])
+
+slots.opaDecisionLogStatus__code = Slot(uri=OPENPOLICYAGENT.code, name="opaDecisionLogStatus__code", curie=OPENPOLICYAGENT.curie('code'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogStatus__code, domain=None, range=Optional[str])
+
+slots.opaDecisionLogStatus__message = Slot(uri=OPENPOLICYAGENT.message, name="opaDecisionLogStatus__message", curie=OPENPOLICYAGENT.curie('message'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogStatus__message, domain=None, range=Optional[str])
+
+slots.opaDecisionLogStatus__http_code = Slot(uri=OPENPOLICYAGENT.http_code, name="opaDecisionLogStatus__http_code", curie=OPENPOLICYAGENT.curie('http_code'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogStatus__http_code, domain=None, range=Optional[int])
+
+slots.opaDecisionLogStatus__metrics = Slot(uri=OPENPOLICYAGENT.metrics, name="opaDecisionLogStatus__metrics", curie=OPENPOLICYAGENT.curie('metrics'),
+                   model_uri=OPENPOLICYAGENT.opaDecisionLogStatus__metrics, domain=None, range=Optional[Union[dict, OpaObject]])
+
+slots.opaPluginStatus__name = Slot(uri=SCHEMA.name, name="opaPluginStatus__name", curie=SCHEMA.curie('name'),
+                   model_uri=OPENPOLICYAGENT.opaPluginStatus__name, domain=None, range=URIRef)
+
+slots.opaPluginStatus__state = Slot(uri=OPENPOLICYAGENT.state, name="opaPluginStatus__state", curie=OPENPOLICYAGENT.curie('state'),
+                   model_uri=OPENPOLICYAGENT.opaPluginStatus__state, domain=None, range=Union[str, "OpaPluginState"])
+
+slots.opaPluginStatus__message = Slot(uri=OPENPOLICYAGENT.message, name="opaPluginStatus__message", curie=OPENPOLICYAGENT.curie('message'),
+                   model_uri=OPENPOLICYAGENT.opaPluginStatus__message, domain=None, range=Optional[str])
+
 slots.OpaAnyType_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaAnyType_type", curie=OPENPOLICYAGENT.curie('type'),
                    model_uri=OPENPOLICYAGENT.OpaAnyType_type, domain=OpaAnyType, range=str)
 
@@ -4522,3 +5151,15 @@ slots.OpaLocalOperand_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaLocalOperan
 
 slots.OpaStringIndexOperand_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaStringIndexOperand_type", curie=OPENPOLICYAGENT.curie('type'),
                    model_uri=OPENPOLICYAGENT.OpaStringIndexOperand_type, domain=OpaStringIndexOperand, range=str)
+
+slots.OpaDecisionLogEvent_revision = Slot(uri=OPENPOLICYAGENT.revision, name="OpaDecisionLogEvent_revision", curie=OPENPOLICYAGENT.curie('revision'),
+                   model_uri=OPENPOLICYAGENT.OpaDecisionLogEvent_revision, domain=OpaDecisionLogEvent, range=Optional[str])
+
+slots.OpaDecisionLogEvent_timestamp = Slot(uri=OPENPOLICYAGENT.timestamp, name="OpaDecisionLogEvent_timestamp", curie=OPENPOLICYAGENT.curie('timestamp'),
+                   model_uri=OPENPOLICYAGENT.OpaDecisionLogEvent_timestamp, domain=OpaDecisionLogEvent, range=Union[str, XSDDateTime])
+
+slots.OpaDecisionBundle_revision = Slot(uri=OPENPOLICYAGENT.revision, name="OpaDecisionBundle_revision", curie=OPENPOLICYAGENT.curie('revision'),
+                   model_uri=OPENPOLICYAGENT.OpaDecisionBundle_revision, domain=OpaDecisionBundle, range=Optional[str])
+
+slots.OpaBundleStatus_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaBundleStatus_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaBundleStatus_type, domain=OpaBundleStatus, range=Optional[Union[str, "OpaBundleType"]])

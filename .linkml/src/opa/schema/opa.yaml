@@ -5,10 +5,10 @@ name: opa
 title: Open Policy Agent (OPA)
 description: >-
   A LinkML model of the JSON formats Open Policy Agent defines: the IR plan, the bundle manifest,
-  the authorization policy input, the capabilities document, the built-in function metadata
-  and the version index. Each module renders one format, and keeps OPA's keys, so a document
-  OPA writes validates against this schema unchanged. The lokf adapt copy renames six keys
-  LOKF defines with another meaning.
+  the authorization policy input, the capabilities document, the built-in function metadata,
+  the version index, the decision log event and the status report. Each module renders one
+  format, and keeps OPA's keys, so a document OPA writes validates against this schema unchanged.
+  The lokf adapt copy renames seven keys LOKF defines with another meaning.
 version: 1.22.2
 source: >-
   https://github.com/open-policy-agent/opa/tree/482d9e368c2ddfed67ced59259fa6a247bb5f1e5
@@ -36,6 +36,8 @@ imports:
   - authorization_input
   - bundle_manifest
   - ir_plan
+  - decision_log
+  - status_report
 keywords:
   - policy as code
   - Open Policy Agent

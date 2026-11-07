@@ -285,6 +285,35 @@ message OpaBuiltinResult {
   // What the result holds.
   string description = 3;
 }
+// The status of a bundle: its active revision, when OPA last asked for, downloaded and activated it, and the errors of the last attempt.
+message OpaBundleStatus {
+  // The bundle's type.
+  OpaBundleType type = 1;
+  // The bundle's name.
+  string name = 2;
+  // The revision of the bundle OPA last activated.
+  string active_revision = 3;
+  // When OPA last activated the bundle.
+  string last_successful_activation = 4;
+  // The bundle's size in bytes.
+  int32 size = 5;
+  // When OPA last downloaded the bundle.
+  string last_successful_download = 6;
+  // When a request for the bundle last succeeded.
+  string last_successful_request = 7;
+  // When OPA last asked for the bundle.
+  string last_request = 8;
+  // The error code, when the last download or activation failed.
+  string code = 9;
+  // What went wrong, in words.
+  string message = 10;
+  // The parse and compile errors of the last activation.
+  repeated OpaObject errors = 11;
+  // The metrics of the last download and activation.
+  OpaObject metrics = 12;
+  // The HTTP status code of a download the server refused.
+  int32 http_code = 13;
+}
 // A statement of kind CallDynamicStmt, with its fields in `stmt`.
 message OpaCallDynamicStmt {
   // The kind of statement.
@@ -349,6 +378,75 @@ message OpaCapabilities {
   repeated OpaFeature features = 4;
   // The hosts OPA may connect to, as host names or IP addresses. OPA reaches any host when the key is absent, and none when the list is empty.
   repeated string allow_net = 5;
+}
+// A bundle whose policy made a decision.
+message OpaDecisionBundle {
+  // The bundle's revision when OPA made the decision.
+  string revision = 1;
+  // The bundle's name.
+  string name = 2;
+}
+// A decision OPA made: the query or path, the input and result, the bundles and the instance behind it, and when and for whom it was made.
+message OpaDecisionLogEvent {
+  // The revision of the bundle that made the decision, under the legacy `bundle` configuration.
+  string revision = 1;
+  // When OPA made the decision.
+  string timestamp = 2;
+  // The labels of the OPA instance that made the decision: its `id`, its `version` and those the configuration sets.
+  OpaLabels labels = 3;
+  // The decision's id, which OPA also returns to the client.
+  string decision_id = 4;
+  // The id that groups the decisions of one batch request.
+  string batch_decision_id = 5;
+  // The request's trace id in W3C trace context, with tracing on.
+  string trace_id = 6;
+  // The request's span id in W3C trace context, with tracing on.
+  string span_id = 7;
+  // The bundles whose policy made the decision, by name.
+  repeated OpaDecisionBundle bundles = 8;
+  // The decision's path in the data tree, such as `http/example/authz/allow`.
+  string path = 9;
+  // The ad hoc query the Query API received.
+  string query = 10;
+  // The input of the query.
+  OpaValue input = 11;
+  // The result the client received.
+  OpaValue result = 12;
+  // The intermediate results the evaluation recorded, when OPA runs with the environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set.
+  OpaObject intermediate_results = 13;
+  // The result as the result mapper of a decision made through OPA's Go SDK wrote it.
+  OpaValue mapped_result = 14;
+  // What each non-deterministic built-in function returned, by function and arguments, with `nd_builtin_cache` on.
+  OpaObject nd_builtin_cache = 15;
+  // JSON pointers to the fields a mask policy removed.
+  repeated string erased = 16;
+  // JSON pointers to the fields a mask policy replaced.
+  repeated string masked = 17;
+  // The error the evaluation raised, as OPA writes it in JSON.
+  OpaValue error = 18;
+  // The address of the client that asked.
+  string requested_by = 19;
+  // The query's metrics, by name.
+  OpaObject metrics = 20;
+  // The number OPA gave the HTTP request, which its request and response logs also carry.
+  int32 req_id = 21;
+  // The merged `labels` annotations of each rule the evaluation used.
+  repeated OpaObject rule_labels = 22;
+  // The parts of the HTTP request the configuration asks OPA to log.
+  OpaRequestContext request_context = 23;
+  // Fields the server or a plugin adds, such as `request_metadata`, the top-level keys of a Data API request body besides `input`.
+  OpaObject custom = 24;
+}
+// The status of the decision log uploads.
+message OpaDecisionLogStatus {
+  // The error code, when the last upload failed.
+  string code = 1;
+  // What went wrong, in words.
+  string message = 2;
+  // The HTTP status code of an upload the server refused.
+  int32 http_code = 3;
+  // The decision logger's metrics.
+  OpaObject metrics = 4;
 }
 // A statement of kind DotStmt, with its fields in `stmt`.
 message OpaDotStmt {
@@ -446,6 +544,11 @@ message OpaFunctionType {
   OpaType result = 5;
   // The type of any further arguments.
   OpaType variadic = 6;
+}
+// The logged parts of an HTTP request.
+message OpaHttpRequestContext {
+  // The headers the configuration names, each with its values.
+  OpaStringListMap headers = 1;
 }
 // An implementation of Rego besides OPA.
 message OpaImplementation {
@@ -574,6 +677,9 @@ message OpaIsUndefinedStmtBody {
   int32 end_row = 5;
   // The local checked.
   int32 source = 6;
+}
+// Labels as text keys and text values, such as an OPA instance's `id` and `version`.
+message OpaLabels {
 }
 // A statement of kind LenStmt, with its fields in `stmt`.
 message OpaLenStmt {
@@ -967,6 +1073,15 @@ message OpaPlans {
   // The plans.
   repeated OpaPlan plans = 1;
 }
+// The state of a plugin.
+message OpaPluginStatus {
+  // The plugin's name.
+  string name = 1;
+  // The plugin's state.
+  OpaPluginState state = 2;
+  // More about the state, in words.
+  string message = 3;
+}
 // Policy represents a planned policy query.
 message OpaPolicy {
   // The functions the plans call.
@@ -977,6 +1092,11 @@ message OpaPolicy {
   OpaStatic static = 3;
   // The rules left out because no entrypoint reaches them.
   repeated OpaUnplannedRule unplanned_rules = 4;
+}
+// The parts of the request that a decision log event logs.
+message OpaRequestContext {
+  // The logged parts of the HTTP request.
+  OpaHttpRequestContext http = 1;
 }
 // A statement of kind ResetLocalStmt, with its fields in `stmt`.
 message OpaResetLocalStmt {
@@ -1123,6 +1243,23 @@ message OpaStaticProperty {
   // The type of the key's value.
   OpaType value = 2;
 }
+// A report on an OPA instance: the state of its bundles, its decision log uploads and its plugins, and its metrics.
+message OpaStatusReport {
+  // The labels of the OPA instance that sends the report.
+  OpaLabels labels = 1;
+  // The status of the one bundle of the legacy `bundle` configuration.
+  OpaBundleStatus bundle = 2;
+  // The status of each bundle OPA downloads, by name.
+  repeated OpaBundleStatus bundles = 3;
+  // The status of the discovery bundle.
+  OpaBundleStatus discovery = 4;
+  // The status of the decision log uploads.
+  OpaDecisionLogStatus decision_logs = 5;
+  // The instance's metrics, under the name of their provider, such as `prometheus`.
+  OpaObject metrics = 6;
+  // The state of each plugin, by name.
+  repeated OpaPluginStatus plugins = 7;
+}
 // Stmt represents an operation (e.g., comparison, loop, dot, etc.) to execute. OPA writes each statement as its kind in `type` and its fields in `stmt`.
 message OpaStmt {
 }
@@ -1249,6 +1386,12 @@ message OpaWithStmtBody {
   OpaOperand value = 9;
 }
 
+// The types of bundle.
+enum OpaBundleType {
+  OPA_BUNDLE_TYPE_UNSPECIFIED = 0;
+  OPA_BUNDLE_TYPE_DELTA = 1;
+  OPA_BUNDLE_TYPE_SNAPSHOT = 2;
+}
 // The language features the capabilities files OPA includes name.
 enum OpaFeature {
   OPA_FEATURE_UNSPECIFIED = 0;
@@ -1271,4 +1414,12 @@ enum OpaFutureKeyword {
   OPA_FUTURE_KEYWORD_IN = 5;
   OPA_FUTURE_KEYWORD_NOT = 6;
   OPA_FUTURE_KEYWORD_OR = 7;
+}
+// The states a plugin reports.
+enum OpaPluginState {
+  OPA_PLUGIN_STATE_UNSPECIFIED = 0;
+  OPA_PLUGIN_STATE_NOT_READY = 1;
+  OPA_PLUGIN_STATE_OK = 2;
+  OPA_PLUGIN_STATE_ERROR = 3;
+  OPA_PLUGIN_STATE_WARN = 4;
 }

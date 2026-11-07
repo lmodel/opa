@@ -294,6 +294,26 @@ linkml:Sparqlpath xsd:string
     )
 }
 
+<OpaBundleStatus> CLOSED {
+    (  $<OpaBundleStatus_tes> (  <type> [ <https://w3id.org/lmodel/opa/OpaBundleType#delta>
+             <https://w3id.org/lmodel/opa/OpaBundleType#snapshot> ] ? ;
+          schema1:name @linkml:String ;
+          <active_revision> @linkml:String ? ;
+          <last_successful_activation> @linkml:Datetime ;
+          <size> @linkml:Integer ? ;
+          <last_successful_download> @linkml:Datetime ;
+          <last_successful_request> @linkml:Datetime ;
+          <last_request> @linkml:Datetime ;
+          <code> @linkml:String ? ;
+          <message> @linkml:String ? ;
+          <errors> @<OpaObject> * ;
+          <metrics> @<OpaObject> ? ;
+          <http_code> @linkml:Integer ?
+       ) ;
+       rdf:type [ <OpaBundleStatus> ]
+    )
+}
+
 <OpaCallDynamicStmt> CLOSED {
     (  $<OpaCallDynamicStmt_tes> (  &<OpaStmt_tes> ;
           rdf:type [ <OpaStmt> ] ? ;
@@ -352,6 +372,54 @@ linkml:Sparqlpath xsd:string
           <allow_net> @linkml:String *
        ) ;
        rdf:type [ <OpaCapabilities> ] ?
+    )
+}
+
+<OpaDecisionBundle> CLOSED {
+    (  $<OpaDecisionBundle_tes> (  <revision> @linkml:String ? ;
+          schema1:name @linkml:String
+       ) ;
+       rdf:type [ <OpaDecisionBundle> ]
+    )
+}
+
+<OpaDecisionLogEvent> CLOSED {
+    (  $<OpaDecisionLogEvent_tes> (  <revision> @linkml:String ? ;
+          <timestamp> @linkml:Datetime ;
+          <labels> @<OpaLabels> ? ;
+          <decision_id> @linkml:String ;
+          <batch_decision_id> @linkml:String ? ;
+          <trace_id> @linkml:String ? ;
+          <span_id> @linkml:String ? ;
+          <bundles> @<OpaDecisionBundle> * ;
+          <path> @linkml:String ? ;
+          <query> @linkml:String ? ;
+          <input> @<OpaValue> ? ;
+          <result> @<OpaValue> ? ;
+          <intermediate_results> @<OpaObject> ? ;
+          <mapped_result> @<OpaValue> ? ;
+          <nd_builtin_cache> @<OpaObject> ? ;
+          <erased> @linkml:String * ;
+          <masked> @linkml:String * ;
+          <error> @<OpaValue> ? ;
+          <requested_by> @linkml:String ? ;
+          <metrics> @<OpaObject> ? ;
+          <req_id> @linkml:Integer ? ;
+          <rule_labels> @<OpaObject> * ;
+          <request_context> @<OpaRequestContext> ? ;
+          <custom> @<OpaObject> ?
+       ) ;
+       rdf:type [ <OpaDecisionLogEvent> ] ?
+    )
+}
+
+<OpaDecisionLogStatus> CLOSED {
+    (  $<OpaDecisionLogStatus_tes> (  <code> @linkml:String ? ;
+          <message> @linkml:String ? ;
+          <http_code> @linkml:Integer ? ;
+          <metrics> @<OpaObject> ?
+       ) ;
+       rdf:type [ <OpaDecisionLogStatus> ] ?
     )
 }
 
@@ -438,6 +506,12 @@ linkml:Sparqlpath xsd:string
           <variadic> @<OpaType> ?
        ) ;
        rdf:type [ <OpaFunctionType> ] ?
+    )
+}
+
+<OpaHttpRequestContext> CLOSED {
+    (  $<OpaHttpRequestContext_tes> <headers> @<OpaStringListMap> ? ;
+       rdf:type [ <OpaHttpRequestContext> ] ?
     )
 }
 
@@ -551,6 +625,12 @@ linkml:Sparqlpath xsd:string
           <source> @linkml:Integer
        ) ;
        rdf:type [ <OpaIsUndefinedStmtBody> ] ?
+    )
+}
+
+<OpaLabels> CLOSED {
+    (  $<OpaLabels_tes> rdf:type . * ;
+       rdf:type [ <OpaLabels> ] ?
     )
 }
 
@@ -904,6 +984,16 @@ linkml:Sparqlpath xsd:string
     )
 }
 
+<OpaPluginStatus> CLOSED {
+    (  $<OpaPluginStatus_tes> (  schema1:name @linkml:String ;
+          <state> [ <https://w3id.org/lmodel/opa/OpaPluginState#NOT_READY> <https://w3id.org/lmodel/opa/OpaPluginState#OK>
+             <https://w3id.org/lmodel/opa/OpaPluginState#ERROR> <https://w3id.org/lmodel/opa/OpaPluginState#WARN> ] ;
+          <message> @linkml:String ?
+       ) ;
+       rdf:type [ <OpaPluginStatus> ]
+    )
+}
+
 <OpaPolicy> CLOSED {
     (  $<OpaPolicy_tes> (  <funcs> @<OpaFuncs> ? ;
           <plans> @<OpaPlans> ? ;
@@ -911,6 +1001,12 @@ linkml:Sparqlpath xsd:string
           <unplanned_rules> @<OpaUnplannedRule> *
        ) ;
        rdf:type [ <OpaPolicy> ] ?
+    )
+}
+
+<OpaRequestContext> CLOSED {
+    (  $<OpaRequestContext_tes> <http> @<OpaHttpRequestContext> ? ;
+       rdf:type [ <OpaRequestContext> ] ?
     )
 }
 
@@ -1037,6 +1133,19 @@ linkml:Sparqlpath xsd:string
           <value> @<OpaType>
        ) ;
        rdf:type [ <OpaStaticProperty> ] ?
+    )
+}
+
+<OpaStatusReport> CLOSED {
+    (  $<OpaStatusReport_tes> (  <labels> @<OpaLabels> ? ;
+          <bundle> @<OpaBundleStatus> ? ;
+          <bundles> @<OpaBundleStatus> * ;
+          <discovery> @<OpaBundleStatus> ? ;
+          <decision_logs> @<OpaDecisionLogStatus> ? ;
+          <metrics> @<OpaObject> ? ;
+          <plugins> @<OpaPluginStatus> *
+       ) ;
+       rdf:type [ <OpaStatusReport> ] ?
     )
 }
 

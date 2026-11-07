@@ -4,9 +4,10 @@ id: https://w3id.org/lmodel/opa-lokf
 name: opa
 title: Open Policy Agent (OPA)
 description: 'A LinkML model of the JSON formats Open Policy Agent defines: the IR plan, the bundle manifest,
-  the authorization policy input, the capabilities document, the built-in function metadata and the version
-  index. Each module renders one format, and keeps OPA''s keys, so a document OPA writes validates against
-  this schema unchanged. The lokf adapt copy renames six keys LOKF defines with another meaning.'
+  the authorization policy input, the capabilities document, the built-in function metadata, the version
+  index, the decision log event and the status report. Each module renders one format, and keeps OPA''s
+  keys, so a document OPA writes validates against this schema unchanged. The lokf adapt copy renames
+  seven keys LOKF defines with another meaning.'
 version: 1.22.2
 source: https://github.com/open-policy-agent/opa/tree/482d9e368c2ddfed67ced59259fa6a247bb5f1e5
 license: Apache-2.0
@@ -45,6 +46,11 @@ classes:
     - LinkML 1.12.1's JSON Schema leaves arrays out of linkml:Any. A slot that may hold an array also
       admits a list of values, so only an array nested directly in such a list fails.
     class_uri: linkml:Any
+  OpaLabels:
+    description: Labels as text keys and text values, such as an OPA instance's `id` and `version`.
+    extra_slots:
+      range_expression:
+        range: string
   OpaStringListMap:
     description: An object whose every value is a list of strings, as Go writes HTTP headers and query
       parameters.
@@ -2044,6 +2050,257 @@ classes:
         range: string
         required: true
         equals_string: string_index
+  OpaDecisionLogEvent:
+    description: 'A decision OPA made: the query or path, the input and result, the bundles and the instance
+      behind it, and when and for whom it was made.'
+    attributes:
+      labels:
+        description: 'The labels of the OPA instance that made the decision: its `id`, its `version` and
+          those the configuration sets.'
+        range: OpaLabels
+        inlined: true
+      decision_id:
+        description: The decision's id, which OPA also returns to the client.
+        required: true
+      batch_decision_id:
+        description: The id that groups the decisions of one batch request.
+      trace_id:
+        description: The request's trace id in W3C trace context, with tracing on.
+      span_id:
+        description: The request's span id in W3C trace context, with tracing on.
+      bundles:
+        description: The bundles whose policy made the decision, by name.
+        range: OpaDecisionBundle
+        multivalued: true
+        inlined: true
+      path:
+        description: The decision's path in the data tree, such as `http/example/authz/allow`.
+      query:
+        description: The ad hoc query the Query API received.
+      input:
+        description: The input of the query.
+        range: OpaValue
+        any_of:
+        - range: OpaValue
+        - range: OpaValue
+          multivalued: true
+      result:
+        description: The result the client received.
+        range: OpaValue
+        any_of:
+        - range: OpaValue
+        - range: OpaValue
+          multivalued: true
+      intermediate_results:
+        description: The intermediate results the evaluation recorded, when OPA runs with the environment
+          variable OPA_DECISIONS_INTERMEDIATE_RESULTS set.
+        range: OpaObject
+        inlined: true
+      mapped_result:
+        description: The result as the result mapper of a decision made through OPA's Go SDK wrote it.
+        range: OpaValue
+        any_of:
+        - range: OpaValue
+        - range: OpaValue
+          multivalued: true
+      nd_builtin_cache:
+        description: What each non-deterministic built-in function returned, by function and arguments,
+          with `nd_builtin_cache` on.
+        range: OpaObject
+        inlined: true
+      erased:
+        description: JSON pointers to the fields a mask policy removed.
+        multivalued: true
+      masked:
+        description: JSON pointers to the fields a mask policy replaced.
+        multivalued: true
+      error:
+        description: The error the evaluation raised, as OPA writes it in JSON.
+        range: OpaValue
+        any_of:
+        - range: OpaValue
+        - range: OpaValue
+          multivalued: true
+      requested_by:
+        description: The address of the client that asked.
+      metrics:
+        description: The query's metrics, by name.
+        range: OpaObject
+        inlined: true
+      req_id:
+        description: The number OPA gave the HTTP request, which its request and response logs also carry.
+        range: integer
+        minimum_value: 0
+      rule_labels:
+        description: The merged `labels` annotations of each rule the evaluation used.
+        range: OpaObject
+        multivalued: true
+        inlined: true
+        inlined_as_list: true
+      request_context:
+        description: The parts of the HTTP request the configuration asks OPA to log.
+        range: OpaRequestContext
+        inlined: true
+      custom:
+        description: Fields the server or a plugin adds, such as `request_metadata`, the top-level keys
+          of a Data API request body besides `input`.
+        range: OpaObject
+        inlined: true
+    slots:
+    - openpolicyagent_revision
+    - openpolicyagent_timestamp
+    slot_usage:
+      openpolicyagent_revision:
+        description: The revision of the bundle that made the decision, under the legacy `bundle` configuration.
+        deprecated: OPA marks the key deprecated and writes `bundles` instead.
+      openpolicyagent_timestamp:
+        description: When OPA made the decision.
+        range: datetime
+        required: true
+  OpaDecisionBundle:
+    description: A bundle whose policy made a decision.
+    attributes:
+      name:
+        description: The bundle's name.
+        key: true
+        slot_uri: schema:name
+    slots:
+    - openpolicyagent_revision
+    slot_usage:
+      openpolicyagent_revision:
+        description: The bundle's revision when OPA made the decision.
+  OpaRequestContext:
+    description: The parts of the request that a decision log event logs.
+    attributes:
+      http:
+        description: The logged parts of the HTTP request.
+        range: OpaHttpRequestContext
+        inlined: true
+  OpaHttpRequestContext:
+    description: The logged parts of an HTTP request.
+    attributes:
+      headers:
+        description: The headers the configuration names, each with its values.
+        range: OpaStringListMap
+        inlined: true
+  OpaStatusReport:
+    description: 'A report on an OPA instance: the state of its bundles, its decision log uploads and
+      its plugins, and its metrics.'
+    attributes:
+      labels:
+        description: The labels of the OPA instance that sends the report.
+        range: OpaLabels
+        inlined: true
+      bundle:
+        description: The status of the one bundle of the legacy `bundle` configuration.
+        range: OpaBundleStatus
+        inlined: true
+        deprecated: OPA marks the key deprecated and writes `bundles` instead.
+      bundles:
+        description: The status of each bundle OPA downloads, by name.
+        range: OpaBundleStatus
+        multivalued: true
+        inlined: true
+      discovery:
+        description: The status of the discovery bundle.
+        range: OpaBundleStatus
+        inlined: true
+      decision_logs:
+        description: The status of the decision log uploads.
+        range: OpaDecisionLogStatus
+        inlined: true
+      metrics:
+        description: The instance's metrics, under the name of their provider, such as `prometheus`.
+        range: OpaObject
+        inlined: true
+      plugins:
+        description: The state of each plugin, by name.
+        range: OpaPluginStatus
+        multivalued: true
+        inlined: true
+  OpaBundleStatus:
+    description: 'The status of a bundle: its active revision, when OPA last asked for, downloaded and
+      activated it, and the errors of the last attempt.'
+    comments:
+    - OPA writes Go's zero time, 0001-01-01T00:00:00Z, for a time that has not come yet, such as the last
+      activation of a bundle that never activated.
+    attributes:
+      name:
+        description: The bundle's name.
+        key: true
+        required: true
+        slot_uri: schema:name
+      active_revision:
+        description: The revision of the bundle OPA last activated.
+      last_successful_activation:
+        description: When OPA last activated the bundle.
+        range: datetime
+        required: true
+      size:
+        description: The bundle's size in bytes.
+        range: integer
+      last_successful_download:
+        description: When OPA last downloaded the bundle.
+        range: datetime
+        required: true
+      last_successful_request:
+        description: When a request for the bundle last succeeded.
+        range: datetime
+        required: true
+      last_request:
+        description: When OPA last asked for the bundle.
+        range: datetime
+        required: true
+      code:
+        description: The error code, when the last download or activation failed.
+      message:
+        description: What went wrong, in words.
+      errors:
+        description: The parse and compile errors of the last activation.
+        range: OpaObject
+        multivalued: true
+        inlined: true
+        inlined_as_list: true
+      metrics:
+        description: The metrics of the last download and activation.
+        range: OpaObject
+        inlined: true
+      http_code:
+        description: The HTTP status code of a download the server refused.
+        range: integer
+    slots:
+    - openpolicyagent_type
+    slot_usage:
+      openpolicyagent_type:
+        description: The bundle's type.
+        range: OpaBundleType
+  OpaDecisionLogStatus:
+    description: The status of the decision log uploads.
+    attributes:
+      code:
+        description: The error code, when the last upload failed.
+      message:
+        description: What went wrong, in words.
+      http_code:
+        description: The HTTP status code of an upload the server refused.
+        range: integer
+      metrics:
+        description: The decision logger's metrics.
+        range: OpaObject
+        inlined: true
+  OpaPluginStatus:
+    description: The state of a plugin.
+    attributes:
+      name:
+        description: The plugin's name.
+        key: true
+        slot_uri: schema:name
+      state:
+        description: The plugin's state.
+        range: OpaPluginState
+        required: true
+      message:
+        description: More about the state, in words.
 slots:
   openpolicyagent_body:
     description: The body of an HTTP request.
@@ -2065,9 +2322,14 @@ slots:
     slot_uri: openpolicyagent:target
     aliases:
     - target
+  openpolicyagent_timestamp:
+    description: When OPA made a decision.
+    slot_uri: openpolicyagent:timestamp
+    aliases:
+    - timestamp
   openpolicyagent_type:
-    description: 'The kind of an object: of a Rego type, a plan statement or an operand, or a type written
-      as OPA prints types.'
+    description: 'The kind of an object: of a Rego type, a plan statement, an operand or a bundle, or
+      a type written as OPA prints types.'
     slot_uri: openpolicyagent:type
     aliases:
     - type
@@ -2113,12 +2375,31 @@ enums:
       rule_head_ref_string_prefixes: {}
       rule_head_refs: {}
       template_strings: {}
+  OpaPluginState:
+    description: The states a plugin reports.
+    permissible_values:
+      NOT_READY:
+        description: Not in an error state, but not yet ready for normal operation, as at start-up.
+      OK:
+        description: Working normally.
+      ERROR:
+        description: In an error state, and not to be taken as working.
+      WARN:
+        description: Working, but degraded or in a state a person may need to fix.
+  OpaBundleType:
+    description: The types of bundle.
+    permissible_values:
+      delta:
+        description: A delta bundle, whose JSON Patch operations change the data OPA holds.
+      snapshot:
+        description: A whole bundle, whose files replace what OPA held under its roots.
 notes:
 - 'Adapted for LOKF by `lokf adapt`. re-rooted on lokf:Concept: OpaCapabilities, OpaBuiltin, OpaManifest,
   OpaPolicy; renamed, IRIs unchanged: body -> openpolicyagent_body, revision -> openpolicyagent_revision,
-  source -> openpolicyagent_source, target -> openpolicyagent_target, type -> openpolicyagent_type, version
-  -> openpolicyagent_version; folded into LOKF''s: OpaType.description -> description, OpaBuiltin.description
-  -> description, OpaBuiltinMetadata.description -> description, OpaBuiltinArgument.description -> description,
-  OpaBuiltinResult.description -> description; kept from folding: OpaBuiltinCategory.name, OpaBuiltinArgument.name,
-  OpaBuiltinResult.name, OpaBuiltin.name, OpaType.name, OpaBuiltinFunc.name, OpaPlan.name, OpaFunc.name,
-  OpaVersionEntry.name.'
+  source -> openpolicyagent_source, target -> openpolicyagent_target, timestamp -> openpolicyagent_timestamp,
+  type -> openpolicyagent_type, version -> openpolicyagent_version; folded into LOKF''s: OpaType.description
+  -> description, OpaBuiltin.description -> description, OpaBuiltinMetadata.description -> description,
+  OpaBuiltinArgument.description -> description, OpaBuiltinResult.description -> description; kept from
+  folding: OpaBuiltinCategory.name, OpaBuiltinArgument.name, OpaBuiltinResult.name, OpaBuiltin.name, OpaType.name,
+  OpaBuiltinFunc.name, OpaPlan.name, OpaFunc.name, OpaVersionEntry.name, OpaDecisionBundle.name, OpaBundleStatus.name,
+  OpaPluginStatus.name.'

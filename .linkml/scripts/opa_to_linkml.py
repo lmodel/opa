@@ -13,6 +13,9 @@ the merged release, and writes one module per format under src/opa/schema/.
   v1/ast/version_index.json have no JSON Schema. Their modules render the Go types
   that write them (ast.Capabilities, ast.Builtin, types.Type, the generators under
   internal/cmd/) and take each enumeration from the values the files OPA includes use.
+- The decision log event and the status report have neither. Their modules render the
+  Go structs OPA encodes, key for key from the structs' JSON tags, and stop the script
+  when a key has no range and description here.
 - v1/ir/ir.go gives the plan's descriptions: the opening sentences of its doc
   comments.
 
@@ -47,12 +50,82 @@ MANIFEST_SCHEMA = "v1/bundle/manifest.schema.json"
 AUTHZ_SCHEMA = "v1/schemas/authorizationPolicy.json"
 IR_GO = "v1/ir/ir.go"
 VERSION_GO = "v1/version/version.go"
+LOGS_GO = "v1/plugins/logs/plugin.go"
+STATUS_GO = "v1/plugins/status/plugin.go"
+BUNDLE_STATUS_GO = "v1/plugins/bundle/status.go"
+LOGS_STATUS_GO = "v1/plugins/logs/status/status.go"
+PLUGINS_GO = "v1/plugins/plugins.go"
+BUNDLE_GO = "v1/bundle/bundle.go"
 
 LOCATION_KEYS = ("file", "col", "row", "end_col", "end_row")
 
 
 def read_json(rel: str) -> Any:
     return json.loads((OPA / rel).read_text(encoding="utf-8"))
+
+
+# A field of a Go struct with a JSON tag: its type and the tag's text.
+GO_FIELD = re.compile(r'^\s+[A-Z]\w*\s+(?P<type>\S+)\s+`[^`]*\bjson:"(?P<tag>[^"]*)"')
+
+
+def go_struct(rel: str, name: str) -> dict[str, tuple[str, bool]]:
+    """Each JSON key of a Go struct, in OPA's order, with the field's Go type and
+    whether the tag says `omitempty`. An exported field without a JSON tag stops the
+    script, since Go would write it under the field's own name."""
+    text = (OPA / rel).read_text(encoding="utf-8")
+    m = re.search(rf"^type {name} struct {{\n(.*?)^}}", text, re.M | re.S)
+    if not m:
+        sys.exit(f"{rel} defines no struct {name}: update the converter")
+    fields: dict[str, tuple[str, bool]] = {}
+    for line in m.group(1).splitlines():
+        if found := GO_FIELD.match(line):
+            key, *options = found["tag"].split(",")
+            if key != "-":
+                fields[key] = (found["type"], "omitempty" in options)
+        elif re.match(r"^\s+[A-Z]", line):
+            sys.exit(f"{rel} {name} has a field with no JSON tag: {line.strip()}")
+    return fields
+
+
+def go_class(rel: str, struct: str, keys: dict[str, dict], **cls: Any) -> dict:
+    """A class with an attribute per JSON key of a Go struct, in the struct's order.
+
+    `keys` gives each key's slot. A key is required when its tag has no `omitempty`
+    and its Go type cannot hold null, as a map, a slice, a pointer or an interface
+    can. The script stops when the struct's keys differ from those in `keys`.
+    """
+    fields = go_struct(rel, struct)
+    if set(fields) != set(keys):
+        sys.exit(
+            f"{rel} {struct} has the keys {sorted(fields)}, and the converter "
+            f"describes {sorted(keys)}: update the converter"
+        )
+    attrs = {}
+    for key, (go_type, omitempty) in fields.items():
+        slot = dict(keys[key])
+        nullable = go_type.startswith(("map[", "[]", "*")) or go_type in (
+            "any",
+            "error",
+        )
+        if not omitempty and not nullable:
+            slot["required"] = True
+        attrs[key] = slot
+    return {**cls, "attributes": attrs}
+
+
+def go_enum(rel: str, pattern: str, texts: dict[str, str], description: str) -> dict:
+    """An enumeration of the string constants a Go file declares, matched by a pattern
+    whose group is the value. The script stops when a value has no text in `texts`."""
+    found = re.findall(pattern, (OPA / rel).read_text(encoding="utf-8"), re.M)
+    if sorted(found) != sorted(texts):
+        sys.exit(
+            f"{rel} declares {sorted(found)}, and the converter describes "
+            f"{sorted(texts)}: update the converter"
+        )
+    return {
+        "description": description,
+        "permissible_values": {v: {"description": texts[v]} for v in found},
+    }
 
 
 def opa_version() -> str:
@@ -175,8 +248,8 @@ def build_common() -> dict:
         "common",
         "OPA common types",
         "Types that more than one OPA format uses: open JSON objects and values, maps of "
-        "HTTP headers, and the Rego type declarations that capabilities and plans carry "
-        "for built-in functions.",
+        "labels and of HTTP headers, and the Rego type declarations that capabilities and "
+        "plans carry for built-in functions.",
         f"{BLOB}v1/types/types.go",
         [],
     )
@@ -193,6 +266,11 @@ def build_common() -> dict:
                 "directly in such a list fails."
             ],
             "class_uri": "linkml:Any",
+        },
+        "OpaLabels": {
+            "description": "Labels as text keys and text values, such as an OPA instance's "
+            "`id` and `version`.",
+            "extra_slots": {"range_expression": {"range": "string"}},
         },
         "OpaStringListMap": {
             "description": "An object whose every value is a list of strings, as Go writes "
@@ -1038,15 +1116,333 @@ def build_authorization_input() -> dict:
     return schema
 
 
+# ---------------------------------------------------------------- decision logs
+
+
+EVENT_KEYS = {
+    "labels": attr(
+        "OpaLabels",
+        "The labels of the OPA instance that made the decision: its `id`, its "
+        "`version` and those the configuration sets.",
+        inlined=True,
+    ),
+    "decision_id": attr(
+        None, "The decision's id, which OPA also returns to the client."
+    ),
+    "batch_decision_id": attr(
+        None, "The id that groups the decisions of one batch request."
+    ),
+    "trace_id": attr(
+        None, "The request's trace id in W3C trace context, with tracing on."
+    ),
+    "span_id": attr(
+        None, "The request's span id in W3C trace context, with tracing on."
+    ),
+    "revision": attr(
+        None,
+        "The revision of the bundle that made the decision, under the legacy `bundle` "
+        "configuration.",
+        deprecated="OPA marks the key deprecated and writes `bundles` instead.",
+    ),
+    "bundles": attr(
+        "OpaDecisionBundle",
+        "The bundles whose policy made the decision, by name.",
+        multivalued=True,
+        inlined=True,
+    ),
+    "path": attr(
+        None,
+        "The decision's path in the data tree, such as `http/example/authz/allow`.",
+    ),
+    "query": attr(None, "The ad hoc query the Query API received."),
+    "input": any_json("The input of the query."),
+    "result": any_json("The result the client received."),
+    "intermediate_results": attr(
+        "OpaObject",
+        "The intermediate results the evaluation recorded, when OPA runs with the "
+        "environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set.",
+        inlined=True,
+    ),
+    "mapped_result": any_json(
+        "The result as the result mapper of a decision made through OPA's Go SDK "
+        "wrote it."
+    ),
+    "nd_builtin_cache": attr(
+        "OpaObject",
+        "What each non-deterministic built-in function returned, by function and "
+        "arguments, with `nd_builtin_cache` on.",
+        inlined=True,
+    ),
+    "erased": attr(
+        None, "JSON pointers to the fields a mask policy removed.", multivalued=True
+    ),
+    "masked": attr(
+        None, "JSON pointers to the fields a mask policy replaced.", multivalued=True
+    ),
+    "error": any_json("The error the evaluation raised, as OPA writes it in JSON."),
+    "requested_by": attr(None, "The address of the client that asked."),
+    "timestamp": attr("datetime", "When OPA made the decision."),
+    "metrics": attr("OpaObject", "The query's metrics, by name.", inlined=True),
+    "req_id": attr(
+        "integer",
+        "The number OPA gave the HTTP request, which its request and response logs "
+        "also carry.",
+        minimum_value=0,
+    ),
+    "rule_labels": attr(
+        "OpaObject",
+        "The merged `labels` annotations of each rule the evaluation used.",
+        multivalued=True,
+        inlined=True,
+        inlined_as_list=True,
+    ),
+    "request_context": attr(
+        "OpaRequestContext",
+        "The parts of the HTTP request the configuration asks OPA to log.",
+        inlined=True,
+    ),
+    "custom": attr(
+        "OpaObject",
+        "Fields the server or a plugin adds, such as `request_metadata`, the top-level "
+        "keys of a Data API request body besides `input`.",
+        inlined=True,
+    ),
+}
+
+
+def build_decision_log() -> dict:
+    schema = header(
+        "decision_log",
+        "OPA decision log event",
+        "The decision log event OPA's decision logger uploads to a decision log service, "
+        "one per decision, in a JSON array. It renders the Go struct logs.EventV1 key for "
+        "key.",
+        f"{BLOB}{LOGS_GO}",
+        ["common"],
+    )
+    event = go_class(
+        LOGS_GO,
+        "EventV1",
+        EVENT_KEYS,
+        tree_root=True,
+        description="A decision OPA made: the query or path, the input and result, the "
+        "bundles and the instance behind it, and when and for whom it was made.",
+    )
+    bundle = go_class(
+        LOGS_GO,
+        "BundleInfoV1",
+        {"revision": attr(None, "The bundle's revision when OPA made the decision.")},
+        description="A bundle whose policy made a decision.",
+    )
+    bundle["attributes"] = {
+        "name": attr(None, "The bundle's name.", key=True),
+        **bundle["attributes"],
+    }
+    schema["classes"] = {
+        "OpaDecisionLogEvent": event,
+        "OpaDecisionBundle": bundle,
+        "OpaRequestContext": go_class(
+            LOGS_GO,
+            "RequestContext",
+            {
+                "http": attr(
+                    "OpaHttpRequestContext",
+                    "The logged parts of the HTTP request.",
+                    inlined=True,
+                )
+            },
+            description="The parts of the request that a decision log event logs.",
+        ),
+        "OpaHttpRequestContext": go_class(
+            LOGS_GO,
+            "HTTPRequestContext",
+            {
+                "headers": attr(
+                    "OpaStringListMap",
+                    "The headers the configuration names, each with its values.",
+                    inlined=True,
+                )
+            },
+            description="The logged parts of an HTTP request.",
+        ),
+    }
+    return schema
+
+
+# ---------------------------------------------------------------- status
+
+
+STATUS_KEYS = {
+    "labels": attr(
+        "OpaLabels",
+        "The labels of the OPA instance that sends the report.",
+        inlined=True,
+    ),
+    "bundle": attr(
+        "OpaBundleStatus",
+        "The status of the one bundle of the legacy `bundle` configuration.",
+        inlined=True,
+        deprecated="OPA marks the key deprecated and writes `bundles` instead.",
+    ),
+    "bundles": attr(
+        "OpaBundleStatus",
+        "The status of each bundle OPA downloads, by name.",
+        multivalued=True,
+        inlined=True,
+    ),
+    "discovery": attr(
+        "OpaBundleStatus", "The status of the discovery bundle.", inlined=True
+    ),
+    "decision_logs": attr(
+        "OpaDecisionLogStatus", "The status of the decision log uploads.", inlined=True
+    ),
+    "metrics": attr(
+        "OpaObject",
+        "The instance's metrics, under the name of their provider, such as `prometheus`.",
+        inlined=True,
+    ),
+    "plugins": attr(
+        "OpaPluginStatus",
+        "The state of each plugin, by name.",
+        multivalued=True,
+        inlined=True,
+    ),
+}
+
+BUNDLE_STATUS_KEYS = {
+    "name": attr(None, "The bundle's name.", key=True),
+    "active_revision": attr(None, "The revision of the bundle OPA last activated."),
+    "last_successful_activation": attr(
+        "datetime", "When OPA last activated the bundle."
+    ),
+    "type": attr("OpaBundleType", "The bundle's type."),
+    "size": attr("integer", "The bundle's size in bytes."),
+    "last_successful_download": attr(
+        "datetime", "When OPA last downloaded the bundle."
+    ),
+    "last_successful_request": attr(
+        "datetime", "When a request for the bundle last succeeded."
+    ),
+    "last_request": attr("datetime", "When OPA last asked for the bundle."),
+    "code": attr(None, "The error code, when the last download or activation failed."),
+    "message": attr(None, "What went wrong, in words."),
+    "errors": attr(
+        "OpaObject",
+        "The parse and compile errors of the last activation.",
+        multivalued=True,
+        inlined=True,
+        inlined_as_list=True,
+    ),
+    "metrics": attr(
+        "OpaObject", "The metrics of the last download and activation.", inlined=True
+    ),
+    "http_code": attr(
+        "integer", "The HTTP status code of a download the server refused."
+    ),
+}
+
+LOG_STATUS_KEYS = {
+    "code": attr(None, "The error code, when the last upload failed."),
+    "message": attr(None, "What went wrong, in words."),
+    "http_code": attr(
+        "integer", "The HTTP status code of an upload the server refused."
+    ),
+    "metrics": attr("OpaObject", "The decision logger's metrics.", inlined=True),
+}
+
+PLUGIN_STATUS_KEYS = {
+    "state": attr("OpaPluginState", "The plugin's state."),
+    "message": attr(None, "More about the state, in words."),
+}
+
+
+PLUGIN_STATES = {
+    "NOT_READY": "Not in an error state, but not yet ready for normal operation, as at "
+    "start-up.",
+    "OK": "Working normally.",
+    "ERROR": "In an error state, and not to be taken as working.",
+    "WARN": "Working, but degraded or in a state a person may need to fix.",
+}
+
+BUNDLE_TYPES = {
+    "snapshot": "A whole bundle, whose files replace what OPA held under its roots.",
+    "delta": "A delta bundle, whose JSON Patch operations change the data OPA holds.",
+}
+
+
+def build_status_report() -> dict:
+    schema = header(
+        "status_report",
+        "OPA status report",
+        "The status report OPA's status plugin sends to a status service: the state of "
+        "the instance's bundles, decision log uploads and plugins. It renders the Go "
+        "struct status.UpdateRequestV1 and the structs it holds key for key.",
+        f"{BLOB}{STATUS_GO}",
+        ["common"],
+    )
+    bundle_status = go_class(
+        BUNDLE_STATUS_GO,
+        "Status",
+        BUNDLE_STATUS_KEYS,
+        description="The status of a bundle: its active revision, when OPA last asked "
+        "for, downloaded and activated it, and the errors of the last attempt.",
+        comments=[
+            "OPA writes Go's zero time, 0001-01-01T00:00:00Z, for a time that has not "
+            "come yet, such as the last activation of a bundle that never activated."
+        ],
+    )
+    plugin_status = go_class(
+        PLUGINS_GO, "Status", PLUGIN_STATUS_KEYS, description="The state of a plugin."
+    )
+    plugin_status["attributes"] = {
+        "name": attr(None, "The plugin's name.", key=True),
+        **plugin_status["attributes"],
+    }
+    schema["classes"] = {
+        "OpaStatusReport": go_class(
+            STATUS_GO,
+            "UpdateRequestV1",
+            STATUS_KEYS,
+            tree_root=True,
+            description="A report on an OPA instance: the state of its bundles, its "
+            "decision log uploads and its plugins, and its metrics.",
+        ),
+        "OpaBundleStatus": bundle_status,
+        "OpaDecisionLogStatus": go_class(
+            LOGS_STATUS_GO,
+            "Status",
+            LOG_STATUS_KEYS,
+            description="The status of the decision log uploads.",
+        ),
+        "OpaPluginStatus": plugin_status,
+    }
+    schema["enums"] = {
+        "OpaPluginState": go_enum(
+            PLUGINS_GO,
+            r'^\s+State\w+\s+State\s*=\s*"([^"]+)"',
+            PLUGIN_STATES,
+            "The states a plugin reports.",
+        ),
+        "OpaBundleType": go_enum(
+            BUNDLE_GO,
+            r'^\s+\w+BundleType\s*=\s*"([^"]+)"',
+            BUNDLE_TYPES,
+            "The types of bundle.",
+        ),
+    }
+    return schema
+
+
 def build_umbrella() -> dict:
     schema = header(
         "opa",
         "Open Policy Agent (OPA)",
         "A LinkML model of the JSON formats Open Policy Agent defines: the IR plan, the bundle "
         "manifest, the authorization policy input, the capabilities document, the built-in "
-        "function metadata and the version index. Each module renders one format, and keeps "
-        "OPA's keys, so a document OPA writes validates against this schema unchanged. The "
-        "lokf adapt copy renames six keys LOKF defines with another meaning.",
+        "function metadata, the version index, the decision log event and the status report. "
+        "Each module renders one format, and keeps OPA's keys, so a document OPA writes "
+        "validates against this schema unchanged. The lokf adapt copy renames seven keys "
+        "LOKF defines with another meaning.",
         f"https://github.com/open-policy-agent/opa/tree/{COMMIT}",
         [m for m in MODULES if m != "opa"],
     )
@@ -1062,6 +1458,8 @@ MODULES = {
     "authorization_input": build_authorization_input,
     "bundle_manifest": build_bundle_manifest,
     "ir_plan": build_ir_plan,
+    "decision_log": build_decision_log,
+    "status_report": build_status_report,
     "opa": build_umbrella,
 }
 
@@ -1098,8 +1496,9 @@ PROMOTED = {
     "revision": "A bundle's revision, a string the bundle's author chooses.",
     "source": "What a plan statement reads: a local, or an operand.",
     "target": "The local a plan statement writes its result to.",
-    "type": "The kind of an object: of a Rego type, a plan statement or an operand, "
-    "or a type written as OPA prints types.",
+    "timestamp": "When OPA made a decision.",
+    "type": "The kind of an object: of a Rego type, a plan statement, an operand or a "
+    "bundle, or a type written as OPA prints types.",
     "version": "A version: an implementation's, a Wasm ABI's major number or a file's "
     "Rego version.",
 }

@@ -1,5 +1,11 @@
 # metamodel_version: 1.12.0
 # version: 1.22.2
+enum OpaBundleType
+  {
+    delta
+    snapshot
+  }
+
 enum OpaFeature
   {
     keywords_in_refs
@@ -21,6 +27,14 @@ enum OpaFutureKeyword
     in
     not
     or
+  }
+
+enum OpaPluginState
+  {
+    NOT_READY
+    OK
+    ERROR
+    WARN
   }
 
 type OpaAnyType
@@ -227,6 +241,23 @@ type OpaBuiltinResult
     description: String
   }
 
+type OpaBundleStatus
+  {
+    type: OpaBundleType
+    name: String!
+    activeRevision: String
+    lastSuccessfulActivation: String!
+    size: Int
+    lastSuccessfulDownload: String!
+    lastSuccessfulRequest: String!
+    lastRequest: String!
+    code: String
+    message: String
+    errors: [OpaObject]
+    metrics: OpaObject
+    httpCode: Int
+  }
+
 type OpaCallDynamicStmt
   {
     type: String!
@@ -270,6 +301,48 @@ type OpaCapabilities
     wasmAbiVersions: [OpaWasmAbiVersion]
     features: [OpaFeature]
     allowNet: [String]
+  }
+
+type OpaDecisionBundle
+  {
+    revision: String
+    name: String!
+  }
+
+type OpaDecisionLogEvent
+  {
+    revision: String
+    timestamp: String!
+    labels: OpaLabels
+    decisionId: String!
+    batchDecisionId: String
+    traceId: String
+    spanId: String
+    bundles: [OpaDecisionBundle]
+    path: String
+    query: String
+    input: OpaValue
+    result: OpaValue
+    intermediateResults: OpaObject
+    mappedResult: OpaValue
+    ndBuiltinCache: OpaObject
+    erased: [String]
+    masked: [String]
+    error: OpaValue
+    requestedBy: String
+    metrics: OpaObject
+    reqId: Int
+    ruleLabels: [OpaObject]
+    requestContext: OpaRequestContext
+    custom: OpaObject
+  }
+
+type OpaDecisionLogStatus
+  {
+    code: String
+    message: String
+    httpCode: Int
+    metrics: OpaObject
   }
 
 type OpaDotStmt
@@ -341,6 +414,11 @@ type OpaFunctionType
     args: [OpaType]
     result: OpaType
     variadic: OpaType
+  }
+
+type OpaHttpRequestContext
+  {
+    headers: OpaStringListMap
   }
 
 type OpaImplementation
@@ -435,6 +513,10 @@ type OpaIsUndefinedStmtBody
     endCol: Int!
     endRow: Int!
     source: Int!
+  }
+
+type OpaLabels
+  {
   }
 
 type OpaLenStmt
@@ -723,12 +805,24 @@ type OpaPlans
     plans: [OpaPlan]
   }
 
+type OpaPluginStatus
+  {
+    name: String!
+    state: OpaPluginState!
+    message: String
+  }
+
 type OpaPolicy
   {
     funcs: OpaFuncs
     plans: OpaPlans
     static: OpaStatic
     unplannedRules: [OpaUnplannedRule]
+  }
+
+type OpaRequestContext
+  {
+    http: OpaHttpRequestContext
   }
 
 type OpaResetLocalStmt
@@ -834,6 +928,17 @@ type OpaStaticProperty
   {
     key: OpaValue!
     value: OpaType!
+  }
+
+type OpaStatusReport
+  {
+    labels: OpaLabels
+    bundle: OpaBundleStatus
+    bundles: [OpaBundleStatus]
+    discovery: OpaBundleStatus
+    decisionLogs: OpaDecisionLogStatus
+    metrics: OpaObject
+    plugins: [OpaPluginStatus]
   }
 
 interface OpaStmt

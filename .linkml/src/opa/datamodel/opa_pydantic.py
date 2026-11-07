@@ -78,10 +78,11 @@ linkml_meta = LinkMLMeta({'annotations': {'upstream_commit': {'tag': 'upstream_c
      'description': 'A LinkML model of the JSON formats Open Policy Agent defines: '
                     'the IR plan, the bundle manifest, the authorization policy '
                     'input, the capabilities document, the built-in function '
-                    'metadata and the version index. Each module renders one '
-                    "format, and keeps OPA's keys, so a document OPA writes "
-                    'validates against this schema unchanged. The lokf adapt copy '
-                    'renames six keys LOKF defines with another meaning.',
+                    'metadata, the version index, the decision log event and the '
+                    'status report. Each module renders one format, and keeps '
+                    "OPA's keys, so a document OPA writes validates against this "
+                    'schema unchanged. The lokf adapt copy renames seven keys LOKF '
+                    'defines with another meaning.',
      'id': 'https://w3id.org/lmodel/opa',
      'imports': ['linkml:types',
                  'common',
@@ -90,7 +91,9 @@ linkml_meta = LinkMLMeta({'annotations': {'upstream_commit': {'tag': 'upstream_c
                  'version_index',
                  'authorization_input',
                  'bundle_manifest',
-                 'ir_plan'],
+                 'ir_plan',
+                 'decision_log',
+                 'status_report'],
      'keywords': ['policy as code', 'Open Policy Agent', 'Rego', 'CNCF'],
      'license': 'Apache-2.0',
      'name': 'opa',
@@ -133,12 +136,58 @@ class OpaFeature(str, Enum):
     template_strings = "template_strings"
 
 
+class OpaPluginState(str, Enum):
+    """
+    The states a plugin reports.
+    """
+    NOT_READY = "NOT_READY"
+    """
+    Not in an error state, but not yet ready for normal operation, as at start-up.
+    """
+    OK = "OK"
+    """
+    Working normally.
+    """
+    ERROR = "ERROR"
+    """
+    In an error state, and not to be taken as working.
+    """
+    WARN = "WARN"
+    """
+    Working, but degraded or in a state a person may need to fix.
+    """
+
+
+class OpaBundleType(str, Enum):
+    """
+    The types of bundle.
+    """
+    delta = "delta"
+    """
+    A delta bundle, whose JSON Patch operations change the data OPA holds.
+    """
+    snapshot = "snapshot"
+    """
+    A whole bundle, whose files replace what OPA held under its roots.
+    """
+
+
 
 class OpaObject(ConfiguredBaseModel):
     """
     A JSON object whose keys OPA leaves open.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'extra_slots': {'allowed': True},
+         'from_schema': 'https://w3id.org/lmodel/opa/common'})
+
+    pass
+
+
+class OpaLabels(ConfiguredBaseModel):
+    """
+    Labels as text keys and text values, such as an OPA instance's `id` and `version`.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'extra_slots': {'range_expression': {'range': 'string'}},
          'from_schema': 'https://w3id.org/lmodel/opa/common'})
 
     pass
@@ -168,7 +217,10 @@ class OpaType(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -236,7 +288,8 @@ class OpaAnyType(OpaType):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'any',
          'slot_uri': 'openpolicyagent:type'} })
     of: Optional[list[OpaType]] = Field(default=None, description="""The types the union admits.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType', 'OpaSetType']} })
@@ -248,7 +301,10 @@ class OpaAnyType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -316,7 +372,8 @@ class OpaArrayType(OpaType):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'array',
          'slot_uri': 'openpolicyagent:type'} })
     static: Optional[list[OpaType]] = Field(default=None, description="""The type of each element by position.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayType', 'OpaObjectType', 'OpaPolicy']} })
@@ -329,7 +386,10 @@ class OpaArrayType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -397,7 +457,8 @@ class OpaBooleanType(OpaType):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'boolean',
          'slot_uri': 'openpolicyagent:type'} })
     name: Optional[str] = Field(default=None, description="""The argument's or result's name, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
@@ -408,7 +469,10 @@ class OpaBooleanType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -476,7 +540,8 @@ class OpaFunctionType(OpaType):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'function',
          'slot_uri': 'openpolicyagent:type'} })
     args: Optional[list[OpaType]] = Field(default=None, description="""The argument types, in order.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaFunctionType',
@@ -486,7 +551,8 @@ class OpaFunctionType(OpaType):
     result: Optional[OpaType] = Field(default=None, description="""The result type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaFunctionType',
                        'OpaBuiltinMetadata',
                        'OpaCallDynamicStmtBody',
-                       'OpaCallStmtBody']} })
+                       'OpaCallStmtBody',
+                       'OpaDecisionLogEvent']} })
     variadic: Optional[OpaType] = Field(default=None, description="""The type of any further arguments.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaFunctionType']} })
     name: Optional[str] = Field(default=None, description="""The argument's or result's name, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -496,7 +562,10 @@ class OpaFunctionType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -564,7 +633,8 @@ class OpaNullType(OpaType):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'null',
          'slot_uri': 'openpolicyagent:type'} })
     name: Optional[str] = Field(default=None, description="""The argument's or result's name, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
@@ -575,7 +645,10 @@ class OpaNullType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -643,7 +716,8 @@ class OpaNumberType(OpaType):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'number',
          'slot_uri': 'openpolicyagent:type'} })
     name: Optional[str] = Field(default=None, description="""The argument's or result's name, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
@@ -654,7 +728,10 @@ class OpaNumberType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -722,7 +799,8 @@ class OpaObjectType(OpaType):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'object',
          'slot_uri': 'openpolicyagent:type'} })
     static: Optional[list[OpaStaticProperty]] = Field(default=None, description="""The known keys and the types of their values.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayType', 'OpaObjectType', 'OpaPolicy']} })
@@ -735,7 +813,10 @@ class OpaObjectType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -803,7 +884,8 @@ class OpaSetType(OpaType):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'set',
          'slot_uri': 'openpolicyagent:type'} })
     of: Optional[OpaType] = Field(default=None, description="""The type of the set's members.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType', 'OpaSetType']} })
@@ -815,7 +897,10 @@ class OpaSetType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -883,7 +968,8 @@ class OpaStringType(OpaType):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'string',
          'slot_uri': 'openpolicyagent:type'} })
     name: Optional[str] = Field(default=None, description="""The argument's or result's name, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
@@ -894,7 +980,10 @@ class OpaStringType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -990,7 +1079,10 @@ class OpaBuiltin(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the function does.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -1050,7 +1142,10 @@ class OpaBuiltinCategory(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     builtins: list[str] = Field(default=..., description="""The names of the category's functions.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaCapabilities', 'OpaBuiltinCategory', 'OpaVersionIndex']} })
 
@@ -1097,7 +1192,8 @@ class OpaBuiltinMetadata(ConfiguredBaseModel):
     result: OpaBuiltinResult = Field(default=..., description="""The result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaFunctionType',
                        'OpaBuiltinMetadata',
                        'OpaCallDynamicStmtBody',
-                       'OpaCallStmtBody']} })
+                       'OpaCallStmtBody',
+                       'OpaDecisionLogEvent']} })
     implementations: dict[str, Union[str, OpaImplementationSupport]] = Field(default=..., description="""The other implementations that support the function, with the version that added it.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltinMetadataCatalog', 'OpaBuiltinMetadata']} })
     infix: Optional[str] = Field(default=None, description="""The infix operator that calls the function.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltin', 'OpaBuiltinMetadata']} })
     relation: Optional[bool] = Field(default=None, description="""Whether the function acts as a relation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltin', 'OpaBuiltinMetadata']} })
@@ -1162,7 +1258,8 @@ class OpaBuiltinArgument(ConfiguredBaseModel):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'slot_uri': 'openpolicyagent:type'} })
     name: Optional[str] = Field(default=None, description="""The argument's name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -1172,7 +1269,10 @@ class OpaBuiltinArgument(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument holds.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -1238,7 +1338,8 @@ class OpaBuiltinResult(ConfiguredBaseModel):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'slot_uri': 'openpolicyagent:type'} })
     name: Optional[str] = Field(default=None, description="""The result's name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -1248,7 +1349,10 @@ class OpaBuiltinResult(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the result holds.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -1302,7 +1406,10 @@ class OpaVersionEntry(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     Major: int = Field(default=..., description="""The major version.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaVersionEntry']} })
     Minor: int = Field(default=..., description="""The minor version.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaVersionEntry']} })
@@ -1342,9 +1449,10 @@ class OpaAuthorizationInput(ConfiguredBaseModel):
                        'OpaFunc',
                        'OpaUnplannedRule',
                        'OpaCallDynamicStmtBody',
-                       'OpaWithStmtBody']} })
+                       'OpaWithStmtBody',
+                       'OpaDecisionLogEvent']} })
     params: OpaStringListMap = Field(default=..., description="""The query parameters, each with its list of values.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput', 'OpaFunc']} })
-    headers: OpaStringListMap = Field(default=..., description="""The request headers, each with its list of values.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
+    headers: OpaStringListMap = Field(default=..., description="""The request headers, each with its list of values.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput', 'OpaHttpRequestContext']} })
 
 
 class OpaManifest(ConfiguredBaseModel):
@@ -1361,7 +1469,8 @@ class OpaManifest(ConfiguredBaseModel):
                                      'required': True}},
          'tree_root': True})
 
-    revision: str = Field(default=..., description="""The bundle's revision, a string the bundle's author chooses.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest'], 'slot_uri': 'openpolicyagent:revision'} })
+    revision: str = Field(default=..., description="""The bundle's revision, a string the bundle's author chooses.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest', 'OpaDecisionLogEvent', 'OpaDecisionBundle'],
+         'slot_uri': 'openpolicyagent:revision'} })
     file_rego_versions: Optional[dict[str, Union[int, OpaFileRegoVersion]]] = Field(default=None, description="""Rego versions for single files, which override `rego_version`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest']} })
     metadata: Optional[OpaObject] = Field(default=None, description="""Metadata the bundle's author adds.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaVersionEntry', 'OpaManifest']} })
     rego_version: Optional[int] = Field(default=None, description="""The Rego version of the bundle's files: 0 for v0, 1 for v1.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest']} })
@@ -1401,7 +1510,8 @@ class OpaFileRegoVersion(ConfiguredBaseModel):
                        'OpaFunc',
                        'OpaUnplannedRule',
                        'OpaCallDynamicStmtBody',
-                       'OpaWithStmtBody']} })
+                       'OpaWithStmtBody',
+                       'OpaDecisionLogEvent']} })
 
 
 class OpaPolicy(ConfiguredBaseModel):
@@ -1470,7 +1580,10 @@ class OpaBuiltinFunc(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
 
 
@@ -1500,7 +1613,10 @@ class OpaPlan(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
 
 
@@ -1530,7 +1646,10 @@ class OpaFunc(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc'],
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
          'slot_uri': 'schema:name'} })
     params: Optional[list[int]] = Field(default=None, description="""The locals that hold the parameters. The first two are the input and data documents.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput', 'OpaFunc']} })
     path: Optional[list[str]] = Field(default=None, description="""Where the function is in the data tree, when it has a path.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput',
@@ -1538,7 +1657,8 @@ class OpaFunc(ConfiguredBaseModel):
                        'OpaFunc',
                        'OpaUnplannedRule',
                        'OpaCallDynamicStmtBody',
-                       'OpaWithStmtBody']} })
+                       'OpaWithStmtBody',
+                       'OpaDecisionLogEvent']} })
     return_: int = Field(default=..., alias="return", description="""The local that holds the return value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaFunc']} })
 
 
@@ -1565,7 +1685,8 @@ class OpaUnplannedRule(ConfiguredBaseModel):
                        'OpaFunc',
                        'OpaUnplannedRule',
                        'OpaCallDynamicStmtBody',
-                       'OpaWithStmtBody']} })
+                       'OpaWithStmtBody',
+                       'OpaDecisionLogEvent']} })
 
 
 class OpaLocation(ConfiguredBaseModel):
@@ -1675,7 +1796,8 @@ class OpaArrayAppendStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'ArrayAppendStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaArrayAppendStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -1802,7 +1924,8 @@ class OpaAssignIntStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'AssignIntStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaAssignIntStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -1946,7 +2069,8 @@ class OpaAssignVarOnceStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'AssignVarOnceStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaAssignVarOnceStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -2092,7 +2216,8 @@ class OpaAssignVarStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'AssignVarStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaAssignVarStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -2238,7 +2363,8 @@ class OpaBlockStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'BlockStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaBlockStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -2350,7 +2476,8 @@ class OpaBreakStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'BreakStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaBreakStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -2462,7 +2589,8 @@ class OpaCallDynamicStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'CallDynamicStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaCallDynamicStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -2517,11 +2645,13 @@ class OpaCallDynamicStmtBody(OpaStmtBody):
                        'OpaFunc',
                        'OpaUnplannedRule',
                        'OpaCallDynamicStmtBody',
-                       'OpaWithStmtBody']} })
+                       'OpaWithStmtBody',
+                       'OpaDecisionLogEvent']} })
     result: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaFunctionType',
                        'OpaBuiltinMetadata',
                        'OpaCallDynamicStmtBody',
-                       'OpaCallStmtBody']} })
+                       'OpaCallStmtBody',
+                       'OpaDecisionLogEvent']} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -2587,7 +2717,8 @@ class OpaCallStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'CallStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaCallStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -2641,7 +2772,8 @@ class OpaCallStmtBody(OpaStmtBody):
     result: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaFunctionType',
                        'OpaBuiltinMetadata',
                        'OpaCallDynamicStmtBody',
-                       'OpaCallStmtBody']} })
+                       'OpaCallStmtBody',
+                       'OpaDecisionLogEvent']} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -2707,7 +2839,8 @@ class OpaDotStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'DotStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaDotStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -2859,7 +2992,8 @@ class OpaEqualStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'EqualStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaEqualStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -2976,7 +3110,8 @@ class OpaIsArrayStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'IsArrayStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaIsArrayStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -3104,7 +3239,8 @@ class OpaIsDefinedStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'IsDefinedStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaIsDefinedStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -3231,7 +3367,8 @@ class OpaIsObjectStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'IsObjectStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaIsObjectStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -3359,7 +3496,8 @@ class OpaIsSetStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'IsSetStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaIsSetStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -3487,7 +3625,8 @@ class OpaIsUndefinedStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'IsUndefinedStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaIsUndefinedStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -3614,7 +3753,8 @@ class OpaLenStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'LenStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaLenStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -3760,7 +3900,8 @@ class OpaMakeArrayStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'MakeArrayStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaMakeArrayStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -3890,7 +4031,8 @@ class OpaMakeNullStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'MakeNullStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaMakeNullStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -4019,7 +4161,8 @@ class OpaMakeNumberIntStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'MakeNumberIntStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaMakeNumberIntStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -4163,7 +4306,8 @@ class OpaMakeNumberRefStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'MakeNumberRefStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaMakeNumberRefStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -4297,7 +4441,8 @@ class OpaMakeObjectStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'MakeObjectStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaMakeObjectStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -4426,7 +4571,8 @@ class OpaMakeSetStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'MakeSetStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaMakeSetStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -4555,7 +4701,8 @@ class OpaNopStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'NopStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaNopStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -4666,7 +4813,8 @@ class OpaNotEqualStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'NotEqualStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaNotEqualStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -4783,7 +4931,8 @@ class OpaNotStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'NotStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaNotStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -4895,7 +5044,8 @@ class OpaObjectInsertOnceStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'ObjectInsertOnceStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaObjectInsertOnceStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -5028,7 +5178,8 @@ class OpaObjectInsertStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'ObjectInsertStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaObjectInsertStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -5161,7 +5312,8 @@ class OpaObjectMergeStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'ObjectMergeStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaObjectMergeStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -5296,7 +5448,8 @@ class OpaResetLocalStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'ResetLocalStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaResetLocalStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -5425,7 +5578,8 @@ class OpaResultSetAddStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'ResultSetAddStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaResultSetAddStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -5551,7 +5705,8 @@ class OpaReturnLocalStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'ReturnLocalStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaReturnLocalStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -5678,7 +5833,8 @@ class OpaScanStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'ScanStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaScanStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -5827,7 +5983,8 @@ class OpaSetAddStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'SetAddStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaSetAddStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -5954,7 +6111,8 @@ class OpaWithStmt(OpaStmt):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'WithStmt',
          'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaWithStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
@@ -6007,7 +6165,8 @@ class OpaWithStmtBody(OpaStmtBody):
                        'OpaFunc',
                        'OpaUnplannedRule',
                        'OpaCallDynamicStmtBody',
-                       'OpaWithStmtBody']} })
+                       'OpaWithStmtBody',
+                       'OpaDecisionLogEvent']} })
     value: OpaOperand = Field(default=..., description="""The replacement value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
                        'OpaDynamicProperty',
                        'OpaStringConst',
@@ -6099,7 +6258,8 @@ class OpaBoolOperand(OpaOperand):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'bool',
          'slot_uri': 'openpolicyagent:type'} })
     value: bool = Field(default=..., description="""The operand's value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
@@ -6177,7 +6337,8 @@ class OpaLocalOperand(OpaOperand):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'local',
          'slot_uri': 'openpolicyagent:type'} })
     value: int = Field(default=..., description="""The operand's value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
@@ -6255,7 +6416,8 @@ class OpaStringIndexOperand(OpaOperand):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand'],
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
          'equals_string': 'string_index',
          'slot_uri': 'openpolicyagent:type'} })
     value: int = Field(default=..., description="""The operand's value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
@@ -6275,9 +6437,264 @@ class OpaStringIndexOperand(OpaOperand):
                        'OpaStringIndexOperand']} })
 
 
+class OpaDecisionLogEvent(ConfiguredBaseModel):
+    """
+    A decision OPA made: the query or path, the input and result, the bundles and the instance behind it, and when and for whom it was made.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/decision_log',
+         'slot_usage': {'revision': {'deprecated': 'OPA marks the key deprecated and '
+                                                   'writes `bundles` instead.',
+                                     'description': 'The revision of the bundle that '
+                                                    'made the decision, under the '
+                                                    'legacy `bundle` configuration.',
+                                     'name': 'revision'},
+                        'timestamp': {'description': 'When OPA made the decision.',
+                                      'name': 'timestamp',
+                                      'range': 'datetime',
+                                      'required': True}},
+         'tree_root': True})
+
+    revision: Optional[str] = Field(default=None, description="""The revision of the bundle that made the decision, under the legacy `bundle` configuration.""", json_schema_extra = { "linkml_meta": {'deprecated': 'OPA marks the key deprecated and writes `bundles` instead.',
+         'domain_of': ['OpaManifest', 'OpaDecisionLogEvent', 'OpaDecisionBundle'],
+         'slot_uri': 'openpolicyagent:revision'} })
+    timestamp: datetime  = Field(default=..., description="""When OPA made the decision.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent'], 'slot_uri': 'openpolicyagent:timestamp'} })
+    labels: Optional[OpaLabels] = Field(default=None, description="""The labels of the OPA instance that made the decision: its `id`, its `version` and those the configuration sets.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent', 'OpaStatusReport']} })
+    decision_id: str = Field(default=..., description="""The decision's id, which OPA also returns to the client.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    batch_decision_id: Optional[str] = Field(default=None, description="""The id that groups the decisions of one batch request.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    trace_id: Optional[str] = Field(default=None, description="""The request's trace id in W3C trace context, with tracing on.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    span_id: Optional[str] = Field(default=None, description="""The request's span id in W3C trace context, with tracing on.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    bundles: Optional[dict[str, Union[str, OpaDecisionBundle]]] = Field(default=None, description="""The bundles whose policy made the decision, by name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent', 'OpaStatusReport']} })
+    path: Optional[str] = Field(default=None, description="""The decision's path in the data tree, such as `http/example/authz/allow`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput',
+                       'OpaFileRegoVersion',
+                       'OpaFunc',
+                       'OpaUnplannedRule',
+                       'OpaCallDynamicStmtBody',
+                       'OpaWithStmtBody',
+                       'OpaDecisionLogEvent']} })
+    query: Optional[str] = Field(default=None, description="""The ad hoc query the Query API received.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    input: Optional[Any] = Field(default=None, description="""The input of the query.""", json_schema_extra = { "linkml_meta": {'any_of': [{'range': 'OpaValue'}, {'multivalued': True, 'range': 'OpaValue'}],
+         'domain_of': ['OpaDecisionLogEvent']} })
+    result: Optional[Any] = Field(default=None, description="""The result the client received.""", json_schema_extra = { "linkml_meta": {'any_of': [{'range': 'OpaValue'}, {'multivalued': True, 'range': 'OpaValue'}],
+         'domain_of': ['OpaFunctionType',
+                       'OpaBuiltinMetadata',
+                       'OpaCallDynamicStmtBody',
+                       'OpaCallStmtBody',
+                       'OpaDecisionLogEvent']} })
+    intermediate_results: Optional[OpaObject] = Field(default=None, description="""The intermediate results the evaluation recorded, when OPA runs with the environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    mapped_result: Optional[Any] = Field(default=None, description="""The result as the result mapper of a decision made through OPA's Go SDK wrote it.""", json_schema_extra = { "linkml_meta": {'any_of': [{'range': 'OpaValue'}, {'multivalued': True, 'range': 'OpaValue'}],
+         'domain_of': ['OpaDecisionLogEvent']} })
+    nd_builtin_cache: Optional[OpaObject] = Field(default=None, description="""What each non-deterministic built-in function returned, by function and arguments, with `nd_builtin_cache` on.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    erased: Optional[list[str]] = Field(default=None, description="""JSON pointers to the fields a mask policy removed.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    masked: Optional[list[str]] = Field(default=None, description="""JSON pointers to the fields a mask policy replaced.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    error: Optional[Any] = Field(default=None, description="""The error the evaluation raised, as OPA writes it in JSON.""", json_schema_extra = { "linkml_meta": {'any_of': [{'range': 'OpaValue'}, {'multivalued': True, 'range': 'OpaValue'}],
+         'domain_of': ['OpaDecisionLogEvent']} })
+    requested_by: Optional[str] = Field(default=None, description="""The address of the client that asked.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    metrics: Optional[OpaObject] = Field(default=None, description="""The query's metrics, by name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent',
+                       'OpaStatusReport',
+                       'OpaBundleStatus',
+                       'OpaDecisionLogStatus']} })
+    req_id: Optional[int] = Field(default=None, description="""The number OPA gave the HTTP request, which its request and response logs also carry.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    rule_labels: Optional[list[OpaObject]] = Field(default=None, description="""The merged `labels` annotations of each rule the evaluation used.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    request_context: Optional[OpaRequestContext] = Field(default=None, description="""The parts of the HTTP request the configuration asks OPA to log.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    custom: Optional[OpaObject] = Field(default=None, description="""Fields the server or a plugin adds, such as `request_metadata`, the top-level keys of a Data API request body besides `input`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+
+
+class OpaDecisionBundle(ConfiguredBaseModel):
+    """
+    A bundle whose policy made a decision.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/decision_log',
+         'slot_usage': {'revision': {'description': "The bundle's revision when OPA "
+                                                    'made the decision.',
+                                     'name': 'revision'}}})
+
+    revision: Optional[str] = Field(default=None, description="""The bundle's revision when OPA made the decision.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest', 'OpaDecisionLogEvent', 'OpaDecisionBundle'],
+         'slot_uri': 'openpolicyagent:revision'} })
+    name: str = Field(default=..., description="""The bundle's name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
+                       'OpaBuiltin',
+                       'OpaBuiltinCategory',
+                       'OpaBuiltinArgument',
+                       'OpaBuiltinResult',
+                       'OpaVersionEntry',
+                       'OpaBuiltinFunc',
+                       'OpaPlan',
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
+         'slot_uri': 'schema:name'} })
+
+
+class OpaRequestContext(ConfiguredBaseModel):
+    """
+    The parts of the request that a decision log event logs.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/decision_log'})
+
+    http: Optional[OpaHttpRequestContext] = Field(default=None, description="""The logged parts of the HTTP request.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaRequestContext']} })
+
+
+class OpaHttpRequestContext(ConfiguredBaseModel):
+    """
+    The logged parts of an HTTP request.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/decision_log'})
+
+    headers: Optional[OpaStringListMap] = Field(default=None, description="""The headers the configuration names, each with its values.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput', 'OpaHttpRequestContext']} })
+
+
+class OpaStatusReport(ConfiguredBaseModel):
+    """
+    A report on an OPA instance: the state of its bundles, its decision log uploads and its plugins, and its metrics.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/status_report', 'tree_root': True})
+
+    labels: Optional[OpaLabels] = Field(default=None, description="""The labels of the OPA instance that sends the report.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent', 'OpaStatusReport']} })
+    bundle: Optional[OpaBundleStatus] = Field(default=None, description="""The status of the one bundle of the legacy `bundle` configuration.""", json_schema_extra = { "linkml_meta": {'deprecated': 'OPA marks the key deprecated and writes `bundles` instead.',
+         'domain_of': ['OpaStatusReport']} })
+    bundles: Optional[dict[str, OpaBundleStatus]] = Field(default=None, description="""The status of each bundle OPA downloads, by name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent', 'OpaStatusReport']} })
+    discovery: Optional[OpaBundleStatus] = Field(default=None, description="""The status of the discovery bundle.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStatusReport']} })
+    decision_logs: Optional[OpaDecisionLogStatus] = Field(default=None, description="""The status of the decision log uploads.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStatusReport']} })
+    metrics: Optional[OpaObject] = Field(default=None, description="""The instance's metrics, under the name of their provider, such as `prometheus`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent',
+                       'OpaStatusReport',
+                       'OpaBundleStatus',
+                       'OpaDecisionLogStatus']} })
+    plugins: Optional[dict[str, OpaPluginStatus]] = Field(default=None, description="""The state of each plugin, by name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStatusReport']} })
+
+
+class OpaBundleStatus(ConfiguredBaseModel):
+    """
+    The status of a bundle: its active revision, when OPA last asked for, downloaded and activated it, and the errors of the last attempt.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'comments': ["OPA writes Go's zero time, 0001-01-01T00:00:00Z, for a time "
+                      'that has not come yet, such as the last activation of a bundle '
+                      'that never activated.'],
+         'from_schema': 'https://w3id.org/lmodel/opa/status_report',
+         'slot_usage': {'type': {'description': "The bundle's type.",
+                                 'name': 'type',
+                                 'range': 'OpaBundleType'}}})
+
+    type: Optional[OpaBundleType] = Field(default=None, description="""The bundle's type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
+                       'OpaArrayType',
+                       'OpaBooleanType',
+                       'OpaFunctionType',
+                       'OpaNullType',
+                       'OpaNumberType',
+                       'OpaObjectType',
+                       'OpaSetType',
+                       'OpaStringType',
+                       'OpaBuiltinArgument',
+                       'OpaBuiltinResult',
+                       'OpaArrayAppendStmt',
+                       'OpaAssignIntStmt',
+                       'OpaAssignVarOnceStmt',
+                       'OpaAssignVarStmt',
+                       'OpaBlockStmt',
+                       'OpaBreakStmt',
+                       'OpaCallDynamicStmt',
+                       'OpaCallStmt',
+                       'OpaDotStmt',
+                       'OpaEqualStmt',
+                       'OpaIsArrayStmt',
+                       'OpaIsDefinedStmt',
+                       'OpaIsObjectStmt',
+                       'OpaIsSetStmt',
+                       'OpaIsUndefinedStmt',
+                       'OpaLenStmt',
+                       'OpaMakeArrayStmt',
+                       'OpaMakeNullStmt',
+                       'OpaMakeNumberIntStmt',
+                       'OpaMakeNumberRefStmt',
+                       'OpaMakeObjectStmt',
+                       'OpaMakeSetStmt',
+                       'OpaNopStmt',
+                       'OpaNotEqualStmt',
+                       'OpaNotStmt',
+                       'OpaObjectInsertOnceStmt',
+                       'OpaObjectInsertStmt',
+                       'OpaObjectMergeStmt',
+                       'OpaResetLocalStmt',
+                       'OpaResultSetAddStmt',
+                       'OpaReturnLocalStmt',
+                       'OpaScanStmt',
+                       'OpaSetAddStmt',
+                       'OpaWithStmt',
+                       'OpaBoolOperand',
+                       'OpaLocalOperand',
+                       'OpaStringIndexOperand',
+                       'OpaBundleStatus'],
+         'slot_uri': 'openpolicyagent:type'} })
+    name: str = Field(default=..., description="""The bundle's name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
+                       'OpaBuiltin',
+                       'OpaBuiltinCategory',
+                       'OpaBuiltinArgument',
+                       'OpaBuiltinResult',
+                       'OpaVersionEntry',
+                       'OpaBuiltinFunc',
+                       'OpaPlan',
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
+         'slot_uri': 'schema:name'} })
+    active_revision: Optional[str] = Field(default=None, description="""The revision of the bundle OPA last activated.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus']} })
+    last_successful_activation: datetime  = Field(default=..., description="""When OPA last activated the bundle.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus']} })
+    size: Optional[int] = Field(default=None, description="""The bundle's size in bytes.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus']} })
+    last_successful_download: datetime  = Field(default=..., description="""When OPA last downloaded the bundle.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus']} })
+    last_successful_request: datetime  = Field(default=..., description="""When a request for the bundle last succeeded.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus']} })
+    last_request: datetime  = Field(default=..., description="""When OPA last asked for the bundle.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus']} })
+    code: Optional[str] = Field(default=None, description="""The error code, when the last download or activation failed.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus', 'OpaDecisionLogStatus']} })
+    message: Optional[str] = Field(default=None, description="""What went wrong, in words.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus', 'OpaDecisionLogStatus', 'OpaPluginStatus']} })
+    errors: Optional[list[OpaObject]] = Field(default=None, description="""The parse and compile errors of the last activation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus']} })
+    metrics: Optional[OpaObject] = Field(default=None, description="""The metrics of the last download and activation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent',
+                       'OpaStatusReport',
+                       'OpaBundleStatus',
+                       'OpaDecisionLogStatus']} })
+    http_code: Optional[int] = Field(default=None, description="""The HTTP status code of a download the server refused.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus', 'OpaDecisionLogStatus']} })
+
+
+class OpaDecisionLogStatus(ConfiguredBaseModel):
+    """
+    The status of the decision log uploads.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/status_report'})
+
+    code: Optional[str] = Field(default=None, description="""The error code, when the last upload failed.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus', 'OpaDecisionLogStatus']} })
+    message: Optional[str] = Field(default=None, description="""What went wrong, in words.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus', 'OpaDecisionLogStatus', 'OpaPluginStatus']} })
+    http_code: Optional[int] = Field(default=None, description="""The HTTP status code of an upload the server refused.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus', 'OpaDecisionLogStatus']} })
+    metrics: Optional[OpaObject] = Field(default=None, description="""The decision logger's metrics.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent',
+                       'OpaStatusReport',
+                       'OpaBundleStatus',
+                       'OpaDecisionLogStatus']} })
+
+
+class OpaPluginStatus(ConfiguredBaseModel):
+    """
+    The state of a plugin.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/status_report'})
+
+    name: str = Field(default=..., description="""The plugin's name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
+                       'OpaBuiltin',
+                       'OpaBuiltinCategory',
+                       'OpaBuiltinArgument',
+                       'OpaBuiltinResult',
+                       'OpaVersionEntry',
+                       'OpaBuiltinFunc',
+                       'OpaPlan',
+                       'OpaFunc',
+                       'OpaDecisionBundle',
+                       'OpaBundleStatus',
+                       'OpaPluginStatus'],
+         'slot_uri': 'schema:name'} })
+    state: OpaPluginState = Field(default=..., description="""The plugin's state.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaPluginStatus']} })
+    message: Optional[str] = Field(default=None, description="""More about the state, in words.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBundleStatus', 'OpaDecisionLogStatus', 'OpaPluginStatus']} })
+
+
 # Model rebuild
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 OpaObject.model_rebuild()
+OpaLabels.model_rebuild()
 OpaStringListMap.model_rebuild()
 OpaType.model_rebuild()
 OpaAnyType.model_rebuild()
@@ -6392,3 +6809,11 @@ OpaOperand.model_rebuild()
 OpaBoolOperand.model_rebuild()
 OpaLocalOperand.model_rebuild()
 OpaStringIndexOperand.model_rebuild()
+OpaDecisionLogEvent.model_rebuild()
+OpaDecisionBundle.model_rebuild()
+OpaRequestContext.model_rebuild()
+OpaHttpRequestContext.model_rebuild()
+OpaStatusReport.model_rebuild()
+OpaBundleStatus.model_rebuild()
+OpaDecisionLogStatus.model_rebuild()
+OpaPluginStatus.model_rebuild()
