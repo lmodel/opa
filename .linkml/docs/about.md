@@ -21,7 +21,7 @@ This page says where each module of the schema comes from, how the model differs
 
 The plan's `{type, stmt}` statements and `{type, value}` operands become one class per kind under an abstract class. A range over the abstract class admits each kind, as OPA's `oneOf` does. The capabilities' type declarations follow the same pattern: one class per Rego type, picked by `type`.
 
-The enumerations of future keywords and features take every value that the capabilities files included with OPA use, so each of those files validates.
+The enumerations of future keywords and features list every value used in the capabilities files that OPA includes, so each of those files validates.
 
 The decision log and status modules render Go structs key for key, from the structs' JSON tags. A key is required when its tag has no `omitempty` and its Go type cannot hold null. The converter stops when a struct gains or loses a key, and `tests/test_parity.py` compares each class with its struct.
 
@@ -33,11 +33,11 @@ A slot that may hold any JSON value, such as a decision's `result`, rejects a li
 
 `tests/test_parity.py` compares the two in three tiers: every definition has a class, a corpus of over 1,300 documents gets the same verdicts, and `parity/structural.yaml` gives the reason for each case that differs. Four reasons cover them all:
 
-- OPA requires some keys whose value may be null. LinkML cannot state that, so those keys are optional here.
+- OPA's JSON Schemas require some keys whose value may be null. LinkML cannot state that, so those keys are optional here.
 - LinkML's JSON Schema lets an optional key hold null.
 - A built-in function's `decl` is the function type OPA writes, where OPA's schema leaves it opaque.
-- OPA type-checks the authorization policy against its schema, which requires `identity`, `client_certificates` and `body` and makes the body an object. OPA's server leaves those keys out when a request has none, and parses a body as any JSON value, so here they are optional and the body takes any value.
+- OPA type-checks the authorization policy against its schema, which requires `identity`, `client_certificates` and `body`, and makes the body an object. OPA's server leaves those keys out when a request has none, and parses a body as any JSON value. So here the three keys are optional, and the body takes any value.
 
 ## What it leaves out
 
-The configuration file and the discovery bundle are left out. OPA's configuration type keeps most sections as raw JSON, which each plugin and service parses with its own types and defaults. A discovery bundle is an ordinary bundle whose data holds a configuration. Either can follow as a module that renders those types.
+The configuration file and the discovery bundle are left out. OPA's configuration type keeps most sections as raw JSON, which each plugin and service parses with its own types and defaults. A discovery bundle is an ordinary bundle whose data holds a configuration. Either can be added later, as a module that renders those types.

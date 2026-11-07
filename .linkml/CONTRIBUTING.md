@@ -59,7 +59,14 @@ npx skills add noelmcloughlin/knowledge-trust-ladder --skill ktl-curator --yes  
 
 ## Taking a new release of OPA
 
-The weekly watch opens an issue when OPA publishes a release. Merge its tag, run `just pin-opa-tree <commit>`, move `TAG`, `COMMIT` and `RELEASE_DATE` in `.linkml/scripts/opa_to_linkml.py`, `EDITION` in the watch and `IMAGE` in `.linkml/scripts/capture_opa_documents.py`, then run `just gen-linkml`, the regeneration above and `just capture-opa-documents`, which needs podman and the network. Merge with a merge commit: a squash loses OPA's history, and the next merge conflicts on every file.
+The weekly watch opens an issue when OPA publishes a release. Then:
+
+1. Merge the release's tag.
+2. Run `just pin-opa-tree <commit>`.
+3. Move `TAG`, `COMMIT` and `RELEASE_DATE` in `.linkml/scripts/opa_to_linkml.py`, `EDITION` in the watch and `IMAGE` in `.linkml/scripts/capture_opa_documents.py`.
+4. Run `just gen-linkml` and the regeneration above.
+5. Run `just capture-opa-documents`, which needs podman and the network.
+6. Merge with a merge commit: a squash loses OPA's history, and the next merge conflicts on every file.
 
 ## Code of conduct
 
