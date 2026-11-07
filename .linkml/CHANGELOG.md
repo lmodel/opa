@@ -18,3 +18,9 @@ The `v0.0.0` tag is a baseline, not a release: it marks where versioning starts 
 ### Removed
 
 - **The five SSSOM sets** to D3FEND, DPV, ISO 27001, OSCAL and SLSA, which a language model matched, with the script that copied them into the schema.
+
+## [0.0.0] - 2026-11-07
+
+### Added
+
+- **The baseline**: this fork's merge of OPA v1.22.2, which the `v0.0.0` tag marks.
