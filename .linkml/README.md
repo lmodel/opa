@@ -48,7 +48,7 @@ In Obsidian, add these to the *Known LOKF types* setting of the KTL Registrar an
 OpaBuiltin, OpaCapabilities, OpaManifest, OpaPolicy
 ```
 
-The copy roots `OpaManifest`, `OpaCapabilities`, `OpaBuiltin` and `OpaPolicy` on LOKF's `Concept`, and folds `description` into LOKF's. Each `name` keeps its key. Six keys mean something else in OPA than in LOKF: `body`, `revision`, `source`, `target`, `type` and an integer `version`. The schema keeps them, so a document OPA writes validates unchanged, and a composite's JSON-LD context reads them as LOKF's. Every class carries the `Opa` prefix, so none is a neighbour's. OPA's keys are ordinary words, so the copy shares some with other lmodel copies, which `tests/test_schema_rules.py` lists.
+The copy roots `OpaManifest`, `OpaCapabilities`, `OpaBuiltin` and `OpaPolicy` on LOKF's `Concept`, and folds `description` into LOKF's. Each `name` keeps its key. Six of OPA's keys are words LOKF defines with another meaning: `body`, `revision`, `source`, `target`, `type` and `version`. Each is a top-level slot with an IRI of this schema's, so a document OPA writes keeps the key, and the copy renames them `openpolicyagent_body`, `openpolicyagent_revision`, `openpolicyagent_source`, `openpolicyagent_target`, `openpolicyagent_type` and `openpolicyagent_version`. Every class carries the `Opa` prefix, so none is a neighbour's. OPA's keys are ordinary words, so the copy shares some with other lmodel copies, which `tests/test_schema_rules.py` lists.
 
 ## Credits
 
