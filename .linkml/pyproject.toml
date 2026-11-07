@@ -76,12 +76,14 @@ skip = [
 ]
 
 # Reminder: words have to be lowercased for the ignore-words-list
-ignore-words-list = "linke"
+ignore-words-list = "linke,nd"
 quiet-level = 3
 
 # Ref.: https://github.com/crate-ci/typos (spell checker)
 [tool.typos.default.extend-words]
 linke = "linke"
+# OPA's key nd_builtin_cache, for the non-deterministic built-in functions' cache.
+nd = "nd"
 
 [tool.typos.files]
 extend-exclude = [

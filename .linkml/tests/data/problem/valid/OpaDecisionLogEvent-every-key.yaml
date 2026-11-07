@@ -6,7 +6,7 @@ labels:
 decision_id: 0552fb5c-9e3e-45e9-94f3-7fb57c4ed61b
 batch_decision_id: 1f6c2a4e-8b0d-4d2e-9f61-3c5a7b9d0e12
 trace_id: 4bf92f3577b34da6a3ce929d0e0e4736
-span_id: 00f067aa0ba902b7
+span_id: 00f067aa0c902b7d
 revision: rev-1
 bundles:
   authz:
