@@ -6,6 +6,8 @@ The `v0.0.0` tag is a baseline, not a release: it marks where versioning starts 
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-07
+
 ### Added
 
 - **The first release: a LinkML schema of eight of the JSON formats OPA v1.22.2 defines.** It renders the IR plan, the bundle manifest and the authorization input from OPA's JSON Schemas; the capabilities, built-in function metadata and version index from OPA's data files and Go types; and the decision log event and status report from OPA's Go structs. `scripts/opa_to_linkml.py` writes every module. Tests compare the schema's verdicts with OPA's JSON Schemas, and validate documents OPA's binary wrote.
