@@ -19,7 +19,7 @@ status: draft
 
 # Licence and attribution
 
-The schema project is under the Apache License 2.0, and the bundle under CC BY 4.0.[^linkml-readme.md] The descriptions of the plan's classes open with OPA's Go comments, and the description of the authorization input's class and that of the plan's legacy `Index` key come from OPA's JSON Schemas; these are OPA's words under the same licence.[^notice]
+The schema project is under the Apache License 2.0, and the bundle under CC BY 4.0.[^linkml-readme.md] The descriptions of the plan's classes open with OPA's Go comments. The description of the authorization input's class and that of the plan's legacy `Index` key come from OPA's JSON Schemas. These are OPA's words, under the same licence.[^notice]
 
 [^notice]: .linkml/NOTICE
 [^linkml-readme.md]: .linkml/README.md, License

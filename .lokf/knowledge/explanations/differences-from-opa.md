@@ -19,6 +19,6 @@ status: draft
 
 # Where the model differs from OPA's JSON Schemas
 
-OPA requires some keys whose value may be null, which LinkML cannot state, so those keys are optional here. LinkML's JSON Schema lets an optional key hold null. A built-in function's `decl` is the function type OPA writes, where OPA's schema leaves it opaque. OPA's authorization schema requires `identity`, `client_certificates` and `body` and makes the body an object, but OPA's server leaves those keys out when a request has none and parses a body as any JSON value, so here they are optional and the body takes any value.[^about.md]
+OPA's JSON Schemas require some keys whose value may be null, which LinkML cannot state, so those keys are optional here. LinkML's JSON Schema lets an optional key hold null. A built-in function's `decl` is the function type OPA writes, where OPA's schema leaves it opaque. OPA's authorization schema requires `identity`, `client_certificates` and `body`, and makes the body an object. OPA's server leaves those keys out when a request has none, and parses a body as any JSON value. So here the three keys are optional, and the body takes any value.[^about.md]
 
 [^about.md]: .linkml/docs/about.md, How the model differs from OPA's JSON Schemas

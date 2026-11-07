@@ -21,7 +21,17 @@ status: draft
 
 # The fork layout
 
-The schema project is under `.linkml/`, the bundle under `.lokf/` and the site under `website/`, beside the doorways `knowledge_bundle` and `linkml_schema`, `llms.txt`, `.releaserc.json`, `.github/SECURITY.md`, `.github/PULL_REQUEST_TEMPLATE/`, `.github/scripts/`, `.github/release/` and the project's own workflows.[^notice] Everything else is OPA's.[^contributing.md]
+This project's parts of the tree are these:[^notice]
+
+- the schema project, under `.linkml/`;
+- the bundle, under `.lokf/`;
+- the site, under `website/`;
+- the doorways `knowledge_bundle` and `linkml_schema`;
+- `llms.txt` and `.releaserc.json`;
+- `.github/SECURITY.md`, `.github/PULL_REQUEST_TEMPLATE/`, `.github/scripts/` and `.github/release/`;
+- the project's own workflows.
+
+Everything else is OPA's.[^contributing.md]
 
 [^notice]: .linkml/NOTICE
 [^contributing.md]: .linkml/CONTRIBUTING.md, What this project is

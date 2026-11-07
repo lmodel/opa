@@ -24,7 +24,19 @@ status: draft
 
 # The OPA LinkML schema
 
-The umbrella `opa.yaml` imports nine modules: the IR plan, the bundle manifest, the authorization input, the capabilities document, the built-in function metadata, the version index, the decision log event, the status report and the types they share.[^opa.yaml] A converter writes every module from OPA's files.[^about.md] `linkml_schema` at the repository's root is a link to this folder.[^linkml-readme.md]
+The umbrella `opa.yaml` imports nine modules:[^opa.yaml]
+
+- the plan in OPA's intermediate representation (IR);
+- the bundle manifest;
+- the authorization input;
+- the capabilities document;
+- the built-in function metadata;
+- the version index;
+- the decision log event;
+- the status report;
+- the types they share.
+
+A converter writes every module from OPA's files.[^about.md] `linkml_schema` at the repository's root is a link to this folder.[^linkml-readme.md]
 
 [^about.md]: .linkml/docs/about.md, Where each module comes from
 [^linkml-readme.md]: .linkml/README.md, Repository Structure

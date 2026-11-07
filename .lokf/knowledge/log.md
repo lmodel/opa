@@ -2,6 +2,7 @@
 
 ## 2026-11-07
 
+* **Prose**: reworded 11 concept bodies in plain English. No fact, link, number or frontmatter changed.
 * **Changed**: The OPA LinkML schema says it models eight of OPA's JSON formats, not all of them.
 * **Changed**: The fork layout names the four paths under `.github/` that NOTICE gives this project.
 * **Changed**: Licence and attribution says that only the authorization input's class description is OPA's, as NOTICE now does.

@@ -19,7 +19,7 @@ status: draft
 
 # Upstream watch (upstream-watch.yaml)
 
-The workflow runs every Monday.[^upstream-watch.yaml] A later OPA release, a moved tag or a changed licence fails it, and a change on its default branch to a file that defines a format the schema renders key for key, a JSON Schema or a Go file, is reported for information.[^check_upstream_release.py]
+The workflow runs every Monday.[^upstream-watch.yaml] A later OPA release, a moved tag or a changed licence fails it. A change on OPA's default branch to a file that defines a format the schema renders key for key (a JSON Schema or a Go file) is reported for information.[^check_upstream_release.py]
 
 [^upstream-watch.yaml]: .github/workflows/upstream-watch.yaml
 [^check_upstream_release.py]: .linkml/scripts/check_upstream_release.py, the docstring

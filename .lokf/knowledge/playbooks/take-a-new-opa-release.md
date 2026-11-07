@@ -19,6 +19,12 @@ status: draft
 
 # Take a new OPA release
 
-The weekly watch opens an issue when OPA publishes a release. Merge its tag, run `just pin-opa-tree <commit>`, update `TAG`, `COMMIT` and `RELEASE_DATE` in the converter, `EDITION` in the watch and `IMAGE` in the capture script, then regenerate and run `just capture-opa-documents`. Merge with a merge commit: a squash loses OPA's history.[^contributing.md]
+The weekly watch opens an issue when OPA publishes a release. Then:[^contributing.md]
+
+1. Merge the release's tag.
+2. Run `just pin-opa-tree <commit>`.
+3. Update `TAG`, `COMMIT` and `RELEASE_DATE` in the converter, `EDITION` in the watch and `IMAGE` in the capture script.
+4. Regenerate, and run `just capture-opa-documents`.
+5. Merge with a merge commit: a squash loses OPA's history.
 
 [^contributing.md]: .linkml/CONTRIBUTING.md, Taking a new release of OPA

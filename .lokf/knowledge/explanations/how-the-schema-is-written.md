@@ -22,7 +22,7 @@ status: draft
 
 # How the schema is written
 
-The plan and the bundle manifest render OPA's JSON Schemas key for key. The authorization input renders the keys of OPA's schema for it, and leaves optional the three that OPA's server writes only when the request has them. The capabilities document, the built-in function metadata and the version index render the Go types that write them, and the decision log event and the status report render OPA's Go structs key for key.[^converter] A statement or an operand of the plan is one class per kind under an abstract class, picked by its `type`.[^about.md] Edit the converter and run `just gen-linkml`, never the modules.[^about.md]
+The plan and the bundle manifest render OPA's JSON Schemas key for key. The authorization input renders the keys of OPA's schema for it, and makes optional the three keys that OPA's server writes only when the request has them. The capabilities document, the built-in function metadata and the version index render the Go types that write them. The decision log event and the status report render OPA's Go structs key for key.[^converter] A statement or an operand of the plan is one class per kind under an abstract class, picked by its `type`.[^about.md] Edit the converter, never the modules, and run `just gen-linkml`.[^about.md]
 
 [^about.md]: .linkml/docs/about.md, Where each module comes from
 [^converter]: .linkml/scripts/opa_to_linkml.py, the docstring

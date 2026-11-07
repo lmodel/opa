@@ -19,6 +19,6 @@ status: draft
 
 # What the schema leaves out
 
-The configuration file and the discovery bundle are left out. OPA's configuration type keeps most sections as raw JSON, which each plugin and service parses with its own types and defaults. A discovery bundle is an ordinary bundle whose data holds a configuration.[^about.md]
+The schema leaves out the configuration file and the discovery bundle. OPA's configuration type keeps most sections as raw JSON, which each plugin and service parses with its own types and defaults. A discovery bundle is an ordinary bundle whose data holds a configuration.[^about.md]
 
 [^about.md]: .linkml/docs/about.md, What it leaves out
