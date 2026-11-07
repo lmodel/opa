@@ -1,0 +1,18 @@
+---
+# A file's Rego version written as text.
+revision: '2026-11-07T00:00:00Z'
+roots:
+  - example
+  - system/authz
+rego_version: 1
+file_rego_versions:
+  /legacy/old.rego: v0
+metadata:
+  owner: platform-team
+  signed: true
+wasm:
+  - entrypoint: example/allow
+    module: /policy.wasm
+    annotations:
+      - scope: rule
+        title: Allow

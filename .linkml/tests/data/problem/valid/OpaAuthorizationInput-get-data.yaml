@@ -1,0 +1,16 @@
+---
+# The input of a GET of /v1/data/example?pretty=true.
+identity: secret-token
+client_certificates: []
+method: GET
+path:
+  - v1
+  - data
+  - example
+params:
+  pretty:
+    - 'true'
+headers:
+  Authorization:
+    - Bearer secret-token
+body: {}

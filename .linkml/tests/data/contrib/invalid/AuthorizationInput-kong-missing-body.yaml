@@ -1,8 +1,0 @@
-client_certificates: []
-method: GET
-path:
-  - status
-  - "200"
-params: {}
-headers:
-  Host: '{{route_host}}'

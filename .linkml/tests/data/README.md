@@ -1,14 +1,14 @@
-# Example data for opa
+# Test data
 
-This folder contains example data for testing and demonstrating the datamodel`
-sorted in subfolders:
+Each file is a document in one of OPA's formats, or a broken copy of one, named
+`<Class>-<what it shows>.yaml` after the class it must validate against.
 
-- `valid` for data conforming to the datamodel. Used to verify the datamodel.
-- `invalid` for data not conforming to the datamodel. Used to verify the validation.
-- `problem` for data which are not yet handled correctly in the current schema version,
-   again separated into valid/invalid.
+- `problem/valid/` holds documents that must pass. Every format has one.
+- `problem/invalid/` holds documents that must fail, each breaking one rule the
+  schema states.
 
-The filenames of all example data must conform to the scheme `classname-###.yaml`
-where classname must be a the name of a class from the schema. "###" can be a number
-or one or more other characters allowed in filenames. The classname is derived by
-splitting at the first "-" and taking the part before the "-".
+The examples use OPA's keys, such as `_categories`, `Major` and `return`, which
+differ from the slot names. The example runner reads keys by slot name, so the
+examples sit under `problem/`, where it does not look, and `tests/test_data.py`
+validates them against the JSON Schema the schema generates. `valid/` and
+`invalid/` stay empty.

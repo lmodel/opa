@@ -1,45 +1,51 @@
-"""Data test."""
+"""Checks each example against the schema, and against OPA's JSON Schema where OPA has one.
 
-import os
-import glob
-import pytest
+An example is a document OPA writes, with OPA's keys, such as `_categories`, `Major` or
+`return`. linkml-validate and the example runner read keys by slot name, so they cannot
+read one; the examples sit under tests/data/problem/, where the runner does not look,
+and this test validates them against the JSON Schema LinkML generates, in which each
+key is the slot's alias. `tests/data/problem/valid/<Class>-<anything>.yaml` must pass,
+and `tests/data/problem/invalid/<Class>-<anything>.yaml` must fail. The plan, the
+manifest and the authorization input must get the same verdict from OPA's schema.
+"""
+
 from pathlib import Path
 
-import opa.datamodel.opa
-from linkml_runtime.loaders import yaml_loader
+import pytest
+import yaml
 
-DATA_DIR_VALID = Path(__file__).parent / "data" / "valid"
-DATA_DIR_INVALID = Path(__file__).parent / "data" / "invalid"
-DATA_DIR_CONTRIB_VALID = Path(__file__).parent / "data" / "contrib" / "valid"
-DATA_DIR_CONTRIB_INVALID = Path(__file__).parent / "data" / "contrib" / "invalid"
+import opa_parity as parity
 
-VALID_EXAMPLE_FILES = sorted(
-    glob.glob(os.path.join(DATA_DIR_VALID, "*.yaml"))
-    + glob.glob(os.path.join(DATA_DIR_CONTRIB_VALID, "*.yaml"))
-)
-INVALID_EXAMPLE_FILES = sorted(
-    glob.glob(os.path.join(DATA_DIR_INVALID, "*.yaml"))
-    + glob.glob(os.path.join(DATA_DIR_CONTRIB_INVALID, "*.yaml"))
-)
+DATA = Path(__file__).parent / "data" / "problem"
+VALID = sorted((DATA / "valid").glob("*.yaml"))
+INVALID = sorted((DATA / "invalid").glob("*.yaml"))
+OPA = {
+    "OpaPolicy": "v1/ir/plan.schema.json#Policy",
+    "OpaManifest": "v1/bundle/manifest.schema.json#Manifest",
+    "OpaAuthorizationInput": parity.AUTHZ,
+}
 
 
-def _target_class_for_filepath(filepath: str):
-    """Resolve fixture filename prefix to datamodel class."""
-    target_class_name = Path(filepath).stem.split("-")[0]
-    return getattr(opa.datamodel.opa, target_class_name)
+def _case(path: Path):
+    return path.stem.split("-")[0], yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
-@pytest.mark.parametrize("filepath", VALID_EXAMPLE_FILES)
-def test_valid_data_files(filepath):
-    """Test loading of all valid data files."""
-    tgt_class = _target_class_for_filepath(filepath)
-    obj = yaml_loader.load(filepath, target_class=tgt_class)
-    assert obj
+@pytest.mark.parametrize("path", VALID, ids=lambda p: p.stem)
+def test_valid_example(path):
+    cls, data = _case(path)
+    assert parity.verdict("generated", cls, data), parity.errors("generated", cls, data)[:3]
+    if cls in OPA:
+        assert parity.verdict("published", OPA[cls], data)
 
 
-@pytest.mark.parametrize("filepath", INVALID_EXAMPLE_FILES)
-def test_invalid_data_files(filepath):
-    """Test loading of invalid fixtures raises an error."""
-    tgt_class = _target_class_for_filepath(filepath)
-    with pytest.raises(Exception):
-        yaml_loader.load(filepath, target_class=tgt_class)
+@pytest.mark.parametrize("path", INVALID, ids=lambda p: p.stem)
+def test_counter_example(path):
+    cls, data = _case(path)
+    assert not parity.verdict("generated", cls, data)
+    if cls in OPA:
+        assert not parity.verdict("published", OPA[cls], data)
+
+
+def test_every_document_class_has_an_example():
+    roots = {name for name, cls in parity.classes().items() if cls.get("tree_root")}
+    assert roots == {path.stem.split("-")[0] for path in VALID}

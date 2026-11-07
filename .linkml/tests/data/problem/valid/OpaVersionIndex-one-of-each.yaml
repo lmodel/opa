@@ -1,0 +1,22 @@
+---
+# A version index with a function, a pre-release, a feature and a keyword.
+builtins:
+  abs:
+    Major: 0
+    Minor: 17
+    Patch: 0
+  base64url.encode_no_pad:
+    Major: 0
+    Minor: 25
+    Patch: 0
+    PreRelease: rc2
+features:
+  rego_v1:
+    Major: 1
+    Minor: 0
+    Patch: 0
+keywords:
+  every:
+    Major: 0
+    Minor: 38
+    Patch: 0

@@ -1,0 +1,41 @@
+---
+# A function whose Wasm flag is text.
+_categories:
+  numbers:
+    - abs
+  aggregates:
+    - count
+_implementations:
+  - id: java
+    label: Java
+    repo: open-policy-agent/java-opa-sdk
+    version: 0.6.0
+abs:
+  args:
+    - description: the number to take the absolute value of
+      name: x
+      type: number
+  available:
+    - v0.17.0
+    - v1.22.2
+    - edge
+  description: Returns the number without its sign.
+  implementations:
+    java: 0.1.0
+  introduced: v0.17.0
+  result:
+    description: the absolute value of x
+    name: y
+    type: number
+  wasm: 'yes'
+count:
+  args:
+    - name: collection
+      type: 'any<string, array[any], object[any: any], set[any]>'
+  available:
+    - v0.17.0
+    - edge
+  implementations: {}
+  introduced: v0.17.0
+  result: {}
+  wasm: true

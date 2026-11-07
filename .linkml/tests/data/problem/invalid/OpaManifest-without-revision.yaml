@@ -1,0 +1,17 @@
+---
+# A manifest without its revision.
+roots:
+  - example
+  - system/authz
+rego_version: 1
+file_rego_versions:
+  /legacy/old.rego: 0
+metadata:
+  owner: platform-team
+  signed: true
+wasm:
+  - entrypoint: example/allow
+    module: /policy.wasm
+    annotations:
+      - scope: rule
+        title: Allow
