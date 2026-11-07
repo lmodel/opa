@@ -8,7 +8,7 @@ The `v0.0.0` tag is a baseline, not a release: it marks where versioning starts 
 
 ### Added
 
-- **The first release: a LinkML schema of the JSON formats OPA v1.22.2 defines.** It renders the IR plan, the bundle manifest and the authorization policy input from OPA's JSON Schemas, and the capabilities document, the built-in function metadata and the version index from OPA's data files and Go types. `scripts/opa_to_linkml.py` writes every module, and `tests/test_parity.py` checks the schema's verdicts against OPA's JSON Schemas.
+- **The first release: a LinkML schema of the JSON formats OPA v1.22.2 defines.** It renders the IR plan, the bundle manifest and the authorization policy input from OPA's JSON Schemas, the capabilities document, the built-in function metadata and the version index from OPA's data files and Go types, and the decision log event and the status report from OPA's Go structs. `scripts/opa_to_linkml.py` writes every module, `tests/test_parity.py` checks the schema's verdicts against OPA's JSON Schemas, and documents OPA's binary wrote all validate.
 - **A KTL v0.62.0 sidecar** with a knowledge bundle, the adapt copy `.lokf/schema/opa.yaml`, the knowledge website and a weekly watch of OPA's releases.
 
 ### Changed

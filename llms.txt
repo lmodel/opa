@@ -26,8 +26,9 @@ librarian fills them.
 The data model of this repository is a LinkML schema at
 `.linkml/src/opa/schema/opa.yaml`, also reachable as
 `linkml_schema/`. Read it before the code it describes. Every class, field
-and enum is defined once there, with its meaning mapped to public
-vocabularies. The JSON Schema, OWL and the rest under `.linkml/project/`
+and enum is defined once there, and a class that renders a definition of
+OPA's plan or manifest JSON Schema names it in `exact_mappings`. The JSON
+Schema, OWL and the rest under `.linkml/project/`
 and the Pydantic models under `.linkml/src/opa/datamodel/` are
 generated from it, never edited. `.linkml/scripts/opa_to_linkml.py`
 writes the schema from OPA's files: change the converter

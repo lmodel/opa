@@ -28,11 +28,18 @@ src/opa/schema/ models OPA's JSON formats. scripts/opa_to_linkml.py writes it
 from OPA's files: the JSON Schemas v1/ir/plan.schema.json,
 v1/bundle/manifest.schema.json and v1/schemas/authorizationPolicy.json; the
 data files capabilities.json, capabilities/, builtin_metadata.json and
-v1/ast/version_index.json; and v1/ir/ir.go. The structure of the schema is this
-project's. The descriptions of the plan's classes open with the doc comments of
-the matching types in v1/ir/ir.go, which are OPA's words; the other
-descriptions are this project's. src/opa/datamodel/, project/ and docs/schema/
-are generated from the schema.
+v1/ast/version_index.json; v1/ir/ir.go; and the Go structs and constants of
+v1/plugins/logs/plugin.go, v1/plugins/status/plugin.go,
+v1/plugins/bundle/status.go, v1/plugins/logs/status/status.go,
+v1/plugins/plugins.go and v1/bundle/bundle.go. The structure of the schema is
+this project's. The descriptions of the plan's classes open with the doc
+comments of the matching types in v1/ir/ir.go, and the descriptions of the
+authorization input and of the plan's legacy Index key come from OPA's JSON
+Schemas; these are OPA's words. The other descriptions are this project's.
+src/opa/datamodel/, project/ and docs/schema/ are generated from the schema.
+
+tests/data/captured/ holds documents OPA's release image wrote when
+scripts/capture_opa_documents.py ran it on this project's test policies.
 
 Open Policy Agent, OPA and Rego are names of the OPA project, a graduated
 project of the Cloud Native Computing Foundation. This project is not part of
