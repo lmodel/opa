@@ -1,0 +1,41 @@
+---
+# A catalogue without its categories, which OPA's generator always writes.
+_implementations:
+  - id: java
+    label: Java
+    repo: open-policy-agent/java-opa-sdk
+    version: 0.6.0
+  - id: swift
+    label: Swift
+    repo: open-policy-agent/swift-opa
+    version: 0.0.10
+abs:
+  args:
+    - description: the number to take the absolute value of
+      name: x
+      type: number
+  available:
+    - v0.17.0
+    - v1.22.2
+    - edge
+  description: Returns the number without its sign.
+  implementations:
+    java: 0.1.0
+    swift: null
+  introduced: v0.17.0
+  result:
+    description: the absolute value of x
+    name: y
+    type: number
+  wasm: true
+count:
+  args:
+    - name: collection
+      type: 'any<string, array[any], object[any: any], set[any]>'
+  available:
+    - v0.17.0
+    - edge
+  implementations: {}
+  introduced: v0.17.0
+  result: {}
+  wasm: true

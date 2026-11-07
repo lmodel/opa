@@ -4,8 +4,8 @@ id: https://w3id.org/lmodel/opa/common
 name: common
 title: OPA common types
 description: >-
-  Types that more than one OPA format uses: an open JSON object, and the Rego type declarations
-  that capabilities and plans carry for built-in functions.
+  Types that more than one OPA format uses: open JSON objects and values, maps of HTTP headers,
+  and the Rego type declarations that capabilities and plans carry for built-in functions.
 version: 1.22.2
 source: >-
   https://github.com/open-policy-agent/opa/blob/482d9e368c2ddfed67ced59259fa6a247bb5f1e5/v1/types/types.go
@@ -33,7 +33,20 @@ classes:
       allowed: true
   OpaValue:
     description: Any JSON value.
+    comments:
+      - >-
+        LinkML 1.12.1's JSON Schema leaves arrays out of linkml:Any. A slot that may hold
+        an array also admits a list of values, so only an array nested directly in such a
+        list fails.
     class_uri: linkml:Any
+  OpaStringListMap:
+    description: >-
+      An object whose every value is a list of strings, as Go writes HTTP headers and query
+      parameters.
+    extra_slots:
+      range_expression:
+        range: string
+        multivalued: true
   OpaType:
     abstract: true
     description: >-
@@ -203,6 +216,10 @@ classes:
       key:
         description: The key, as a JSON value.
         range: OpaValue
+        any_of:
+          - range: OpaValue
+          - range: OpaValue
+            multivalued: true
         required: true
       value:
         description: The type of the key's value.

@@ -103,6 +103,18 @@ class OpaObject(YAMLRoot):
 
 OpaValue = Any
 
+class OpaStringListMap(YAMLRoot):
+    """
+    An object whose every value is a list of strings, as Go writes HTTP headers and query parameters.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaStringListMap"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaStringListMap"
+    class_name: ClassVar[str] = "OpaStringListMap"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaStringListMap
+
+
 @dataclass(repr=False)
 class OpaType(YAMLRoot):
     """
@@ -392,6 +404,19 @@ class OpaStaticProperty(YAMLRoot):
     value: Union[dict, OpaType] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.key):
+            self.MissingRequiredField("key")
+        if not isinstance(self.key, (OpaValue,)):
+            value = self.key
+            for _coerce in (lambda: OpaValue(),):
+                try:
+                    self.key = _coerce()
+                    break
+                except (ValueError, TypeError):
+                    continue
+            else:
+                raise ValueError(f"None of the candidate types OpaValue could be constructed from {value!r} for slot key")
+
         if self._is_empty(self.value):
             self.MissingRequiredField("value")
         if not isinstance(self.value, OpaType):
@@ -562,12 +587,16 @@ class OpaBuiltinMetadataCatalog(YAMLRoot):
     class_name: ClassVar[str] = "OpaBuiltinMetadataCatalog"
     class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBuiltinMetadataCatalog
 
-    _categories: Optional[Union[dict[Union[str, OpaBuiltinCategoryName], Union[dict, "OpaBuiltinCategory"]], list[Union[dict, "OpaBuiltinCategory"]]]] = empty_dict()
-    _implementations: Optional[Union[Union[dict, "OpaImplementation"], list[Union[dict, "OpaImplementation"]]]] = empty_list()
+    _categories: Union[dict[Union[str, OpaBuiltinCategoryName], Union[dict, "OpaBuiltinCategory"]], list[Union[dict, "OpaBuiltinCategory"]]] = empty_dict()
+    _implementations: Union[Union[dict, "OpaImplementation"], list[Union[dict, "OpaImplementation"]]] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self._categories):
+            self.MissingRequiredField("_categories")
         self._normalize_inlined_as_dict(slot_name="_categories", slot_type=OpaBuiltinCategory, key_name="name", keyed=True)
 
+        if self._is_empty(self._implementations):
+            self.MissingRequiredField("_implementations")
         self._normalize_inlined_as_list(slot_name="_implementations", slot_type=OpaImplementation, key_name="version", keyed=False)
 
         super().__post_init__(**kwargs)
@@ -785,7 +814,7 @@ class OpaImplementationSupport(YAMLRoot):
     class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaImplementationSupport
 
     implementation: Union[str, OpaImplementationSupportImplementation] = None
-    version: str = None
+    version: Optional[str] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.implementation):
@@ -793,9 +822,7 @@ class OpaImplementationSupport(YAMLRoot):
         if not isinstance(self.implementation, OpaImplementationSupportImplementation):
             self.implementation = OpaImplementationSupportImplementation(self.implementation)
 
-        if self._is_empty(self.version):
-            self.MissingRequiredField("version")
-        if not isinstance(self.version, str):
+        if self.version is not None and not isinstance(self.version, str):
             self.version = str(self.version)
 
         super().__post_init__(**kwargs)
@@ -850,6 +877,7 @@ class OpaVersionEntry(YAMLRoot):
     Minor: int = None
     Patch: int = None
     PreRelease: Optional[str] = None
+    Metadata: Optional[str] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.name):
@@ -875,6 +903,9 @@ class OpaVersionEntry(YAMLRoot):
         if self.PreRelease is not None and not isinstance(self.PreRelease, str):
             self.PreRelease = str(self.PreRelease)
 
+        if self.Metadata is not None and not isinstance(self.Metadata, str):
+            self.Metadata = str(self.Metadata)
+
         super().__post_init__(**kwargs)
 
 
@@ -890,31 +921,15 @@ class OpaAuthorizationInput(YAMLRoot):
     class_name: ClassVar[str] = "OpaAuthorizationInput"
     class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaAuthorizationInput
 
-    body: Union[dict, OpaObject] = None
-    identity: str = None
-    client_certificates: Union[Union[dict, OpaObject], list[Union[dict, OpaObject]]] = None
     method: str = None
     path: Union[str, list[str]] = None
-    params: Union[dict, OpaObject] = None
-    headers: Union[dict, OpaObject] = None
+    params: Union[dict, OpaStringListMap] = None
+    headers: Union[dict, OpaStringListMap] = None
+    body: Optional[Union[dict, OpaValue]] = None
+    identity: Optional[str] = None
+    client_certificates: Optional[Union[Union[dict, OpaObject], list[Union[dict, OpaObject]]]] = empty_list()
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.body):
-            self.MissingRequiredField("body")
-        if not isinstance(self.body, OpaObject):
-            self.body = OpaObject()
-
-        if self._is_empty(self.identity):
-            self.MissingRequiredField("identity")
-        if not isinstance(self.identity, str):
-            self.identity = str(self.identity)
-
-        if self._is_empty(self.client_certificates):
-            self.MissingRequiredField("client_certificates")
-        if not isinstance(self.client_certificates, list):
-            self.client_certificates = [self.client_certificates] if self.client_certificates is not None else []
-        self.client_certificates = [v if isinstance(v, OpaObject) else OpaObject(**as_dict(v)) for v in self.client_certificates]
-
         if self._is_empty(self.method):
             self.MissingRequiredField("method")
         if not isinstance(self.method, str):
@@ -928,13 +943,31 @@ class OpaAuthorizationInput(YAMLRoot):
 
         if self._is_empty(self.params):
             self.MissingRequiredField("params")
-        if not isinstance(self.params, OpaObject):
-            self.params = OpaObject()
+        if not isinstance(self.params, OpaStringListMap):
+            self.params = OpaStringListMap()
 
         if self._is_empty(self.headers):
             self.MissingRequiredField("headers")
-        if not isinstance(self.headers, OpaObject):
-            self.headers = OpaObject()
+        if not isinstance(self.headers, OpaStringListMap):
+            self.headers = OpaStringListMap()
+
+        if self.body is not None and not isinstance(self.body, (OpaValue,)):
+            value = self.body
+            for _coerce in (lambda: OpaValue(),):
+                try:
+                    self.body = _coerce()
+                    break
+                except (ValueError, TypeError):
+                    continue
+            else:
+                raise ValueError(f"None of the candidate types OpaValue could be constructed from {value!r} for slot body")
+
+        if self.identity is not None and not isinstance(self.identity, str):
+            self.identity = str(self.identity)
+
+        if not isinstance(self.client_certificates, list):
+            self.client_certificates = [self.client_certificates] if self.client_certificates is not None else []
+        self.client_certificates = [v if isinstance(v, OpaObject) else OpaObject(**as_dict(v)) for v in self.client_certificates]
 
         super().__post_init__(**kwargs)
 
@@ -3795,10 +3828,10 @@ slots.opaWasmAbiVersion__minor_version = Slot(uri=OPENPOLICYAGENT.minor_version,
                    model_uri=OPENPOLICYAGENT.opaWasmAbiVersion__minor_version, domain=None, range=int)
 
 slots.opaBuiltinMetadataCatalog__categories = Slot(uri=OPENPOLICYAGENT._categories, name="opaBuiltinMetadataCatalog__categories", curie=OPENPOLICYAGENT.curie('_categories'),
-                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadataCatalog__categories, domain=None, range=Optional[Union[dict[Union[str, OpaBuiltinCategoryName], Union[dict, OpaBuiltinCategory]], list[Union[dict, OpaBuiltinCategory]]]])
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadataCatalog__categories, domain=None, range=Union[dict[Union[str, OpaBuiltinCategoryName], Union[dict, OpaBuiltinCategory]], list[Union[dict, OpaBuiltinCategory]]])
 
 slots.opaBuiltinMetadataCatalog__implementations = Slot(uri=OPENPOLICYAGENT._implementations, name="opaBuiltinMetadataCatalog__implementations", curie=OPENPOLICYAGENT.curie('_implementations'),
-                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadataCatalog__implementations, domain=None, range=Optional[Union[Union[dict, OpaImplementation], list[Union[dict, OpaImplementation]]]])
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadataCatalog__implementations, domain=None, range=Union[Union[dict, OpaImplementation], list[Union[dict, OpaImplementation]]])
 
 slots.opaBuiltinCategory__name = Slot(uri=SCHEMA.name, name="opaBuiltinCategory__name", curie=SCHEMA.curie('name'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinCategory__name, domain=None, range=URIRef)
@@ -3884,11 +3917,14 @@ slots.opaVersionEntry__patch = Slot(uri=OPENPOLICYAGENT.Patch, name="opaVersionE
 slots.opaVersionEntry__pre_release = Slot(uri=OPENPOLICYAGENT.PreRelease, name="opaVersionEntry__pre_release", curie=OPENPOLICYAGENT.curie('PreRelease'),
                    model_uri=OPENPOLICYAGENT.opaVersionEntry__pre_release, domain=None, range=Optional[str])
 
+slots.opaVersionEntry__metadata = Slot(uri=OPENPOLICYAGENT.Metadata, name="opaVersionEntry__metadata", curie=OPENPOLICYAGENT.curie('Metadata'),
+                   model_uri=OPENPOLICYAGENT.opaVersionEntry__metadata, domain=None, range=Optional[str])
+
 slots.opaAuthorizationInput__identity = Slot(uri=OPENPOLICYAGENT.identity, name="opaAuthorizationInput__identity", curie=OPENPOLICYAGENT.curie('identity'),
-                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__identity, domain=None, range=str)
+                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__identity, domain=None, range=Optional[str])
 
 slots.opaAuthorizationInput__client_certificates = Slot(uri=OPENPOLICYAGENT.client_certificates, name="opaAuthorizationInput__client_certificates", curie=OPENPOLICYAGENT.curie('client_certificates'),
-                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__client_certificates, domain=None, range=Union[Union[dict, OpaObject], list[Union[dict, OpaObject]]])
+                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__client_certificates, domain=None, range=Optional[Union[Union[dict, OpaObject], list[Union[dict, OpaObject]]]])
 
 slots.opaAuthorizationInput__method = Slot(uri=OPENPOLICYAGENT.method, name="opaAuthorizationInput__method", curie=OPENPOLICYAGENT.curie('method'),
                    model_uri=OPENPOLICYAGENT.opaAuthorizationInput__method, domain=None, range=str)
@@ -3897,10 +3933,10 @@ slots.opaAuthorizationInput__path = Slot(uri=OPENPOLICYAGENT.path, name="opaAuth
                    model_uri=OPENPOLICYAGENT.opaAuthorizationInput__path, domain=None, range=Union[str, list[str]])
 
 slots.opaAuthorizationInput__params = Slot(uri=OPENPOLICYAGENT.params, name="opaAuthorizationInput__params", curie=OPENPOLICYAGENT.curie('params'),
-                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__params, domain=None, range=Union[dict, OpaObject])
+                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__params, domain=None, range=Union[dict, OpaStringListMap])
 
 slots.opaAuthorizationInput__headers = Slot(uri=OPENPOLICYAGENT.headers, name="opaAuthorizationInput__headers", curie=OPENPOLICYAGENT.curie('headers'),
-                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__headers, domain=None, range=Union[dict, OpaObject])
+                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__headers, domain=None, range=Union[dict, OpaStringListMap])
 
 slots.opaManifest__file_rego_versions = Slot(uri=OPENPOLICYAGENT.file_rego_versions, name="opaManifest__file_rego_versions", curie=OPENPOLICYAGENT.curie('file_rego_versions'),
                    model_uri=OPENPOLICYAGENT.opaManifest__file_rego_versions, domain=None, range=Optional[Union[dict[Union[str, OpaFileRegoVersionPath], Union[dict, OpaFileRegoVersion]], list[Union[dict, OpaFileRegoVersion]]]])
@@ -4263,10 +4299,10 @@ slots.OpaBuiltinResult_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaBuiltinRes
                    model_uri=OPENPOLICYAGENT.OpaBuiltinResult_type, domain=OpaBuiltinResult, range=Optional[str])
 
 slots.OpaImplementationSupport_version = Slot(uri=OPENPOLICYAGENT.version, name="OpaImplementationSupport_version", curie=OPENPOLICYAGENT.curie('version'),
-                   model_uri=OPENPOLICYAGENT.OpaImplementationSupport_version, domain=OpaImplementationSupport, range=str)
+                   model_uri=OPENPOLICYAGENT.OpaImplementationSupport_version, domain=OpaImplementationSupport, range=Optional[str])
 
 slots.OpaAuthorizationInput_body = Slot(uri=OPENPOLICYAGENT.body, name="OpaAuthorizationInput_body", curie=OPENPOLICYAGENT.curie('body'),
-                   model_uri=OPENPOLICYAGENT.OpaAuthorizationInput_body, domain=OpaAuthorizationInput, range=Union[dict, OpaObject])
+                   model_uri=OPENPOLICYAGENT.OpaAuthorizationInput_body, domain=OpaAuthorizationInput, range=Optional[Union[dict, OpaValue]])
 
 slots.OpaManifest_revision = Slot(uri=OPENPOLICYAGENT.revision, name="OpaManifest_revision", curie=OPENPOLICYAGENT.curie('revision'),
                    model_uri=OPENPOLICYAGENT.OpaManifest_revision, domain=OpaManifest, range=str)

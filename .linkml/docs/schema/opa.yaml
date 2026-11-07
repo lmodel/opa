@@ -715,6 +715,10 @@ slots:
     required: true
     inlined: true
     inlined_as_list: true
+    any_of:
+    - range: OpaValue
+    - range: OpaValue
+      multivalued: true
   opaStaticProperty__value:
     name: opaStaticProperty__value
     description: The type of the key's value.
@@ -924,6 +928,7 @@ slots:
     domain_of:
     - OpaBuiltinMetadataCatalog
     range: OpaBuiltinCategory
+    required: true
     multivalued: true
     inlined: true
     inlined_as_list: false
@@ -937,6 +942,7 @@ slots:
     domain_of:
     - OpaBuiltinMetadataCatalog
     range: OpaImplementation
+    required: true
     multivalued: true
     inlined: true
     inlined_as_list: true
@@ -1281,10 +1287,20 @@ slots:
     domain_of:
     - OpaVersionEntry
     range: string
+  opaVersionEntry__metadata:
+    name: opaVersionEntry__metadata
+    description: The build metadata, the part of a version after a plus sign.
+    from_schema: https://w3id.org/lmodel/opa/version_index
+    slot_uri: openpolicyagent:Metadata
+    alias: Metadata
+    owner: OpaVersionEntry
+    domain_of:
+    - OpaVersionEntry
+    range: string
   opaAuthorizationInput__identity:
     name: opaAuthorizationInput__identity
-    description: The bearer token or client certificate subject that identifies the
-      caller.
+    description: 'The caller''s identity: the bearer token under --authentication=token,
+      or the client certificate''s subject under --authentication=tls.'
     from_schema: https://w3id.org/lmodel/opa/authorization_input
     slot_uri: openpolicyagent:identity
     alias: identity
@@ -1292,10 +1308,10 @@ slots:
     domain_of:
     - OpaAuthorizationInput
     range: string
-    required: true
   opaAuthorizationInput__client_certificates:
     name: opaAuthorizationInput__client_certificates
-    description: The client's TLS certificates.
+    description: The client's TLS certificates under --authentication=tls, each as
+      Go writes an x509 certificate in JSON.
     from_schema: https://w3id.org/lmodel/opa/authorization_input
     slot_uri: openpolicyagent:client_certificates
     alias: client_certificates
@@ -1303,13 +1319,12 @@ slots:
     domain_of:
     - OpaAuthorizationInput
     range: OpaObject
-    required: true
     multivalued: true
     inlined: true
     inlined_as_list: true
   opaAuthorizationInput__method:
     name: opaAuthorizationInput__method
-    description: The HTTP method of the request.
+    description: The HTTP method of the request, in upper case.
     from_schema: https://w3id.org/lmodel/opa/authorization_input
     slot_uri: openpolicyagent:method
     alias: method
@@ -1332,27 +1347,27 @@ slots:
     multivalued: true
   opaAuthorizationInput__params:
     name: opaAuthorizationInput__params
-    description: The query parameters.
+    description: The query parameters, each with its list of values.
     from_schema: https://w3id.org/lmodel/opa/authorization_input
     slot_uri: openpolicyagent:params
     alias: params
     owner: OpaAuthorizationInput
     domain_of:
     - OpaAuthorizationInput
-    range: OpaObject
+    range: OpaStringListMap
     required: true
     inlined: true
     inlined_as_list: true
   opaAuthorizationInput__headers:
     name: opaAuthorizationInput__headers
-    description: The request headers.
+    description: The request headers, each with its list of values.
     from_schema: https://w3id.org/lmodel/opa/authorization_input
     slot_uri: openpolicyagent:headers
     alias: headers
     owner: OpaAuthorizationInput
     domain_of:
     - OpaAuthorizationInput
-    range: OpaObject
+    range: OpaStringListMap
     required: true
     inlined: true
     inlined_as_list: true
@@ -1563,7 +1578,8 @@ slots:
     required: true
   opaBuiltinFunc__decl:
     name: opaBuiltinFunc__decl
-    description: BuiltinFunc declaration; opaque in this schema.
+    description: The function's type declaration. OPA's schema leaves it opaque; OPA
+      writes a function type.
     from_schema: https://w3id.org/lmodel/opa/ir_plan
     slot_uri: openpolicyagent:decl
     alias: decl
@@ -2923,7 +2939,8 @@ slots:
   OpaImplementationSupport_version:
     name: OpaImplementationSupport_version
     definition_uri: https://w3id.org/lmodel/opa/version
-    description: The implementation's version that added the function.
+    description: The implementation's version that added the function, or null for
+      an implementation that publishes no version history.
     from_schema: https://w3id.org/lmodel/opa/common
     mappings:
     - openpolicyagent:version
@@ -2937,11 +2954,11 @@ slots:
     is_usage_slot: true
     usage_slot_name: version
     range: string
-    required: true
   OpaAuthorizationInput_body:
     name: OpaAuthorizationInput_body
     definition_uri: https://w3id.org/lmodel/opa/body
-    description: The request body.
+    description: The request body, parsed from JSON or YAML, for a POST to the default
+      decision, v0/data, v1/data, v1/compile or v1/query.
     from_schema: https://w3id.org/lmodel/opa/common
     mappings:
     - openpolicyagent:body
@@ -2954,10 +2971,13 @@ slots:
     - OpaAuthorizationInput
     is_usage_slot: true
     usage_slot_name: body
-    range: OpaObject
-    required: true
+    range: OpaValue
     inlined: true
     inlined_as_list: true
+    any_of:
+    - range: OpaValue
+    - range: OpaValue
+      multivalued: true
   OpaManifest_revision:
     name: OpaManifest_revision
     definition_uri: https://w3id.org/lmodel/opa/revision
@@ -4318,10 +4338,25 @@ classes:
     name: OpaValue
     definition_uri: https://w3id.org/lmodel/opa/OpaValue
     description: Any JSON value.
+    comments:
+    - LinkML 1.12.1's JSON Schema leaves arrays out of linkml:Any. A slot that may
+      hold an array also admits a list of values, so only an array nested directly
+      in such a list fails.
     from_schema: https://w3id.org/lmodel/opa/common
     exact_mappings:
     - linkml:Any
     class_uri: linkml:Any
+  OpaStringListMap:
+    name: OpaStringListMap
+    definition_uri: https://w3id.org/lmodel/opa/OpaStringListMap
+    description: An object whose every value is a list of strings, as Go writes HTTP
+      headers and query parameters.
+    from_schema: https://w3id.org/lmodel/opa/common
+    class_uri: openpolicyagent:OpaStringListMap
+    extra_slots:
+      range_expression:
+        range: string
+        multivalued: true
   OpaType:
     name: OpaType
     definition_uri: https://w3id.org/lmodel/opa/OpaType
@@ -4589,6 +4624,10 @@ classes:
         description: The key, as a JSON value.
         range: OpaValue
         required: true
+        any_of:
+        - range: OpaValue
+        - range: OpaValue
+          multivalued: true
       value:
         name: value
         description: The type of the key's value.
@@ -4748,6 +4787,7 @@ classes:
         description: The categories, each with the names of its functions.
         alias: _categories
         range: OpaBuiltinCategory
+        required: true
         multivalued: true
         inlined: true
       implementations:
@@ -4755,6 +4795,7 @@ classes:
         description: The implementations of Rego besides OPA that the catalogue tracks.
         alias: _implementations
         range: OpaImplementation
+        required: true
         multivalued: true
         inlined: true
         inlined_as_list: true
@@ -4941,8 +4982,8 @@ classes:
     slot_usage:
       version:
         name: version
-        description: The implementation's version that added the function.
-        required: true
+        description: The implementation's version that added the function, or null
+          for an implementation that publishes no version history.
     attributes:
       implementation:
         name: implementation
@@ -4997,6 +5038,7 @@ classes:
     - opaVersionEntry__minor
     - opaVersionEntry__patch
     - opaVersionEntry__pre_release
+    - opaVersionEntry__metadata
     attributes:
       name:
         name: name
@@ -5025,11 +5067,20 @@ classes:
         name: pre_release
         description: The pre-release label, such as `rc2`.
         alias: PreRelease
+      metadata:
+        name: metadata
+        description: The build metadata, the part of a version after a plus sign.
+        alias: Metadata
     class_uri: openpolicyagent:OpaVersionEntry
   OpaAuthorizationInput:
     name: OpaAuthorizationInput
     definition_uri: https://w3id.org/lmodel/opa/OpaAuthorizationInput
     description: The OPA Authorization Policy Input document.
+    comments:
+    - OPA's schema requires every key and makes the body an object. The server leaves
+      out identity, client_certificates and body when the request has none, and a
+      body can be any JSON value, so those three are optional here and the body takes
+      any value.
     from_schema: https://w3id.org/lmodel/opa/authorization_input
     slots:
     - OpaAuthorizationInput_body
@@ -5042,28 +5093,30 @@ classes:
     slot_usage:
       body:
         name: body
-        description: The request body.
-        range: OpaObject
-        required: true
-        inlined: true
+        description: The request body, parsed from JSON or YAML, for a POST to the
+          default decision, v0/data, v1/data, v1/compile or v1/query.
+        range: OpaValue
+        any_of:
+        - range: OpaValue
+        - range: OpaValue
+          multivalued: true
     attributes:
       identity:
         name: identity
-        description: The bearer token or client certificate subject that identifies
-          the caller.
+        description: 'The caller''s identity: the bearer token under --authentication=token,
+          or the client certificate''s subject under --authentication=tls.'
         range: string
-        required: true
       client_certificates:
         name: client_certificates
-        description: The client's TLS certificates.
+        description: The client's TLS certificates under --authentication=tls, each
+          as Go writes an x509 certificate in JSON.
         range: OpaObject
-        required: true
         multivalued: true
         inlined: true
         inlined_as_list: true
       method:
         name: method
-        description: The HTTP method of the request.
+        description: The HTTP method of the request, in upper case.
         range: string
         required: true
       path:
@@ -5074,14 +5127,14 @@ classes:
         multivalued: true
       params:
         name: params
-        description: The query parameters.
-        range: OpaObject
+        description: The query parameters, each with its list of values.
+        range: OpaStringListMap
         required: true
         inlined: true
       headers:
         name: headers
-        description: The request headers.
-        range: OpaObject
+        description: The request headers, each with its list of values.
+        range: OpaStringListMap
         required: true
         inlined: true
     class_uri: openpolicyagent:OpaAuthorizationInput
@@ -5294,7 +5347,8 @@ classes:
     attributes:
       decl:
         name: decl
-        description: BuiltinFunc declaration; opaque in this schema.
+        description: The function's type declaration. OPA's schema leaves it opaque;
+          OPA writes a function type.
         range: OpaFunctionType
         inlined: true
       name:
@@ -7424,6 +7478,6 @@ classes:
     class_uri: openpolicyagent:OpaStringIndexOperand
 metamodel_version: 1.12.0
 source_file: opa.yaml
-source_file_date: '2026-11-07T04:36:42'
+source_file_date: '2026-11-07T10:25:16'
 source_file_size: 1372
 

@@ -114,7 +114,9 @@ classes:
       decl:
         range: OpaFunctionType
         inlined: true
-        description: BuiltinFunc declaration; opaque in this schema.
+        description: >-
+          The function's type declaration. OPA's schema leaves it opaque; OPA writes a function
+          type.
       name:
         range: string
         required: true

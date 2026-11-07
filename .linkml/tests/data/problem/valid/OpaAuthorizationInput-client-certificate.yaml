@@ -1,0 +1,23 @@
+---
+# The input of a POST of /v1/data/example under --authentication=tls: the identity is
+# the certificate's subject, and the certificate is abridged to two of Go's fields.
+identity: CN=opa-client-01,O=Example
+client_certificates:
+  - Subject:
+      CommonName: opa-client-01
+    URIs:
+      - Scheme: spiffe
+        Host: example.org
+        Path: /client
+method: POST
+path:
+  - v1
+  - data
+  - example
+params: {}
+headers:
+  Content-Type:
+    - application/json
+body:
+  input:
+    user: alice

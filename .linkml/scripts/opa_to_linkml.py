@@ -4,9 +4,11 @@
 The script reads OPA's own files from the repository root, which is OPA's tree at
 the merged release, and writes one module per format under src/opa/schema/.
 
-- v1/ir/plan.schema.json, v1/bundle/manifest.schema.json and
-  v1/schemas/authorizationPolicy.json are OPA's JSON Schemas. The plan, the bundle
-  manifest and the authorization input render them key for key.
+- v1/ir/plan.schema.json and v1/bundle/manifest.schema.json are OPA's JSON Schemas,
+  and the plan and the bundle manifest render them key for key.
+- v1/schemas/authorizationPolicy.json is the schema OPA type-checks the system.authz
+  policy against. The authorization input renders its keys, and leaves optional the
+  three that OPA's server writes only when the request has them.
 - capabilities.json and capabilities/*.json, builtin_metadata.json and
   v1/ast/version_index.json have no JSON Schema. Their modules render the Go types
   that write them (ast.Capabilities, ast.Builtin, types.Type, the generators under
@@ -142,6 +144,16 @@ def attr(rng: str | None = None, description: str | None = None, **extra: Any) -
     return out
 
 
+def any_json(description: str) -> dict:
+    """A slot that holds any JSON value. LinkML 1.12.1's JSON Schema leaves arrays out
+    of linkml:Any, so the slot also admits a list of values."""
+    return {
+        "description": description,
+        "range": "OpaValue",
+        "any_of": [{"range": "OpaValue"}, {"range": "OpaValue", "multivalued": True}],
+    }
+
+
 # ---------------------------------------------------------------- common
 
 
@@ -162,8 +174,9 @@ def build_common() -> dict:
     schema = header(
         "common",
         "OPA common types",
-        "Types that more than one OPA format uses: an open JSON object, and the Rego type "
-        "declarations that capabilities and plans carry for built-in functions.",
+        "Types that more than one OPA format uses: open JSON objects and values, maps of "
+        "HTTP headers, and the Rego type declarations that capabilities and plans carry "
+        "for built-in functions.",
         f"{BLOB}v1/types/types.go",
         [],
     )
@@ -174,7 +187,19 @@ def build_common() -> dict:
         },
         "OpaValue": {
             "description": "Any JSON value.",
+            "comments": [
+                "LinkML 1.12.1's JSON Schema leaves arrays out of linkml:Any. A slot that "
+                "may hold an array also admits a list of values, so only an array nested "
+                "directly in such a list fails."
+            ],
             "class_uri": "linkml:Any",
+        },
+        "OpaStringListMap": {
+            "description": "An object whose every value is a list of strings, as Go writes "
+            "HTTP headers and query parameters.",
+            "extra_slots": {
+                "range_expression": {"range": "string", "multivalued": True}
+            },
         },
         "OpaType": {
             "abstract": True,
@@ -240,7 +265,7 @@ def build_common() -> dict:
     classes["OpaStaticProperty"] = {
         "description": "A known key of an object type and the type of its value.",
         "attributes": {
-            "key": attr("OpaValue", "The key, as a JSON value.", required=True),
+            "key": {**any_json("The key, as a JSON value."), "required": True},
             "value": attr(
                 "OpaType", "The type of the key's value.", required=True, inlined=True
             ),
@@ -396,6 +421,7 @@ def build_builtin_metadata() -> dict:
                     alias="_categories",
                     multivalued=True,
                     inlined=True,
+                    required=True,
                 ),
                 "implementations": attr(
                     "OpaImplementation",
@@ -404,6 +430,7 @@ def build_builtin_metadata() -> dict:
                     multivalued=True,
                     inlined=True,
                     inlined_as_list=True,
+                    required=True,
                 ),
             },
             "extra_slots": {"range_expression": {"range": "OpaBuiltinMetadata"}},
@@ -510,8 +537,8 @@ def build_builtin_metadata() -> dict:
                 "implementation": attr(None, "The implementation's id.", key=True),
                 "version": attr(
                     None,
-                    "The implementation's version that added the function.",
-                    required=True,
+                    "The implementation's version that added the function, or null for "
+                    "an implementation that publishes no version history.",
                 ),
             },
         },
@@ -564,6 +591,11 @@ def build_version_index() -> dict:
                 ),
                 "pre_release": attr(
                     None, "The pre-release label, such as `rc2`.", alias="PreRelease"
+                ),
+                "metadata": attr(
+                    None,
+                    "The build metadata, the part of a version after a plus sign.",
+                    alias="Metadata",
                 ),
             },
         },
@@ -795,7 +827,10 @@ def build_ir_plan() -> dict:
             cls["slot_usage"] = {k: {"required": True} for k in LOCATION_KEYS}
         classes[names[name]] = cls
     classes["OpaPolicy"]["tree_root"] = True
-    classes["OpaBuiltinFunc"]["attributes"]["decl"]["range"] = "OpaFunctionType"
+    # OPA's schema describes decl as opaque, which it is not here.
+    classes["OpaBuiltinFunc"]["attributes"]["decl"].update(
+        range="OpaFunctionType", description=FIELD_TEXT[("BuiltinFunc", "decl")]
+    )
     # Python keyword: the slot is return_local, and OPA's key is its alias.
     classes["OpaFunc"]["attributes"]["return_local"] = {
         **classes["OpaFunc"]["attributes"].pop("return"),
@@ -954,30 +989,50 @@ def build_bundle_manifest() -> dict:
     return schema
 
 
+# The keys OPA's schema requires that the server writes only when the request has them
+# (makeInput in v1/server/authorizer/authorizer.go).
+AUTHZ_ABSENT = ("identity", "client_certificates", "body")
+
+
 def build_authorization_input() -> dict:
     doc = read_json(AUTHZ_SCHEMA)
     schema = header(
         "authorization_input",
         "OPA authorization policy input",
         "The input document OPA's REST API gives the system.authz policy when OPA runs with "
-        "--authorization=basic. It renders OPA's JSON Schema for that input.",
+        "--authorization=basic. It renders the keys of OPA's JSON Schema for that input, "
+        "which OPA type-checks the policy against.",
         f"{BLOB}{AUTHZ_SCHEMA}",
         ["common"],
     )
     text = {
-        "identity": "The bearer token or client certificate subject that identifies the caller.",
-        "client_certificates": "The client's TLS certificates.",
-        "method": "The HTTP method of the request.",
+        "identity": "The caller's identity: the bearer token under --authentication=token, "
+        "or the client certificate's subject under --authentication=tls.",
+        "client_certificates": "The client's TLS certificates under "
+        "--authentication=tls, each as Go writes an x509 certificate in JSON.",
+        "method": "The HTTP method of the request, in upper case.",
         "path": "The request path, one segment per element.",
-        "params": "The query parameters.",
-        "headers": "The request headers.",
-        "body": "The request body.",
+        "params": "The query parameters, each with its list of values.",
+        "headers": "The request headers, each with its list of values.",
+        "body": "The request body, parsed from JSON or YAML, for a POST to the default "
+        "decision, v0/data, v1/data, v1/compile or v1/query.",
     }
     cls = object_class(
         doc, {}, doc["description"].replace("Schema for the", "The") + ".", None
     )
     for key, slot in cls["attributes"].items():
         slot["description"] = text[key]
+        if key in AUTHZ_ABSENT:
+            slot.pop("required")
+    cls["attributes"]["body"] = any_json(text["body"])
+    for key in ("params", "headers"):
+        cls["attributes"][key]["range"] = "OpaStringListMap"
+    cls["comments"] = [
+        "OPA's schema requires every key and makes the body an object. The server leaves "
+        "out identity, client_certificates and body when the request has none, and a body "
+        "can be any JSON value, so those three are optional here and the body takes any "
+        "value."
+    ]
     cls["tree_root"] = True
     schema["classes"] = {"OpaAuthorizationInput": cls}
     return schema

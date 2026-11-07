@@ -110,13 +110,13 @@ type OpaAssignVarStmtBody
 
 type OpaAuthorizationInput
   {
-    body: OpaObject!
-    identity: String!
-    clientCertificates: [OpaObject]!
+    body: OpaValue
+    identity: String
+    clientCertificates: [OpaObject]
     method: String!
     path: [String]!
-    params: OpaObject!
-    headers: OpaObject!
+    params: OpaStringListMap!
+    headers: OpaStringListMap!
   }
 
 type OpaBlock
@@ -216,8 +216,8 @@ type OpaBuiltinMetadata
 
 type OpaBuiltinMetadataCatalog
   {
-    categories: [OpaBuiltinCategory]
-    implementations: [OpaImplementation]
+    categories: [OpaBuiltinCategory]!
+    implementations: [OpaImplementation]!
   }
 
 type OpaBuiltinResult
@@ -353,7 +353,7 @@ type OpaImplementation
 
 type OpaImplementationSupport
   {
-    version: String!
+    version: String
     implementation: String!
   }
 
@@ -860,6 +860,10 @@ type OpaStringIndexOperand
     value: Int!
   }
 
+type OpaStringListMap
+  {
+  }
+
 type OpaStringType
   {
     name: String
@@ -888,6 +892,7 @@ type OpaVersionEntry
     minor: Int!
     patch: Int!
     preRelease: String
+    metadata: String
   }
 
 type OpaVersionIndex

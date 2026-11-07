@@ -1,5 +1,6 @@
 ---
-# A catalogue with two functions, one category list and one other implementation.
+# A catalogue with two functions, two category lists and two other implementations,
+# one of which publishes no version history, so its version for a function is null.
 _categories:
   numbers:
     - abs
@@ -10,6 +11,10 @@ _implementations:
     label: Java
     repo: open-policy-agent/java-opa-sdk
     version: 0.6.0
+  - id: swift
+    label: Swift
+    repo: open-policy-agent/swift-opa
+    version: 0.0.10
 abs:
   args:
     - description: the number to take the absolute value of
@@ -22,6 +27,7 @@ abs:
   description: Returns the number without its sign.
   implementations:
     java: 0.1.0
+    swift: null
   introduced: v0.17.0
   result:
     description: the absolute value of x

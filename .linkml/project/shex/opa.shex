@@ -147,13 +147,13 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaAuthorizationInput> CLOSED {
-    (  $<OpaAuthorizationInput_tes> (  <body> @<OpaObject> ;
-          <identity> @linkml:String ;
-          <client_certificates> @<OpaObject> + ;
+    (  $<OpaAuthorizationInput_tes> (  <body> @<OpaValue> ? ;
+          <identity> @linkml:String ? ;
+          <client_certificates> @<OpaObject> * ;
           <method> @linkml:String ;
           <path> @linkml:String + ;
-          <params> @<OpaObject> ;
-          <headers> @<OpaObject>
+          <params> @<OpaStringListMap> ;
+          <headers> @<OpaStringListMap>
        ) ;
        rdf:type [ <OpaAuthorizationInput> ] ?
     )
@@ -278,8 +278,8 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaBuiltinMetadataCatalog> CLOSED {
-    (  $<OpaBuiltinMetadataCatalog_tes> (  <_categories> @<OpaBuiltinCategory> * ;
-          <_implementations> @<OpaImplementation> *
+    (  $<OpaBuiltinMetadataCatalog_tes> (  <_categories> @<OpaBuiltinCategory> + ;
+          <_implementations> @<OpaImplementation> +
        ) ;
        rdf:type [ <OpaBuiltinMetadataCatalog> ] ?
     )
@@ -452,7 +452,7 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaImplementationSupport> CLOSED {
-    (  $<OpaImplementationSupport_tes> (  <version> @linkml:String ;
+    (  $<OpaImplementationSupport_tes> (  <version> @linkml:String ? ;
           <implementation> @linkml:String
        ) ;
        rdf:type [ <OpaImplementationSupport> ]
@@ -1094,6 +1094,12 @@ linkml:Sparqlpath xsd:string
     )
 }
 
+<OpaStringListMap> CLOSED {
+    (  $<OpaStringListMap_tes> rdf:type . * ;
+       rdf:type [ <OpaStringListMap> ] ?
+    )
+}
+
 <OpaStringType> CLOSED {
     (  $<OpaStringType_tes> (  &<OpaType_tes> ;
           rdf:type [ <OpaType> ] ? ;
@@ -1135,7 +1141,8 @@ linkml:Sparqlpath xsd:string
           <Major> @linkml:Integer ;
           <Minor> @linkml:Integer ;
           <Patch> @linkml:Integer ;
-          <PreRelease> @linkml:String ?
+          <PreRelease> @linkml:String ? ;
+          <Metadata> @linkml:String ?
        ) ;
        rdf:type [ <OpaVersionEntry> ]
     )

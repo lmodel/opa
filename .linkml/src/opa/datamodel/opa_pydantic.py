@@ -144,6 +144,16 @@ class OpaObject(ConfiguredBaseModel):
     pass
 
 
+class OpaStringListMap(ConfiguredBaseModel):
+    """
+    An object whose every value is a list of strings, as Go writes HTTP headers and query parameters.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'extra_slots': {'range_expression': {'multivalued': True, 'range': 'string'}},
+         'from_schema': 'https://w3id.org/lmodel/opa/common'})
+
+    pass
+
+
 class OpaType(ConfiguredBaseModel):
     """
     A Rego type, as OPA's types package writes it in JSON. A named type is an argument or result of a built-in function, with a name and a description.
@@ -900,7 +910,8 @@ class OpaStaticProperty(ConfiguredBaseModel):
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common'})
 
-    key: Any = Field(default=..., description="""The key, as a JSON value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
+    key: Any = Field(default=..., description="""The key, as a JSON value.""", json_schema_extra = { "linkml_meta": {'any_of': [{'range': 'OpaValue'}, {'multivalued': True, 'range': 'OpaValue'}],
+         'domain_of': ['OpaStaticProperty',
                        'OpaDynamicProperty',
                        'OpaDotStmtBody',
                        'OpaObjectInsertOnceStmtBody',
@@ -1021,8 +1032,8 @@ class OpaBuiltinMetadataCatalog(ConfiguredBaseModel):
          'from_schema': 'https://w3id.org/lmodel/opa/builtin_metadata',
          'tree_root': True})
 
-    categories: Optional[dict[str, Union[str, OpaBuiltinCategory]]] = Field(default=None, alias="_categories", description="""The categories, each with the names of its functions.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltin', 'OpaBuiltinMetadataCatalog']} })
-    implementations: Optional[list[OpaImplementation]] = Field(default=None, alias="_implementations", description="""The implementations of Rego besides OPA that the catalogue tracks.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltinMetadataCatalog', 'OpaBuiltinMetadata']} })
+    categories: dict[str, Union[str, OpaBuiltinCategory]] = Field(default=..., alias="_categories", description="""The categories, each with the names of its functions.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltin', 'OpaBuiltinMetadataCatalog']} })
+    implementations: list[OpaImplementation] = Field(default=..., alias="_implementations", description="""The implementations of Rego besides OPA that the catalogue tracks.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltinMetadataCatalog', 'OpaBuiltinMetadata']} })
 
 
 class OpaBuiltinCategory(ConfiguredBaseModel):
@@ -1253,11 +1264,12 @@ class OpaImplementationSupport(ConfiguredBaseModel):
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/builtin_metadata',
          'slot_usage': {'version': {'description': "The implementation's version that "
-                                                   'added the function.',
-                                    'name': 'version',
-                                    'required': True}}})
+                                                   'added the function, or null for an '
+                                                   'implementation that publishes no '
+                                                   'version history.',
+                                    'name': 'version'}}})
 
-    version: str = Field(default=..., description="""The implementation's version that added the function.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaWasmAbiVersion',
+    version: Optional[str] = Field(default=None, description="""The implementation's version that added the function, or null for an implementation that publishes no version history.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaWasmAbiVersion',
                        'OpaImplementation',
                        'OpaImplementationSupport',
                        'OpaFileRegoVersion'],
@@ -1296,33 +1308,43 @@ class OpaVersionEntry(ConfiguredBaseModel):
     Minor: int = Field(default=..., description="""The minor version.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaVersionEntry']} })
     Patch: int = Field(default=..., description="""The patch version.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaVersionEntry']} })
     PreRelease: Optional[str] = Field(default=None, description="""The pre-release label, such as `rc2`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaVersionEntry']} })
+    Metadata: Optional[str] = Field(default=None, description="""The build metadata, the part of a version after a plus sign.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaVersionEntry', 'OpaManifest']} })
 
 
 class OpaAuthorizationInput(ConfiguredBaseModel):
     """
     The OPA Authorization Policy Input document.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'extra_slots': {'allowed': True},
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'comments': ["OPA's schema requires every key and makes the body an object. "
+                      'The server leaves out identity, client_certificates and body '
+                      'when the request has none, and a body can be any JSON value, so '
+                      'those three are optional here and the body takes any value.'],
+         'extra_slots': {'allowed': True},
          'from_schema': 'https://w3id.org/lmodel/opa/authorization_input',
-         'slot_usage': {'body': {'description': 'The request body.',
-                                 'inlined': True,
+         'slot_usage': {'body': {'any_of': [{'range': 'OpaValue'},
+                                            {'multivalued': True, 'range': 'OpaValue'}],
+                                 'description': 'The request body, parsed from JSON or '
+                                                'YAML, for a POST to the default '
+                                                'decision, v0/data, v1/data, '
+                                                'v1/compile or v1/query.',
                                  'name': 'body',
-                                 'range': 'OpaObject',
-                                 'required': True}},
+                                 'range': 'OpaValue'}},
          'tree_root': True})
 
-    body: OpaObject = Field(default=..., description="""The request body.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput'], 'slot_uri': 'openpolicyagent:body'} })
-    identity: str = Field(default=..., description="""The bearer token or client certificate subject that identifies the caller.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
-    client_certificates: list[OpaObject] = Field(default=..., description="""The client's TLS certificates.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
-    method: str = Field(default=..., description="""The HTTP method of the request.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
+    body: Optional[Any] = Field(default=None, description="""The request body, parsed from JSON or YAML, for a POST to the default decision, v0/data, v1/data, v1/compile or v1/query.""", json_schema_extra = { "linkml_meta": {'any_of': [{'range': 'OpaValue'}, {'multivalued': True, 'range': 'OpaValue'}],
+         'domain_of': ['OpaAuthorizationInput'],
+         'slot_uri': 'openpolicyagent:body'} })
+    identity: Optional[str] = Field(default=None, description="""The caller's identity: the bearer token under --authentication=token, or the client certificate's subject under --authentication=tls.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
+    client_certificates: Optional[list[OpaObject]] = Field(default=None, description="""The client's TLS certificates under --authentication=tls, each as Go writes an x509 certificate in JSON.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
+    method: str = Field(default=..., description="""The HTTP method of the request, in upper case.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
     path: list[str] = Field(default=..., description="""The request path, one segment per element.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput',
                        'OpaFileRegoVersion',
                        'OpaFunc',
                        'OpaUnplannedRule',
                        'OpaCallDynamicStmtBody',
                        'OpaWithStmtBody']} })
-    params: OpaObject = Field(default=..., description="""The query parameters.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput', 'OpaFunc']} })
-    headers: OpaObject = Field(default=..., description="""The request headers.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
+    params: OpaStringListMap = Field(default=..., description="""The query parameters, each with its list of values.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput', 'OpaFunc']} })
+    headers: OpaStringListMap = Field(default=..., description="""The request headers, each with its list of values.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
 
 
 class OpaManifest(ConfiguredBaseModel):
@@ -1341,7 +1363,7 @@ class OpaManifest(ConfiguredBaseModel):
 
     revision: str = Field(default=..., description="""The bundle's revision, a string the bundle's author chooses.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest'], 'slot_uri': 'openpolicyagent:revision'} })
     file_rego_versions: Optional[dict[str, Union[int, OpaFileRegoVersion]]] = Field(default=None, description="""Rego versions for single files, which override `rego_version`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest']} })
-    metadata: Optional[OpaObject] = Field(default=None, description="""Metadata the bundle's author adds.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest']} })
+    metadata: Optional[OpaObject] = Field(default=None, description="""Metadata the bundle's author adds.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaVersionEntry', 'OpaManifest']} })
     rego_version: Optional[int] = Field(default=None, description="""The Rego version of the bundle's files: 0 for v0, 1 for v1.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest']} })
     roots: Optional[list[str]] = Field(default=None, description="""The paths in the data tree the bundle owns. A bundle without the key owns the whole tree.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest']} })
     wasm: Optional[list[OpaWasmResolver]] = Field(default=None, description="""The Wasm modules the bundle holds, and the entrypoints they resolve.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltinMetadata', 'OpaManifest']} })
@@ -1439,7 +1461,7 @@ class OpaBuiltinFunc(ConfiguredBaseModel):
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:BuiltinFunc'],
          'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
 
-    decl: Optional[OpaFunctionType] = Field(default=None, description="""BuiltinFunc declaration; opaque in this schema.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltin', 'OpaBuiltinFunc']} })
+    decl: Optional[OpaFunctionType] = Field(default=None, description="""The function's type declaration. OPA's schema leaves it opaque; OPA writes a function type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltin', 'OpaBuiltinFunc']} })
     name: str = Field(default=..., description="""The function's name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinCategory',
@@ -6256,6 +6278,7 @@ class OpaStringIndexOperand(OpaOperand):
 # Model rebuild
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 OpaObject.model_rebuild()
+OpaStringListMap.model_rebuild()
 OpaType.model_rebuild()
 OpaAnyType.model_rebuild()
 OpaArrayType.model_rebuild()

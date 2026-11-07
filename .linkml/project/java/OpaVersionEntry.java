@@ -21,6 +21,7 @@ public class OpaVersionEntry  {
   private int minor;
   private int patch;
   private String preRelease;
+  private String metadata;
 
 
 }

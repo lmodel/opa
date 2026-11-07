@@ -75,3 +75,6 @@ classes:
       pre_release:
         description: The pre-release label, such as `rc2`.
         alias: PreRelease
+      metadata:
+        description: The build metadata, the part of a version after a plus sign.
+        alias: Metadata

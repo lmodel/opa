@@ -1,5 +1,6 @@
 ---
-# A version index with a function, a pre-release, a feature and a keyword.
+# A version index with a function, a pre-release, build metadata, a feature and a
+# keyword.
 builtins:
   abs:
     Major: 0
@@ -10,6 +11,11 @@ builtins:
     Minor: 25
     Patch: 0
     PreRelease: rc2
+  example.with_build:
+    Major: 1
+    Minor: 2
+    Patch: 3
+    Metadata: build.7
 features:
   rego_v1:
     Major: 1

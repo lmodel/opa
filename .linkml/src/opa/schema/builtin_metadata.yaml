@@ -41,6 +41,7 @@ classes:
         alias: _categories
         multivalued: true
         inlined: true
+        required: true
       implementations:
         description: The implementations of Rego besides OPA that the catalogue tracks.
         range: OpaImplementation
@@ -48,6 +49,7 @@ classes:
         multivalued: true
         inlined: true
         inlined_as_list: true
+        required: true
     extra_slots:
       range_expression:
         range: OpaBuiltinMetadata
@@ -167,5 +169,6 @@ classes:
       - version
     slot_usage:
       version:
-        description: The implementation's version that added the function.
-        required: true
+        description: >-
+          The implementation's version that added the function, or null for an implementation
+          that publishes no version history.

@@ -155,3 +155,27 @@ differences:
     reason: OPA's schema requires the key but allows null as its value. LinkML
       cannot state a required key whose value may be null, so the slot is optional
       here, and a document without the key passes.
+  - definition: v1/schemas/authorizationPolicy.json
+    here: accepts
+    cases:
+      - drop:body
+      - drop:client_certificates
+      - drop:identity
+    reason: OPA's schema, which OPA type-checks the authorization policy against,
+      requires the key. OPA's server leaves it out when the request has none, so
+      the slot is optional here.
+  - definition: v1/schemas/authorizationPolicy.json
+    here: accepts
+    cases:
+      - null:client_certificates
+      - null:identity
+    reason: LinkML's JSON Schema lets an optional slot hold null, where OPA's
+      schema gives the key one type only.
+  - definition: v1/schemas/authorizationPolicy.json
+    here: accepts
+    cases:
+      - null:body
+      - wrong:body
+    reason: OPA's schema makes the body an object. OPA's server parses the body
+      as any JSON value, such as the string, array or null that a POST to v0/data
+      or to the default decision can carry, so the slot takes any value here.

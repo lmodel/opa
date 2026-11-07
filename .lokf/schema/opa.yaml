@@ -41,7 +41,17 @@ classes:
       allowed: true
   OpaValue:
     description: Any JSON value.
+    comments:
+    - LinkML 1.12.1's JSON Schema leaves arrays out of linkml:Any. A slot that may hold an array also
+      admits a list of values, so only an array nested directly in such a list fails.
     class_uri: linkml:Any
+  OpaStringListMap:
+    description: An object whose every value is a list of strings, as Go writes HTTP headers and query
+      parameters.
+    extra_slots:
+      range_expression:
+        range: string
+        multivalued: true
   OpaType:
     abstract: true
     description: A Rego type, as OPA's types package writes it in JSON. A named type is an argument or
@@ -228,6 +238,10 @@ classes:
       key:
         description: The key, as a JSON value.
         range: OpaValue
+        any_of:
+        - range: OpaValue
+        - range: OpaValue
+          multivalued: true
         required: true
       value:
         description: The type of the key's value.
@@ -331,6 +345,7 @@ classes:
         alias: _categories
         multivalued: true
         inlined: true
+        required: true
       implementations:
         description: The implementations of Rego besides OPA that the catalogue tracks.
         range: OpaImplementation
@@ -338,6 +353,7 @@ classes:
         multivalued: true
         inlined: true
         inlined_as_list: true
+        required: true
     extra_slots:
       range_expression:
         range: OpaBuiltinMetadata
@@ -456,8 +472,8 @@ classes:
     - openpolicyagent_version
     slot_usage:
       openpolicyagent_version:
-        description: The implementation's version that added the function.
-        required: true
+        description: The implementation's version that added the function, or null for an implementation
+          that publishes no version history.
   OpaVersionIndex:
     description: The version index.
     attributes:
@@ -504,6 +520,9 @@ classes:
       pre_release:
         description: The pre-release label, such as `rc2`.
         alias: PreRelease
+      metadata:
+        description: The build metadata, the part of a version after a plus sign.
+        alias: Metadata
   OpaAuthorizationInput:
     description: The OPA Authorization Policy Input document.
     extra_slots:
@@ -511,42 +530,49 @@ classes:
     attributes:
       identity:
         range: string
-        required: true
-        description: The bearer token or client certificate subject that identifies the caller.
+        description: 'The caller''s identity: the bearer token under --authentication=token, or the client
+          certificate''s subject under --authentication=tls.'
       client_certificates:
         range: OpaObject
         inlined: true
         multivalued: true
         inlined_as_list: true
-        required: true
-        description: The client's TLS certificates.
+        description: The client's TLS certificates under --authentication=tls, each as Go writes an x509
+          certificate in JSON.
       method:
         range: string
         required: true
-        description: The HTTP method of the request.
+        description: The HTTP method of the request, in upper case.
       path:
         range: string
         multivalued: true
         required: true
         description: The request path, one segment per element.
       params:
-        range: OpaObject
+        range: OpaStringListMap
         inlined: true
         required: true
-        description: The query parameters.
+        description: The query parameters, each with its list of values.
       headers:
-        range: OpaObject
+        range: OpaStringListMap
         inlined: true
         required: true
-        description: The request headers.
+        description: The request headers, each with its list of values.
+    comments:
+    - OPA's schema requires every key and makes the body an object. The server leaves out identity, client_certificates
+      and body when the request has none, and a body can be any JSON value, so those three are optional
+      here and the body takes any value.
     slots:
     - openpolicyagent_body
     slot_usage:
       openpolicyagent_body:
-        range: OpaObject
-        inlined: true
-        required: true
-        description: The request body.
+        description: The request body, parsed from JSON or YAML, for a POST to the default decision, v0/data,
+          v1/data, v1/compile or v1/query.
+        range: OpaValue
+        any_of:
+        - range: OpaValue
+        - range: OpaValue
+          multivalued: true
   OpaManifest:
     description: A bundle manifest. OPA's schema leaves the manifest open to other keys.
     exact_mappings:
@@ -679,7 +705,8 @@ classes:
       decl:
         range: OpaFunctionType
         inlined: true
-        description: BuiltinFunc declaration; opaque in this schema.
+        description: The function's type declaration. OPA's schema leaves it opaque; OPA writes a function
+          type.
       name:
         range: string
         required: true

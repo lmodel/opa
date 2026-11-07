@@ -5,8 +5,9 @@ An example is a document OPA writes, with OPA's keys, such as `_categories`, `Ma
 read one. The examples are kept under tests/data/problem/, where the runner does not look,
 and this test validates them against the JSON Schema LinkML generates, in which each
 key is the slot's alias. `tests/data/problem/valid/<Class>-<anything>.yaml` must pass,
-and `tests/data/problem/invalid/<Class>-<anything>.yaml` must fail. The plan, the
-manifest and the authorization input must get the same verdict from OPA's schema.
+and `tests/data/problem/invalid/<Class>-<anything>.yaml` must fail. The plan and the
+manifest must get the same verdict from OPA's schema. The authorization input is left
+out of that comparison: OPA's schema for it requires keys that OPA's server leaves out.
 """
 
 from pathlib import Path
@@ -22,7 +23,6 @@ INVALID = sorted((DATA / "invalid").glob("*.yaml"))
 OPA = {
     "OpaPolicy": "v1/ir/plan.schema.json#Policy",
     "OpaManifest": "v1/bundle/manifest.schema.json#Manifest",
-    "OpaAuthorizationInput": parity.AUTHZ,
 }
 
 

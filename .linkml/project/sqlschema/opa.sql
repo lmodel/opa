@@ -4,6 +4,8 @@
 --     * Slot: OpaWasmResolver_id Description: Autocreated FK slot
 -- # Class: OpaValue Description: Any JSON value.
 --     * Slot: id
+-- # Class: OpaStringListMap Description: An object whose every value is a list of strings, as Go writes HTTP headers and query parameters.
+--     * Slot: id
 -- # Abstract Class: OpaType Description: A Rego type, as OPA's types package writes it in JSON. A named type is an argument or result of a built-in function, with a name and a description.
 --     * Slot: id
 --     * Slot: name Description: The argument's or result's name, on a named type.
@@ -120,7 +122,7 @@
 --     * Slot: name Description: The result's name.
 --     * Slot: description Description: What the result holds.
 -- # Class: OpaImplementationSupport Description: An implementation that supports a function, and the version that added it.
---     * Slot: version Description: The implementation's version that added the function.
+--     * Slot: version Description: The implementation's version that added the function, or null for an implementation that publishes no version history.
 --     * Slot: implementation Description: The implementation's id.
 --     * Slot: OpaBuiltinMetadata_id Description: Autocreated FK slot
 -- # Class: OpaVersionIndex Description: The version index.
@@ -131,14 +133,15 @@
 --     * Slot: Minor Description: The minor version.
 --     * Slot: Patch Description: The patch version.
 --     * Slot: PreRelease Description: The pre-release label, such as `rc2`.
+--     * Slot: Metadata Description: The build metadata, the part of a version after a plus sign.
 --     * Slot: OpaVersionIndex_id Description: Autocreated FK slot
 -- # Class: OpaAuthorizationInput Description: The OPA Authorization Policy Input document.
 --     * Slot: id
---     * Slot: identity Description: The bearer token or client certificate subject that identifies the caller.
---     * Slot: method Description: The HTTP method of the request.
---     * Slot: body_id Description: The request body.
---     * Slot: params_id Description: The query parameters.
---     * Slot: headers_id Description: The request headers.
+--     * Slot: identity Description: The caller's identity: the bearer token under --authentication=token, or the client certificate's subject under --authentication=tls.
+--     * Slot: method Description: The HTTP method of the request, in upper case.
+--     * Slot: body_id Description: The request body, parsed from JSON or YAML, for a POST to the default decision, v0/data, v1/data, v1/compile or v1/query.
+--     * Slot: params_id Description: The query parameters, each with its list of values.
+--     * Slot: headers_id Description: The request headers, each with its list of values.
 -- # Class: OpaManifest Description: A bundle manifest. OPA's schema leaves the manifest open to other keys.
 --     * Slot: id
 --     * Slot: revision Description: The bundle's revision, a string the bundle's author chooses.
@@ -168,7 +171,7 @@
 --     * Slot: id
 --     * Slot: name Description: The function's name.
 --     * Slot: OpaStatic_id Description: Autocreated FK slot
---     * Slot: decl_id Description: BuiltinFunc declaration; opaque in this schema.
+--     * Slot: decl_id Description: The function's type declaration. OPA's schema leaves it opaque; OPA writes a function type.
 -- # Class: OpaPlans Description: Plans represents a collection of named query plans to expose in the policy.
 --     * Slot: id
 -- # Class: OpaPlan Description: Plan represents an ordered series of blocks to execute. Plan execution stops when a return statement is reached.
@@ -710,6 +713,12 @@ CREATE TABLE "OpaValue" (
 );
 CREATE INDEX "ix_OpaValue_id" ON "OpaValue" (id);
 
+CREATE TABLE "OpaStringListMap" (
+	id INTEGER NOT NULL,
+	PRIMARY KEY (id)
+);
+CREATE INDEX "ix_OpaStringListMap_id" ON "OpaStringListMap" (id);
+
 CREATE TABLE "OpaType" (
 	id INTEGER NOT NULL,
 	name TEXT,
@@ -819,20 +828,6 @@ CREATE TABLE "OpaVersionIndex" (
 	PRIMARY KEY (id)
 );
 CREATE INDEX "ix_OpaVersionIndex_id" ON "OpaVersionIndex" (id);
-
-CREATE TABLE "OpaAuthorizationInput" (
-	id INTEGER NOT NULL,
-	identity TEXT NOT NULL,
-	method TEXT NOT NULL,
-	body_id INTEGER NOT NULL,
-	params_id INTEGER NOT NULL,
-	headers_id INTEGER NOT NULL,
-	PRIMARY KEY (id),
-	FOREIGN KEY(body_id) REFERENCES "OpaObject" (id),
-	FOREIGN KEY(params_id) REFERENCES "OpaObject" (id),
-	FOREIGN KEY(headers_id) REFERENCES "OpaObject" (id)
-);
-CREATE INDEX "ix_OpaAuthorizationInput_id" ON "OpaAuthorizationInput" (id);
 
 CREATE TABLE "OpaManifest" (
 	id INTEGER NOT NULL,
@@ -1194,9 +1189,9 @@ CREATE TABLE "OpaBuiltinCategory" (
 	UNIQUE ("OpaBuiltinMetadataCatalog_id", name),
 	FOREIGN KEY("OpaBuiltinMetadataCatalog_id") REFERENCES "OpaBuiltinMetadataCatalog" (id)
 );
+CREATE INDEX "ix_OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id");
 CREATE INDEX "OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id_name_idx" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id", name);
 CREATE INDEX "ix_OpaBuiltinCategory_name" ON "OpaBuiltinCategory" (name);
-CREATE INDEX "ix_OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id");
 
 CREATE TABLE "OpaImplementation" (
 	uid INTEGER NOT NULL,
@@ -1230,18 +1225,34 @@ CREATE TABLE "OpaVersionEntry" (
 	"Minor" INTEGER NOT NULL,
 	"Patch" INTEGER NOT NULL,
 	"PreRelease" TEXT,
+	"Metadata" TEXT,
 	"OpaVersionIndex_id" INTEGER,
-	PRIMARY KEY (name, "Major", "Minor", "Patch", "PreRelease", "OpaVersionIndex_id"),
+	PRIMARY KEY (name, "Major", "Minor", "Patch", "PreRelease", "Metadata", "OpaVersionIndex_id"),
 	UNIQUE ("OpaVersionIndex_id", name),
 	FOREIGN KEY("OpaVersionIndex_id") REFERENCES "OpaVersionIndex" (id)
 );
-CREATE INDEX "ix_OpaVersionEntry_Minor" ON "OpaVersionEntry" ("Minor");
+CREATE INDEX "ix_OpaVersionEntry_Metadata" ON "OpaVersionEntry" ("Metadata");
 CREATE INDEX "ix_OpaVersionEntry_Major" ON "OpaVersionEntry" ("Major");
-CREATE INDEX "ix_OpaVersionEntry_OpaVersionIndex_id" ON "OpaVersionEntry" ("OpaVersionIndex_id");
-CREATE INDEX "ix_OpaVersionEntry_PreRelease" ON "OpaVersionEntry" ("PreRelease");
-CREATE INDEX "ix_OpaVersionEntry_Patch" ON "OpaVersionEntry" ("Patch");
-CREATE INDEX "OpaVersionEntry_OpaVersionIndex_id_name_idx" ON "OpaVersionEntry" ("OpaVersionIndex_id", name);
 CREATE INDEX "ix_OpaVersionEntry_name" ON "OpaVersionEntry" (name);
+CREATE INDEX "ix_OpaVersionEntry_OpaVersionIndex_id" ON "OpaVersionEntry" ("OpaVersionIndex_id");
+CREATE INDEX "OpaVersionEntry_OpaVersionIndex_id_name_idx" ON "OpaVersionEntry" ("OpaVersionIndex_id", name);
+CREATE INDEX "ix_OpaVersionEntry_Patch" ON "OpaVersionEntry" ("Patch");
+CREATE INDEX "ix_OpaVersionEntry_Minor" ON "OpaVersionEntry" ("Minor");
+CREATE INDEX "ix_OpaVersionEntry_PreRelease" ON "OpaVersionEntry" ("PreRelease");
+
+CREATE TABLE "OpaAuthorizationInput" (
+	id INTEGER NOT NULL,
+	identity TEXT,
+	method TEXT NOT NULL,
+	body_id INTEGER,
+	params_id INTEGER NOT NULL,
+	headers_id INTEGER NOT NULL,
+	PRIMARY KEY (id),
+	FOREIGN KEY(body_id) REFERENCES "OpaValue" (id),
+	FOREIGN KEY(params_id) REFERENCES "OpaStringListMap" (id),
+	FOREIGN KEY(headers_id) REFERENCES "OpaStringListMap" (id)
+);
+CREATE INDEX "ix_OpaAuthorizationInput_id" ON "OpaAuthorizationInput" (id);
 
 CREATE TABLE "OpaFileRegoVersion" (
 	version INTEGER NOT NULL,
@@ -1250,9 +1261,9 @@ CREATE TABLE "OpaFileRegoVersion" (
 	PRIMARY KEY (version, path, "OpaManifest_id"),
 	FOREIGN KEY("OpaManifest_id") REFERENCES "OpaManifest" (id)
 );
+CREATE INDEX "ix_OpaFileRegoVersion_path" ON "OpaFileRegoVersion" (path);
 CREATE INDEX "ix_OpaFileRegoVersion_version" ON "OpaFileRegoVersion" (version);
 CREATE INDEX "ix_OpaFileRegoVersion_OpaManifest_id" ON "OpaFileRegoVersion" ("OpaManifest_id");
-CREATE INDEX "ix_OpaFileRegoVersion_path" ON "OpaFileRegoVersion" (path);
 
 CREATE TABLE "OpaPolicy" (
 	id INTEGER NOT NULL,
@@ -1504,15 +1515,6 @@ CREATE TABLE "OpaCapabilities_allow_net" (
 CREATE INDEX "ix_OpaCapabilities_allow_net_allow_net" ON "OpaCapabilities_allow_net" (allow_net);
 CREATE INDEX "ix_OpaCapabilities_allow_net_OpaCapabilities_id" ON "OpaCapabilities_allow_net" ("OpaCapabilities_id");
 
-CREATE TABLE "OpaAuthorizationInput_path" (
-	"OpaAuthorizationInput_id" INTEGER,
-	path TEXT NOT NULL,
-	PRIMARY KEY ("OpaAuthorizationInput_id", path),
-	FOREIGN KEY("OpaAuthorizationInput_id") REFERENCES "OpaAuthorizationInput" (id)
-);
-CREATE INDEX "ix_OpaAuthorizationInput_path_OpaAuthorizationInput_id" ON "OpaAuthorizationInput_path" ("OpaAuthorizationInput_id");
-CREATE INDEX "ix_OpaAuthorizationInput_path_path" ON "OpaAuthorizationInput_path" (path);
-
 CREATE TABLE "OpaManifest_roots" (
 	"OpaManifest_id" INTEGER,
 	roots TEXT,
@@ -1528,8 +1530,8 @@ CREATE TABLE "OpaCallDynamicStmtBody_args" (
 	PRIMARY KEY ("OpaCallDynamicStmtBody_id", args),
 	FOREIGN KEY("OpaCallDynamicStmtBody_id") REFERENCES "OpaCallDynamicStmtBody" (id)
 );
-CREATE INDEX "ix_OpaCallDynamicStmtBody_args_OpaCallDynamicStmtBody_id" ON "OpaCallDynamicStmtBody_args" ("OpaCallDynamicStmtBody_id");
 CREATE INDEX "ix_OpaCallDynamicStmtBody_args_args" ON "OpaCallDynamicStmtBody_args" (args);
+CREATE INDEX "ix_OpaCallDynamicStmtBody_args_OpaCallDynamicStmtBody_id" ON "OpaCallDynamicStmtBody_args" ("OpaCallDynamicStmtBody_id");
 
 CREATE TABLE "OpaObjectType" (
 	id INTEGER NOT NULL,
@@ -1554,17 +1556,17 @@ CREATE TABLE "OpaBuiltinArgument" (
 CREATE INDEX "ix_OpaBuiltinArgument_id" ON "OpaBuiltinArgument" (id);
 
 CREATE TABLE "OpaImplementationSupport" (
-	version TEXT NOT NULL,
+	version TEXT,
 	implementation TEXT NOT NULL,
 	"OpaBuiltinMetadata_id" INTEGER,
 	PRIMARY KEY (version, implementation, "OpaBuiltinMetadata_id"),
 	UNIQUE ("OpaBuiltinMetadata_id", implementation),
 	FOREIGN KEY("OpaBuiltinMetadata_id") REFERENCES "OpaBuiltinMetadata" (id)
 );
-CREATE INDEX "OpaImplementationSupport_OpaBuiltinMetadata_id_implementation_idx" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id", implementation);
 CREATE INDEX "ix_OpaImplementationSupport_version" ON "OpaImplementationSupport" (version);
-CREATE INDEX "ix_OpaImplementationSupport_OpaBuiltinMetadata_id" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id");
+CREATE INDEX "OpaImplementationSupport_OpaBuiltinMetadata_id_implementation_idx" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id", implementation);
 CREATE INDEX "ix_OpaImplementationSupport_implementation" ON "OpaImplementationSupport" (implementation);
+CREATE INDEX "ix_OpaImplementationSupport_OpaBuiltinMetadata_id" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id");
 
 CREATE TABLE "OpaBlock" (
 	id INTEGER NOT NULL,
@@ -1782,8 +1784,8 @@ CREATE TABLE "OpaBuiltin_categories" (
 	PRIMARY KEY ("OpaBuiltin_id", categories),
 	FOREIGN KEY("OpaBuiltin_id") REFERENCES "OpaBuiltin" (id)
 );
-CREATE INDEX "ix_OpaBuiltin_categories_OpaBuiltin_id" ON "OpaBuiltin_categories" ("OpaBuiltin_id");
 CREATE INDEX "ix_OpaBuiltin_categories_categories" ON "OpaBuiltin_categories" (categories);
+CREATE INDEX "ix_OpaBuiltin_categories_OpaBuiltin_id" ON "OpaBuiltin_categories" ("OpaBuiltin_id");
 
 CREATE TABLE "OpaBuiltinCategory_builtins" (
 	"OpaBuiltinCategory_name" TEXT,
@@ -1803,14 +1805,23 @@ CREATE TABLE "OpaBuiltinMetadata_available" (
 CREATE INDEX "ix_OpaBuiltinMetadata_available_OpaBuiltinMetadata_id" ON "OpaBuiltinMetadata_available" ("OpaBuiltinMetadata_id");
 CREATE INDEX "ix_OpaBuiltinMetadata_available_available" ON "OpaBuiltinMetadata_available" (available);
 
+CREATE TABLE "OpaAuthorizationInput_path" (
+	"OpaAuthorizationInput_id" INTEGER,
+	path TEXT NOT NULL,
+	PRIMARY KEY ("OpaAuthorizationInput_id", path),
+	FOREIGN KEY("OpaAuthorizationInput_id") REFERENCES "OpaAuthorizationInput" (id)
+);
+CREATE INDEX "ix_OpaAuthorizationInput_path_OpaAuthorizationInput_id" ON "OpaAuthorizationInput_path" ("OpaAuthorizationInput_id");
+CREATE INDEX "ix_OpaAuthorizationInput_path_path" ON "OpaAuthorizationInput_path" (path);
+
 CREATE TABLE "OpaFunc_params" (
 	"OpaFunc_id" INTEGER,
 	params INTEGER,
 	PRIMARY KEY ("OpaFunc_id", params),
 	FOREIGN KEY("OpaFunc_id") REFERENCES "OpaFunc" (id)
 );
-CREATE INDEX "ix_OpaFunc_params_OpaFunc_id" ON "OpaFunc_params" ("OpaFunc_id");
 CREATE INDEX "ix_OpaFunc_params_params" ON "OpaFunc_params" (params);
+CREATE INDEX "ix_OpaFunc_params_OpaFunc_id" ON "OpaFunc_params" ("OpaFunc_id");
 
 CREATE TABLE "OpaFunc_path" (
 	"OpaFunc_id" INTEGER,
@@ -2036,5 +2047,5 @@ CREATE TABLE "OpaWithStmtBody_path" (
 	PRIMARY KEY ("OpaWithStmtBody_id", path),
 	FOREIGN KEY("OpaWithStmtBody_id") REFERENCES "OpaWithStmtBody" (id)
 );
-CREATE INDEX "ix_OpaWithStmtBody_path_OpaWithStmtBody_id" ON "OpaWithStmtBody_path" ("OpaWithStmtBody_id");
 CREATE INDEX "ix_OpaWithStmtBody_path_path" ON "OpaWithStmtBody_path" (path);
+CREATE INDEX "ix_OpaWithStmtBody_path_OpaWithStmtBody_id" ON "OpaWithStmtBody_path" ("OpaWithStmtBody_id");

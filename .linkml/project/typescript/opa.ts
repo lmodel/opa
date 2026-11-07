@@ -46,6 +46,13 @@ export interface OpaValue {
 
 
 /**
+ * An object whose every value is a list of strings, as Go writes HTTP headers and query parameters.
+ */
+export interface OpaStringListMap {
+}
+
+
+/**
  * A Rego type, as OPA's types package writes it in JSON. A named type is an argument or result of a built-in function, with a name and a description.
  */
 export interface OpaType {
@@ -233,9 +240,9 @@ export interface OpaWasmAbiVersion {
  */
 export interface OpaBuiltinMetadataCatalog {
     /** The categories, each with the names of its functions. */
-    _categories?: {[index: OpaBuiltinCategoryName]: OpaBuiltinCategory },
+    _categories: {[index: OpaBuiltinCategoryName]: OpaBuiltinCategory },
     /** The implementations of Rego besides OPA that the catalogue tracks. */
-    _implementations?: OpaImplementation[],
+    _implementations: OpaImplementation[],
 }
 
 
@@ -322,8 +329,8 @@ export interface OpaBuiltinResult {
  * An implementation that supports a function, and the version that added it.
  */
 export interface OpaImplementationSupport {
-    /** The implementation's version that added the function. */
-    version: string,
+    /** The implementation's version that added the function, or null for an implementation that publishes no version history. */
+    version?: string,
     /** The implementation's id. */
     implementation: string,
 }
@@ -356,6 +363,8 @@ export interface OpaVersionEntry {
     Patch: number,
     /** The pre-release label, such as `rc2`. */
     PreRelease?: string,
+    /** The build metadata, the part of a version after a plus sign. */
+    Metadata?: string,
 }
 
 
@@ -363,20 +372,20 @@ export interface OpaVersionEntry {
  * The OPA Authorization Policy Input document.
  */
 export interface OpaAuthorizationInput {
-    /** The request body. */
-    body: OpaObject,
-    /** The bearer token or client certificate subject that identifies the caller. */
-    identity: string,
-    /** The client's TLS certificates. */
-    client_certificates: OpaObject[],
-    /** The HTTP method of the request. */
+    /** The request body, parsed from JSON or YAML, for a POST to the default decision, v0/data, v1/data, v1/compile or v1/query. */
+    body?: OpaValue,
+    /** The caller's identity: the bearer token under --authentication=token, or the client certificate's subject under --authentication=tls. */
+    identity?: string,
+    /** The client's TLS certificates under --authentication=tls, each as Go writes an x509 certificate in JSON. */
+    client_certificates?: OpaObject[],
+    /** The HTTP method of the request, in upper case. */
     method: string,
     /** The request path, one segment per element. */
     path: string[],
-    /** The query parameters. */
-    params: OpaObject,
-    /** The request headers. */
-    headers: OpaObject,
+    /** The query parameters, each with its list of values. */
+    params: OpaStringListMap,
+    /** The request headers, each with its list of values. */
+    headers: OpaStringListMap,
 }
 
 
@@ -464,7 +473,7 @@ export interface OpaStringConst {
  * BuiltinFunc represents a built-in function that may be required by the policy.
  */
 export interface OpaBuiltinFunc {
-    /** BuiltinFunc declaration; opaque in this schema. */
+    /** The function's type declaration. OPA's schema leaves it opaque; OPA writes a function type. */
     decl?: OpaFunctionType,
     /** The function's name. */
     name: string,

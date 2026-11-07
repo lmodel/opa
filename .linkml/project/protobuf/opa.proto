@@ -124,20 +124,20 @@ message OpaAssignVarStmtBody {
 }
 // The OPA Authorization Policy Input document.
 message OpaAuthorizationInput {
-  // The request body.
-  OpaObject body = 1;
-  // The bearer token or client certificate subject that identifies the caller.
+  // The request body, parsed from JSON or YAML, for a POST to the default decision, v0/data, v1/data, v1/compile or v1/query.
+  OpaValue body = 1;
+  // The caller's identity: the bearer token under --authentication=token, or the client certificate's subject under --authentication=tls.
   string identity = 2;
-  // The client's TLS certificates.
+  // The client's TLS certificates under --authentication=tls, each as Go writes an x509 certificate in JSON.
   repeated OpaObject client_certificates = 3;
-  // The HTTP method of the request.
+  // The HTTP method of the request, in upper case.
   string method = 4;
   // The request path, one segment per element.
   repeated string path = 5;
-  // The query parameters.
-  OpaObject params = 6;
-  // The request headers.
-  OpaObject headers = 7;
+  // The query parameters, each with its list of values.
+  OpaStringListMap params = 6;
+  // The request headers, each with its list of values.
+  OpaStringListMap headers = 7;
 }
 // Block represents an ordered sequence of statements to execute. Blocks are executed until a return statement is encountered, a statement is undefined, or there are no more statements.
 message OpaBlock {
@@ -241,7 +241,7 @@ message OpaBuiltinCategory {
 }
 // BuiltinFunc represents a built-in function that may be required by the policy.
 message OpaBuiltinFunc {
-  // BuiltinFunc declaration; opaque in this schema.
+  // The function's type declaration. OPA's schema leaves it opaque; OPA writes a function type.
   OpaFunctionType decl = 1;
   // The function's name.
   string name = 2;
@@ -460,7 +460,7 @@ message OpaImplementation {
 }
 // An implementation that supports a function, and the version that added it.
 message OpaImplementationSupport {
-  // The implementation's version that added the function.
+  // The implementation's version that added the function, or null for an implementation that publishes no version history.
   string version = 1;
   // The implementation's id.
   string implementation = 2;
@@ -1151,6 +1151,9 @@ message OpaStringIndexOperand {
   // The operand's value.
   int32 value = 2;
 }
+// An object whose every value is a list of strings, as Go writes HTTP headers and query parameters.
+message OpaStringListMap {
+}
 // A string.
 message OpaStringType {
   // The argument's or result's name, on a named type.
@@ -1189,6 +1192,8 @@ message OpaVersionEntry {
   int32 Patch = 4;
   // The pre-release label, such as `rc2`.
   string PreRelease = 5;
+  // The build metadata, the part of a version after a plus sign.
+  string Metadata = 6;
 }
 // The version index.
 message OpaVersionIndex {

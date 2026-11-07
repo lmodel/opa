@@ -470,31 +470,50 @@
             "description": "The OPA Authorization Policy Input document.",
             "properties": {
                 "body": {
-                    "$ref": "#/$defs/OpaObject",
-                    "description": "The request body."
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaValue"
+                        },
+                        {
+                            "items": {
+                                "$ref": "#/$defs/OpaValue"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The request body, parsed from JSON or YAML, for a POST to the default decision, v0/data, v1/data, v1/compile or v1/query."
                 },
                 "client_certificates": {
-                    "description": "The client's TLS certificates.",
+                    "description": "The client's TLS certificates under --authentication=tls, each as Go writes an x509 certificate in JSON.",
                     "items": {
                         "$ref": "#/$defs/OpaObject"
                     },
-                    "type": "array"
+                    "type": [
+                        "array",
+                        "null"
+                    ]
                 },
                 "headers": {
-                    "$ref": "#/$defs/OpaObject",
-                    "description": "The request headers."
+                    "$ref": "#/$defs/OpaStringListMap",
+                    "description": "The request headers, each with its list of values."
                 },
                 "identity": {
-                    "description": "The bearer token or client certificate subject that identifies the caller.",
-                    "type": "string"
+                    "description": "The caller's identity: the bearer token under --authentication=token, or the client certificate's subject under --authentication=tls.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
                 },
                 "method": {
-                    "description": "The HTTP method of the request.",
+                    "description": "The HTTP method of the request, in upper case.",
                     "type": "string"
                 },
                 "params": {
-                    "$ref": "#/$defs/OpaObject",
-                    "description": "The query parameters."
+                    "$ref": "#/$defs/OpaStringListMap",
+                    "description": "The query parameters, each with its list of values."
                 },
                 "path": {
                     "description": "The request path, one segment per element.",
@@ -505,9 +524,6 @@
                 }
             },
             "required": [
-                "body",
-                "identity",
-                "client_certificates",
                 "method",
                 "path",
                 "params",
@@ -967,7 +983,7 @@
                             "type": "null"
                         }
                     ],
-                    "description": "BuiltinFunc declaration; opaque in this schema."
+                    "description": "The function's type declaration. OPA's schema leaves it opaque; OPA writes a function type."
                 },
                 "name": {
                     "description": "The function's name.",
@@ -1019,8 +1035,11 @@
                                 "$ref": "#/$defs/OpaImplementationSupport__identifier_optional"
                             },
                             {
-                                "description": "The implementation's version that added the function.",
+                                "description": "The implementation's version that added the function, or null for an implementation that publishes no version history.",
                                 "type": "string"
+                            },
+                            {
+                                "type": "null"
                             }
                         ]
                     },
@@ -1094,22 +1113,20 @@
                         ]
                     },
                     "description": "The categories, each with the names of its functions.",
-                    "type": [
-                        "object",
-                        "null"
-                    ]
+                    "type": "object"
                 },
                 "_implementations": {
                     "description": "The implementations of Rego besides OPA that the catalogue tracks.",
                     "items": {
                         "$ref": "#/$defs/OpaImplementation"
                     },
-                    "type": [
-                        "array",
-                        "null"
-                    ]
+                    "type": "array"
                 }
             },
+            "required": [
+                "_categories",
+                "_implementations"
+            ],
             "title": "OpaBuiltinMetadataCatalog",
             "type": "object"
         },
@@ -1943,12 +1960,14 @@
                     "type": "string"
                 },
                 "version": {
-                    "description": "The implementation's version that added the function.",
-                    "type": "string"
+                    "description": "The implementation's version that added the function, or null for an implementation that publishes no version history.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
                 }
             },
             "required": [
-                "version",
                 "implementation"
             ],
             "title": "OpaImplementationSupport",
@@ -1963,13 +1982,14 @@
                     "type": "string"
                 },
                 "version": {
-                    "description": "The implementation's version that added the function.",
-                    "type": "string"
+                    "description": "The implementation's version that added the function, or null for an implementation that publishes no version history.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
                 }
             },
-            "required": [
-                "version"
-            ],
+            "required": [],
             "title": "OpaImplementationSupport",
             "type": "object"
         },
@@ -4028,6 +4048,17 @@
             "properties": {
                 "key": {
                     "$ref": "#/$defs/OpaValue",
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/OpaValue"
+                        },
+                        {
+                            "items": {
+                                "$ref": "#/$defs/OpaValue"
+                            },
+                            "type": "array"
+                        }
+                    ],
                     "description": "The key, as a JSON value."
                 },
                 "value": {
@@ -4147,6 +4178,20 @@
             "title": "OpaStringIndexOperand",
             "type": "object"
         },
+        "OpaStringListMap": {
+            "additionalProperties": {
+                "items": {
+                    "type": "string"
+                },
+                "type": [
+                    "array",
+                    "null"
+                ]
+            },
+            "description": "An object whose every value is a list of strings, as Go writes HTTP headers and query parameters.",
+            "title": "OpaStringListMap",
+            "type": "object"
+        },
         "OpaStringType": {
             "additionalProperties": false,
             "description": "A string.",
@@ -4245,6 +4290,13 @@
                     "description": "The major version.",
                     "type": "integer"
                 },
+                "Metadata": {
+                    "description": "The build metadata, the part of a version after a plus sign.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
                 "Minor": {
                     "description": "The minor version.",
                     "type": "integer"
@@ -4281,6 +4333,13 @@
                 "Major": {
                     "description": "The major version.",
                     "type": "integer"
+                },
+                "Metadata": {
+                    "description": "The build metadata, the part of a version after a plus sign.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
                 },
                 "Minor": {
                     "description": "The minor version.",

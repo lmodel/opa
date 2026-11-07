@@ -1,7 +1,6 @@
 ---
 # A path written as one string, where OPA gives one element per segment.
 identity: secret-token
-client_certificates: []
 method: GET
 path: /v1/data/example
 params:
@@ -10,4 +9,3 @@ params:
 headers:
   Authorization:
     - Bearer secret-token
-body: {}
