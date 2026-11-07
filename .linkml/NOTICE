@@ -2,8 +2,9 @@ Open Policy Agent LinkML Schema (opa)
 Copyright 2026 Noel McLoughlin
 
 This repository is a fork of Open Policy Agent (OPA). Everything in it is
-under the Apache License, Version 2.0, and the copyright in each part is its
-author's, as this notice sets out by path.
+under the Apache License, Version 2.0, except the knowledge bundle, which is
+under CC BY 4.0. The copyright in each part is its author's, as this notice
+sets out by path.
 
 The schema project, everything under .linkml/, and what this project adds beside
 OPA's tree (.lokf/, knowledge_bundle, linkml_schema, website/, llms.txt,
@@ -12,6 +13,10 @@ OPA's tree (.lokf/, knowledge_bundle, linkml_schema, website/, llms.txt,
 lint-and-docs.yaml, main.yaml, semantic-release.yml and upstream-watch.yaml) is
 this project's, licensed under the Apache License, Version 2.0 (see LICENSE
 beside this file), except for what the sections below list.
+
+The concepts under .lokf/knowledge/ are this project's work, licensed under
+the Creative Commons Attribution 4.0 International Public License (CC BY 4.0,
+https://creativecommons.org/licenses/by/4.0/), as .lokf/schema/lokf.yaml states.
 
 Everything else is OPA's, unchanged, and under OPA's terms: LICENSE at the
 repository's root.
@@ -32,11 +37,11 @@ v1/ast/version_index.json; v1/ir/ir.go; and the Go structs and constants of
 v1/plugins/logs/plugin.go, v1/plugins/status/plugin.go,
 v1/plugins/bundle/status.go, v1/plugins/logs/status/status.go,
 v1/plugins/plugins.go and v1/bundle/bundle.go. The structure of the schema is
-this project's. The descriptions of the plan's classes open with the doc
-comments of the matching types in v1/ir/ir.go. The description of the
+this project's. The descriptions of the plan classes that match a type in
+v1/ir/ir.go open with that type's doc comment. The description of the
 authorization input's class and that of the plan's legacy Index key come from
-OPA's JSON Schemas. These are OPA's words. The other descriptions are this
-project's.
+OPA's JSON Schemas. Those doc comments and these two descriptions are OPA's
+words. The other descriptions are this project's.
 src/opa/datamodel/, project/ and docs/schema/ are generated from the schema.
 
 tests/data/captured/ holds documents OPA's release image wrote when

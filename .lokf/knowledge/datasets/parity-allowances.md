@@ -16,7 +16,7 @@ sources:
     title: the docstring
 generated:
   by: process:ktl-librarian
-  at: "2026-11-07T04:10:40Z"
+  at: "2026-11-07T11:24:45Z"
 status: draft
 ---
 

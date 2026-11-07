@@ -1,8 +1,8 @@
 ---
 # Tier 3 of the parity check: each case of the corpus in tests/test_parity.py where the
 # schema's verdict differs from OPA's JSON Schema's, with its reason. `here` says what
-# the schema does with the case. The test fails when a case is added, or one listed
-# no longer differs.
+# the schema does with the case. The test fails when a case the file does not list
+# differs, or when a listed case no longer differs.
 differences:
   - definition: BlockStmt
     here: accepts

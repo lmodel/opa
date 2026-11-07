@@ -755,7 +755,7 @@ openpolicyagent:OpaValue a owl:Class ;
 	skos:definition "Any JSON value." ;
 	skos:exactMatch linkml:Any ;
 	skos:inScheme openpolicyagent:common ;
-	skos:note "LinkML 1.12.1's JSON Schema leaves arrays out of linkml:Any. A slot that may hold an array also admits a list of values, so only an array nested directly in such a list fails." .
+	skos:note "LinkML 1.12.1's JSON Schema leaves arrays out of linkml:Any. A slot that may hold an array also admits a list of values, so an array nested directly in such a list fails. LinkML writes a required slot's range beside that list, so a static property's key, which is required, refuses every list. No capabilities file OPA includes has a list as a key." .
 openpolicyagent:OpaVersionEntry a owl:Class ;
 	rdfs:label "OpaVersionEntry" ;
 	rdfs:subClassOf _:c14n1011 , _:c14n1012 , _:c14n200 , _:c14n32 , _:c14n432 , _:c14n535 , _:c14n561 , _:c14n60 , _:c14n617 , _:c14n674 , _:c14n675 , _:c14n731 , _:c14n734 , _:c14n754 , _:c14n80 , _:c14n811 , _:c14n880 , _:c14n986 ;

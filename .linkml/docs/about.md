@@ -25,7 +25,7 @@ The enumerations of future keywords and features list every value used in the ca
 
 The decision log and status modules render Go structs key for key, from the structs' JSON tags. A key is required when its tag has no `omitempty` and its Go type cannot hold null. The converter stops when a struct gains or loses a key, and `tests/test_parity.py` compares each class with its struct.
 
-A slot that may hold any JSON value, such as a decision's `result`, rejects a list whose items include a list, such as `[[1, 2]]`: LinkML 1.12.1's JSON Schema leaves arrays out of `linkml:Any`.
+A slot that may hold any JSON value, such as a decision's `result`, rejects a list whose items include a list, such as `[[1, 2]]`: LinkML 1.12.1's JSON Schema leaves arrays out of `linkml:Any`. A static property's `key` refuses every list, since LinkML writes a required slot's range beside its `any_of`. No capabilities file OPA includes has a list as a key.
 
 `tests/data/captured/` holds documents OPA's own binary wrote: a plan, three manifests, five decision log events, a status report and five authorization inputs. `just capture-opa-documents` writes them again from OPA's release image, and every one must validate.
 

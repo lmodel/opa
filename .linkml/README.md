@@ -27,7 +27,7 @@ This repository is a fork of [open-policy-agent/opa](https://github.com/open-pol
 * [docs/](docs/): the website's own pages
 * [parity/](parity): the differences from OPA's JSON Schemas the tests allow, each with its reason
 * [project/](project/): generated project files (do not edit them)
-* [scripts/](scripts/): the converter, the capture of OPA's documents, the upstream watch and the sidecar's preflight
+* [scripts/](scripts/): the converter, the capture of OPA's documents, the pin of OPA's tree, the upstream watch and the sidecar's preflight
 * [src/opa/schema/](src/opa/schema): the LinkML schema, which the converter writes, also at `linkml_schema/` in the repository's root
 * [src/opa/datamodel/](src/opa/datamodel): the generated Python datamodel
 * [tests/](tests/): Python tests, with example data in [data/problem/](tests/data/problem), documents OPA wrote in [data/captured/](tests/data/captured) and the neighbours' adapt copies in [neighbours/](tests/neighbours)
@@ -40,7 +40,7 @@ Run `just` from this folder to list the project's [just](https://github.com/case
 
 ## Knowledge Trust Ladder (KTL)
 
-`.lokf/` holds this project's [KTL](https://w3id.org/ktl/) sidecar. Its domain schema, `.lokf/schema/opa.yaml`, is the copy `just lokf-adapt` writes from `src/opa/schema/opa.yaml`, and `just lokf-adapt-check` says when it is stale. Edit the converter, never the copy. A release carries the copy as `schema-<tag>-opa.yaml`.
+`.lokf/` holds this project's [KTL](https://w3id.org/ktl/) sidecar. Its domain schema, `.lokf/schema/opa.yaml`, is the copy `just lokf-adapt` writes from `src/opa/schema/opa.yaml`, and `just lokf-adapt-check` says when it is stale. Edit the converter, never the copy. Once `KNOWLEDGE_RELEASE_ENABLED` is `true`, a release carries the copy as `schema-<tag>-opa.yaml`.
 
 In Obsidian, add these to the *Known LOKF types* setting of the KTL Registrar and KTL Curator plugins:
 
@@ -50,7 +50,7 @@ OpaBuiltin, OpaCapabilities, OpaManifest, OpaPolicy
 
 In the copy, these four classes descend from LOKF's `Concept`, `description` folds into LOKF's, and each `name` keeps its key. Seven of OPA's keys are words LOKF defines with another meaning: `body`, `revision`, `source`, `target`, `timestamp`, `type` and `version`. Each is a top-level slot with an IRI in this schema's namespace. So the schema keeps OPA's key, and the copy renames the slot with the prefix: `type` becomes `openpolicyagent_type`, and so on. A document with OPA's keys therefore validates against the schema, not the copy.
 
-Every class carries the `Opa` prefix, so no class name is also a neighbour's. `tests/test_schema_rules.py` lists the keys that the copy shares with other lmodel copies, which are ordinary words.
+Every class carries the `Opa` prefix, so no class name is also a neighbour's. OPA's keys are ordinary words, so the copy shares some with other lmodel copies. `tests/test_schema_rules.py` lists them.
 
 ## Credits
 
@@ -60,4 +60,4 @@ This project uses the template [linkml-project-copier](https://github.com/linkml
 
 The schema project is under the [Apache License 2.0](LICENSE), and the bundle under CC BY 4.0.
 
-OPA is the OPA Authors', under the [Apache License 2.0](../LICENSE), and the plan's descriptions open with OPA's Go comments under the same terms. [NOTICE](NOTICE) says what comes from where. This project is not part of OPA, and the OPA project does not endorse it.
+OPA is the OPA Authors', under the [Apache License 2.0](../LICENSE), and some of the schema's descriptions are OPA's words, under the same terms. [NOTICE](NOTICE) says what comes from where. This project is not part of OPA, and the OPA project does not endorse it.

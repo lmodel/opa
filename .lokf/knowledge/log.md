@@ -2,6 +2,8 @@
 
 ## 2026-11-07
 
+* **Changed**: Licence and attribution says only the plan classes that match a type in `v1/ir/ir.go` take its doc comment, as NOTICE now does.
+* **Changed**: Parity allowances says the test fails when a case the file does not list differs, as `parity/structural.yaml` now says.
 * **Prose**: reworded 11 concept bodies in plain English. No fact, link, number or frontmatter changed.
 * **Changed**: The OPA LinkML schema says it models eight of OPA's JSON formats, not all of them.
 * **Changed**: The fork layout names the four paths under `.github/` that NOTICE gives this project.

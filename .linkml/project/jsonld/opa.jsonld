@@ -6241,7 +6241,7 @@
       "definition_uri": "https://w3id.org/lmodel/opa/OpaValue",
       "description": "Any JSON value.",
       "comments": [
-        "LinkML 1.12.1's JSON Schema leaves arrays out of linkml:Any. A slot that may hold an array also admits a list of values, so only an array nested directly in such a list fails."
+        "LinkML 1.12.1's JSON Schema leaves arrays out of linkml:Any. A slot that may hold an array also admits a list of values, so an array nested directly in such a list fails. LinkML writes a required slot's range beside that list, so a static property's key, which is required, refuses every list. No capabilities file OPA includes has a list as a key."
       ],
       "from_schema": "https://w3id.org/lmodel/opa/common",
       "exact_mappings": [
@@ -10275,7 +10275,7 @@
   ],
   "metamodel_version": "1.12.0",
   "source_file": "opa.yaml",
-  "source_file_date": "2026-11-07T10:55:38",
+  "source_file_date": "2026-11-07T11:25:02",
   "source_file_size": 1470,
   "@type": "SchemaDefinition",
   "@context": [

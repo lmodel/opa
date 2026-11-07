@@ -44,7 +44,9 @@ classes:
     description: Any JSON value.
     comments:
     - LinkML 1.12.1's JSON Schema leaves arrays out of linkml:Any. A slot that may hold an array also
-      admits a list of values, so only an array nested directly in such a list fails.
+      admits a list of values, so an array nested directly in such a list fails. LinkML writes a required
+      slot's range beside that list, so a static property's key, which is required, refuses every list.
+      No capabilities file OPA includes has a list as a key.
     class_uri: linkml:Any
   OpaLabels:
     description: Labels as text keys and text values, such as an OPA instance's `id` and `version`.
