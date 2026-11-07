@@ -6,15 +6,16 @@ OPA_CONTAINER_CLI) and keeps what OPA writes:
 
 - the plan, and the manifests of a bundle, a plan bundle and a Wasm bundle, from
   `opa build`;
-- the decision log events and status reports OPA's server sends to a service, which a
-  server in this script plays;
-- the input the server gives the system.authz policy, which a policy prints.
+- the decision log events and status reports OPA's server sends to a service, here a
+  server this script runs;
+- the input the server gives the system.authz policy, which the authorization policy
+  prints.
 
 Each file is one document, re-indented with OPA's values, named `<Class>-<what it
 is>.json` after the class tests/test_data.py validates it against. OPA picks ids, ports
 and times, so each run writes other values. Run `just capture-opa-documents` after a
-merge of an OPA release, with IMAGE moved to it; it needs the container command and the
-network, and CI never runs it. Usage::
+merge of an OPA release, with IMAGE moved to that release. It needs the container command
+and the network, and CI never runs it. Usage::
 
     python scripts/capture_opa_documents.py
 """
@@ -46,7 +47,7 @@ IMAGE = (
 )
 CLI = os.environ.get("OPA_CONTAINER_CLI", "podman")
 # The container's user, which owns what OPA writes into the work folder. Rootless
-# podman maps its root to the user who runs this script; Docker needs that user's ids.
+# podman maps its root to the user who runs this script. Docker needs that user's ids.
 USER = "0" if Path(CLI).name == "podman" else f"{os.getuid()}:{os.getgid()}"
 
 # The policy the bundles hold: rules with labels, a non-deterministic call, a rule
@@ -137,8 +138,9 @@ def member(bundle: Path, name: str) -> object:
 
 
 class Sink(http.server.BaseHTTPRequestHandler):
-    """The services OPA's configuration names: it serves the bundle, records each
-    upload, and refuses the first decision log upload so the status reports it."""
+    """The services OPA's configuration names. The server serves the bundle, records
+    each upload, and refuses the first decision log upload, so that a status report
+    carries the error."""
 
     bundle = b""
     received: list[tuple[str, object]] = []
@@ -181,7 +183,7 @@ def call(base: str, method: str, path: str, body=None, headers=None) -> None:
         with urllib.request.urlopen(req, timeout=10):
             pass
     except urllib.error.HTTPError:
-        pass  # OPA's answer is not what is kept.
+        pass  # Only what OPA sends and prints is kept, never its answer.
 
 
 def wait_for(base: str) -> None:
@@ -280,8 +282,9 @@ status: {{service: sink}}
         elif event["path"] != "roles":  # the reads that waited for the bundle
             label = labels[(event["path"], "input" in event)]
             write(f"OpaDecisionLogEvent-{label}", event)
-    # One report, about 90 kB with the Prometheus metrics a server always adds: the
-    # last that holds the refused upload's error beside the bundles' and plugins' state.
+    # Keep one report: the last that holds the refused upload's error beside the state
+    # of the bundles and plugins. It is about 90 kB, with the Prometheus metrics that a
+    # server always adds.
     refused = [r for r in reports if (r.get("decision_logs") or {}).get("code")]
     write("OpaStatusReport-running", (refused or reports)[-1])
 

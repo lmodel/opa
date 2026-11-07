@@ -161,7 +161,7 @@ differences:
       - drop:body
       - drop:client_certificates
       - drop:identity
-    reason: OPA's schema, which OPA type-checks the authorization policy against,
+    reason: OPA type-checks the authorization policy against its schema, which
       requires the key. OPA's server leaves it out when the request has none, so
       the slot is optional here.
   - definition: v1/schemas/authorizationPolicy.json

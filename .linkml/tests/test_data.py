@@ -2,9 +2,9 @@
 
 An example is a document OPA writes, with OPA's keys, such as `_categories`, `Major` or
 `return`. linkml-validate and the example runner read keys by slot name, so they cannot
-read one. The examples are kept under tests/data/problem/, where the runner does not look,
-and this test validates them against the JSON Schema LinkML generates, in which each
-key is the slot's alias. `tests/data/problem/valid/<Class>-<anything>.yaml` must pass,
+read one. The examples are kept under tests/data/problem/, where the runner does not look.
+This test validates them against the JSON Schema LinkML generates, in which each key is
+the slot's alias. `tests/data/problem/valid/<Class>-<anything>.yaml` must pass,
 and `tests/data/problem/invalid/<Class>-<anything>.yaml` must fail. The plan and the
 manifest must get the same verdict from OPA's schema. The authorization input is left
 out of that comparison: OPA's schema for it requires keys that OPA's server leaves out.

@@ -5,12 +5,13 @@
    key of the Go structs the decision log and status modules render is a key of the
    class, and back.
 2. Verdicts: a corpus built from OPA's definitions gets the same verdict from the schema
-   as from OPA, except in the cases parity/structural.yaml lists. The corpus holds, for
-   each definition and each branch of a oneOf, a document with only the required keys,
-   one with every key, and mutations of each: a required key dropped, an unknown key
-   added, a key set to null or to a value of the wrong type, and a branch's kind given
-   another branch's fields. OPA's data files that have no JSON Schema (every capabilities
-   file it includes, builtin_metadata.json and the version index) all validate.
+   as from OPA, except in the cases parity/structural.yaml lists. For each definition
+   and each branch of a oneOf, the corpus holds a document with only the required keys
+   and one with every key. It also holds mutations of each: a required key dropped, an
+   unknown key added, a key set to null or to a value of the wrong type, and a branch's
+   kind given another branch's fields. OPA's data files that have no JSON Schema (every
+   capabilities file it includes, builtin_metadata.json and the version index) all
+   validate.
 3. Shape: parity/structural.yaml gives the reason for each difference, and every case it
    lists still differs.
 """

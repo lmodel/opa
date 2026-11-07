@@ -12,10 +12,10 @@ the merged release, and writes one module per format under src/opa/schema/.
 - capabilities.json and capabilities/*.json, builtin_metadata.json and
   v1/ast/version_index.json have no JSON Schema. Their modules render the Go types
   that write them (ast.Capabilities, ast.Builtin, types.Type, the generators under
-  internal/cmd/) and take each enumeration from the values the files OPA includes use.
+  internal/cmd/) and take each enumeration from the values used in the files OPA includes.
 - The decision log event and the status report have neither. Their modules render the
-  Go structs OPA encodes, key for key from the structs' JSON tags, and stop the script
-  when a key has no range and description here.
+  Go structs OPA encodes, key for key from the structs' JSON tags. The script stops
+  when one of their keys has no range and description here.
 - v1/ir/ir.go gives the plan's descriptions: the opening sentences of its doc
   comments.
 

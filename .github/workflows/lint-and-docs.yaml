@@ -36,7 +36,7 @@ jobs:
         with:
           persist-credentials: false
       # Only this project's scripts: OPA's stay as OPA writes them. The
-      # runner image ships ShellCheck.
+      # runner image includes ShellCheck.
       - name: ShellCheck
         run: git ls-files -z '.linkml/*.sh' '.lokf/*.sh' '.github/scripts/*.sh' | xargs -0 -r shellcheck
 
@@ -147,9 +147,9 @@ jobs:
       # under /bin/sh, where `**/*.md` means `*/*.md` and skips the root and
       # the dot-folders. git ls-files lists tracked files only, so the
       # knowledge_bundle link is not read twice. [tool.codespell] in
-      # pyproject.toml gives the ignore list, but its skip globs are relative
-      # to .linkml/, where codespell runs by hand, and match no path here, so
-      # the pathspecs leave out the copier template's doc templates, as
-      # markdownlint's config does.
+      # pyproject.toml gives the ignore list. Its skip globs are relative to
+      # .linkml/, where codespell runs by hand, so they match no path here.
+      # The pathspecs therefore leave out the copier template's doc
+      # templates, as markdownlint's config does.
       - name: codespell
         run: git ls-files -z '.linkml/*.md' '.lokf/*.md' '.github/SECURITY.md' ':!.linkml/docs/templates-linkml/*' | xargs -0 pipx run --spec codespell==2.4.2 codespell --toml .linkml/pyproject.toml

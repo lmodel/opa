@@ -14,9 +14,9 @@ without any change here, and each fails the check:
 - the licence on OPA's default branch changes.
 
 For information only, it reports which of the files that define a format the schema
-renders key for key differ on OPA's default branch: the JSON Schemas of the plan, the
-manifest and the authorization input, and the Go files of the decision log event and the
-status report. That says what the next release may change.
+renders key for key differ on OPA's default branch. Those files are the JSON Schemas of
+the plan, the manifest and the authorization input, and the Go files of the decision log
+event and the status report. That says what the next release may change.
 
 The script reads only GitHub's API and compares git object hashes, so it downloads no
 file. It prints a Markdown report, and exits 1 when a check fails or cannot finish. Text
@@ -49,8 +49,8 @@ API = f"https://{HOST}/repos/{REPOSITORY}"
 # The most the script reads of one answer. A folder listing is a few kilobytes.
 MAX_BYTES = 5_000_000
 
-# The release merged into this repository. tests/test_upstream.py holds the schema
-# headers, the converter and these pins equal. Move them together, with
+# The release merged into this repository. tests/test_upstream.py checks that the
+# schema headers, the converter and these pins agree. Move them together, with
 # tests/upstream_tree.tsv, after a merge of another release.
 EDITION = {
     "label": "OPA v1.22.2",
