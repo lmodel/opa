@@ -2,6 +2,7 @@
 
 ## 2026-11-07
 
+* **Changed**: The fork layout names the four paths under `.github/` that NOTICE gives this project.
 * **Changed**: Licence and attribution says that only the authorization input's class description is OPA's, as NOTICE now does.
 * **Changed**: the schema concept names the nine modules, with the decision log event and the status report.
 * **Changed**: What the schema leaves out names only the configuration file and the discovery bundle, now that the decision log event and the status report are modelled.
