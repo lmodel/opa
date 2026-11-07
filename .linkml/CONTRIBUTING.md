@@ -4,7 +4,7 @@
 
 ## What this project is
 
-A LinkML schema of the JSON formats Open Policy Agent (OPA) defines, in a fork of OPA's repository. OPA's tree is unchanged at the repository's root, and this LinkML project is beside it in `.linkml/`.
+A LinkML schema of eight of the JSON formats Open Policy Agent (OPA) defines, in a fork of OPA's repository. OPA's tree is unchanged at the repository's root, and this LinkML project is beside it in `.linkml/`.
 
 | Path | Holds |
 | --- | --- |

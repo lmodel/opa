@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write the LinkML schema of OPA's JSON formats from the OPA release this fork holds.
+"""Write the LinkML schema of eight of OPA's JSON formats from the merged OPA release.
 
 The script reads OPA's own files from the repository root, which is OPA's tree at
 the merged release, and writes one module per format under src/opa/schema/.
@@ -1437,11 +1437,12 @@ def build_umbrella() -> dict:
     schema = header(
         "opa",
         "Open Policy Agent (OPA)",
-        "A LinkML model of the JSON formats Open Policy Agent defines: the IR plan, the bundle "
-        "manifest, the authorization policy input, the capabilities document, the built-in "
-        "function metadata, the version index, the decision log event and the status report. "
-        "Each module renders one format, and keeps OPA's keys, so a document OPA writes "
-        "validates against this schema unchanged. The lokf adapt copy renames seven keys "
+        "A LinkML model of eight of the JSON formats Open Policy Agent defines: the IR plan, the "
+        "bundle manifest, the authorization policy input, the capabilities document, the "
+        "built-in function metadata, the version index, the decision log event and the status "
+        "report. "
+        "Each module renders one format and keeps OPA's keys, so the schema checks a document "
+        "OPA writes as it is, with no key renamed. The lokf adapt copy renames seven keys "
         "LOKF defines with another meaning.",
         f"https://github.com/open-policy-agent/opa/tree/{COMMIT}",
         [m for m in MODULES if m != "opa"],

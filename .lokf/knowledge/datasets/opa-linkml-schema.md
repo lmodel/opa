@@ -3,7 +3,7 @@ type: Dataset
 id: https://w3id.org/lmodel/opa/knowledge/datasets/opa-linkml-schema
 genre: reference
 title: The OPA LinkML schema
-description: "The LinkML model of OPA v1.22.2's JSON formats in `.linkml/src/opa/schema/`: one module per format, `Opa` classes that keep OPA's keys, and the umbrella `opa.yaml`."
+description: "The LinkML model of eight of OPA v1.22.2's JSON formats in `.linkml/src/opa/schema/`: one module per format, `Opa` classes that keep OPA's keys, and the umbrella `opa.yaml`."
 resource: .linkml/src/opa/schema/opa.yaml
 derivedFrom:
   - https://w3id.org/lmodel/opa/knowledge/datasets/opa-tree
@@ -18,7 +18,7 @@ sources:
     resource: .linkml/src/opa/schema/opa.yaml
 generated:
   by: process:ktl-librarian
-  at: "2026-11-07T10:31:22Z"
+  at: "2026-11-07T10:48:19Z"
 status: draft
 ---
 

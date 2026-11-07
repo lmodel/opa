@@ -1,6 +1,6 @@
 # opa
 
-This project is a LinkML model of the JSON formats Open Policy Agent (OPA) defines, at release v1.22.2. Each module renders one format and keeps OPA's keys, so a document OPA writes validates here unchanged.
+This project is a LinkML model of eight of the JSON formats Open Policy Agent (OPA) defines, at release v1.22.2. Each module renders one format and keeps OPA's keys, so the schema checks a document OPA writes as it is, with no key renamed.
 
 - [Schema documentation](elements/index.md), generated from the schema
 - [About](about.md): where each module comes from, how the model differs from OPA's JSON Schemas and what it leaves out

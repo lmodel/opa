@@ -16,7 +16,7 @@
 	a owl:Ontology ;
 	rdfs:label "opa" ;
 	rdfs:seeAlso <https://lmodel.github.io/opa> , <https://www.openpolicyagent.org/docs> ;
-	skos:definition "A LinkML model of the JSON formats Open Policy Agent defines: the IR plan, the bundle manifest, the authorization policy input, the capabilities document, the built-in function metadata, the version index, the decision log event and the status report. Each module renders one format, and keeps OPA's keys, so a document OPA writes validates against this schema unchanged. The lokf adapt copy renames seven keys LOKF defines with another meaning." ;
+	skos:definition "A LinkML model of eight of the JSON formats Open Policy Agent defines: the IR plan, the bundle manifest, the authorization policy input, the capabilities document, the built-in function metadata, the version index, the decision log event and the status report. Each module renders one format and keeps OPA's keys, so the schema checks a document OPA writes as it is, with no key renamed. The lokf adapt copy renames seven keys LOKF defines with another meaning." ;
 	openpolicyagent:upstream_commit "482d9e368c2ddfed67ced59259fa6a247bb5f1e5" ;
 	openpolicyagent:upstream_license "Apache-2.0" ;
 	openpolicyagent:upstream_release_date "2026-11-05" ;

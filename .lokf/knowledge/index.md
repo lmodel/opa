@@ -27,7 +27,7 @@ A [LOKF](https://lokf.nolan-nichols.com) knowledge base for opa. Every Markdown 
 # Datasets
 
 * [OPA's tree at v1.22.2](datasets/opa-tree.md) - Every file of OPA's release v1.22.2, listed with its git object hash in `.linkml/tests/upstream_tree.tsv`, which a test holds the checkout to.
-* [The OPA LinkML schema](datasets/opa-linkml-schema.md) - The LinkML model of OPA v1.22.2's JSON formats in `.linkml/src/opa/schema/`: one module per format, `Opa` classes that keep OPA's keys, and the umbrella `opa.yaml`.
+* [The OPA LinkML schema](datasets/opa-linkml-schema.md) - The LinkML model of eight of OPA v1.22.2's JSON formats in `.linkml/src/opa/schema/`: one module per format, `Opa` classes that keep OPA's keys, and the umbrella `opa.yaml`.
 * [The adapt copy](datasets/adapt-copy.md) - `.lokf/schema/opa.yaml`, the copy `just lokf-adapt` writes from the schema for the bundle to validate against, which a release attaches as `schema-<tag>-opa.yaml`.
 * [Parity allowances](datasets/parity-allowances.md) - `.linkml/parity/structural.yaml`: each case where the schema's verdict differs from OPA's JSON Schema's, with its reason.
 * [Example data](datasets/example-data.md) - The examples under `.linkml/tests/data/`: a valid document per format, documents that each break one rule, and documents OPA's own binary wrote.
