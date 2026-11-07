@@ -11,6 +11,7 @@ import (
 
 	"github.com/open-policy-agent/opa/cmd/internal/env"
 	"github.com/open-policy-agent/opa/v1/ast"
+	"github.com/open-policy-agent/opa/v1/util"
 	"github.com/spf13/cobra"
 )
 
@@ -97,7 +98,7 @@ Print the capabilities of a capabilities file
 	capabilitiesCommand.Flags().BoolVar(&capabilitiesParams.showCurrent, "current", false, "print current capabilities")
 	capabilitiesCommand.Flags().StringVar(&capabilitiesParams.version, "version", "", "print capabilities of a specific version")
 	capabilitiesCommand.Flags().StringVar(&capabilitiesParams.file, "file", "", "print capabilities defined by a file")
-	addV0CompatibleFlag(capabilitiesCommand.Flags(), &capabilitiesParams.v0Compatible, false)
+	addV0CompatibleFlag(capabilitiesCommand.Flags(), &capabilitiesParams.v0Compatible)
 
 	root.AddCommand(capabilitiesCommand)
 }
@@ -123,10 +124,8 @@ func doCapabilities(params capabilitiesParams) (string, error) {
 	}
 
 	bs, err := json.MarshalIndent(c, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(bs), nil
+
+	return util.ByteSliceToString(bs), err
 
 }
 
@@ -136,6 +135,5 @@ func showVersions() (string, error) {
 		return "", err
 	}
 
-	t := strings.Join(cvs, "\n")
-	return t, nil
+	return strings.Join(cvs, "\n"), nil
 }

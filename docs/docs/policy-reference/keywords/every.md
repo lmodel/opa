@@ -1,6 +1,6 @@
 ---
 sidebar_label: every
-title: 'Rego Keyword Examples: every'
+title: 'Rego Keyword: every'
 ---
 
 Rego rules and statements are existentially quantified by default. This means
@@ -10,7 +10,7 @@ keyword makes this
 [universal quantification](/docs/policy-language#universal-quantification-for-all)
 easier.
 
-Here we show two equivalent rules achieve universal quantification, note how
+The following two equivalent rules achieve universal quantification. Note how
 much easier to read the one using `every` is.
 
 ```rego
@@ -31,8 +31,17 @@ allow2 if {
 <sub>
 `allow2` works by generating a set of 'results' testing elements from the
 array `[1,2,3]`. The resulting set is tested against `{true}` to verify all
-elements are `true`. As we can see `every` is a much better option!
+elements are `true`. `every` is a much better option!
 </sub>
+
+## Partial evaluation
+
+During [partial evaluation](../../filtering/partial-evaluation), an `every` over a _known_ collection of at most 32 elements is evaluated once per element, and the result is the conjunction of the body for each.
+That is what lets the [Compile API](../../rest-api#compile-api) turn it into a filter: with `input.banned` set to `["a", "b"]`, `every x in input.banned { input.fruits.name != x }` gives `WHERE (fruits.name <> 'a' AND fruits.name <> 'b')` for the SQL targets.
+An empty collection leaves no condition: the `every` is true, and the query is `true`.
+If the body is false for one of the elements, the `every` is false, and no query remains.
+With more elements, or an unknown collection, the `every` stays in the result.
+Nested `every`s count together: unrolling stops once the elements of the enclosing ones multiplied by those of the inner collection exceed 32.
 
 ## Examples
 

@@ -9,7 +9,7 @@ package topdown
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -145,14 +145,14 @@ func TestHTTPSendRetryRequest(t *testing.T) {
 			query:       `http.send({"method": "get", "url": "%URL%", "force_json_decode": true, "max_retry_attempts": 100,  "timeout": "500ms"}, x)`,
 			evalTimeout: 2 * time.Second,
 			wantErr:     true,
-			err:         fmt.Errorf("eval_cancel_error: http.send: timed out (context deadline exceeded)"),
+			err:         errors.New("eval_cancel_error: http.send: timed out (context deadline exceeded)"),
 		},
 		{
 			note:    "cancel query",
 			query:   `http.send({"method": "get", "url": "%URL%", "force_json_decode": true, "max_retry_attempts": 100,  "timeout": "500ms"}, x)`,
 			cancel:  NewCancel(),
 			wantErr: true,
-			err:     fmt.Errorf("eval_cancel_error: caller cancelled query execution"),
+			err:     errors.New("eval_cancel_error: caller cancelled query execution"),
 		},
 	}
 
@@ -169,12 +169,26 @@ func TestHTTPSendRetryRequest(t *testing.T) {
 				}
 			}))
 
-			defer ts.Close()
+			t.Cleanup(ts.Close)
 
-			// delay server start to exercise retry logic
+			// delay server start to exercise retry logic. Guarded because a
+			// subtest can finish, and so close the server, before the delay
+			// elapses: starting a closed server panics on Go 1.27+. Cleanups
+			// run LIFO, so this marks the server closed before ts.Close runs.
+			var mu sync.Mutex
+			closed := false
+			t.Cleanup(func() {
+				mu.Lock()
+				defer mu.Unlock()
+				closed = true
+			})
 			go func() {
 				time.Sleep(time.Second * 5)
-				ts.Start()
+				mu.Lock()
+				defer mu.Unlock()
+				if !closed {
+					ts.Start()
+				}
 			}()
 
 			ctx := context.Background()

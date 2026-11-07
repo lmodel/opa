@@ -16,9 +16,9 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
-	"sort"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/open-policy-agent/opa/v1/ast"
 	astJSON "github.com/open-policy-agent/opa/v1/ast/json"
@@ -98,7 +98,7 @@ p contains x if {
 
 				if len(tc.expErrs) > 0 {
 					if err == nil {
-						t.Fatalf("Expected errors but got nil")
+						t.Fatal("Expected errors but got nil")
 					}
 
 					for _, expErr := range tc.expErrs {
@@ -172,7 +172,7 @@ p contains x if {
 
 				if len(tc.expErrs) > 0 {
 					if err == nil {
-						t.Fatalf("Expected errors but got nil")
+						t.Fatal("Expected errors but got nil")
 					}
 
 					for _, expErr := range tc.expErrs {
@@ -242,7 +242,7 @@ p contains x if {
 
 				if len(tc.expErrs) > 0 {
 					if err == nil {
-						t.Fatalf("Expected errors but got nil")
+						t.Fatal("Expected errors but got nil")
 					}
 
 					for _, expErr := range tc.expErrs {
@@ -312,7 +312,7 @@ p contains x if {
 
 				if len(tc.expErrs) > 0 {
 					if err == nil {
-						t.Fatalf("Expected errors but got nil")
+						t.Fatal("Expected errors but got nil")
 					}
 
 					for _, expErr := range tc.expErrs {
@@ -382,7 +382,7 @@ p contains x if {
 
 				if len(tc.expErrs) > 0 {
 					if err == nil {
-						t.Fatalf("Expected errors but got nil")
+						t.Fatal("Expected errors but got nil")
 					}
 
 					for _, expErr := range tc.expErrs {
@@ -453,44 +453,64 @@ func TestLoadYAML(t *testing.T) {
 	})
 }
 
-func TestLoadGuessYAML(t *testing.T) {
+func TestLoadYAMLKeywordKeys(t *testing.T) {
 	files := map[string]string{
-		"/foo": `
-        a: b
-        `,
+		"/foo.yaml": `
+on: push
+off: x
+a: yes
+b: no
+c: y
+d: n
+e: true
+f: FALSE
+`,
 	}
+
 	test.WithTempFS(files, func(rootDir string) {
-		yamlFile := filepath.Join(rootDir, "foo")
-		loaded, err := NewFileLoader().All([]string{yamlFile})
+		loaded, err := NewFileLoader().All([]string{filepath.Join(rootDir, "foo.yaml")})
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
-		expected := parseJSON(`{"a": "b"}`)
+		expected := parseJSON(`{
+			"on": "push", "off": "x",
+			"a": "yes", "b": "no", "c": "y", "d": "n",
+			"e": true, "f": false
+		}`)
 		if !reflect.DeepEqual(loaded.Documents, expected) {
 			t.Fatalf("Expected %v but got: %v", expected, loaded.Documents)
 		}
 	})
 }
 
+func TestLoadGuessYAML(t *testing.T) {
+	rootDir := test.TempDirOf(t, "/foo", `
+        a: b
+        `,
+	)
+	yamlFile := filepath.Join(rootDir, "foo")
+	loaded, err := NewFileLoader().All([]string{yamlFile})
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	expected := parseJSON(`{"a": "b"}`)
+	if !reflect.DeepEqual(loaded.Documents, expected) {
+		t.Fatalf("Expected %v but got: %v", expected, loaded.Documents)
+	}
+}
+
 func TestLoadExtension(t *testing.T) {
-	files := map[string]string{
-		"/foo.mock": `{"a": [1,2,3]}`,
+	extension.RegisterExtension(".mock", util.UnmarshalJSON)
+	rootDir := test.TempDirOf(t, "/foo.mock", `{"a": [1,2,3]}`)
+
+	loaded, err := NewFileLoader().All([]string{filepath.Join(rootDir, "foo.mock")})
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
 	}
 
-	extension.RegisterExtension(".mock", util.UnmarshalJSON)
-
-	test.WithTempFS(files, func(rootDir string) {
-		loaded, err := NewFileLoader().All([]string{filepath.Join(rootDir, "foo.mock")})
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
-
-		expected := parseJSON(files["/foo.mock"])
-
-		if !reflect.DeepEqual(loaded.Documents, expected) {
-			t.Fatalf("Expected %v but got: %v", expected, loaded.Documents)
-		}
-	})
+	if exp := parseJSON(`{"a": [1,2,3]}`); !reflect.DeepEqual(loaded.Documents, exp) {
+		t.Fatalf("Expected %v but got: %v", exp, loaded.Documents)
+	}
 }
 
 func TestLoadExtensionFail(t *testing.T) {
@@ -528,7 +548,7 @@ func TestLoadDirRecursive(t *testing.T) {
 	}
 
 	test.WithTempFS(files, func(rootDir string) {
-		loaded, err := NewFileLoader().All(mustListPaths(rootDir, false)[1:])
+		loaded, err := NewFileLoader().All(mustListPaths(rootDir)[1:])
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -666,58 +686,55 @@ func TestGetBundleDirectoryLoader(t *testing.T) {
 }
 
 func TestLoadBundle(t *testing.T) {
+	rootDir := t.TempDir()
 
-	test.WithTempFS(nil, func(rootDir string) {
+	f, err := os.Create(filepath.Join(rootDir, "bundle.tar.gz"))
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		f, err := os.Create(filepath.Join(rootDir, "bundle.tar.gz"))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		var testBundle = bundle.Bundle{
-			Modules: []bundle.ModuleFile{
-				{
-					Path: "x.rego",
-					Raw: []byte(`
+	var testBundle = bundle.Bundle{
+		Modules: []bundle.ModuleFile{
+			{
+				Path: "x.rego",
+				Raw: []byte(`
 				package baz
 
 				p = 1`),
-				},
 			},
-			Data: map[string]any{
-				"foo": "bar",
-			},
-			Manifest: bundle.Manifest{
-				Revision: "",
-				Roots:    &[]string{""},
-			},
-		}
+		},
+		Data: map[string]any{
+			"foo": "bar",
+		},
+		Manifest: bundle.Manifest{
+			Revision: "",
+			Roots:    &[]string{""},
+		},
+	}
 
-		if err := bundle.Write(f, testBundle); err != nil {
-			t.Fatal(err)
-		}
+	if err := bundle.Write(f, testBundle); err != nil {
+		t.Fatal(err)
+	}
 
-		paths := mustListPaths(rootDir, false)[1:]
-		loaded, err := NewFileLoader().All(paths)
-		if err != nil {
-			t.Fatal(err)
-		}
+	paths := mustListPaths(rootDir)[1:]
+	loaded, err := NewFileLoader().All(paths)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		actualData := testBundle.Data
-		actualData["system"] = map[string]any{"bundle": map[string]any{"manifest": map[string]any{"revision": "", "roots": []any{""}}}}
+	actualData := testBundle.Data
+	actualData["system"] = map[string]any{"bundle": map[string]any{"manifest": map[string]any{"revision": "", "roots": []any{""}}}}
 
-		if !reflect.DeepEqual(actualData, loaded.Documents) {
-			t.Fatalf("Expected %v but got: %v", actualData, loaded.Documents)
-		}
+	if !reflect.DeepEqual(actualData, loaded.Documents) {
+		t.Fatalf("Expected %v but got: %v", actualData, loaded.Documents)
+	}
 
-		if !bytes.Equal(testBundle.Modules[0].Raw, loaded.Modules["/x.rego"].Raw) {
-			t.Fatalf("Expected %v but got: %v", string(testBundle.Modules[0].Raw), loaded.Modules["/x.rego"].Raw)
-		}
-	})
+	if !bytes.Equal(testBundle.Modules[0].Raw, loaded.Modules["/x.rego"].Raw) {
+		t.Fatalf("Expected %v but got: %v", string(testBundle.Modules[0].Raw), loaded.Modules["/x.rego"].Raw)
+	}
 }
 
 func TestLoadBundleWithReader(t *testing.T) {
-
 	buf := bytes.Buffer{}
 	testBundle := bundle.Bundle{
 		Modules: []bundle.ModuleFile{
@@ -747,7 +764,7 @@ func TestLoadBundleWithReader(t *testing.T) {
 		t.Fatal(err)
 	}
 	if b == nil {
-		t.Fatalf("Expected bundle to be non-nil")
+		t.Fatal("Expected bundle to be non-nil")
 	}
 
 	if exp, act := 1, len(b.Modules); exp != act {
@@ -772,58 +789,55 @@ func TestLoadBundleWithReader(t *testing.T) {
 }
 
 func TestLoadBundleSubDir(t *testing.T) {
+	rootDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(rootDir, "a", "b"), 0777); err != nil {
+		t.Fatal(err)
+	}
 
-	test.WithTempFS(nil, func(rootDir string) {
+	f, err := os.Create(filepath.Join(rootDir, "a", "b", "bundle.tar.gz"))
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		if err := os.MkdirAll(filepath.Join(rootDir, "a", "b"), 0777); err != nil {
-			t.Fatal(err)
-		}
-
-		f, err := os.Create(filepath.Join(rootDir, "a", "b", "bundle.tar.gz"))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		var testBundle = bundle.Bundle{
-			Modules: []bundle.ModuleFile{
-				{
-					Path: "x.rego",
-					Raw: []byte(`
+	var testBundle = bundle.Bundle{
+		Modules: []bundle.ModuleFile{
+			{
+				Path: "x.rego",
+				Raw: []byte(`
 				package baz
 
 				p = 1`),
-				},
 			},
-			Data: map[string]any{
-				"foo": "bar",
-			},
-			Manifest: bundle.Manifest{
-				Revision: "",
-				Roots:    &[]string{""},
-			},
-		}
+		},
+		Data: map[string]any{
+			"foo": "bar",
+		},
+		Manifest: bundle.Manifest{
+			Revision: "",
+			Roots:    &[]string{""},
+		},
+	}
 
-		if err := bundle.Write(f, testBundle); err != nil {
-			t.Fatal(err)
-		}
+	if err := bundle.Write(f, testBundle); err != nil {
+		t.Fatal(err)
+	}
 
-		paths := mustListPaths(rootDir, false)[1:]
-		loaded, err := NewFileLoader().All(paths)
-		if err != nil {
-			t.Fatal(err)
-		}
+	paths := mustListPaths(rootDir)[1:]
+	loaded, err := NewFileLoader().All(paths)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		actualData := testBundle.Data
-		actualData["system"] = map[string]any{"bundle": map[string]any{"manifest": map[string]any{"revision": "", "roots": []any{""}}}}
+	actualData := testBundle.Data
+	actualData["system"] = map[string]any{"bundle": map[string]any{"manifest": map[string]any{"revision": "", "roots": []any{""}}}}
 
-		if !reflect.DeepEqual(map[string]any{"b": testBundle.Data}, loaded.Documents) {
-			t.Fatalf("Expected %v but got: %v", testBundle.Data, loaded.Documents)
-		}
+	if !reflect.DeepEqual(map[string]any{"b": testBundle.Data}, loaded.Documents) {
+		t.Fatalf("Expected %v but got: %v", testBundle.Data, loaded.Documents)
+	}
 
-		if !bytes.Equal(testBundle.Modules[0].Raw, loaded.Modules["/x.rego"].Raw) {
-			t.Fatalf("Expected %v but got: %v", string(testBundle.Modules[0].Raw), loaded.Modules["/x.rego"].Raw)
-		}
-	})
+	if !bytes.Equal(testBundle.Modules[0].Raw, loaded.Modules["/x.rego"].Raw) {
+		t.Fatalf("Expected %v but got: %v", string(testBundle.Modules[0].Raw), loaded.Modules["/x.rego"].Raw)
+	}
 }
 
 func TestAsBundleWithDir(t *testing.T) {
@@ -843,7 +857,7 @@ func TestAsBundleWithDir(t *testing.T) {
 		}
 
 		if b == nil {
-			t.Fatalf("Expected bundle to be non-nil")
+			t.Fatal("Expected bundle to be non-nil")
 		}
 
 		if len(b.Modules) != 2 {
@@ -886,7 +900,7 @@ func TestAsBundleWithFileURLDir(t *testing.T) {
 		}
 
 		if b == nil {
-			t.Fatalf("Expected bundle to be non-nil")
+			t.Fatal("Expected bundle to be non-nil")
 		}
 
 		if len(b.Modules) != 1 {
@@ -962,11 +976,12 @@ func TestAsBundleWithFile(t *testing.T) {
 			t.Fatalf("Unexpected error: %s", err)
 		}
 
-		var tmp any = b
+		var tmp any = b.Data
 		err = util.RoundTrip(&tmp)
 		if err != nil {
 			t.Fatalf("Unexpected error: %s", err)
 		}
+		b.Data = tmp.(map[string]any)
 
 		if !actual.Equal(*b) {
 			t.Fatalf("Loaded bundle doesn't match expected.\n\nExpected: %+v\n\nActual: %+v\n\n", b, actual)
@@ -1077,8 +1092,7 @@ func TestLoadRooted(t *testing.T) {
 	}
 
 	test.WithTempFS(files, func(rootDir string) {
-		paths := mustListPaths(rootDir, false)[1:]
-		sort.Strings(paths)
+		paths := util.Sorted(mustListPaths(rootDir)[1:])
 		paths[0] = "one.two:" + paths[0]
 		paths[1] = "three:" + paths[1]
 		paths[2] = "four:" + paths[2]
@@ -1092,6 +1106,41 @@ func TestLoadRooted(t *testing.T) {
 		`)
 		if !reflect.DeepEqual(loaded.Documents, expected) {
 			t.Fatalf("Expected %v but got: %v", expected, loaded.Documents)
+		}
+	})
+}
+
+func TestLoadDuplicatePaths(t *testing.T) {
+	files := map[string]string{
+		"/dir/data.json": `{"a": "b"}`,
+		"/other.json":    `{"c": "d"}`,
+	}
+
+	test.WithTempFS(files, func(rootDir string) {
+		dir := filepath.Join(rootDir, "dir")
+		file := filepath.Join(dir, "data.json")
+		other := filepath.Join(rootDir, "other.json")
+
+		tests := map[string]struct {
+			paths    []string
+			expected string
+		}{
+			"dir and file inside":   {[]string{dir, file, other}, `{"a": "b", "c": "d"}`},
+			"file twice":            {[]string{file, file, other}, `{"a": "b", "c": "d"}`},
+			"unclean path":          {[]string{file, filepath.Join(dir, ".", "data.json"), other}, `{"a": "b", "c": "d"}`},
+			"same file with prefix": {[]string{file, "x:" + file}, `{"a": "b", "x": {"a": "b"}}`},
+		}
+
+		for name, tc := range tests {
+			t.Run(name, func(t *testing.T) {
+				loaded, err := NewFileLoader().All(tc.paths)
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+				if expected := parseJSON(tc.expected); !reflect.DeepEqual(loaded.Documents, expected) {
+					t.Fatalf("Expected %v but got: %v", expected, loaded.Documents)
+				}
+			})
 		}
 	})
 }
@@ -1170,7 +1219,7 @@ func TestLoadWithJSONOptions(t *testing.T) {
 
 	mod, ok := loaded.Modules["bar/bar.rego"]
 	if !ok {
-		t.Fatalf("Expected bar/bar.rego to be loaded")
+		t.Fatal("Expected bar/bar.rego to be loaded")
 	}
 
 	bs, err := json.Marshal(mod.Parsed.Package)
@@ -1185,7 +1234,6 @@ func TestLoadWithJSONOptions(t *testing.T) {
 }
 
 func TestGlobExcludeName(t *testing.T) {
-
 	files := map[string]string{
 		"/.data.json":          `{"x":1}`,
 		"/.y/data.json":        `{"y": 2}`,
@@ -1195,8 +1243,7 @@ func TestGlobExcludeName(t *testing.T) {
 	}
 
 	test.WithTempFS(files, func(rootDir string) {
-		paths := mustListPaths(rootDir, false)[1:]
-		sort.Strings(paths)
+		paths := util.Sorted(mustListPaths(rootDir)[1:])
 		result, err := NewFileLoader().Filtered(paths, GlobExcludeName(".*", 1))
 		if err != nil {
 			t.Fatal(err)
@@ -1225,11 +1272,9 @@ func TestLoadErrors(t *testing.T) {
 		"/bad_doc.json": "[1,2,3]",
 	}
 	test.WithTempFS(files, func(rootDir string) {
-		paths := mustListPaths(rootDir, false)[1:]
-		sort.Strings(paths)
-		_, err := NewFileLoader().All(paths)
+		_, err := NewFileLoader().All(util.Sorted(mustListPaths(rootDir)[1:]))
 		if err == nil {
-			t.Fatalf("Expected failure")
+			t.Fatal("Expected failure")
 		}
 
 		expected := []string{
@@ -1237,7 +1282,8 @@ func TestLoadErrors(t *testing.T) {
 			"a.json: EOF",
 			"b.yaml: error converting YAML to JSON",
 			"empty.rego:0: rego_parse_error: empty module",
-			"x2.json: merge error",
+			"x2.json: merge error: conflicting values at data.x, also defined in ",
+			"x1.json",
 			"rego_parse_error: empty module",
 		}
 
@@ -1249,6 +1295,21 @@ func TestLoadErrors(t *testing.T) {
 	})
 }
 
+func TestLoadYAMLUnreachableContent(t *testing.T) {
+	files := map[string]string{
+		"/data.yaml": "\n  test:\ntest1: hello\n",
+	}
+	test.WithTempFS(files, func(rootDir string) {
+		_, err := NewFileLoader().All([]string{filepath.Join(rootDir, "data.yaml")})
+		if err == nil {
+			t.Fatal("expected failure")
+		}
+		if exp := "did not find expected <document start>"; !strings.Contains(err.Error(), exp) {
+			t.Fatalf("expected error to contain %v but got:\n%v", exp, err)
+		}
+	})
+}
+
 func TestLoadFileURL(t *testing.T) {
 	files := map[string]string{
 		"/a/a/1.json": `1`,        // this will load as a directory (e.g., file://a/a)
@@ -1256,10 +1317,7 @@ func TestLoadFileURL(t *testing.T) {
 		"c.json":      `3`,        // this will loas as rooted file
 	}
 	test.WithTempFS(files, func(rootDir string) {
-
-		paths := mustListPaths(rootDir, false)[1:]
-		sort.Strings(paths)
-
+		paths := util.Sorted(mustListPaths(rootDir)[1:])
 		for i := range paths {
 			paths[i] = "file://" + paths[i]
 		}
@@ -1286,9 +1344,9 @@ func TestUnsupportedURLScheme(t *testing.T) {
 }
 
 func TestSplitPrefix(t *testing.T) {
-
 	tests := []struct {
 		input     string
+		goos      string
 		wantParts []string
 		wantPath  string
 	}{
@@ -1324,18 +1382,125 @@ func TestSplitPrefix(t *testing.T) {
 			wantParts: []string{"x", "y"},
 			wantPath:  "file:///c:/a/b/c",
 		},
+		{
+			input:    "c:/a/b/c",
+			goos:     "windows",
+			wantPath: "c:/a/b/c",
+		},
+		{
+			input:    `C:\a\b\c`,
+			goos:     "windows",
+			wantPath: `C:\a\b\c`,
+		},
+		{
+			input:     "c:a/b",
+			goos:      "windows",
+			wantParts: []string{"c"},
+			wantPath:  "a/b",
+		},
+		{
+			// Only a single character can name a drive, so a longer prefix
+			// over a rooted path is still a prefix on Windows.
+			input:     "foo:/a/b",
+			goos:      "windows",
+			wantParts: []string{"foo"},
+			wantPath:  "/a/b",
+		},
+		{
+			input:     "x.y:/a/b",
+			goos:      "windows",
+			wantParts: []string{"x", "y"},
+			wantPath:  "/a/b",
+		},
+		{
+			input:     "x.y:c:/a/b",
+			goos:      "windows",
+			wantParts: []string{"x", "y"},
+			wantPath:  "c:/a/b",
+		},
+		{
+			// A drive-rooted path is read as a path, so a single-character
+			// prefix over a rooted path is spelled by qualifying the path.
+			input:     "c:C:/a/b",
+			goos:      "windows",
+			wantParts: []string{"c"},
+			wantPath:  "C:/a/b",
+		},
+		{
+			input:    `\\?\c:\a\b`,
+			goos:     "windows",
+			wantPath: `\\?\c:\a\b`,
+		},
+		{
+			input:    "//?/c:/a/b",
+			goos:     "windows",
+			wantPath: "//?/c:/a/b",
+		},
+		{
+			input:    `\\.\c:\a\b`,
+			goos:     "windows",
+			wantPath: `\\.\c:\a\b`,
+		},
+		{
+			input:    `\\server\share\a`,
+			goos:     "windows",
+			wantPath: `\\server\share\a`,
+		},
+		{
+			input:     "c:/a/b/c",
+			goos:      "linux",
+			wantParts: []string{"c"},
+			wantPath:  "/a/b/c",
+		},
+		{
+			input:     `\\?\c:\a\b`,
+			goos:      "linux",
+			wantParts: []string{`\\?\c`},
+			wantPath:  `\a\b`,
+		},
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.input, func(t *testing.T) {
+		t.Run(tc.goos+tc.input, func(t *testing.T) {
+			if tc.goos != "" {
+				prev := goos
+				goos = tc.goos
+				t.Cleanup(func() { goos = prev })
+			}
+
 			parts, gotPath := SplitPrefix(tc.input)
 			if !slices.Equal(parts, tc.wantParts) {
 				t.Errorf("wanted parts %v but got %v", tc.wantParts, parts)
 			}
 			if gotPath != tc.wantPath {
-				t.Errorf("wanted path %q but got %q", gotPath, tc.wantPath)
+				t.Errorf("wanted path %q but got %q", tc.wantPath, gotPath)
 			}
 		})
+	}
+}
+
+func TestLoadWindowsAbsolutePath(t *testing.T) {
+	prev := goos
+	goos = "windows"
+	t.Cleanup(func() { goos = prev })
+
+	fsys := fstest.MapFS{
+		"c:/policies/foo.json": &fstest.MapFile{Data: []byte(`{"a": [1,2,3]}`)},
+		"c:/policies/bar.rego": &fstest.MapFile{Data: []byte("package bar\n")},
+	}
+
+	loaded, err := NewFileLoader().WithFS(fsys).All([]string{"c:/policies"})
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	expected := parseJSON(`{"a": [1,2,3]}`)
+	if !reflect.DeepEqual(loaded.Documents, expected) {
+		t.Fatalf("Expected %v but got: %v", expected, loaded.Documents)
+	}
+
+	if _, ok := loaded.Modules["c:/policies/bar.rego"]; !ok {
+		t.Fatalf("Expected c:/policies/bar.rego to be loaded, got: %v", loaded.Modules)
 	}
 }
 
@@ -1356,9 +1521,7 @@ func TestLoadRegos(t *testing.T) {
 	}
 
 	test.WithTempFS(files, func(rootDir string) {
-		paths := mustListPaths(rootDir, false)[1:]
-		sort.Strings(paths)
-		result, err := AllRegos(paths)
+		result, err := AllRegos(util.Sorted(mustListPaths(rootDir)[1:]))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1372,8 +1535,8 @@ func parseJSON(x string) any {
 	return util.MustUnmarshalJSON([]byte(x))
 }
 
-func mustListPaths(path string, recurse bool) (paths []string) {
-	paths, err := Paths(path, recurse)
+func mustListPaths(path string) (paths []string) {
+	paths, err := Paths(path, false)
 	if err != nil {
 		panic(err)
 	}
@@ -1393,7 +1556,6 @@ func TestDirs(t *testing.T) {
 }
 
 func TestSchemas(t *testing.T) {
-
 	tests := []struct {
 		note   string
 		path   string
@@ -1480,6 +1642,135 @@ func TestSchemas(t *testing.T) {
 							t.Fatalf("expected schema %v but got %v", schema, result)
 						}
 					}
+				}
+			})
+		})
+	}
+}
+
+// TestAsBundleWithVerificationConfig is a regression test for when an attacker with write access
+// to a local bundle file strips .signatures.json.
+func TestAsBundleWithVerificationConfig(t *testing.T) {
+	keyConfigs := map[string]*bundle.KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}
+
+	mod := "package b.c\np=1"
+
+	tests := []struct {
+		note       string
+		variant    string
+		vc         *bundle.VerificationConfig
+		skipVerify bool
+		expErr     string
+	}{
+		{
+			note:    "strict config rejects stripped bundle",
+			variant: "unsigned",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "foo", "", nil),
+			expErr:  "bundle missing .signatures.json file",
+		},
+		{
+			note:    "strict config with no keyid rejects stripped bundle",
+			variant: "unsigned",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "", "", nil),
+			expErr:  "bundle missing .signatures.json file",
+		},
+		{
+			note:    "strict config with scope only rejects stripped bundle",
+			variant: "unsigned",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "", "write", nil),
+			expErr:  "bundle missing .signatures.json file",
+		},
+		{
+			note:    "strict config accepts signed bundle",
+			variant: "signed",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "foo", "", nil),
+		},
+		{
+			note:    "strict config rejects tampered bundle",
+			variant: "tampered",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "foo", "", nil),
+			expErr:  "digest mismatch",
+		},
+		{
+			note:    "optional signature config rejects tampered bundle",
+			variant: "tampered",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "", "", nil).WithOptionalSignature(),
+			expErr:  "digest mismatch",
+		},
+		{
+			note:    "optional signature config accepts stripped bundle",
+			variant: "unsigned",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "", "", nil).WithOptionalSignature(),
+		},
+		{
+			note:       "skip verify accepts stripped bundle",
+			variant:    "unsigned",
+			vc:         bundle.NewVerificationConfig(keyConfigs, "foo", "", nil),
+			skipVerify: true,
+		},
+		{
+			note:    "no config accepts stripped bundle",
+			variant: "unsigned",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			test.WithTempFS(map[string]string{"bundle.tar.gz": ""}, func(rootDir string) {
+				bundleFile := filepath.Join(rootDir, "bundle.tar.gz")
+
+				b := bundle.Bundle{
+					Manifest: bundle.Manifest{Roots: &[]string{"a", "b/c"}, Revision: "123"},
+					Data:     map[string]any{"a": map[string]any{"b": []int{4, 5, 6}}},
+					Modules: []bundle.ModuleFile{
+						{
+							URL:    path.Join(bundleFile, "policy.rego"),
+							Path:   "/policy.rego",
+							Raw:    []byte(mod),
+							Parsed: ast.MustParseModule(mod),
+						},
+					},
+				}
+
+				if tc.variant != "unsigned" {
+					if err := b.GenerateSignature(bundle.NewSigningConfig("secret", "HS256", ""), "foo", true); err != nil {
+						t.Fatalf("Unexpected error: %s", err)
+					}
+				}
+
+				if tc.variant == "tampered" {
+					// a valid signature over different content
+					b.Data = map[string]any{"a": map[string]any{"b": []int{7, 8, 9}}}
+				}
+
+				f, err := os.Create(bundleFile)
+				if err != nil {
+					t.Fatalf("Unexpected error: %s", err)
+				}
+				if err := bundle.Write(f, b); err != nil {
+					t.Fatalf("Unexpected error: %s", err)
+				}
+				if err := f.Close(); err != nil {
+					t.Fatalf("Unexpected error: %s", err)
+				}
+
+				_, err = NewFileLoader().
+					WithBundleVerificationConfig(tc.vc).
+					WithSkipBundleVerification(tc.skipVerify).
+					AsBundle(bundleFile)
+
+				if tc.expErr == "" {
+					if err != nil {
+						t.Fatalf("Unexpected error: %s", err)
+					}
+					return
+				}
+
+				if err == nil {
+					t.Fatal("Expected error but got nil")
+				}
+				if !strings.Contains(err.Error(), tc.expErr) {
+					t.Fatalf("Expected error to contain %q but got %v", tc.expErr, err)
 				}
 			})
 		})

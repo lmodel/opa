@@ -2,12 +2,15 @@ package topdown
 
 import (
 	"fmt"
+	"math/rand/v2"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/storage"
 	"github.com/open-policy-agent/opa/v1/storage/inmem"
+	"github.com/open-policy-agent/opa/v1/topdown/cache"
 	"github.com/open-policy-agent/opa/v1/util"
 )
 
@@ -48,6 +51,8 @@ result if {
 	}
 }
 
+// 149365 ns/op	  277926 B/op	    4505 allocs/op  // Before, with a patricia trie
+// 92848 ns/op	   85821 B/op	    1191 allocs/op  // After, with sort and binary search
 func BenchmarkBulkStartsWithOptimized(b *testing.B) {
 	data := generateBulkStartsWithInput()
 	ctx := b.Context()
@@ -87,11 +92,11 @@ result if {
 
 func generateBulkStartsWithInput() map[string]any {
 	strs := make([]string, 0, 1000)
-	for i := range strs {
+	for i := range 1000 {
 		strs = append(strs, fmt.Sprintf("aabbccddeeffgghhiijjkkllmmnnoopp_%d", i))
 	}
 	prefixes := make([]string, 0, 100)
-	for i := range prefixes {
+	for i := range 100 {
 		prefixes = append(prefixes, fmt.Sprintf("aabbccddeeffgghhiijjkkllmmnnoorr_%d", i))
 	}
 	return map[string]any{
@@ -331,8 +336,6 @@ func BenchmarkConcatVsSprintfSimple(b *testing.B) {
 		}
 	})
 
-	b.ResetTimer()
-
 	b.Run("sprintf foobar", func(b *testing.B) {
 		operands := []*ast.Term{ast.InternedTerm("%s%s"), ast.ArrayTerm(foo, bar)}
 
@@ -344,12 +347,37 @@ func BenchmarkConcatVsSprintfSimple(b *testing.B) {
 	})
 }
 
-func repeatTerm(t *ast.Term, n int) *ast.Term {
-	terms := make([]*ast.Term, 0, n)
-	for range n {
-		terms = append(terms, t)
+// 542.1 ns/op	     552 B/op	      20 allocs/op
+// 451.5 ns/op	     424 B/op	      15 allocs/op
+func BenchmarkLongSprintf(b *testing.B) {
+	bctx := BuiltinContext{}
+
+	operands := []*ast.Term{
+		ast.StringTerm("%s %f %s %d %s %v %s %v %s"),
+		ast.ArrayTerm(
+			ast.InternedTerm("word"),
+			ast.FloatNumberTerm(3.14159),
+			ast.InternedTerm("more"),
+			ast.InternedTerm(55),
+			ast.ArrayTerm(ast.InternedTerm("foo"), ast.InternedTerm("bar")),
+			ast.SetTerm(ast.InternedTerm("baz")),
+			ast.ObjectTerm(ast.Item(ast.InternedTerm("k"), ast.InternedTerm("v"))),
+			ast.NullTerm(),
+			ast.InternedBooleanTrue,
+		),
 	}
-	return ast.ArrayTerm(terms...)
+
+	expected := ast.StringTerm(`word 3.141590 more 55 ["foo", "bar"] {"baz"} {"k": "v"} null true`)
+
+	for b.Loop() {
+		if err := builtinSprintf(bctx, operands, eqIter(expected)); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func repeatTerm(t *ast.Term, n int) *ast.Term {
+	return ast.ArrayTerm(slices.Repeat([]*ast.Term{t}, n)...)
 }
 
 func BenchmarkSplitLenVsStringsCount(b *testing.B) {
@@ -370,4 +398,102 @@ func BenchmarkSplitLenVsStringsCount(b *testing.B) {
 			}
 		}
 	})
+}
+
+// With an inter-query value cache, compared with matching without a trie on
+// every call, which is what an evaluation without one still does:
+//
+//	                             no trie                       cached trie
+//	n=1/m=1000/common=0           3382 ns        49 B/op         64 ns        0 B/op
+//	n=1/m=100000/common=0       334400 ns        49 B/op         83 ns        1 B/op
+//	n=100/m=1000/common=0        25832 ns     18320 B/op       4118 ns     1864 B/op
+//	n=10000/m=10/common=0       646000 ns    164147 B/op     263800 ns   163942 B/op
+//	n=10000/m=100000/common=0 10257000 ns   1769574 B/op    1797000 ns   191488 B/op
+func BenchmarkAnyPrefixMatch(b *testing.B) {
+	for _, n := range []int{1, 100, 10000} {
+		for _, m := range []int{10, 1000, 100000} {
+			for _, common := range []int{0, 32} {
+				strs, prefixes := generateAnyStartsWithAnyInput(n, m, common)
+				search := stringsArray(strs)
+				if n == 1 {
+					// One string, the usual shape in a rule body, is passed as it is.
+					search = ast.StringTerm(strs[0])
+				}
+				operands := []*ast.Term{search, stringsArray(prefixes)}
+				for _, cached := range []bool{false, true} {
+					b.Run(fmt.Sprintf("n=%d/m=%d/common=%d/cached=%v", n, m, common, cached), func(b *testing.B) {
+						bctx := BuiltinContext{}
+						if cached {
+							bctx.InterQueryBuiltinValueCache = cache.NewInterQueryValueCache(b.Context(), &cache.Config{})
+						}
+						for b.Loop() {
+							if err := builtinAnyPrefixMatch(bctx, operands, func(r *ast.Term) error {
+								if r.Value.Compare(ast.Boolean(false)) != 0 {
+									b.Fatal("expected no match")
+								}
+								return nil
+							}); err != nil {
+								b.Fatal(err)
+							}
+						}
+					})
+				}
+			}
+		}
+	}
+}
+
+func generateAnyStartsWithAnyInput(n, m, common int) ([]string, []string) {
+	rng := rand.New(rand.NewPCG(uint64(n), uint64(m)))
+	root := strings.Repeat("x", common)
+	strs := make([]string, n)
+	for i := range strs {
+		strs[i] = fmt.Sprintf("%s/%08x/%04x", root, rng.Uint32(), i)
+	}
+	prefixes := make([]string, m)
+	for i := range prefixes {
+		// The trailing "z" can't follow a hex digit, so no prefix matches.
+		prefixes[i] = fmt.Sprintf("%s/%08x/z", root, rng.Uint32())
+	}
+	return strs, prefixes
+}
+
+// BenchmarkAnyAffixMatchOneString is the shape a rule body has, one value
+// checked against a literal list, matching only on the last member.
+func BenchmarkAnyAffixMatchOneString(b *testing.B) {
+	for _, m := range []int{10, 1000, 10000} {
+		affixes := make([]*ast.Term, m)
+		for i := range affixes {
+			affixes[i] = ast.StringTerm(fmt.Sprintf("/svc/p%d/", i))
+		}
+		operands := []*ast.Term{ast.StringTerm(fmt.Sprintf("/svc/p%d/", m-1)), ast.ArrayTerm(affixes...)}
+
+		for name, f := range map[string]BuiltinFunc{"prefix": builtinAnyPrefixMatch, "suffix": builtinAnySuffixMatch} {
+			b.Run(fmt.Sprintf("%s/m=%d", name, m), func(b *testing.B) {
+				for b.Loop() {
+					if err := f(BuiltinContext{}, operands, func(t *ast.Term) error {
+						if t.Value != ast.Boolean(true) {
+							b.Fatal("expected a match")
+						}
+						return nil
+					}); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+		}
+	}
+}
+
+func BenchmarkIndexOfN(b *testing.B) {
+	operands := []*ast.Term{
+		ast.StringTerm("The quick brown fox jumps over the lazy dog, the end"),
+		ast.StringTerm("the"),
+	}
+
+	for b.Loop() {
+		if err := builtinIndexOfN(BuiltinContext{}, operands, func(*ast.Term) error { return nil }); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

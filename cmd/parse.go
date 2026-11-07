@@ -7,7 +7,6 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -109,7 +108,7 @@ func parse(args []string, params *parseParams, stdout io.Writer, stderr io.Write
 			return 1
 		}
 
-		_, _ = fmt.Fprint(stdout, string(bs)+"\n")
+		stdout.Write(append(bs, '\n'))
 	default:
 		ast.Pretty(stdout, result.Parsed)
 	}
@@ -142,8 +141,8 @@ func initParse(root *cobra.Command, _ string) {
 
 	addOutputFormat(parseCommand.Flags(), configuredParseParams.format)
 	parseCommand.Flags().StringVarP(&configuredParseParams.jsonInclude, "json-include", "", "", "include or exclude optional elements. By default comments are included. Current options: locations, comments. E.g. --json-include locations,-comments will include locations and exclude comments.")
-	addV1CompatibleFlag(parseCommand.Flags(), &configuredParseParams.v1Compatible, false)
-	addV0CompatibleFlag(parseCommand.Flags(), &configuredParseParams.v0Compatible, false)
+	addV1CompatibleFlag(parseCommand.Flags(), &configuredParseParams.v1Compatible)
+	addV0CompatibleFlag(parseCommand.Flags(), &configuredParseParams.v0Compatible)
 
 	root.AddCommand(parseCommand)
 }

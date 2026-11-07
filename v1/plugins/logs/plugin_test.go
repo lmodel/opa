@@ -20,6 +20,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -41,6 +42,7 @@ import (
 	"github.com/open-policy-agent/opa/v1/topdown/print"
 	"github.com/open-policy-agent/opa/v1/util"
 	"github.com/open-policy-agent/opa/v1/version"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func TestMain(m *testing.M) {
@@ -96,7 +98,7 @@ func TestPluginCustomBackend(t *testing.T) {
 	// Server events with only `Revision` should not include bundles in the EventV1 struct
 	for _, e := range backend.events {
 		if len(e.Bundles) > 0 {
-			t.Errorf("Unexpected `bundles` in event")
+			t.Error("Unexpected `bundles` in event")
 		}
 	}
 }
@@ -1470,7 +1472,10 @@ func TestPluginStatusUpdateRateLimitExceeded(t *testing.T) {
 		t.Fatal("Expected metrics field in status update")
 	}
 
-	exp := map[string]any{"<built-in>": map[string]any{"counter_decision_logs_dropped_rate_limit_exceeded": json.Number("2")}}
+	exp := map[string]any{"<built-in>": map[string]any{
+		"counter_decision_logs_dropped_rate_limit_exceeded": json.Number("2"),
+		"counter_decision_logs_chunks_uploaded":             json.Number("1"),
+	}}
 
 	if !reflect.DeepEqual(e.Fields["metrics"], exp) {
 		t.Fatalf("Expected %v but got %v", exp, e.Fields["metrics"])
@@ -1808,7 +1813,7 @@ func TestPluginNoLogging(t *testing.T) {
 				t.Errorf("expected no error: %v", err)
 			}
 			if config != nil {
-				t.Errorf("excected no config for a no-op logging plugin")
+				t.Error("excected no config for a no-op logging plugin")
 			}
 		})
 	}
@@ -1915,6 +1920,45 @@ func TestPluginTriggerManual(t *testing.T) {
 			}
 
 			fixture.plugin.Stop(ctx)
+		})
+	}
+}
+
+func TestPluginSizeBufferKeepsFullChunks(t *testing.T) {
+	t.Parallel()
+
+	for _, mode := range []plugins.TriggerMode{plugins.TriggerManual, plugins.TriggerPeriodic} {
+		t.Run(string(mode), func(t *testing.T) {
+			t.Parallel()
+
+			ctx := t.Context()
+			fixture := newTestFixture(t, testFixtureOptions{
+				ReportingBufferType: sizeBufferType,
+				// small enough that logging cuts complete chunks before the upload
+				ReportingUploadSizeLimitBytes: 300,
+				TriggerMode:                   mode,
+			})
+			fixture.server.ch = make(chan []EventV1, 1000)
+			defer fixture.server.stop()
+
+			const logged = 1000
+			for i := range logged {
+				if err := fixture.plugin.Log(ctx, &server.Info{DecisionID: strconv.Itoa(i)}); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if err := fixture.plugin.Trigger(ctx); err != nil {
+				t.Fatal(err)
+			}
+
+			received := 0
+			for len(fixture.server.ch) > 0 {
+				received += len(<-fixture.server.ch)
+			}
+			if received != logged {
+				t.Fatalf("expected %d events to be uploaded, got %d", logged, received)
+			}
 		})
 	}
 }
@@ -2112,7 +2156,7 @@ func TestPluginTerminatesAfterGracefulShutdownPeriod(t *testing.T) {
 
 	// Ensure the plugin was stopped without flushing its whole buffer
 	if fixture.plugin.b.(*sizeBuffer).buffer.Len() == 0 && fixture.plugin.b.(*sizeBuffer).enc.buf.Len() == 0 {
-		t.Errorf("Expected the plugin to still have buffered messages")
+		t.Error("Expected the plugin to still have buffered messages")
 	}
 }
 
@@ -2658,10 +2702,7 @@ func TestPluginMasking(t *testing.T) {
 			store := inmem.New()
 
 			err := storage.Txn(ctx, store, storage.WriteParams, func(txn storage.Transaction) error {
-				if err := store.UpsertPolicy(ctx, txn, "test.rego", tc.rawPolicy); err != nil {
-					return err
-				}
-				return nil
+				return store.UpsertPolicy(ctx, txn, "test.rego", tc.rawPolicy)
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -2771,6 +2812,92 @@ func TestPluginMasking(t *testing.T) {
 	}
 }
 
+func TestPluginPreparedQueryCacheConcurrency(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := inmem.New()
+
+	policy := []byte(`
+		package system.log
+		import rego.v1
+
+		mask contains "/input/password" if {
+			input.input.is_sensitive
+		}
+
+		drop if {
+			endswith(input.path, "/drop")
+		}`)
+
+	if err := storage.Txn(ctx, store, storage.WriteParams, func(txn storage.Transaction) error {
+		return store.UpsertPolicy(ctx, txn, "test.rego", policy)
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	manager, err := plugins.New(nil, "test", store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := manager.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &Config{Service: "svc"}
+	trigger := plugins.DefaultTriggerMode
+	if err := cfg.validateAndInjectDefaults([]string{"svc"}, nil, &trigger, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	plugin := New(cfg, manager)
+
+	const iterations = 200
+
+	var wg sync.WaitGroup
+
+	// Readers evaluate the cached queries the way Log() does.
+	for range 4 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			for range iterations {
+				var input any = map[string]any{"is_sensitive": true, "password": "secret"}
+				event := &EventV1{Path: "foo/bar", Input: &input}
+
+				value, err := event.AST()
+				if err != nil {
+					t.Error(err)
+					return
+				}
+
+				if err := plugin.maskEvent(ctx, nil, value, event); err != nil {
+					t.Error(err)
+					return
+				}
+
+				if _, err := plugin.dropEvent(ctx, nil, value); err != nil {
+					t.Error(err)
+					return
+				}
+			}
+		}()
+	}
+
+	// The writer does what compilerUpdated() does on every bundle activation.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		for range iterations {
+			plugin.compilerUpdated(nil)
+		}
+	}()
+
+	wg.Wait()
+}
+
 func TestPluginDrop(t *testing.T) {
 	t.Parallel()
 
@@ -2804,6 +2931,38 @@ func TestPluginDrop(t *testing.T) {
 			event:    &EventV1{Path: "foo/foo"},
 			expected: false,
 		},
+		{
+			note: "drop on request context header",
+			rawPolicy: []byte(`
+			package system.log
+			import rego.v1
+			drop if {
+				input.request_context.http.headers["X-Skip-Log"][_] == "true"
+			}`),
+			event: &EventV1{
+				Path: "foo/foo",
+				RequestContext: &RequestContext{
+					HTTPRequest: &HTTPRequestContext{
+						Headers: map[string][]string{"X-Skip-Log": {"true"}},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			note: "drop on trace id",
+			rawPolicy: []byte(`
+			package system.log
+			import rego.v1
+			drop if {
+				input.trace_id == "4bf92f3577b34da6a3ce929d0e0e4736"
+			}`),
+			event: &EventV1{
+				Path:    "foo/foo",
+				TraceID: "4bf92f3577b34da6a3ce929d0e0e4736",
+			},
+			expected: true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -2814,10 +2973,7 @@ func TestPluginDrop(t *testing.T) {
 
 			//checks if raw policy is valid and stores policy in store
 			err := storage.Txn(ctx, store, storage.WriteParams, func(txn storage.Transaction) error {
-				if err := store.UpsertPolicy(ctx, txn, "test.rego", tc.rawPolicy); err != nil {
-					return err
-				}
-				return nil
+				return store.UpsertPolicy(ctx, txn, "test.rego", tc.rawPolicy)
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -2870,6 +3026,116 @@ func TestPluginDrop(t *testing.T) {
 	}
 }
 
+// Regression test: the decision log policy input is built from the event, so it must
+// include the Metrics and Error fields that Log() attaches. Previously the input was
+// snapshotted before those assignments, so `drop if input.error` and any mask rule keyed
+// on input.metrics silently never fired.
+func TestPluginLogPolicyInputIncludesErrorAndMetrics(t *testing.T) {
+	t.Parallel()
+
+	rawPolicy := []byte(`
+		package system.log
+		import rego.v1
+
+		# Under test: the drop policy must be able to observe input.error.
+		drop if { input.error }
+
+		# Control: identical shape, on a field the policy demonstrably sees already.
+		# Without this, a failure above could just mean dropping is broken entirely.
+		drop if { input.path == "control/drop" }
+
+		# Under test: the mask policy must be able to observe input.metrics.
+		mask contains "/result" if { input.metrics }
+
+		# Control: identical shape, on a field the policy demonstrably sees already.
+		mask contains "/input/plain" if { input.path == "keep/me" }
+	`)
+
+	ctx := context.Background()
+	store := inmem.New()
+	if err := storage.Txn(ctx, store, storage.WriteParams, func(txn storage.Transaction) error {
+		return store.UpsertPolicy(ctx, txn, "test.rego", rawPolicy)
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	testLogger := test.New()
+	manager, err := plugins.New(nil, "test", store, plugins.ConsoleLogger(testLogger))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := manager.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &Config{ConsoleLogs: true}
+	trigger := plugins.DefaultTriggerMode
+	if err := cfg.validateAndInjectDefaults(nil, nil, &trigger, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	plugin := New(cfg, manager)
+	if err := plugin.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	defer plugin.Stop(ctx)
+
+	newMetrics := func() metrics.Metrics {
+		m := metrics.New()
+		m.Timer("test_timer").Start()
+		m.Timer("test_timer").Stop()
+		return m
+	}
+
+	// Kept: neither drop rule applies. Both mask rules must fire.
+	input := any(map[string]any{"plain": "secret", "keep": "fine"})
+	result := any("some-result")
+	if err := plugin.Log(ctx, &server.Info{
+		Path: "keep/me", Input: &input, Results: &result, Metrics: newMetrics(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Control: dropped on a field the policy already sees, proving drop works via Log().
+	if err := plugin.Log(ctx, &server.Info{
+		Path: "control/drop", Metrics: newMetrics(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Under test: dropped because the event carries an error.
+	if err := plugin.Log(ctx, &server.Info{
+		Path: "keep/me", Error: errors.New("boom"), Metrics: newMetrics(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	entries := testLogger.Entries()
+	if len(entries) != 1 {
+		var paths []string
+		for _, e := range entries {
+			paths = append(paths, fmt.Sprint(e.Fields["path"]))
+		}
+		t.Fatalf("expected only the kept event to be logged, got %d entries for paths %v", len(entries), paths)
+	}
+
+	erased, _ := entries[0].Fields["erased"].([]any)
+	got := map[string]bool{}
+	for _, e := range erased {
+		if s, ok := e.(string); ok {
+			got[s] = true
+		}
+	}
+	for _, want := range []string{"/input/plain", "/result"} {
+		if !got[want] {
+			t.Errorf("expected %q to be erased, got %v", want, erased)
+		}
+	}
+	if len(got) != 2 {
+		t.Errorf("expected exactly 2 erased paths, got %v", erased)
+	}
+}
+
 func TestPluginMaskErrorHandling(t *testing.T) {
 	t.Parallel()
 
@@ -2887,10 +3153,7 @@ func TestPluginMaskErrorHandling(t *testing.T) {
 
 	// checks if raw policy is valid and stores policy in store
 	err := storage.Txn(ctx, store, storage.WriteParams, func(txn storage.Transaction) error {
-		if err := store.UpsertPolicy(ctx, txn, "test.rego", rawPolicy); err != nil {
-			return err
-		}
-		return nil
+		return store.UpsertPolicy(ctx, txn, "test.rego", rawPolicy)
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -2965,10 +3228,7 @@ func TestPluginDropErrorHandling(t *testing.T) {
 
 	//checks if raw policy is valid and stores policy in store
 	err := storage.Txn(ctx, store, storage.WriteParams, func(txn storage.Transaction) error {
-		if err := store.UpsertPolicy(ctx, txn, "test.rego", rawPolicy); err != nil {
-			return err
-		}
-		return nil
+		return store.UpsertPolicy(ctx, txn, "test.rego", rawPolicy)
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3039,6 +3299,7 @@ type testFixtureOptions struct {
 	ExtraConfig                    map[string]any
 	ExtraManagerConfig             map[string]any
 	ManagerInit                    func(*plugins.Manager)
+	PrometheusRegister             prometheus.Registerer
 	TriggerMode                    plugins.TriggerMode
 	MinDelay                       int64
 	MaxDelay                       int64
@@ -3097,7 +3358,8 @@ func newTestFixture(t *testing.T, opts ...testFixtureOptions) testFixture {
 		"test-instance-id",
 		inmem.New(),
 		plugins.GracefulShutdownPeriod(10),
-		plugins.ConsoleLogger(options.ConsoleLogger))
+		plugins.ConsoleLogger(options.ConsoleLogger),
+		plugins.WithPrometheusRegister(options.PrometheusRegister))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3514,6 +3776,58 @@ func TestEventV1ToAST(t *testing.T) {
 				Timestamp:           time.Now(),
 				RequestID:           1,
 				inputAST:            astInput,
+			},
+		},
+		{
+			note: "event with trace and span ids",
+			event: EventV1{
+				Labels:      map[string]string{"foo": "1", "bar": "2"},
+				DecisionID:  "1234567890",
+				TraceID:     "4bf92f3577b34da6a3ce929d0e0e4736",
+				SpanID:      "00f067aa0ba902b7",
+				Input:       &goInput,
+				Path:        "/http/authz/allow",
+				RequestedBy: "[::1]:59943",
+				Result:      &result,
+				Timestamp:   time.Now(),
+				inputAST:    astInput,
+			},
+		},
+		{
+			note: "event with request context",
+			event: EventV1{
+				Labels:      map[string]string{"foo": "1", "bar": "2"},
+				DecisionID:  "1234567890",
+				Input:       &goInput,
+				Path:        "/http/authz/allow",
+				RequestedBy: "[::1]:59943",
+				Result:      &result,
+				Timestamp:   time.Now(),
+				RequestContext: &RequestContext{
+					HTTPRequest: &HTTPRequestContext{
+						Headers: map[string][]string{
+							"X-Single": {"one"},
+							"X-Multi":  {"one", "two"},
+						},
+					},
+				},
+				inputAST: astInput,
+			},
+		},
+		{
+			note: "event with empty request context",
+			event: EventV1{
+				DecisionID:     "1234567890",
+				Timestamp:      time.Now(),
+				RequestContext: &RequestContext{},
+			},
+		},
+		{
+			note: "event with request context holding no headers",
+			event: EventV1{
+				DecisionID:     "1234567890",
+				Timestamp:      time.Now(),
+				RequestContext: &RequestContext{HTTPRequest: &HTTPRequestContext{}},
 			},
 		},
 	}

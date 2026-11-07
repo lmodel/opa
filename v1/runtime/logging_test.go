@@ -2,7 +2,6 @@
 // Use of this source code is governed by an Apache2
 // license that can be found in the LICENSE file.
 
-// nolint: goconst // string duplication is for test readability.
 package runtime
 
 import (
@@ -118,11 +117,7 @@ func TestRequestErrorLoggingWithHTTPRequestContext(t *testing.T) {
 	}
 
 	initChannel := rt.Manager.ServerInitializedChannel()
-	go func() {
-		if err := rt.Serve(ctx); err != nil {
-			t.Error(err)
-		}
-	}()
+	serve(ctx, t, rt)
 	<-initChannel
 
 	rec := httptest.NewRecorder()
@@ -186,11 +181,7 @@ func TestRequestLogging(t *testing.T) {
 	}
 
 	initChannel := rt.Manager.ServerInitializedChannel()
-	go func() {
-		if err := rt.Serve(ctx); err != nil {
-			t.Error(err)
-		}
-	}()
+	serve(ctx, t, rt)
 	<-initChannel
 
 	// prepare the request bodies to be used
@@ -346,6 +337,119 @@ func TestRequestLogging(t *testing.T) {
 	}
 	if t.Failed() {
 		t.Logf("logs: %v", ents)
+	}
+}
+
+func TestDiagnosticHandlerLoggingLevel(t *testing.T) {
+	inner := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	cases := []struct {
+		name        string
+		newHandler  func(logging.Logger, http.Handler) http.Handler
+		wantAtInfo  bool
+		wantAtDebug bool
+	}{
+		{name: "main", newHandler: NewLoggingHandler, wantAtInfo: true, wantAtDebug: true},
+		{name: "diagnostic", newHandler: NewDiagnosticLoggingHandler, wantAtInfo: false, wantAtDebug: true},
+	}
+
+	for _, tc := range cases {
+		for _, lvl := range []struct {
+			name  string
+			level logging.Level
+		}{
+			{"info", logging.Info},
+			{"debug", logging.Debug},
+		} {
+			t.Run(tc.name+"/"+lvl.name, func(t *testing.T) {
+				logger := test.New()
+				logger.SetLevel(lvl.level)
+
+				handler := tc.newHandler(logger, inner)
+
+				// /health is served by both the main and diagnostic handlers
+				// (depending on which listener accepted the connection), so
+				// the log level decision must be driven by which handler is
+				// in play, not the request path.
+				req, err := http.NewRequest("GET", "/health", nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				rec := httptest.NewRecorder()
+				handler.ServeHTTP(rec, req)
+
+				var gotReceived, gotSent bool
+				for _, ent := range logger.Entries() {
+					switch ent.Message {
+					case "Received request.":
+						gotReceived = true
+					case "Sent response.":
+						gotSent = true
+					}
+				}
+
+				want := tc.wantAtInfo
+				if lvl.level == logging.Debug {
+					want = tc.wantAtDebug
+				}
+
+				if gotReceived != want || gotSent != want {
+					t.Errorf("expected logged=%v at level %s, got received=%v sent=%v", want, lvl.name, gotReceived, gotSent)
+				}
+			})
+		}
+	}
+}
+
+func TestLoggingHandlerConfigurableLevel(t *testing.T) {
+	inner := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	for _, tc := range []struct {
+		name       string
+		loggerAt   logging.Level
+		wantLogged bool
+	}{
+		{name: "logger at error, below configured level", loggerAt: logging.Error, wantLogged: false},
+		{name: "logger at info, at configured level", loggerAt: logging.Info, wantLogged: true},
+		{name: "logger at debug, above configured level", loggerAt: logging.Debug, wantLogged: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			logger := test.New()
+			logger.SetLevel(tc.loggerAt)
+
+			handler := NewLoggingHandlerWithLevel(logger, inner, logging.Warn)
+
+			req, err := http.NewRequest("GET", "/v1/data", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			var gotReceived, gotSent bool
+			for _, ent := range logger.Entries() {
+				switch ent.Message {
+				case "Received request.":
+					gotReceived = true
+					if ent.Level != logging.Warn {
+						t.Errorf("expected \"Received request.\" logged at warn, got %v", ent.Level)
+					}
+				case "Sent response.":
+					gotSent = true
+					if ent.Level != logging.Warn {
+						t.Errorf("expected \"Sent response.\" logged at warn, got %v", ent.Level)
+					}
+				}
+			}
+
+			if gotReceived != tc.wantLogged || gotSent != tc.wantLogged {
+				t.Errorf("expected logged=%v, got received=%v sent=%v", tc.wantLogged, gotReceived, gotSent)
+			}
+		})
 	}
 }
 

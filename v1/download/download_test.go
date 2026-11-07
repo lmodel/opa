@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -152,17 +153,39 @@ func TestStopWithMultipleCalls(t *testing.T) {
 		t.Fatal("expected bundle with at least one module but got:", u1)
 	}
 
-	done := make(chan struct{})
-	go func() {
-		d.Stop(ctx)
-		close(done)
-	}()
+	// Stop must be safe to call concurrently and more than once: the first
+	// call shuts the downloader down and any later call is a no-op, rather
+	// than blocking forever on the stop channel.
+	stopReturns := func(n int) bool {
+		var wg sync.WaitGroup
+		wg.Add(n)
+		for range n {
+			go func() {
+				defer wg.Done()
+				d.Stop(ctx)
+			}()
+		}
 
-	d.Stop(ctx)
-	<-done
+		returned := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(returned)
+		}()
 
-	if !d.stopped {
-		t.Fatal("expected downloader to be stopped")
+		select {
+		case <-returned:
+			return true
+		case <-time.After(10 * time.Second):
+			return false
+		}
+	}
+
+	if !stopReturns(2) {
+		t.Fatal("expected concurrent Stop calls to return, but they blocked")
+	}
+
+	if !stopReturns(1) {
+		t.Fatal("expected Stop on an already-stopped downloader to return, but it blocked")
 	}
 }
 
@@ -506,7 +529,7 @@ func TestOneShotWithBundleEtag(t *testing.T) {
 
 	if fixture.updates[0].Bundle == nil {
 		// 200 response on first request, bundle should be present
-		t.Errorf("Expected bundle in response")
+		t.Error("Expected bundle in response")
 	}
 
 	if fixture.updates[0].Bundle.Etag != fixture.server.expEtag {
@@ -605,7 +628,7 @@ func TestOneShotV1Compatible(t *testing.T) {
 
 				if fixture.updates[0].Bundle == nil {
 					// 200 response on first request, bundle should be present
-					t.Errorf("Expected bundle in response")
+					t.Error("Expected bundle in response")
 				}
 
 				if fixture.updates[0].Bundle.Etag != fixture.server.expEtag {
@@ -736,7 +759,7 @@ p contains 1 if {
 
 				if fixture.updates[0].Bundle == nil {
 					// 200 response on first request, bundle should be present
-					t.Errorf("Expected bundle in response")
+					t.Error("Expected bundle in response")
 				}
 
 				if fixture.updates[0].Bundle.Etag != fixture.server.expEtag {
@@ -793,8 +816,8 @@ func TestFailureUnexpected(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	var hErr HTTPError
-	if !errors.As(err, &hErr) {
+	hErr, ok := errors.AsType[HTTPError](err)
+	if !ok {
 		t.Fatal("expected HTTPError")
 	}
 	if hErr.StatusCode != 500 {
@@ -825,8 +848,8 @@ func TestFailureUnexpectedWithResponseBody(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	var hErr HTTPError
-	if !errors.As(err, &hErr) {
+	hErr, ok := errors.AsType[HTTPError](err)
+	if !ok {
 		t.Fatal("expected HTTPError")
 	}
 	if hErr.StatusCode != 500 {
@@ -874,7 +897,7 @@ func TestEtagInResponse(t *testing.T) {
 
 	if fixture.updates[0].Bundle == nil {
 		// 200 response on first request, bundle should be present
-		t.Errorf("Expected bundle in response")
+		t.Error("Expected bundle in response")
 	}
 
 	err = fixture.d.oneShot(ctx)
@@ -888,7 +911,7 @@ func TestEtagInResponse(t *testing.T) {
 
 	if fixture.updates[1].Bundle != nil {
 		// 304 response on second request, bundle should _not_ be present
-		t.Errorf("Expected no bundle in response")
+		t.Error("Expected no bundle in response")
 	}
 }
 
@@ -1015,7 +1038,7 @@ func TestDownloadLongPollNotModifiedOn304(t *testing.T) {
 		t.Fatal("Unexpected:", err)
 	}
 	if resp.longPoll != fixture.d.longPollingEnabled {
-		t.Fatalf("Expected same value for longPoll and longPollingEnabled")
+		t.Fatal("Expected same value for longPoll and longPollingEnabled")
 	}
 }
 
@@ -1040,7 +1063,7 @@ func TestOneShotLongPollingSwitch(t *testing.T) {
 		t.Fatal("Unexpected:", err)
 	}
 	if fixture.d.longPollingEnabled != fixture.server.longPoll {
-		t.Fatalf("Expected same value for longPoll and longPollingEnabled")
+		t.Fatal("Expected same value for longPoll and longPollingEnabled")
 	}
 
 	fixture.server.longPoll = false
@@ -1049,7 +1072,7 @@ func TestOneShotLongPollingSwitch(t *testing.T) {
 		t.Fatal("Unexpected:", err)
 	}
 	if fixture.d.longPollingEnabled != fixture.server.longPoll {
-		t.Fatalf("Expected same value for longPollingEnabled and longPoll")
+		t.Fatal("Expected same value for longPollingEnabled and longPoll")
 	}
 }
 
@@ -1124,5 +1147,130 @@ func TestWarnOnNonBundleContentType(t *testing.T) {
 
 	if !found {
 		t.Errorf("Expected log entry: %s", expectLogged)
+	}
+}
+
+// TestDownloaderSignatureVerification is a regression test for when a compromised or MITM'd bundle service is serving bundles over HTTP.
+// This is the same Reader construction the OCI downloader uses.
+func TestDownloaderSignatureVerification(t *testing.T) {
+	t.Parallel()
+
+	keyConfigs := map[string]*bundle.KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}
+
+	module := `package test
+
+p := 7`
+
+	newBundle := func(t *testing.T, variant string) bundle.Bundle {
+		t.Helper()
+
+		b := bundle.Bundle{
+			Manifest: bundle.Manifest{Revision: "quickbrownfaux"},
+			Data:     map[string]any{},
+			Modules: []bundle.ModuleFile{
+				{
+					Path: "/example.rego",
+					URL:  "/example.rego",
+					Raw:  []byte(module),
+				},
+			},
+		}
+		b.Manifest.Init()
+
+		if variant == "unsigned" {
+			return b
+		}
+
+		if err := b.GenerateSignature(bundle.NewSigningConfig("secret", "HS256", ""), "foo", true); err != nil {
+			t.Fatal("unexpected error:", err)
+		}
+
+		if variant == "tampered" {
+			// a valid signature over different content: exercises the per-file
+			// hash loop rather than the .signatures.json presence check
+			b.Modules[0].Raw = []byte("package test\n\np := 99")
+		}
+
+		return b
+	}
+
+	tests := []struct {
+		note    string
+		variant string
+		vc      *bundle.VerificationConfig
+		expErr  string
+	}{
+		{
+			note:    "strict config rejects stripped bundle",
+			variant: "unsigned",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "foo", "", nil),
+			expErr:  "bundle missing .signatures.json file",
+		},
+		{
+			note:    "strict config with no keyid rejects stripped bundle",
+			variant: "unsigned",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "", "", nil),
+			expErr:  "bundle missing .signatures.json file",
+		},
+		{
+			note:    "strict config accepts signed bundle",
+			variant: "signed",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "foo", "", nil),
+		},
+		{
+			note:    "strict config rejects tampered bundle",
+			variant: "tampered",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "foo", "", nil),
+			expErr:  "digest mismatch",
+		},
+		{
+			note:    "optional signature config rejects tampered bundle",
+			variant: "tampered",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "", "", nil).WithOptionalSignature(),
+			expErr:  "digest mismatch",
+		},
+		{
+			note:    "optional signature config accepts stripped bundle",
+			variant: "unsigned",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "", "", nil).WithOptionalSignature(),
+		},
+		{
+			note:    "optional signature config verifies signed bundle",
+			variant: "signed",
+			vc:      bundle.NewVerificationConfig(keyConfigs, "", "", nil).WithOptionalSignature(),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+			fixture := newTestFixture(t)
+			defer fixture.server.stop()
+
+			fixture.server.bundles["test/signing"] = newBundle(t, tc.variant)
+
+			d := New(Config{}, fixture.client, "/bundles/test/signing").
+				WithCallback(func(_ context.Context, u Update) error { return u.Error }).
+				WithBundleVerificationConfig(tc.vc).
+				WithLazyLoadingMode(true)
+
+			err := d.oneShot(ctx)
+
+			if tc.expErr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error %v", err)
+				}
+				return
+			}
+
+			if err == nil {
+				t.Fatal("expected error but got nil")
+			}
+			if !strings.Contains(err.Error(), tc.expErr) {
+				t.Fatalf("expected error to contain %q but got %v", tc.expErr, err)
+			}
+		})
 	}
 }

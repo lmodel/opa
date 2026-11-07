@@ -2,7 +2,7 @@
 title: Contributing Code
 ---
 
-We are thrilled that you're interested in contributing to OPA! This document
+Thanks for your interest in contributing to OPA! This document
 outlines some of the important guidelines when getting started as a new
 contributor.
 
@@ -27,9 +27,21 @@ When contributing please consider the following pointers:
   lightweight, and easily embedded. Vendoring may make features _easier_ to
   implement however they come with their own cost for both OPA developers and
   OPA users (e.g., vendoring conflicts, security, debugging, etc.)
+- **Wire-format schemas:** The IR plan and bundle manifest each have two
+  published schemas: a JSON Schema generated from the Go types (drift-tested),
+  and a hand-authored `.proto` (Edition 2023) checked for consistency with the
+  Go types. When adding, renaming, or removing fields on `ir.Policy`,
+  `ir.Stmt` / `ir.Val` kinds, or `bundle.Manifest`, update the matching
+  `.proto` (`v1/ir/plan.proto` or `v1/bundle/manifest.proto`) in the same
+  change set. Field numbers and `oneof` case numbers in the `.proto` are
+  a permanent wire-format commitment — never reuse a number for a
+  different field, and mark removed fields with `reserved`. The consistency tests
+  (`e2e/proto/plan_test.go`, `e2e/proto/manifest_test.go`) catch
+  drift; `buf breaking` (in CI) catches wire-incompatible
+  changes.
 - **AI Tooling**: You can use generative AI tooling to assist your work on OPA,
-  but please review our project's [AI Guidelines](#ai-guidelines) below before doing so to
-  help us help you.
+  but please review the project's [AI Guidelines](#ai-guidelines) below before doing so to
+  help maintainers help you.
 
 :::tip
 Looking for developer environment set-up? Head over to the
@@ -121,7 +133,7 @@ off by a human author.
 The OPA maintainers reserve the right to request additional information about
 patches and reject PRs where code origin cannot be verified.
 
-See more in our [AI Guidelines](#ai-guidelines).
+See more in the [AI Guidelines](#ai-guidelines).
 :::
 
 ## Code Review
@@ -151,7 +163,7 @@ their own commit and added to the PR.
 
 If your Pull Request is small though, it is acceptable to squash changes during
 the review process. Use your judgement about what constitutes a small Pull
-Request. If you aren't sure, send a message to the OPA slack or post a comment
+Request. If you aren't sure, send a message to the OPA Slack or post a comment
 on the Pull Request.
 
 ## Vulnerability scanning
@@ -180,9 +192,8 @@ in the `.trivyignore` file.
 
 ## AI Guidelines
 
-We are really excited for you to contribute to OPA! In order for us (the OPA
-maintainers) to help you effectively, we have some guidelines that we request
-you follow:
+Contributing to OPA is encouraged! In order for the OPA
+maintainers to help effectively, please follow these guidelines:
 
 1. Follow the
    [Linux Foundation Guidelines](https://www.linuxfoundation.org/legal/generative-ai)
@@ -200,22 +211,22 @@ you follow:
    - Opening issues with clear proposals before starting work not already
      outlined in an existing issue.
    - Starting with small pull requests related to single issues (one at a time for new contributors).
-   - Never using LLM output to respond to maintainer comments in PRs or issues.
+   - Never using LLM output to respond to maintainer comments, or generate PR/Issue descriptions.
      Reviewers are interested in knowing **your** reasoning about the code you
      submitted for review. Even if an LLM helped you write that code, it's yours
      to own and explain. Engaging an AI in discussions with human community
      members who took the time to review your code and provide you with personal
      feedback is considered disrespectful and will have your PR rejected.
 
-3. Don't be afraid to get it wrong! We are friendly, and will answer questions
-   you might have about contributing to our project. You can always:
+3. Don't be afraid to get it wrong! The team is friendly and will answer questions
+   you might have about contributing to the project. You can always:
 
    - Ask for clarification of a review comment if you don't understand it.
    - Ask for input on a technical implementation, ideally before investing your
      time into it.
    - Correct maintainers when you think they've misunderstood something.
 
-   Together we can learn and build a better OPA!
+   Together the community can learn and build a better OPA!
 
 ## Contribution process
 

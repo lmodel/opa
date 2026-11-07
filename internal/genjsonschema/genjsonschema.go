@@ -15,8 +15,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"sort"
+	"slices"
 	"strings"
+
+	"github.com/open-policy-agent/opa/v1/util"
 )
 
 // TypeResolver returns a JSON Schema for t and reports handled=true to short
@@ -66,13 +68,8 @@ func (b *Builder) AllowAdditionalProperties(t reflect.Type) {
 // DefsOrdered returns the accumulated $defs in name-sorted order so the
 // rendered schema is byte-stable across runs.
 func (b *Builder) DefsOrdered() OrderedMap {
-	names := make([]string, 0, len(b.defs))
-	for n := range b.defs {
-		names = append(names, n)
-	}
-	sort.Strings(names)
-	out := make(OrderedMap, 0, len(names))
-	for _, n := range names {
+	out := make(OrderedMap, 0, len(b.defs))
+	for _, n := range util.KeysSorted(b.defs) {
 		out = append(out, Entry{n, b.defs[n]})
 	}
 	return out
@@ -158,7 +155,7 @@ func (b *Builder) reflectStructBody(t reflect.Type) (OrderedMap, error) {
 		return nil, err
 	}
 
-	sort.Strings(required)
+	slices.Sort(required)
 
 	out := OrderedMap{
 		{"type", "object"},
@@ -181,8 +178,7 @@ func (b *Builder) collectFields(t reflect.Type, properties *OrderedMap, required
 	}
 	var fields []pendingField
 
-	for i := range t.NumField() {
-		f := t.Field(i)
+	for f := range t.Fields() {
 		if !f.IsExported() {
 			continue
 		}
@@ -220,7 +216,7 @@ func (b *Builder) collectFields(t reflect.Type, properties *OrderedMap, required
 		})
 	}
 
-	sort.Slice(fields, func(i, j int) bool { return fields[i].name < fields[j].name })
+	slices.SortFunc(fields, func(a, b pendingField) int { return strings.Compare(a.name, b.name) })
 	for _, f := range fields {
 		*properties = append(*properties, Entry{f.name, f.schema})
 		if f.required {
@@ -327,10 +323,8 @@ func MakeNullable(schema any) any {
 				out[i] = Entry{"type", []string{v, "null"}}
 				return out
 			case []string:
-				for _, s := range v {
-					if s == "null" {
-						return m
-					}
+				if slices.Contains(v, "null") {
+					return m
 				}
 				out := cloneOrderedMap(m)
 				widened := make([]string, len(v)+1)

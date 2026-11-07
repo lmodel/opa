@@ -17,7 +17,7 @@ import (
 )
 
 func TestEvaluatedRuleTracker(t *testing.T) {
-	t.Run("nil tracker is safe", func(t *testing.T) {
+	t.Run("nil tracker is safe", func(*testing.T) {
 		var tracker *topdown.EvaluatedRuleTracker
 		tracker.Record(&ast.Rule{})
 	})
@@ -225,17 +225,35 @@ package test
 # METADATA
 # labels:
 #   severity: low
-allow if input.role == "admin"
+reasons contains "admin" if "admin" in input.roles
 
 # METADATA
 # labels:
 #   severity: low
-allow if input.role == "editor"
+reasons contains "editor" if "editor" in input.roles
+`,
+			query: "data.test.reasons",
+			input: `{"roles": ["admin", "editor"]}`,
+			exp: []map[string]any{
+				{"service": "auth", "severity": "low"},
+			},
+		},
+		{
+			note: "labels kept when a later annotation has none",
+			module: `# METADATA
+# scope: package
+# labels:
+#   service: auth
+package test
+
+# METADATA
+# title: allow admins
+allow if input.role == "admin"
 `,
 			query: "data.test.allow",
 			input: `{"role": "admin"}`,
 			exp: []map[string]any{
-				{"service": "auth", "severity": "low"},
+				{"service": "auth"},
 			},
 		},
 		{

@@ -1,3 +1,5 @@
+//go:build !go1.27
+
 package cmd
 
 import (
@@ -17,6 +19,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/open-policy-agent/opa/internal/file/archive"
 	"github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/loader"
@@ -77,7 +80,6 @@ func TestBuildProducesBundle(t *testing.T) {
 }
 
 func TestBuildRespectsCapabilities(t *testing.T) {
-	//nolint:prealloc // test slice is extended dynamically, initial values are clearer as slice literal
 	tests := []struct {
 		note       string
 		caps       string
@@ -106,7 +108,7 @@ func TestBuildRespectsCapabilities(t *testing.T) {
 			]
 		}`,
 			policy: `package test
-p { is_foo("bar") }`,
+				p { is_foo("bar") }`,
 		},
 		{
 			note: "future kw NOT defined in caps",
@@ -121,9 +123,9 @@ p { is_foo("bar") }`,
 				return string(j)
 			}(),
 			policy: `package test
-import future.keywords.if
-import future.keywords.in
-p if "opa" in input.tools`,
+				import future.keywords.if
+				import future.keywords.in
+				p if "opa" in input.tools`,
 			err: "rego_parse_error: unexpected keyword, must be one of [in]",
 		},
 		{
@@ -139,9 +141,9 @@ p if "opa" in input.tools`,
 				return string(j)
 			}(),
 			policy: `package test
-import future.keywords.if
-import future.keywords.in
-p if "opa" in input.tools`,
+				import future.keywords.if
+				import future.keywords.in
+				p if "opa" in input.tools`,
 		},
 		{
 			note: "future kw are defined in caps",
@@ -155,9 +157,9 @@ p if "opa" in input.tools`,
 				return string(j)
 			}(),
 			policy: `package test
-import future.keywords.if
-import future.keywords.in
-p if "opa" in input.tools`,
+				import future.keywords.if
+				import future.keywords.in
+				p if "opa" in input.tools`,
 		},
 		{
 			note: "rego.v1 imported AND defined in capabilities",
@@ -171,7 +173,7 @@ p if "opa" in input.tools`,
 				return string(j)
 			}(),
 			policy: `package test
-import rego.v1`,
+				import rego.v1`,
 		},
 		{
 			note: "rego.v1 imported AND rego-v1 in capabilities",
@@ -185,7 +187,38 @@ import rego.v1`,
 				return string(j)
 			}(),
 			policy: `package test
-import rego.v1`,
+				import rego.v1`,
+		},
+		{
+			note: "rego.v2 imported but NOT defined in capabilities",
+			caps: func() string {
+				c := ast.CapabilitiesForThisVersion()
+				c.Features = []string{ast.FeatureRegoV1Import}
+				j, err := json.Marshal(c)
+				if err != nil {
+					panic(err)
+				}
+				return string(j)
+			}(),
+			policy: `package test
+				import rego.v2
+				p if input.a or input.b`,
+			err: "rego_parse_error: invalid import, `rego.v2` is not supported by current capabilities",
+		},
+		{
+			note: "rego.v2 imported AND defined in capabilities",
+			caps: func() string {
+				c := ast.CapabilitiesForThisVersion()
+				c.Features = []string{ast.FeatureRegoV2Import}
+				j, err := json.Marshal(c)
+				if err != nil {
+					panic(err)
+				}
+				return string(j)
+			}(),
+			policy: `package test
+				import rego.v2
+				p if input.a or input.b`,
 		},
 	}
 
@@ -445,6 +478,114 @@ func TestBuildPlanWithPruneUnused(t *testing.T) {
 		}
 		if !found {
 			t.Error("plan.json not found")
+		}
+	})
+}
+
+func TestBuildPlanProtoFormat(t *testing.T) {
+	files := map[string]string{
+		"test.rego": `
+			package test
+			default p := false
+			p if input.user == "alice"
+		`,
+	}
+
+	test.WithTempFS(files, func(root string) {
+		params := newBuildParams()
+		if err := params.target.Set("plan"); err != nil {
+			t.Fatal(err)
+		}
+		if err := params.planFormat.Set("proto"); err != nil {
+			t.Fatal(err)
+		}
+		params.entrypoints.v = []string{"test"}
+		params.outputFile = path.Join(root, "bundle.tar.gz")
+
+		if err := dobuild(params, []string{root}); err != nil {
+			t.Fatal(err)
+		}
+
+		f, err := os.Open(params.outputFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer f.Close()
+
+		gr, err := gzip.NewReader(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		tr := tar.NewReader(gr)
+
+		var foundPlan, foundManifest bool
+		var sawJSONPlan, sawJSONManifest bool
+
+		for {
+			h, err := tr.Next()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			switch h.Name {
+			case "/plan.pb":
+				foundPlan = true
+			case "/.manifest.pb":
+				foundManifest = true
+			case "/plan.json":
+				sawJSONPlan = true
+			case "/.manifest":
+				sawJSONManifest = true
+			}
+		}
+
+		if !foundPlan {
+			t.Error("plan.pb not found in bundle")
+		}
+		if !foundManifest {
+			t.Error("/.manifest.pb not found in bundle")
+		}
+		if sawJSONPlan {
+			t.Error("plan.json should not be present when --format=proto")
+		}
+		if sawJSONManifest {
+			t.Error("/.manifest should not be present when --format=proto")
+		}
+
+		loaded, err := loader.NewFileLoader().AsBundle(params.outputFile)
+		if err != nil {
+			t.Fatalf("load proto bundle: %v", err)
+		}
+		if len(loaded.PlanModules) != 1 {
+			t.Fatalf("expected 1 plan module, got %d", len(loaded.PlanModules))
+		}
+		if filepath.Base(loaded.PlanModules[0].Path) != "plan.pb" {
+			t.Errorf("plan module path should end in plan.pb, got %q", loaded.PlanModules[0].Path)
+		}
+		if loaded.Manifest.Empty() {
+			t.Error("manifest should not be empty after loading proto bundle")
+		}
+	})
+}
+
+func TestBuildFormatRequiresPlanTarget(t *testing.T) {
+	files := map[string]string{
+		"test.rego": `package test`,
+	}
+	test.WithTempFS(files, func(root string) {
+		params := newBuildParams()
+		if err := params.planFormat.Set("proto"); err != nil {
+			t.Fatal(err)
+		}
+		params.outputFile = path.Join(root, "bundle.tar.gz")
+
+		err := dobuild(params, []string{root})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "plan") {
+			t.Fatalf("error should mention plan target, got: %v", err)
 		}
 	})
 }
@@ -1076,6 +1217,40 @@ p contains 42 if {
 }`,
 			},
 			expManifest: `{"revision":"","roots":[""],"rego_version":1}`,
+		},
+		{
+			note: "v2 bundle rego-version",
+			files: map[string]string{
+				".manifest": `{"rego_version": 2}`,
+				"test.rego": `package test
+
+p contains 42 if {
+	input.x == 1 or input.y == 2
+}`,
+			},
+			expManifest: `{"revision":"","roots":[""],"rego_version":2}`,
+		},
+		{
+			note: "v1 bundle rego-version, v2 per-file override",
+			files: map[string]string{
+				".manifest": `{
+	"rego_version": 1,
+	"file_rego_versions": {
+		"*/test2.rego": 2
+	}
+}`,
+				"test1.rego": `package test
+
+p contains 1 if {
+	input.x == 1
+}`,
+				"test2.rego": `package test
+
+p contains 2 if {
+	input.x == 1 or input.y == 2
+}`,
+			},
+			expManifest: `{"revision":"","roots":[""],"rego_version":1,"file_rego_versions":{"%ROOT%/test2.rego":2}}`,
 		},
 		{
 			note: "v0 bundle rego-version, v1 per-file override",
@@ -1841,103 +2016,102 @@ q contains 1 if {
 
 	for _, tc := range tests {
 		t.Run(tc.note, func(t *testing.T) {
-			test.WithTempFS(nil, func(root string) {
-				var roots []string
-				for name, files := range tc.bundles {
-					p := filepath.Join(root, name)
-					roots = append(roots, p)
-					filePairs := make([][2]string, 0, len(files))
-					for k, v := range files {
-						filePairs = append(filePairs, [2]string{k, v})
-					}
-					buf := archive.MustWriteTarGz(filePairs)
-					bf, err := os.Create(p)
-					if err != nil {
-						t.Fatalf("Unexpected error: %v", err)
-					}
-					_, err = bf.Write(buf.Bytes())
-					if err != nil {
-						t.Fatalf("Unexpected error: %v", err)
+			root := t.TempDir()
+			var roots []string
+			for name, files := range tc.bundles {
+				p := filepath.Join(root, name)
+				roots = append(roots, p)
+				filePairs := make([][2]string, 0, len(files))
+				for k, v := range files {
+					filePairs = append(filePairs, [2]string{k, v})
+				}
+				buf := archive.MustWriteTarGz(filePairs)
+				bf, err := os.Create(p)
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+				_, err = bf.Write(buf.Bytes())
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+			}
+
+			params := newBuildParams()
+			params.outputFile = path.Join(root, "bundle.tar.gz")
+			params.bundleMode = true
+			params.v0Compatible = tc.v0Compatible
+			params.v1Compatible = tc.v1Compatible
+
+			if tc.capabilities != nil {
+				params.capabilities.C = tc.capabilities
+			}
+
+			err := dobuild(params, roots)
+			if tc.expErrs != nil {
+				if err == nil {
+					t.Fatal("expected error but got none")
+				}
+				for _, expErr := range tc.expErrs {
+					if !strings.Contains(err.Error(), expErr) {
+						t.Fatalf("expected error:\n\n%q\n\nbut got:\n\n%v", expErr, err)
 					}
 				}
-
-				params := newBuildParams()
-				params.outputFile = path.Join(root, "bundle.tar.gz")
-				params.bundleMode = true
-				params.v0Compatible = tc.v0Compatible
-				params.v1Compatible = tc.v1Compatible
-
-				if tc.capabilities != nil {
-					params.capabilities.C = tc.capabilities
+			} else {
+				if err != nil {
+					t.Fatal(err)
 				}
 
-				err := dobuild(params, roots)
-				if tc.expErrs != nil {
-					if err == nil {
-						t.Fatal("expected error but got none")
-					}
-					for _, expErr := range tc.expErrs {
-						if !strings.Contains(err.Error(), expErr) {
-							t.Fatalf("expected error:\n\n%q\n\nbut got:\n\n%v", expErr, err)
-						}
-					}
-				} else {
-					if err != nil {
+				_, err = loader.NewFileLoader().AsBundle(params.outputFile)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				f, err := os.Open(params.outputFile)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer func() {
+					_ = f.Close()
+				}()
+
+				gr, err := gzip.NewReader(f)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				tr := tar.NewReader(gr)
+
+				for {
+					f, err := tr.Next()
+					if err == io.EOF {
+						break
+					} else if err != nil {
 						t.Fatal(err)
 					}
 
-					_, err = loader.NewFileLoader().AsBundle(params.outputFile)
-					if err != nil {
-						t.Fatal(err)
-					}
-
-					f, err := os.Open(params.outputFile)
-					if err != nil {
-						t.Fatal(err)
-					}
-					defer func() {
-						_ = f.Close()
-					}()
-
-					gr, err := gzip.NewReader(f)
-					if err != nil {
-						t.Fatal(err)
-					}
-
-					tr := tar.NewReader(gr)
-
-					for {
-						f, err := tr.Next()
-						if err == io.EOF {
-							break
-						} else if err != nil {
-							t.Fatal(err)
-						}
-
-						found := false
-						for expName, expVal := range tc.expBundle {
-							expName = strings.ReplaceAll(expName, "%ROOT%", root)
-							if f.Name == expName {
-								found = true
-								b, err := io.ReadAll(tr)
-								if err != nil {
-									t.Fatal(err)
-								}
-								expVal = strings.ReplaceAll(expVal, "%ROOT%", root)
-								expVal = strings.ReplaceAll(expVal, "%DEFAULT_REGO_VERSION%",
-									strconv.Itoa(ast.DefaultRegoVersion.Int()))
-								if string(b) != expVal {
-									t.Fatalf("expected %v:\n\n%v\n\nbut got:\n\n%v", expName, expVal, string(b))
-								}
-								break
+					found := false
+					for expName, expVal := range tc.expBundle {
+						expName = strings.ReplaceAll(expName, "%ROOT%", root)
+						if f.Name == expName {
+							found = true
+							b, err := io.ReadAll(tr)
+							if err != nil {
+								t.Fatal(err)
 							}
-						}
-						if !found {
-							t.Fatalf("unexpected file in bundle: %v", f.Name)
+							expVal = strings.ReplaceAll(expVal, "%ROOT%", root)
+							expVal = strings.ReplaceAll(expVal, "%DEFAULT_REGO_VERSION%",
+								strconv.Itoa(ast.DefaultRegoVersion.Int()))
+							if string(b) != expVal {
+								t.Fatalf("expected %v:\n\n%v\n\nbut got:\n\n%v", expName, expVal, string(b))
+							}
+							break
 						}
 					}
+					if !found {
+						t.Fatalf("unexpected file in bundle: %v", f.Name)
+					}
 				}
-			})
+			}
 		})
 	}
 }
@@ -2370,6 +2544,99 @@ p contains x if {
 							t.Fatalf("expected file %s not found in bundle, got: %v", expectedFile, foundFiles)
 						}
 					}
+				}
+			})
+		})
+	}
+}
+
+func TestBuildTemplateStringCapabilities(t *testing.T) {
+	const (
+		module = `package test
+					p := $"foo {input.x}"`
+		errMessage = "template strings are not supported by current capabilities"
+	)
+
+	tests := []struct {
+		note         string
+		regoVersion  int
+		capabilities *ast.Capabilities
+		expErr       string
+	}{
+		{
+			note:         "v1 module, v1 capabilities",
+			regoVersion:  1,
+			capabilities: capsWithoutFeat(ast.RegoV1),
+		},
+		{
+			note:         "v1 module, v1 capabilities without template_strings",
+			regoVersion:  1,
+			capabilities: capsWithoutFeat(ast.RegoV1, ast.FeatureTemplateStrings),
+			expErr:       errMessage,
+		},
+		{
+			note:         "v1 module, v0 capabilities",
+			regoVersion:  1,
+			capabilities: capsWithoutFeat(ast.RegoV0),
+			expErr:       errMessage,
+		},
+		{
+			note:         "v2 module, v2 capabilities",
+			regoVersion:  2,
+			capabilities: capsWithoutFeat(ast.RegoV2),
+		},
+		{
+			note:         "v2 module, v1 capabilities without template_strings",
+			regoVersion:  2,
+			capabilities: capsWithoutFeat(ast.RegoV1, ast.FeatureTemplateStrings),
+		},
+		{
+			note:         "v2 module, v0 capabilities",
+			regoVersion:  2,
+			capabilities: capsWithoutFeat(ast.RegoV0),
+		},
+		{
+			note:         "v2 module, v0 capabilities without rego_v2",
+			regoVersion:  2,
+			capabilities: capsWithoutFeat(ast.RegoV0, ast.FeatureRegoV2),
+			expErr:       "rego_v2 feature required",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			files := map[string]string{
+				".manifest": fmt.Sprintf(`{"rego_version": %d}`, tc.regoVersion),
+				"test.rego": module,
+			}
+
+			test.WithTempFS(files, func(root string) {
+				params := newBuildParams()
+				params.outputFile = path.Join(root, "bundle.tar.gz")
+				params.capabilities.C = tc.capabilities
+				params.bundleMode = true // reads the input .manifest
+
+				err := dobuild(params, []string{root})
+
+				if tc.expErr != "" {
+					if err == nil || !strings.Contains(err.Error(), tc.expErr) {
+						t.Fatalf("expected error containing %q, got: %v", tc.expErr, err)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				b, err := loader.NewFileLoader().AsBundle(params.outputFile)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if b.Manifest.RegoVersion == nil {
+					t.Fatalf("expected manifest rego_version %d, got none", tc.regoVersion)
+				}
+				if got := *b.Manifest.RegoVersion; got != tc.regoVersion {
+					t.Fatalf("expected manifest rego_version %d, got %d", tc.regoVersion, got)
 				}
 			})
 		})
@@ -2921,6 +3188,65 @@ foo contains __local1__1 if {
 `,
 			},
 		},
+		{
+			note:                "v0, rego.v2 imported",
+			v1Compatible:        false,
+			regoV1ImportCapable: true,
+			files: map[string]string{
+				"test.rego": `package test
+import rego.v2
+# METADATA
+# entrypoint: true
+p if {
+	input.a or not { input.b; input.c }
+}
+`,
+			},
+			// TODO: No v2 ast.RegoVersion yet, so we can't remember this for the module, so it gets v1+keywords applied
+			expectedFiles: map[string]string{
+				"/.manifest": `{"revision":"","roots":[""],"rego_version":0}
+`,
+				"/optimized/test.rego": `package test
+
+import future.keywords.not
+import future.keywords.or
+import rego.v1
+
+p if {
+	input.a or not { input.b; input.c }
+}
+`,
+			},
+		},
+		{
+			note:                "v1, rego.v2 imported",
+			v1Compatible:        true,
+			regoV1ImportCapable: true,
+			files: map[string]string{
+				"test.rego": `package test
+import rego.v2
+# METADATA
+# entrypoint: true
+p if {
+	input.a or not { input.b; input.c }
+}
+`,
+			},
+			// TODO: No v2 ast.RegoVersion yet, so we can't remember this for the module, so it gets keywords applied
+			expectedFiles: map[string]string{
+				"/.manifest": `{"revision":"","roots":[""],"rego_version":1}
+`,
+				"/optimized/test.rego": `package test
+
+import future.keywords.not
+import future.keywords.or
+
+p if {
+	input.a or not { input.b; input.c }
+}
+`,
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -3235,7 +3561,7 @@ func TestBuildManifestWarning(t *testing.T) {
 			},
 			bundleMode: true,
 			buildArgs:  []string{"bundle"},
-			expectedStderr: func(root string) string {
+			expectedStderr: func(_ string) string {
 				return ""
 			},
 		},
@@ -3245,7 +3571,7 @@ func TestBuildManifestWarning(t *testing.T) {
 			},
 			bundleMode: false,
 			buildArgs:  []string{"bundle"},
-			expectedStderr: func(root string) string {
+			expectedStderr: func(_ string) string {
 				return ""
 			},
 		},
@@ -3264,6 +3590,17 @@ func TestBuildManifestWarning(t *testing.T) {
 Warning: .manifest file found in %q but -b flag not specified. Manifest will be ignored.
 `,
 					path.Join(root, "bundle1"), path.Join(root, "bundle2"))
+			},
+		},
+		"warns when proto manifest ignored": {
+			files: map[string]string{
+				"bundle/.manifest.pb": "ignored-content",
+				"bundle/data.json":    `{"data": "value"}`,
+			},
+			bundleMode: false,
+			buildArgs:  []string{"bundle"},
+			expectedStderr: func(root string) string {
+				return fmt.Sprintf("Warning: .manifest.pb file found in %q but -b flag not specified. Manifest will be ignored.\n", path.Join(root, "bundle"))
 			},
 		},
 	}
@@ -3296,4 +3633,68 @@ Warning: .manifest file found in %q but -b flag not specified. Manifest will be 
 			})
 		})
 	}
+}
+
+func TestBuildPlanJSONOutputBytes(t *testing.T) {
+	files := map[string]string{
+		"test.rego": `
+			package test
+			p = 1
+		`,
+	}
+
+	test.WithTempFS(files, func(root string) {
+		params := newBuildParams()
+		if err := params.target.Set("plan"); err != nil {
+			t.Fatal(err)
+		}
+		params.entrypoints.v = []string{"test"}
+		params.outputFile = path.Join(root, "bundle.tar.gz")
+
+		if err := dobuild(params, []string{root}); err != nil {
+			t.Fatal(err)
+		}
+
+		f, err := os.Open(params.outputFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer f.Close()
+
+		gr, err := gzip.NewReader(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tr := tar.NewReader(gr)
+		var planBytes []byte
+		var found bool
+
+		for {
+			h, err := tr.Next()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if h.Name == "/plan.json" {
+				found = true
+				if planBytes, err = io.ReadAll(tr); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+
+		if !found {
+			t.Fatal("plan.json not found")
+		}
+
+		got := strings.ReplaceAll(string(planBytes), root, "TEMPDIR")
+
+		expected := `{"static":{"strings":[{"value":"result"},{"value":"p"},{"value":"1"},{"value":"test"}],"files":[{"value":"TEMPDIR/test.rego"}]},"plans":{"plans":[{"name":"test","blocks":[{"stmts":[{"type":"MakeObjectStmt","stmt":{"target":2,"file":0,"col":0,"row":0,"end_col":0,"end_row":0}},{"type":"BlockStmt","stmt":{"blocks":[{"stmts":[{"type":"CallStmt","stmt":{"func":"g0.data.test.p","args":[{"type":"local","value":0},{"type":"local","value":1}],"result":3,"file":0,"col":0,"row":0,"end_col":0,"end_row":0}},{"type":"ObjectInsertStmt","stmt":{"key":{"type":"string_index","value":1},"value":{"type":"local","value":3},"object":2,"file":0,"col":0,"row":0,"end_col":0,"end_row":0}}]}],"file":0,"col":0,"row":0,"end_col":0,"end_row":0}},{"type":"BlockStmt","stmt":{"blocks":[{"stmts":[{"type":"BlockStmt","stmt":{"blocks":[{"stmts":[{"type":"DotStmt","stmt":{"source":{"type":"local","value":1},"key":{"type":"string_index","value":3},"target":5,"file":0,"col":0,"row":0,"end_col":0,"end_row":0}},{"type":"ObjectMergeStmt","stmt":{"a":5,"b":2,"target":4,"file":0,"col":0,"row":0,"end_col":0,"end_row":0}},{"type":"BreakStmt","stmt":{"index":1,"file":0,"col":0,"row":0,"end_col":0,"end_row":0}}]}],"file":0,"col":0,"row":0,"end_col":0,"end_row":0}},{"type":"AssignVarStmt","stmt":{"source":{"type":"local","value":2},"target":4,"file":0,"col":0,"row":0,"end_col":0,"end_row":0}}]}],"file":0,"col":0,"row":0,"end_col":0,"end_row":0}},{"type":"AssignVarStmt","stmt":{"source":{"type":"local","value":4},"target":6,"file":0,"col":0,"row":0,"end_col":0,"end_row":0}},{"type":"MakeObjectStmt","stmt":{"target":7,"file":0,"col":0,"row":0,"end_col":0,"end_row":0}},{"type":"ObjectInsertStmt","stmt":{"key":{"type":"string_index","value":0},"value":{"type":"local","value":6},"object":7,"file":0,"col":0,"row":0,"end_col":0,"end_row":0}},{"type":"ResultSetAddStmt","stmt":{"value":7,"file":0,"col":0,"row":0,"end_col":0,"end_row":0}}]}]}]},"funcs":{"funcs":[{"name":"g0.data.test.p","params":[0,1],"return":2,"blocks":[{"stmts":[{"type":"ResetLocalStmt","stmt":{"target":3,"file":0,"col":4,"row":3,"end_col":9,"end_row":3}},{"type":"MakeNumberRefStmt","stmt":{"file":0,"col":4,"row":3,"end_col":9,"end_row":3,"index":2,"Index":2,"target":4}},{"type":"AssignVarOnceStmt","stmt":{"source":{"type":"local","value":4},"target":3,"file":0,"col":4,"row":3,"end_col":9,"end_row":3}}]},{"stmts":[{"type":"IsDefinedStmt","stmt":{"source":3,"file":0,"col":4,"row":3,"end_col":9,"end_row":3}},{"type":"AssignVarOnceStmt","stmt":{"source":{"type":"local","value":3},"target":2,"file":0,"col":4,"row":3,"end_col":9,"end_row":3}}]},{"stmts":[{"type":"ReturnLocalStmt","stmt":{"source":2,"file":0,"col":4,"row":3,"end_col":9,"end_row":3}}]}],"path":["g0","test","p"]}]}}`
+
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Errorf("unexpected result (-want, +got):\n%s", diff)
+		}
+	})
 }

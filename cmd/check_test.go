@@ -1,3 +1,5 @@
+//go:build !go1.27
+
 // Copyright 2022 The OPA Authors.  All rights reserved.
 // Use of this source code is governed by an Apache2
 // license that can be found in the LICENSE file.
@@ -5,6 +7,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -14,13 +17,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/open-policy-agent/opa/internal/file/archive"
+	pr "github.com/open-policy-agent/opa/internal/presentation"
 	"github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/util/test"
 )
 
 func TestCheckRespectsCapabilities(t *testing.T) {
-	//nolint:prealloc // test slice is extended dynamically, initial values are clearer as slice literal
 	tests := []struct {
 		note       string
 		caps       string
@@ -49,7 +54,7 @@ func TestCheckRespectsCapabilities(t *testing.T) {
 			]
 		}`,
 			policy: `package test
-p { is_foo("bar") }`,
+				p { is_foo("bar") }`,
 		},
 		{
 			note: "future kw NOT defined in caps",
@@ -64,9 +69,9 @@ p { is_foo("bar") }`,
 				return string(j)
 			}(),
 			policy: `package test
-import future.keywords.if
-import future.keywords.in
-p if "opa" in input.tools`,
+				import future.keywords.if
+				import future.keywords.in
+				p if "opa" in input.tools`,
 			err: "rego_parse_error: unexpected keyword, must be one of [in]",
 		},
 		{
@@ -82,9 +87,9 @@ p if "opa" in input.tools`,
 				return string(j)
 			}(),
 			policy: `package test
-import future.keywords.if
-import future.keywords.in
-p if "opa" in input.tools`,
+				import future.keywords.if
+				import future.keywords.in
+				p if "opa" in input.tools`,
 		},
 		{
 			note: "future kw are defined in caps",
@@ -98,9 +103,9 @@ p if "opa" in input.tools`,
 				return string(j)
 			}(),
 			policy: `package test
-import future.keywords.if
-import future.keywords.in
-p if "opa" in input.tools`,
+				import future.keywords.if
+				import future.keywords.in
+				p if "opa" in input.tools`,
 		},
 		{
 			note: "rego.v1 imported but NOT defined in capabilities",
@@ -114,7 +119,7 @@ p if "opa" in input.tools`,
 				return string(j)
 			}(),
 			policy: `package test
-import rego.v1`,
+				import rego.v1`,
 			err: "rego_parse_error: invalid import, `rego.v1` is not supported by current capabilities",
 		},
 		{
@@ -129,7 +134,7 @@ import rego.v1`,
 				return string(j)
 			}(),
 			policy: `package test
-import rego.v1`,
+				import rego.v1`,
 		},
 		{
 			note: "rego.v1 imported AND rego-v1 in capabilities",
@@ -143,7 +148,54 @@ import rego.v1`,
 				return string(j)
 			}(),
 			policy: `package test
-import rego.v1`,
+				import rego.v1`,
+		},
+		{
+			note: "rego.v2 imported but NOT defined in capabilities",
+			caps: func() string {
+				c := ast.CapabilitiesForThisVersion()
+				c.Features = []string{ast.FeatureRegoV1Import}
+				j, err := json.Marshal(c)
+				if err != nil {
+					panic(err)
+				}
+				return string(j)
+			}(),
+			policy: `package test
+				import rego.v2
+				p if input.a or input.b`,
+			err: "rego_parse_error: invalid import, `rego.v2` is not supported by current capabilities",
+		},
+		{
+			note: "rego.v2 imported AND defined in capabilities",
+			caps: func() string {
+				c := ast.CapabilitiesForThisVersion()
+				c.Features = []string{ast.FeatureRegoV2Import}
+				j, err := json.Marshal(c)
+				if err != nil {
+					panic(err)
+				}
+				return string(j)
+			}(),
+			policy: `package test
+				import rego.v2
+				p if input.a or input.b`,
+		},
+		{
+			note: "rego.v2 imported AND rego-v1 in capabilities",
+			caps: func() string {
+				c := ast.CapabilitiesForThisVersion()
+				c.Features = []string{ast.FeatureRegoV1}
+				j, err := json.Marshal(c)
+				if err != nil {
+					panic(err)
+				}
+				return string(j)
+			}(),
+			policy: `package test
+				import rego.v2
+				p if input.a or input.b`,
+			err: "rego_parse_error: invalid import, `rego.v2` is not supported by current capabilities",
 		},
 	}
 
@@ -288,6 +340,84 @@ func TestCheckFailsOnInvalidRego(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), expectedError) {
 			t.Fatalf("expected error %v but received %v", expectedError, err)
+		}
+	})
+}
+
+func TestCheckStrictReportsAllViolations(t *testing.T) {
+	files := map[string]string{
+		"test.rego": `package test
+
+import data.foo
+import data.foo
+
+a := any([foo])
+b := all([true])
+
+f(x) if {
+	input.bar
+}`,
+	}
+
+	expected := []string{
+		"test.rego:4: rego_compile_error: import must not shadow import data.foo",
+		"test.rego:6: rego_type_error: deprecated built-in function calls in expression: any",
+		"test.rego:7: rego_type_error: deprecated built-in function calls in expression: all",
+		"test.rego:9: rego_compile_error: unused argument x. (hint: use _ (wildcard variable) instead)",
+	}
+
+	test.WithTempFS(files, func(root string) {
+		params := newCheckParams()
+		params.strict = true
+
+		err := checkModules(params, []string{root})
+		if err == nil {
+			t.Fatal("expected error but received none")
+		}
+
+		exp := "4 errors occurred:\n" + strings.Join(expected, "\n")
+		if got := strings.ReplaceAll(err.Error(), root+string(filepath.Separator), ""); got != exp {
+			t.Errorf("expected:\n\n%v\n\ngot:\n\n%v", exp, got)
+		}
+	})
+}
+
+func TestCheckJSONOutputBytes(t *testing.T) {
+	files := map[string]string{
+		"test.rego": `package test
+{}`,
+	}
+
+	test.WithTempFS(files, func(root string) {
+		params := newCheckParams()
+
+		checkErr := checkModules(params, []string{root})
+		if checkErr == nil {
+			t.Fatal("expected error but received none")
+		}
+
+		var buf bytes.Buffer
+		if err := pr.JSON(&buf, pr.Output{Errors: pr.NewOutputErrors(checkErr)}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		expected := strings.ReplaceAll(`{
+  "errors": [
+    {
+      "message": "object cannot be used for rule name",
+      "code": "rego_parse_error",
+      "location": {
+        "file": "TEMPDIR/test.rego",
+        "row": 2,
+        "col": 1
+      }
+    }
+  ]
+}
+`, "TEMPDIR", root)
+
+		if diff := cmp.Diff(expected, buf.String()); diff != "" {
+			t.Errorf("unexpected result (-want, +got):\n%s", diff)
 		}
 	})
 }
@@ -892,6 +1022,60 @@ import rego.v1
 p contains x if {
 	x := [1,2,3]
 }`,
+		},
+		{
+			note:         "v0, rego.v2 imported",
+			v0Compatible: true,
+			policy: `package test
+				import rego.v2
+				p contains x if {
+					some x in input.xs
+					x or not { input.y }
+				}`,
+		},
+		{
+			note:         "v0, rego.v2 imported, NOT v1 compliant (parser)",
+			v0Compatible: true,
+			policy: `package test
+				import rego.v2
+				p {
+					input.a or input.b
+				}`,
+			expErrs: []string{
+				"test.rego:3: rego_parse_error: `if` keyword is required before rule body",
+			},
+		},
+		{
+			note:         "v0, rego.v2 imported, NOT v1 compliant (compiler)",
+			v0Compatible: true,
+			policy: `package test
+				import rego.v2
+				
+				import data.foo
+				import data.bar as foo
+				`,
+			expErrs: []string{
+				"test.rego:5: rego_compile_error: import must not shadow import data.foo",
+			},
+		},
+		{
+			note:         "v1, rego.v2 imported",
+			v1Compatible: true,
+			policy: `package test
+				import rego.v2
+				p if {
+					input.a or not { input.b; input.c }
+				}`,
+		},
+		{
+			note:         "v0+v1, rego.v2 imported",
+			v0Compatible: true,
+			v1Compatible: true,
+			policy: `package test
+				import rego.v2
+				p if {
+					input.a or not { input.b; input.c }
+				}`,
 		},
 	}
 

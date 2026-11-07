@@ -2,7 +2,6 @@
 // Use of this source code is governed by an Apache2
 // license that can be found in the LICENSE file.
 
-// nolint: goconst // string duplication is for test readability.
 package discovery
 
 import (
@@ -24,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-policy-agent/opa/internal/pluginset"
 	"github.com/open-policy-agent/opa/v1/ast"
 	bundleApi "github.com/open-policy-agent/opa/v1/bundle"
 	"github.com/open-policy-agent/opa/v1/download"
@@ -50,66 +50,93 @@ func TestMain(m *testing.M) {
 	if version.Version == "" {
 		version.Version = "unit-test"
 	}
-	os.Exit(m.Run())
+	m.Run()
 }
 
 func TestEvaluateBundle(t *testing.T) {
-	sampleModule := `
-		package foo.bar
-		import rego.v1
+	tests := []struct {
+		note   string
+		module string
+	}{
+		{
+			note: "rego.v1 import",
+			module: `
+				package foo.bar
+				import rego.v1
 
-		bundle = {
-			"name": rt.name,
-			"service": "example"
-		} if {
-			rt := opa.runtime()
-		}
-	`
-
-	b := &bundleApi.Bundle{
-		Manifest: bundleApi.Manifest{
-			Revision: "quickbrownfaux",
+				bundle = {
+					"name": rt.name,
+					"service": "example"
+				} if {
+					rt := opa.runtime()
+				}
+			`,
 		},
-		Data: map[string]any{
-			"foo": map[string]any{
-				"bar": map[string]any{
-					"status": map[string]any{},
+		{
+			note: "rego.v2 import",
+			module: `
+				package foo.bar
+				import rego.v2
+
+				bundle = {
+					"name": rt.name,
+					"service": "example"
+				} if {
+					rt := opa.runtime()
+					rt.name or not { rt.missing }
+				}
+			`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			b := &bundleApi.Bundle{
+				Manifest: bundleApi.Manifest{
+					Revision: "quickbrownfaux",
 				},
-			},
-		},
-		Modules: []bundleApi.ModuleFile{
-			{
-				Path:   `/example.rego`,
-				Raw:    []byte(sampleModule),
-				Parsed: ast.MustParseModule(sampleModule),
-			},
-		},
-	}
+				Data: map[string]any{
+					"foo": map[string]any{
+						"bar": map[string]any{
+							"status": map[string]any{},
+						},
+					},
+				},
+				Modules: []bundleApi.ModuleFile{
+					{
+						Path:   `/example.rego`,
+						Raw:    []byte(tc.module),
+						Parsed: ast.MustParseModule(tc.module),
+					},
+				},
+			}
 
-	info := ast.MustParseTerm(`{"name": "test/bundle1"}`)
+			info := ast.MustParseTerm(`{"name": "test/bundle1"}`)
 
-	config, err := evaluateBundle(t.Context(), "test-id", info, b, "data.foo.bar")
-	if err != nil {
-		t.Fatal(err)
-	}
+			config, err := evaluateBundle(t.Context(), "test-id", info, b, "data.foo.bar")
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	if config.Bundle == nil {
-		t.Fatal("Expected a bundle configuration")
-	}
+			if config.Bundle == nil {
+				t.Fatal("Expected a bundle configuration")
+			}
 
-	var parsedConfig bundlePlugin.Config
+			var parsedConfig bundlePlugin.Config
 
-	if err := util.Unmarshal(config.Bundle, &parsedConfig); err != nil {
-		t.Fatal("Unexpected error:", err)
-	}
+			if err := util.Unmarshal(config.Bundle, &parsedConfig); err != nil {
+				t.Fatal("Unexpected error:", err)
+			}
 
-	expectedBundleConfig := bundlePlugin.Config{
-		Name:    "test/bundle1",
-		Service: "example",
-	}
+			expectedBundleConfig := bundlePlugin.Config{
+				Name:    "test/bundle1",
+				Service: "example",
+			}
 
-	if !reflect.DeepEqual(expectedBundleConfig, parsedConfig) {
-		t.Fatalf("Expected bundle config %v, but got %v", expectedBundleConfig, parsedConfig)
+			if !reflect.DeepEqual(expectedBundleConfig, parsedConfig) {
+				t.Fatalf("Expected bundle config %v, but got %v", expectedBundleConfig, parsedConfig)
+			}
+		})
 	}
 }
 
@@ -246,6 +273,50 @@ func TestEnvVarSubstitution(t *testing.T) {
 	},
 	"status": {}
 }`, version.Version))
+}
+
+func TestProcessBundleLogsConfigWarnings(t *testing.T) {
+	ctx := t.Context()
+
+	testLogger := test.New()
+	manager, err := plugins.New([]byte(`{
+		"services": {"default": {"url": "http://localhost:8181"}},
+		"discovery": {"name": "config"}
+	}`), "test-id", inmem.New(), plugins.Logger(testLogger))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	disco, err := New(manager)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The discovered config carries an unrecognized top-level option.
+	bundle := makeDataBundle(1, `
+		{
+			"config": {
+				"bundle": {"name": "test1"},
+				"decision_logz": {}
+			}
+		}
+	`)
+
+	if _, err := disco.processBundle(ctx, bundle); err != nil {
+		t.Fatal(err)
+	}
+
+	want := `unknown configuration option "decision_logz" encountered`
+	found := false
+	for _, e := range testLogger.Entries() {
+		if e.Message == want {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected warning %q to be logged, got entries: %+v", want, testLogger.Entries())
+	}
 }
 
 func TestProcessBundleV1Compatible(t *testing.T) {
@@ -638,7 +709,7 @@ func TestStartWithBundlePersistence(t *testing.T) {
 
 	// verify the test plugin was registered on the manager
 	if plugin := manager.Plugin("test_plugin"); plugin == nil {
-		t.Fatalf("expected \"test_plugin\" to be regsitered with the plugin manager")
+		t.Fatal("expected \"test_plugin\" to be regsitered with the plugin manager")
 	}
 
 	// verify the test plugin was started
@@ -734,7 +805,7 @@ func TestOneShotWithBundlePersistence(t *testing.T) {
 
 	// verify the test plugin was registered on the manager
 	if plugin := manager.Plugin("test_plugin"); plugin == nil {
-		t.Fatalf("expected \"test_plugin\" to be regsitered with the plugin manager")
+		t.Fatal("expected \"test_plugin\" to be regsitered with the plugin manager")
 	}
 
 	// verify the test plugin was started
@@ -820,7 +891,7 @@ func TestLoadAndActivateBundleFromDisk(t *testing.T) {
 
 	// verify the test plugin was registered on the manager
 	if plugin := manager.Plugin("test_plugin"); plugin == nil {
-		t.Fatalf("expected \"test_plugin\" to be regsitered with the plugin manager")
+		t.Fatal("expected \"test_plugin\" to be regsitered with the plugin manager")
 	}
 
 	// verify the test plugin was started
@@ -835,7 +906,7 @@ func TestLoadAndActivateBundleFromDisk(t *testing.T) {
 
 	// verify the bundle plugin was registered on the manager
 	if plugin := bundlePlugin.Lookup(disco.manager); plugin == nil {
-		t.Fatalf("expected bundle plugin to be regsitered with the plugin manager")
+		t.Fatal("expected bundle plugin to be regsitered with the plugin manager")
 	}
 }
 
@@ -916,7 +987,7 @@ func TestLoadAndActivateSignedBundleFromDisk(t *testing.T) {
 
 	// verify the test plugin was registered on the manager
 	if plugin := manager.Plugin("test_plugin"); plugin == nil {
-		t.Fatalf("expected \"test_plugin\" to be regsitered with the plugin manager")
+		t.Fatal("expected \"test_plugin\" to be regsitered with the plugin manager")
 	}
 
 	// verify the test plugin was started
@@ -931,7 +1002,7 @@ func TestLoadAndActivateSignedBundleFromDisk(t *testing.T) {
 
 	// verify the bundle plugin was registered on the manager
 	if plugin := bundlePlugin.Lookup(disco.manager); plugin == nil {
-		t.Fatalf("expected bundle plugin to be regsitered with the plugin manager")
+		t.Fatal("expected bundle plugin to be regsitered with the plugin manager")
 	}
 }
 
@@ -1116,7 +1187,7 @@ bundles.authz.service := v if {
 
 			// verify the test plugin was registered on the manager
 			if plugin := manager.Plugin("test_plugin"); plugin == nil {
-				t.Fatalf("expected \"test_plugin\" to be regsitered with the plugin manager")
+				t.Fatal("expected \"test_plugin\" to be regsitered with the plugin manager")
 			}
 
 			// verify the test plugin was started
@@ -1131,7 +1202,7 @@ bundles.authz.service := v if {
 
 			// verify the bundle plugin was registered on the manager
 			if plugin := bundlePlugin.Lookup(disco.manager); plugin == nil {
-				t.Fatalf("expected bundle plugin to be regsitered with the plugin manager")
+				t.Fatal("expected bundle plugin to be regsitered with the plugin manager")
 			}
 		})
 	}
@@ -1231,6 +1302,49 @@ bundles.authz.service := v if {
 }`},
 			},
 		},
+		{
+			note:              "v2 bundle",
+			bundleRegoVersion: 2,
+			modules: map[string]versionedModule{
+				"policy.rego": {-1, `package config
+labels.x := "label value changed"
+default_decision := "bar/baz"
+default_authorization_decision := "baz/qux"
+plugins.test_plugin := v if {
+	v := {"a": "b"}
+	v.a == "b" or v.a == "c"
+}
+services.acmecorp.url := v if {
+	v := "http://localhost:8181"
+}
+bundles.authz.service := v if {
+	v := "localhost"
+}`},
+			},
+		},
+		{
+			note:              "v1 bundle, v2 per-file override",
+			bundleRegoVersion: 1,
+			modules: map[string]versionedModule{
+				"policy1.rego": {2, `package config
+labels.x := "label value changed"
+default_decision := "bar/baz"
+default_authorization_decision := "baz/qux"
+plugins.test_plugin := v if {
+	v := {"a": "b"}
+	v.a == "b" or v.a == "c"
+}`},
+				"policy2.rego": {-1, `package config
+
+services.acmecorp.url := v if {
+	v := "http://localhost:8181"
+}
+
+bundles.authz.service := v if {
+	v := "localhost"
+}`},
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -1286,7 +1400,7 @@ bundles.authz.service := v if {
 
 			// verify the test plugin was registered on the manager
 			if plugin := manager.Plugin("test_plugin"); plugin == nil {
-				t.Fatalf("expected \"test_plugin\" to be regsitered with the plugin manager")
+				t.Fatal("expected \"test_plugin\" to be regsitered with the plugin manager")
 			}
 
 			// verify the test plugin was started
@@ -1301,7 +1415,7 @@ bundles.authz.service := v if {
 
 			// verify the bundle plugin was registered on the manager
 			if plugin := bundlePlugin.Lookup(disco.manager); plugin == nil {
-				t.Fatalf("expected bundle plugin to be regsitered with the plugin manager")
+				t.Fatal("expected bundle plugin to be regsitered with the plugin manager")
 			}
 		})
 	}
@@ -3104,7 +3218,7 @@ func TestStatusUpdatesFromPersistedBundlesDontDelayBoot(t *testing.T) {
 			}
 		}
 	case <-ctx.Done():
-		t.Errorf("Timed out waiting for disco to start")
+		t.Error("Timed out waiting for disco to start")
 	}
 }
 
@@ -3443,7 +3557,7 @@ bundle:
 `
 	manager := getTestManager(t, conf)
 	trigger := plugins.TriggerManual
-	_, err := getPluginSet(nil, manager, manager.GetConfig(), nil, nil, &trigger)
+	_, err := pluginset.New(nil, manager, manager.GetConfig(), nil, nil, &trigger)
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
@@ -3480,7 +3594,7 @@ bundles:
 `
 	manager := getTestManager(t, conf)
 	trigger := plugins.TriggerManual
-	_, err := getPluginSet(nil, manager, manager.GetConfig(), nil, nil, &trigger)
+	_, err := pluginset.New(nil, manager, manager.GetConfig(), nil, nil, &trigger)
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
@@ -3539,7 +3653,7 @@ bundles:
 		t.Run(name, func(t *testing.T) {
 			manager := getTestManager(t, tc.conf)
 			trigger := plugins.TriggerManual
-			_, err := getPluginSet(nil, manager, manager.GetConfig(), nil, nil, &trigger)
+			_, err := pluginset.New(nil, manager, manager.GetConfig(), nil, nil, &trigger)
 
 			if tc.wantErr {
 				if err == nil {
@@ -3602,7 +3716,7 @@ decision_logs:
 		t.Run(name, func(t *testing.T) {
 			manager := getTestManager(t, tc.conf)
 			trigger := plugins.TriggerManual
-			_, err := getPluginSet(nil, manager, manager.GetConfig(), nil, nil, &trigger)
+			_, err := pluginset.New(nil, manager, manager.GetConfig(), nil, nil, &trigger)
 
 			if tc.wantErr {
 				if err == nil {
@@ -3672,7 +3786,7 @@ status:
 		t.Run(name, func(t *testing.T) {
 			manager := getTestManager(t, tc.conf)
 			trigger := plugins.TriggerManual
-			_, err := getPluginSet(nil, manager, manager.GetConfig(), nil, nil, &trigger)
+			_, err := pluginset.New(nil, manager, manager.GetConfig(), nil, nil, &trigger)
 
 			if tc.wantErr {
 				if err == nil {
@@ -3813,7 +3927,7 @@ func TestNDBuiltinCacheConfigUpdate(t *testing.T) {
 	}
 
 	// Verify NDBuiltinCache is triggered with initial config
-	if config1 == nil || config1.v != true {
+	if config1 == nil || !config1.v {
 		t.Fatalf("Expected ND builtin cache to be enabled after initial discovery, got: %v", config1.v)
 	}
 
@@ -3829,7 +3943,7 @@ func TestNDBuiltinCacheConfigUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if config2 == nil || config2.v != false {
+	if config2 == nil || config2.v {
 		t.Fatalf("Expected ND builtin cache to be disabled after discovery reconfigure, got: %v", config2.v)
 	}
 }
@@ -3842,7 +3956,7 @@ func TestPluginManualTriggerLifecycle(t *testing.T) {
 	defer fixture.stop()
 
 	// run query
-	result, err := fixture.runQuery(ctx, "data.foo.bar", m)
+	result, err := fixture.runQuery(ctx, "data.foo.baz", m)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3852,7 +3966,7 @@ func TestPluginManualTriggerLifecycle(t *testing.T) {
 	}
 
 	// log result (there should not be a decision log plugin on the manager yet)
-	err = fixture.log(ctx, "data.foo.bar", m, &result)
+	err = fixture.log(ctx, "data.foo.baz", m, &result)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3890,7 +4004,7 @@ func TestPluginManualTriggerLifecycle(t *testing.T) {
 	}
 
 	// run query (since the bundle plugin is not triggered yet, there should not be any activated bundles)
-	result, err = fixture.runQuery(ctx, "data.foo.bar", m)
+	result, err = fixture.runQuery(ctx, "data.foo.baz", m)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3900,7 +4014,7 @@ func TestPluginManualTriggerLifecycle(t *testing.T) {
 	}
 
 	// log result
-	err = fixture.log(ctx, "data.foo.bar", m, &result)
+	err = fixture.log(ctx, "data.foo.baz", m, &result)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3908,7 +4022,7 @@ func TestPluginManualTriggerLifecycle(t *testing.T) {
 	// trigger the bundle plugin
 	fixture.server.bundleData = map[string]any{
 		"foo": map[string]any{
-			"bar": "hello",
+			"baz": "hello",
 		},
 	}
 	fixture.server.bundleRevision = "abc"
@@ -3933,7 +4047,7 @@ func TestPluginManualTriggerLifecycle(t *testing.T) {
 	fixture.manager.Store.Abort(ctx, txn)
 
 	// run query
-	result, err = fixture.runQuery(ctx, "data.foo.bar", m)
+	result, err = fixture.runQuery(ctx, "data.foo.baz", m)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3944,7 +4058,7 @@ func TestPluginManualTriggerLifecycle(t *testing.T) {
 	}
 
 	// log result
-	err = fixture.log(ctx, "data.foo.bar", m, &result)
+	err = fixture.log(ctx, "data.foo.baz", m, &result)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -4057,7 +4171,7 @@ func TestListeners(t *testing.T) {
 	}
 
 	if status == nil {
-		t.Fatalf("Expected discovery listener to receive status but was nil")
+		t.Fatal("Expected discovery listener to receive status but was nil")
 	}
 
 	status = nil
@@ -4074,7 +4188,7 @@ func TestListeners(t *testing.T) {
 }
 
 func TestServicePluginInitialization(t *testing.T) {
-	manager, err := plugins.New(fmt.Appendf(nil, `{
+	manager, err := plugins.New([]byte(`{
 			"services": {
 				"localhost": {
 					"url": "http://localhost:9999"
@@ -4097,14 +4211,14 @@ func TestServicePluginInitialization(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = disco.Start(context.Background())
+	err = disco.Start(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	_, exists := testPlugin.counts["start"]
 	if !exists {
-		t.Fatalf("Expected plugin to have been initialized but it was not")
+		t.Fatal("Expected plugin to have been initialized but it was not")
 	}
 }
 
@@ -4459,5 +4573,220 @@ func ensurePluginState(t *testing.T, d *Discovery, state plugins.State) {
 	}
 	if status.State != state {
 		t.Fatalf("Unexpected status state found in plugin manager for %s:\n\n\tFound:%+v\n\n\tExpected: %s", Name, status.State, state)
+	}
+}
+
+func TestLoadUnsignedDiscoveryBundleFromDisk(t *testing.T) {
+	keyConfigs := map[string]*bundleApi.KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}
+
+	tests := []struct {
+		note   string
+		signed bool
+		vc     *bundleApi.VerificationConfig
+		expErr string
+	}{
+		{
+			note:   "strict config rejects unsigned bundle",
+			signed: false,
+			vc:     bundleApi.NewVerificationConfig(keyConfigs, "foo", "", nil),
+			expErr: "bundle missing .signatures.json file",
+		},
+		{
+			note:   "strict config with no keyid rejects unsigned bundle",
+			signed: false,
+			vc:     bundleApi.NewVerificationConfig(keyConfigs, "", "", nil),
+			expErr: "bundle missing .signatures.json file",
+		},
+		{
+			note:   "optional signature config accepts unsigned bundle",
+			signed: false,
+			vc:     bundleApi.NewVerificationConfig(keyConfigs, "", "", nil).WithOptionalSignature(),
+		},
+		{
+			note:   "strict config accepts signed bundle",
+			signed: true,
+			vc:     bundleApi.NewVerificationConfig(keyConfigs, "foo", "", nil),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			dir := t.TempDir()
+
+			manager, err := plugins.New([]byte(`{
+				"labels": {"x": "y"},
+				"services": {
+					"localhost": {
+						"url": "http://localhost:9999"
+					}
+				},
+				"discovery": {"name": "config", "persist": true},
+			}`), "test-id", inmem.New())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			disco, err := New(manager)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			ctx := t.Context()
+
+			disco.bundlePersistPath = filepath.Join(dir, ".opa")
+			disco.config.Signing = tc.vc
+
+			b := makeDataBundle(1, `
+				{
+					"config": {
+						"bundles": {"authz": {"service": "localhost"}}
+					}
+				}
+			`)
+			b.Manifest.Init()
+
+			if tc.signed {
+				if err := b.GenerateSignature(bundleApi.NewSigningConfig("secret", "HS256", ""), "foo", false); err != nil {
+					t.Fatal("Unexpected error:", err)
+				}
+			}
+
+			var buf bytes.Buffer
+			if err := bundleApi.NewWriter(&buf).Write(*b); err != nil {
+				t.Fatal("unexpected error:", err)
+			}
+
+			if err := disco.saveBundleToDisk(&buf); err != nil {
+				t.Fatalf("unexpected error %v", err)
+			}
+
+			disco.loadAndActivateBundleFromDisk(ctx)
+
+			if tc.expErr == "" {
+				ensurePluginState(t, disco, plugins.StateOK)
+				return
+			}
+
+			// activation must not have happened
+			ensurePluginState(t, disco, plugins.StateNotReady)
+
+			if disco.status.Code == "" {
+				t.Fatal("expected discovery status to carry an error but got none")
+			}
+
+			if !strings.Contains(disco.status.Message, tc.expErr) {
+				t.Fatalf("expected status message to contain %q but got %q", tc.expErr, disco.status.Message)
+			}
+		})
+	}
+}
+
+// TestStrippedDiscoveryBundleConfigDowngrade is a regression test for when an attacker is able to
+// strip signatures from the discovery bundle.
+func TestStrippedDiscoveryBundleConfigDowngrade(t *testing.T) {
+	tests := []struct {
+		note       string
+		signing    string // the discovery.signing block, verbatim, or "" to omit it
+		expApplied bool   // whether the attacker's config takes effect
+	}{
+		{
+			note:       "keyid set rejects the stripped bundle",
+			signing:    `, "signing": {"keyid": "foo"}`,
+			expApplied: false,
+		},
+		{
+			note:       "scope only rejects the stripped bundle",
+			signing:    `, "signing": {"scope": "write"}`,
+			expApplied: false,
+		},
+		{
+			note:       "empty signing block rejects the stripped bundle",
+			signing:    `, "signing": {}`,
+			expApplied: false,
+		},
+		{
+			// A keys-only config is not a verification opt-in
+			note:       "keys only is signature-optional, so the stripped bundle is accepted",
+			signing:    "",
+			expApplied: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			dir := t.TempDir()
+
+			conf := fmt.Sprintf(`{
+				"labels": {"x": "y"},
+				"services": {
+					"localhost": {
+						"url": "http://localhost:9999"
+					}
+				},
+				"discovery": {"name": "config", "persist": true%s},
+				"keys": {"foo": {"algorithm": "HS256", "key": "secret"}},
+			}`, tc.signing)
+
+			manager, err := plugins.New([]byte(conf), "test-id", inmem.New())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			disco, err := New(manager)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			ctx := t.Context()
+			disco.bundlePersistPath = filepath.Join(dir, ".opa")
+
+			// the attacker's config: no `keys`, and decision logs pointed at their
+			// own endpoint to exfiltrate every decision input
+			attackerBundle := makeDataBundle(1, `
+				{
+					"config": {
+						"labels": {"x": "attacker"},
+						"decision_logs": {"service": "localhost"}
+					}
+				}
+			`)
+			attackerBundle.Manifest.Init()
+
+			// no GenerateSignature call: this is the stripped bundle
+			var buf bytes.Buffer
+			if err := bundleApi.NewWriter(&buf).Write(*attackerBundle); err != nil {
+				t.Fatal("unexpected error:", err)
+			}
+
+			if err := disco.saveBundleToDisk(&buf); err != nil {
+				t.Fatalf("unexpected error %v", err)
+			}
+
+			disco.loadAndActivateBundleFromDisk(ctx)
+
+			if tc.expApplied {
+				ensurePluginState(t, disco, plugins.StateOK)
+
+				if p := manager.Plugin(logs.Name); p == nil {
+					t.Fatal("expected the decision log plugin to have been configured")
+				}
+				return
+			}
+
+			ensurePluginState(t, disco, plugins.StateNotReady)
+
+			if exp := "bundle missing .signatures.json file"; !strings.Contains(disco.status.Message, exp) {
+				t.Fatalf("expected status message to contain %q but got %q", exp, disco.status.Message)
+			}
+
+			// the attacker's config must never have taken effect
+			if label := manager.Labels()["x"]; label != "y" {
+				t.Fatalf("expected label x to remain %q but got %q", "y", label)
+			}
+
+			if p := manager.Plugin(logs.Name); p != nil {
+				t.Fatal("expected the decision log plugin not to be configured by the rejected discovery bundle")
+			}
+		})
 	}
 }

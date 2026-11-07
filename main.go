@@ -20,8 +20,7 @@ func main() {
 	}() // orderly shutdown, run all defer routines
 
 	if err := cmd.RootCommand.Execute(); err != nil {
-		var e *cmd.ExitError
-		if errors.As(err, &e) {
+		if e, ok := errors.AsType[*cmd.ExitError](err); ok {
 			exit = e.Exit
 		} else {
 			exit = 1
@@ -29,7 +28,7 @@ func main() {
 	}
 }
 
-//go:generate build/gen-run-go.sh github.com/mna/pigeon@v1.3.0 -o v1/topdown/durationparser/duration_parser.go v1/topdown/durationparser/duration.peg
+//go:generate build/gen-run-go.sh github.com/mna/pigeon -o v1/topdown/durationparser/duration_parser.go v1/topdown/durationparser/duration.peg
 //go:generate build/gen-run-go.sh internal/cmd/genopacapabilities/main.go capabilities.json
 //go:generate build/gen-run-go.sh internal/cmd/genbuiltinmetadata/main.go builtin_metadata.json
 //go:generate build/gen-run-go.sh internal/cmd/genversionindex/main.go v1/ast/version_index.json

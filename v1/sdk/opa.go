@@ -133,9 +133,13 @@ func New(ctx context.Context, nopts Options) (*OPA, error) {
 // Plugin returns the named plugin. If the plugin does not exist, this function
 // returns nil.
 func (opa *OPA) Plugin(name string) plugins.Plugin {
+	// Release opa.mtx before calling into the manager to avoid inverting the
+	// lock order used by the manager's onCommit callback (see #8873).
 	opa.mtx.Lock()
-	defer opa.mtx.Unlock()
-	return opa.state.manager.Plugin(name)
+	mgr := opa.state.manager
+	opa.mtx.Unlock()
+
+	return mgr.Plugin(name)
 }
 
 // Configure updates the configuration of the OPA in-place. This function should
@@ -167,8 +171,7 @@ func (opa *OPA) configure(ctx context.Context, bs []byte, ready chan struct{}, b
 		return err
 	}
 
-	//nolint:prealloc // option list has known initial values, extended with opa.managerOpts
-	opts := []func(*plugins.Manager){
+	opts := append([]func(*plugins.Manager){
 		plugins.Info(runtimeInfo),
 		plugins.Logger(opa.logger),
 		plugins.ConsoleLogger(opa.console),
@@ -176,8 +179,7 @@ func (opa *OPA) configure(ctx context.Context, bs []byte, ready chan struct{}, b
 		plugins.EnablePrintStatements(opa.logger.GetLevel() >= logging.Info),
 		plugins.PrintHook(loggingPrintHook{logger: opa.logger}),
 		plugins.WithHooks(opa.hooks),
-	}
-	opts = append(opts, opa.managerOpts...)
+	}, opa.managerOpts...)
 
 	// Plumb in storage for external bundle activation plugin, if registered with bundle.RegisterStore,
 	// unless the user has passed their own store already.
@@ -341,6 +343,7 @@ func (opa *OPA) Decision(ctx context.Context, options DecisionOptions) (*Decisio
 				profiler:                    options.Profiler,
 				instrument:                  options.Instrument,
 				evaluatedRules:              tracker,
+				httpRoundTripper:            options.HTTPRoundTripper,
 			})
 			if record.Error == nil {
 				record.Results = &result.Result
@@ -367,6 +370,14 @@ type DecisionOptions struct {
 	Profiler            topdown.QueryTracer // specifies the profiler to use, optional
 	Instrument          bool                // if true, instrumentation will be enabled
 	DecisionID          string              // the identifier for this decision; if not set, a globally unique identifier will be generated
+
+	// HTTPRoundTripper customizes the http.RoundTripper used by http.send
+	// during this decision. The provided function receives the http.Transport
+	// OPA would otherwise use — which may be nil for plain-HTTP requests
+	// without TLS or unix-socket options — and returns the http.RoundTripper
+	// to use in its place, typically a wrapper around the received transport.
+	// When nil, OPA's default behavior is preserved.
+	HTTPRoundTripper topdown.CustomizeRoundTripper
 }
 
 // DecisionResult contains the output of query evaluation.
@@ -377,9 +388,7 @@ type DecisionResult struct {
 }
 
 func (opa *OPA) executeTransaction(ctx context.Context, record *server.Info, work func(state, *DecisionResult)) (*DecisionResult, error) {
-	if record.Metrics == nil {
-		record.Metrics = metrics.New()
-	}
+	record.Metrics = util.Or(record.Metrics, metrics.New)
 	record.Metrics.Timer(metrics.SDKDecisionEval).Start()
 
 	if record.DecisionID == "" {
@@ -424,6 +433,15 @@ func (opa *OPA) executeTransaction(ctx context.Context, record *server.Info, wor
 				return nil, err
 			}
 			*record.Input = asJSON
+		}
+		if record.NDBuiltinCache != nil {
+			if ndbc, ok := (*record.NDBuiltinCache).(builtins.NDBCache); ok {
+				asJSON, err := ast.JSON(ndbc.AsValue())
+				if err != nil {
+					return nil, err
+				}
+				*record.NDBuiltinCache = asJSON
+			}
 		}
 		if err := logger.Log(ctx, record); err != nil {
 			return result, fmt.Errorf("decision log: %w", err)
@@ -543,7 +561,7 @@ const (
 func undefinedDecisionErr(path string) *Error {
 	return &Error{
 		Code:    UndefinedErr,
-		Message: fmt.Sprintf("%v decision was undefined", path),
+		Message: path + " decision was undefined",
 	}
 }
 
@@ -572,6 +590,7 @@ type evalArgs struct {
 	profiler                    topdown.QueryTracer
 	instrument                  bool
 	evaluatedRules              *topdown.EvaluatedRuleTracker
+	httpRoundTripper            topdown.CustomizeRoundTripper
 }
 
 func evaluate(ctx context.Context, args evalArgs) (any, types.ProvenanceV1, ast.Value, map[string]server.BundleInfo, error) {
@@ -640,6 +659,7 @@ func evaluate(ctx context.Context, args evalArgs) (any, types.ProvenanceV1, ast.
 		rego.EvalMetrics(args.m),
 		rego.EvalQueryTracer(args.profiler),
 		rego.EvalInstrument(args.instrument),
+		rego.EvalHTTPRoundTripper(args.httpRoundTripper),
 	)
 	if err != nil {
 		return nil, provenance, inputAST, bundles, err
@@ -766,6 +786,6 @@ type loggingPrintHook struct {
 }
 
 func (h loggingPrintHook) Print(pctx print.Context, msg string) error {
-	h.logger.WithFields(map[string]any{"line": pctx.Location.String()}).Info(msg)
+	h.logger.WithFields(map[string]any{"line": pctx.Location.String()}).Info("%s", msg)
 	return nil
 }

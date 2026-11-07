@@ -1346,7 +1346,7 @@ func TestBearerTokenInvalidConfig(t *testing.T) {
 	_, err = client.Do(ctx, "GET", "test")
 
 	if err == nil {
-		t.Fatalf("Expected error but got nil")
+		t.Fatal("Expected error but got nil")
 	}
 
 	if !strings.HasPrefix(err.Error(), "invalid config") {
@@ -1818,7 +1818,7 @@ func TestS3SigningInstantiationInitializesLogger(t *testing.T) {
 	}
 
 	if authPlugin.logger == nil {
-		t.Errorf("Expected logger to be initialized")
+		t.Error("Expected logger to be initialized")
 	}
 }
 
@@ -1846,18 +1846,17 @@ func TestS3SigningMultiCredentialProvider(t *testing.T) {
 
 	awsPlugin := client.config.Credentials.S3Signing
 	if awsPlugin == nil {
-		t.Fatalf("Client config S3 signing credentials setup unexpected")
+		t.Fatal("Client config S3 signing credentials setup unexpected")
 	}
 
-	awsCredentialServiceChain, ok := awsPlugin.awsCredentialService().(*awsCredentialServiceChain)
+	chain, ok := awsPlugin.awsCredentialService().(*awsCredentialServiceChain)
 	if !ok {
-		t.Fatalf("Unexpected AWS credential service:%v is not a chain",
-			reflect.TypeOf(awsCredentialServiceChain))
+		t.Fatalf("Unexpected AWS credential service: %T is not a chain", chain)
 	}
 
-	if len(awsCredentialServiceChain.awsCredentialServices) != credentialProviderCount {
+	if len(chain.awsCredentialServices) != credentialProviderCount {
 		t.Fatalf("Credential provider count mismatch %d != %d", credentialProviderCount,
-			len(awsCredentialServiceChain.awsCredentialServices))
+			len(chain.awsCredentialServices))
 	}
 
 	expectedOrder := []awsCredentialService{
@@ -1867,9 +1866,8 @@ func TestS3SigningMultiCredentialProvider(t *testing.T) {
 		&awsMetadataCredentialService{},
 	}
 
-	if !reflect.DeepEqual(awsCredentialServiceChain.awsCredentialServices,
-		expectedOrder) {
-		t.Fatalf("Ordering is unexpected")
+	if !reflect.DeepEqual(chain.awsCredentialServices, expectedOrder) {
+		t.Fatal("Ordering is unexpected")
 	}
 }
 
@@ -1941,7 +1939,7 @@ func TestAWSCredentialServiceChain(t *testing.T) {
 
 			awsPlugin := client.config.Credentials.S3Signing
 			if awsPlugin == nil {
-				t.Fatalf("Client config S3 signing credentials setup unexpected")
+				t.Fatal("Client config S3 signing credentials setup unexpected")
 			}
 
 			req, err := http.NewRequest("GET", "/example/bundle.tar.gz", nil)
@@ -2372,7 +2370,6 @@ func (t *testServer) generateClientKeys() {
 
 	var pemBlock *pem.Block
 	if t.clientCertPassword != "" {
-		// nolint: staticcheck // We don't want to forbid users from using this encryption.
 		pemBlock, err = x509.EncryptPEMBlock(rand.Reader, "RSA PRIVATE KEY", x509.MarshalPKCS1PrivateKey(clientKey),
 			[]byte(t.clientCertPassword), x509.PEMCipherAES128)
 		if err != nil {
@@ -2601,7 +2598,7 @@ func newOauth2KmsClientCredentialsTestClient(t *testing.T, ts *testServer, ots *
 	}
 
 	if client.config.Credentials.OAuth2.AWSSigningPlugin.kmsSignPlugin == nil {
-		t.Errorf("OAuth2.AWSSigningPlugin.kmsSignPlugin isn't setup")
+		t.Error("OAuth2.AWSSigningPlugin.kmsSignPlugin isn't setup")
 	}
 
 	// setup fake KMS signer
@@ -2655,7 +2652,7 @@ func TestOauth2ClientCredentialsGrantTypeWithKeyVault(t *testing.T) {
 	}))
 	defer kvServer.Close()
 
-	tokenerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	tokenerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		b, err := json.Marshal(azureManagedIdentitiesToken{AccessToken: "token1"})
 		if err != nil {
 			t.Fatalf("json.Marshal(azureManagedIdentitiesToken{}) = %v", err)
@@ -2736,7 +2733,7 @@ func newOauth2AzureKVClient(t *testing.T, ts *testServer, ots *oauth2TestServer,
 	}
 
 	if client.config.Credentials.OAuth2.AzureSigningPlugin.keyVaultSignPlugin == nil {
-		t.Errorf("Oauth2.AzureSigningPlugin.keyVaultSignPlugin isn't setup")
+		t.Error("Oauth2.AzureSigningPlugin.keyVaultSignPlugin isn't setup")
 	}
 
 	// setup fake KV config and signer

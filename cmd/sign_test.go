@@ -1,3 +1,5 @@
+//go:build !go1.27
+
 // Copyright 2018 The OPA Authors.  All rights reserved.
 // Use of this source code is governed by an Apache2
 // license that can be found in the LICENSE file.
@@ -7,11 +9,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/open-policy-agent/opa/internal/file/archive"
+	initload "github.com/open-policy-agent/opa/internal/runtime/init"
 	"github.com/open-policy-agent/opa/v1/bundle"
 	"github.com/open-policy-agent/opa/v1/keys"
 	"github.com/open-policy-agent/opa/v1/util/test"
@@ -43,6 +50,25 @@ func TestWriteTokenToFile(t *testing.T) {
 
 		if !bytes.Equal(expectedBytes, bs) {
 			t.Fatal("Unexpected content in \".signatures.json\" file")
+		}
+	})
+}
+
+func TestWriteTokenToFileJSONOutputBytes(t *testing.T) {
+	test.WithTempFS(map[string]string{}, func(rootDir string) {
+		if err := writeTokenToFile("footoken", rootDir); err != nil {
+			t.Fatalf("Unexpected error %v", err)
+		}
+
+		gotBytes, err := os.ReadFile(filepath.Join(rootDir, ".signatures.json"))
+		if err != nil {
+			t.Fatalf("Unexpected error %v", err)
+		}
+
+		expected := "{\n \"signatures\": [\n  \"footoken\"\n ]\n}"
+
+		if diff := cmp.Diff(expected, string(gotBytes)); diff != "" {
+			t.Errorf("unexpected result (-want, +got):\n%s", diff)
 		}
 	})
 }
@@ -96,7 +122,7 @@ func TestBundleSignVerification(t *testing.T) {
 
 		// create gzipped tarball
 		var filesInBundle [][2]string
-		err = filepath.Walk(rootDir, func(path string, info os.FileInfo, _ error) error {
+		err = filepath.WalkDir(rootDir, func(path string, info fs.DirEntry, _ error) error {
 			if !info.IsDir() {
 				bs, err := os.ReadFile(path)
 				if err != nil {
@@ -124,6 +150,47 @@ func TestBundleSignVerification(t *testing.T) {
 		_, err = reader.Read()
 		if err != nil {
 			t.Fatalf("Unexpected error %v", err)
+		}
+	})
+}
+
+func TestReadBundleFilesTreatsMisnamedSignatureFilesAsContent(t *testing.T) {
+	files := map[string]string{
+		"/data.json":            `{"x": 1}`,
+		"/.signatures.json":     `{"signatures": []}`,
+		"/data.signatures.json": `{"x": 2}`,
+		"/signatures.json":      `{"x": 3}`,
+	}
+
+	test.WithTempFS(files, func(rootDir string) {
+		load, err := initload.WalkPaths([]string{rootDir}, nil, true)
+		if err != nil {
+			t.Fatalf("WalkPaths: %v", err)
+		}
+
+		hash, err := bundle.NewSignatureHasher(defaultHashingAlg)
+		if err != nil {
+			t.Fatalf("NewSignatureHasher: %v", err)
+		}
+
+		got, err := readBundleFiles(load.BundlesLoader, hash)
+		if err != nil {
+			t.Fatalf("readBundleFiles: %v", err)
+		}
+
+		trimmedRoot := strings.TrimPrefix(rootDir, "/")
+		signed := make(map[string]bool, len(got))
+		for _, fi := range got {
+			signed[strings.TrimPrefix(strings.TrimPrefix(fi.Name, trimmedRoot), "/")] = true
+		}
+
+		for _, want := range []string{"data.json", "data.signatures.json", "signatures.json"} {
+			if !signed[want] {
+				t.Errorf("expected %q to be signed as content; got %v", want, signed)
+			}
+		}
+		if signed[".signatures.json"] {
+			t.Errorf("root .signatures.json must be skipped when signing; got %v", signed)
 		}
 	})
 }

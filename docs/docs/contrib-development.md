@@ -3,7 +3,7 @@ title: Development
 ---
 
 This page details the process for getting up and running locally for OPA
-development. If you're a first time contributor, we recommend you read through
+development. First-time contributors are encouraged to read through
 the [Contributing to OPA](./contrib-code) page first.
 
 OPA is written in the [Go](https://go.dev/) programming language.
@@ -20,16 +20,15 @@ Requirements:
 - Go (please see the project's [go.mod](https://github.com/open-policy-agent/opa/blob/main/go.mod) file for the current version in use)
 - GNU Make
 - A POSIX-compatible shell (`bash`)
-- A C compiler (e.g., `gcc`) for CGO
 - Python3, pip, `yamllint` (if linting YAML files manually)
 
 ## Windows
 
 The build system relies on `bash` shell scripts and GNU Make, which are not available out of the box on Windows. The recommended approach is to use [WSL (Windows Subsystem for Linux)](https://learn.microsoft.com/en-us/windows/wsl/install), which provides a full Linux environment where the standard requirements above apply.
 
-If you prefer to develop without WSL, you can use [MSYS2](https://www.msys2.org/) with the MinGW64 toolchain, which provides `bash`, `make`, and `gcc`. Note the following when using MSYS2/MinGW64:
+If you prefer to develop without WSL, you can use [MSYS2](https://www.msys2.org/) with the MinGW64 toolchain, which provides `bash` and `make`. Note the following when using MSYS2/MinGW64:
 
-- Install the MinGW64 variants of GCC, Go, and Make (e.g., `pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-go make`).
+- Install the MinGW64 variants of Go and Make (e.g., `pacman -S mingw-w64-x86_64-go make`).
 - Configure Git to check out files with Unix-style line endings (`git config --global core.autocrlf input`) to avoid test failures caused by `CRLF` vs `LF` differences.
 - A small number of tests may still fail due to Windows path separator differences (`\\` vs `/`). This is expected and should not block development.
 - Some build scripts (e.g., `go:generate` directives in `main.go`) invoke `.sh` files directly. These require `bash` to be in your `PATH`, which MSYS2 provides.
@@ -126,8 +125,8 @@ Pull Request, please mention it in the discussion.
 ## Benchmarks
 
 Several packages in this repository implement benchmark tests. To execute the
-benchmarks you can run `make perf` in the top-level directory. We use the Go
-benchmarking framework for all benchmarks.
+benchmarks, run `make perf` in the top-level directory. The Go
+benchmarking framework is used for all benchmarks.
 
 ## Dependencies
 
@@ -138,7 +137,7 @@ All `go` commands from the [Makefile](https://github.com/open-policy-agent/opa/b
 module mode by setting `GO111MODULE=on`.
 
 To update a dependency ensure that `GO111MODULE` is either on, or the repository
-qualifies for `auto` to enable module mode. Then simply use `go get ..` to get
+qualifies for `auto` to enable module mode. Then use `go get ..` to get
 the version desired. This should update the [go.mod](https://github.com/open-policy-agent/opa/blob/main/go.mod) and (potentially)
 [go.sum](https://github.com/open-policy-agent/opa/blob/main/go.sum) files.
 
@@ -176,9 +175,9 @@ performant, that's great! Some things should however be considered before you su
 OPA uses Github Actions defined in the [.github/workflows](https://github.com/open-policy-agent/opa/tree/main/.github/workflows)
 directory.
 
-### Github Action Secrets
+### GitHub Action Secrets
 
-The following secrets are used by the Github Action workflows:
+The following secrets are used by the GitHub Action workflows:
 
 | Name                       | Description                                                                                                                                                     |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -186,7 +185,7 @@ The following secrets are used by the Github Action workflows:
 | AWS_ACCESS_KEY_ID          | AWS credentials required to upload to the configured `S3_RELEASE_BUCKET`. Optional -- If not provided the release upload steps are skipped.                     |
 | AWS_SECRET_ACCESS_KEY      | AWS credentials required to upload to the configured `S3_RELEASE_BUCKET`. Optional -- If not provided the release upload steps are skipped.                     |
 | DOCKER_IMAGE               | Full docker image name (with org) to tag and publish OPA images. Optional -- If not provided the image defaults to `openpolicyagent/opa`.                       |
-| DOCKER_WASM_BUILDER_IMAGE  | Full docker image name (with org) to tag and publish WASM builder images. Optional -- If not provided the image defaults to `openpolicyagent/opa-wasm-builder`. |
+| DOCKER_WASM_BUILDER_IMAGE  | Full docker image name (with org) to tag and publish Wasm builder images. Optional -- If not provided the image defaults to `openpolicyagent/opa-wasm-builder`. |
 | DOCKER_USER                | Docker username for uploading release images. Will be used with `docker login`. Optional -- If not provided the image push steps are skipped.                   |
 | DOCKER_PASSWORD            | Docker password or API token for the configured `DOCKER_USER`. Will be used with `docker login`. Optional -- If not provided the image push steps are skipped.  |
 | SLACK_NOTIFICATION_WEBHOOK | Slack webhook for sending notifications. Optional -- If not provided the notification steps are skipped.                                                        |
@@ -194,7 +193,7 @@ The following secrets are used by the Github Action workflows:
 
 ### Periodic Workflows
 
-Some of the Github Action workflows are triggered on a schedule, and not included in the
+Some of the GitHub Action workflows are triggered on a schedule, and not included in the
 post-merge, pull-request, etc actions. These are reserved for time consuming or potentially
 non-deterministic jobs (race detection tests, fuzzing, etc).
 

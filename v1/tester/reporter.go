@@ -11,13 +11,13 @@ import (
 	"fmt"
 	"io"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/open-policy-agent/opa/cmd/formats"
 	"github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/cover"
 	"github.com/open-policy-agent/opa/v1/topdown"
+	"github.com/open-policy-agent/opa/v1/util/channel"
 )
 
 // Reporter defines the interface for reporting test results.
@@ -47,7 +47,6 @@ func (r PrettyReporter) println(a ...any) {
 // printed immediately, and the FAILURES detail section and summary are
 // printed after all results have been received.
 func (r PrettyReporter) Report(ch chan *Result) error {
-
 	dirty := false
 	var pass, fail, skip, errs int
 	var failures []*Result
@@ -120,6 +119,12 @@ func (r PrettyReporter) Report(ch chan *Result) error {
 		}
 		if tr.Error != nil {
 			_, _ = fmt.Fprintf(r.Output, "  %v\n", tr.Error)
+			if tdErr, ok := errors.AsType[*topdown.Error](tr.Error); ok && len(tdErr.StackTrace) > 0 {
+				r.println("  Traceback:")
+				for _, f := range tdErr.StackTrace {
+					_, _ = fmt.Fprintf(r.Output, "    %v\n", f)
+				}
+			}
 		}
 	}
 
@@ -207,8 +212,8 @@ func printFailure(w io.Writer, trace []*topdown.Event, verbose bool, failureLine
 
 	if failureLine {
 		_, _ = fmt.Fprintln(w)
-		for i := len(trace) - 1; i >= 0; i-- {
-			e := trace[i]
+		for _, e := range slices.Backward(trace) {
+
 			if e.Op == topdown.FailOp && e.Location != nil && e.QueryID != 0 {
 				if expr, isExpr := e.Node.(*ast.Expr); isExpr {
 					if _, isEvery := expr.Terms.(*ast.Every); isEvery {
@@ -245,11 +250,11 @@ func (r PrettyReporter) fmtBenchmark(tr *Result) string {
 		//
 		// This converts the test case name like data.foo.bar.test_auth to be more
 		// like BenchmarkDataFooBarTestAuth.
-		camelCaseName := ""
+		var camelCaseName strings.Builder
 		for part := range strings.SplitSeq(strings.ReplaceAll(name, "_", "."), ".") {
-			camelCaseName += strings.Title(part) //nolint:perfsprint,staticcheck
+			camelCaseName.WriteString(strings.Title(part)) //nolint:staticcheck
 		}
-		name = "Benchmark" + camelCaseName
+		name = "Benchmark" + camelCaseName.String()
 	}
 
 	result := fmt.Sprintf("%s\t%s", name, tr.BenchmarkResult.String())
@@ -268,27 +273,15 @@ type JSONReporter struct {
 
 // Report prints the test report to the reporter's output.
 func (r JSONReporter) Report(ch chan *Result) error {
-	report := make([]*Result, 0, len(ch))
-	for tr := range ch {
-		report = append(report, tr)
-	}
-
-	switch r.Sort {
-	case formats.SortDuration:
-		slices.SortFunc(report, func(i, j *Result) int {
-			return cmp.Compare(i.Duration, j.Duration)
-		})
-
-		sort.Slice(report, func(i, j int) bool {
-			return report[i].Duration > report[j].Duration
-		})
+	report := channel.Collect(ch)
+	if r.Sort == formats.SortDuration {
+		slices.SortFunc(report, byDuration)
 	}
 
 	bs, err := json.MarshalIndent(report, "", "  ")
-	if err != nil {
-		return err
+	if err == nil {
+		_, err = r.Output.Write(append(bs, '\n'))
 	}
-	_, err = fmt.Fprintln(r.Output, string(bs))
 	return err
 }
 
@@ -390,4 +383,8 @@ func (w indentingWriter) Write(bs []byte) (int, error) {
 		indent = b == '\n'
 	}
 	return written, nil
+}
+
+func byDuration(a, b *Result) int {
+	return cmp.Compare(b.Duration, a.Duration)
 }

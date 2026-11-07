@@ -5,10 +5,12 @@
 package planner
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"reflect"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -16,6 +18,40 @@ import (
 	"github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/ir"
 )
+
+func TestPlannerUnplannedRules(t *testing.T) {
+	module := `
+package example
+
+allow if { true }
+unused if { true }
+`
+	m, err := ast.ParseModuleWithOpts("example.rego", module, ast.ParserOptions{AllFutureKeywords: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	queries := []ast.Body{ast.MustParseBody("data.example.allow")}
+
+	policy, err := New().WithQueries([]QuerySet{
+		{Name: "test", Queries: queries},
+	}).WithModules([]*ast.Module{m}).WithBuiltinDecls(ast.BuiltinMap).WithUnplannedRules(true).Plan()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(policy.UnplannedRules) != 1 {
+		t.Fatalf("expected 1 unplanned rule, got %d: %v", len(policy.UnplannedRules), policy.UnplannedRules)
+	}
+
+	if policy.UnplannedRules[0].Path != "data.example.unused" {
+		t.Errorf("expected unplanned rule path %q, got %q", "data.example.unused", policy.UnplannedRules[0].Path)
+	}
+
+	if policy.UnplannedRules[0].Location == nil || policy.UnplannedRules[0].Location.Row != 5 {
+		t.Errorf("expected unplanned rule location on row 5, got %v", policy.UnplannedRules[0].Location)
+	}
+}
 
 func TestPlannerHelloWorld(t *testing.T) {
 	// NOTE(tsandall): These tests are not meant to give comprehensive coverage
@@ -436,6 +472,83 @@ q = 2`,
 	}
 }
 
+func TestPlannerSharedPathPrefixReference(t *testing.T) {
+	tests := []struct {
+		note   string
+		module string
+		query  string
+		expErr string
+	}{
+		{
+			note: "general ref head negating a sibling leaf",
+			module: `package test
+p[x].foo.bar if {
+	x := "a"
+	not p[x].foo.baz
+}
+
+p[x].foo.baz if {
+	x := "a"
+	false
+}`,
+			query:  "data.test.p = x",
+			expErr: "reference to data.test.p is not supported: rules sharing that path prefix are planned as a single function",
+		},
+		{
+			note: "partial object with a var key read by a sibling ground key",
+			module: `package test
+p[x] := 1 if { x := "a" }
+p.b := y if { y := p.a + 1 }`,
+			query:  "data.test.p = x",
+			expErr: "reference to data.test.p is not supported: rules sharing that path prefix are planned as a single function",
+		},
+		{
+			note: "sibling leaf reached through a function mock",
+			module: `package test
+f(_) := 1
+
+g(_) := 2
+
+p[x].foo.bar if {
+	x := "a"
+	not p[x].foo.baz with f as g
+}
+
+p[x].foo.baz if {
+	x := "a"
+	f(1) == 1
+}`,
+			query:  "data.test.p = x",
+			expErr: "reference to data.test.p is not supported: rules sharing that path prefix are planned as a single function",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			m, err := ast.ParseModuleWithOpts("test.rego", tc.module, ast.ParserOptions{RegoVersion: ast.RegoV1})
+			if err != nil {
+				t.Fatal(err)
+			}
+			c := ast.NewCompiler()
+			c.Compile(map[string]*ast.Module{"test.rego": m})
+			if c.Failed() {
+				t.Fatalf("unexpected compile error: %v", c.Errors)
+			}
+
+			_, err = New().WithQueries([]QuerySet{
+				{Name: "test", Queries: []ast.Body{ast.MustParseBody(tc.query)}},
+			}).WithModules([]*ast.Module{c.Modules["test.rego"]}).WithBuiltinDecls(ast.BuiltinMap).Plan()
+
+			if err == nil {
+				t.Fatalf("expected error %q but got none", tc.expErr)
+			}
+			if !strings.Contains(err.Error(), tc.expErr) {
+				t.Fatalf("expected error %q but got: %v", tc.expErr, err)
+			}
+		})
+	}
+}
+
 type cmpWalker struct {
 	needle any
 	loc    string
@@ -472,9 +585,8 @@ func getLocation(x any) string {
 	v := reflect.ValueOf(x).Elem().FieldByName("Location")
 	li := v.Interface()
 	file := v.FieldByName("file").String()
-	text := v.FieldByName("text").String()
 	if loc, ok := li.(ir.Location); ok {
-		return fmt.Sprintf("%s:%d:%d: %s", file, loc.Row, loc.Col, text)
+		return fmt.Sprintf("%s:%d:%d: %s", file, loc.Row, loc.Col, loc.Text)
 	}
 	return "unknown"
 }
@@ -735,8 +847,210 @@ a if {
 	}
 }
 
-func TestMultipleNamedQueries(t *testing.T) {
+func TestPlannerLogicalOps(t *testing.T) {
+	tests := []struct {
+		note   string
+		module string
+		want   string
+	}{
+		{
+			note: "and",
+			module: `
+				package test
+				import future.keywords.and
 
+				p if {
+					input.x > 0 and input.y > 0
+				}
+			`,
+			want: `| *ir.Funcs Funcs (1 funcs)
+| | *ir.Func g0.data.test.p (2 params: [Local<0> Local<1>], 3 blocks, path: [g0 test p])
+| | | *ir.Block Block (8 statements)
+| | | | *ir.ResetLocalStmt &{Target:Local<3>}
+| | | | *ir.ResetLocalStmt &{Target:Local<4>}
+| | | | *ir.BlockStmt BlockStmt (1 blocks)
+| | | | | *ir.Block Block (5 statements)
+| | | | | | *ir.DotStmt &{Source:{Value:Local<0>} Key:{Value:String<0>} Target:Local<5>}
+| | | | | | *ir.MakeNumberRefStmt &{Index:1 Target:Local<6>}
+| | | | | | *ir.CallStmt &{Func:gt Args:[{Value:Local<5>} {Value:Local<6>}] Result:Local<7>}
+| | | | | | *ir.NotEqualStmt &{A:{Value:Local<7>} B:{Value:Bool<false>}}
+| | | | | | *ir.AssignVarStmt &{Source:{Value:Bool<true>} Target:Local<4>}
+| | | | *ir.IsDefinedStmt &{Source:Local<4>}
+| | | | *ir.ResetLocalStmt &{Target:Local<4>}
+| | | | *ir.BlockStmt BlockStmt (1 blocks)
+| | | | | *ir.Block Block (5 statements)
+| | | | | | *ir.DotStmt &{Source:{Value:Local<0>} Key:{Value:String<2>} Target:Local<8>}
+| | | | | | *ir.MakeNumberRefStmt &{Index:1 Target:Local<9>}
+| | | | | | *ir.CallStmt &{Func:gt Args:[{Value:Local<8>} {Value:Local<9>}] Result:Local<10>}
+| | | | | | *ir.NotEqualStmt &{A:{Value:Local<10>} B:{Value:Bool<false>}}
+| | | | | | *ir.AssignVarStmt &{Source:{Value:Bool<true>} Target:Local<4>}
+| | | | *ir.IsDefinedStmt &{Source:Local<4>}
+| | | | *ir.AssignVarOnceStmt &{Source:{Value:Bool<true>} Target:Local<3>}
+| | | *ir.Block Block (2 statements)
+| | | | *ir.IsDefinedStmt &{Source:Local<3>}
+| | | | *ir.AssignVarOnceStmt &{Source:{Value:Local<3>} Target:Local<2>}
+| | | *ir.Block Block (1 statements)
+| | | | *ir.ReturnLocalStmt &{Source:Local<2>}
+`,
+		},
+		{
+			note: "or",
+			module: `
+				package test
+				import future.keywords.or
+
+				p if {
+					input.x > 0 or input.y > 0
+				}
+			`,
+			want: `| *ir.Funcs Funcs (1 funcs)
+| | *ir.Func g0.data.test.p (2 params: [Local<0> Local<1>], 3 blocks, path: [g0 test p])
+| | | *ir.Block Block (6 statements)
+| | | | *ir.ResetLocalStmt &{Target:Local<3>}
+| | | | *ir.ResetLocalStmt &{Target:Local<4>}
+| | | | *ir.BlockStmt BlockStmt (1 blocks)
+| | | | | *ir.Block Block (5 statements)
+| | | | | | *ir.DotStmt &{Source:{Value:Local<0>} Key:{Value:String<0>} Target:Local<5>}
+| | | | | | *ir.MakeNumberRefStmt &{Index:1 Target:Local<6>}
+| | | | | | *ir.CallStmt &{Func:gt Args:[{Value:Local<5>} {Value:Local<6>}] Result:Local<7>}
+| | | | | | *ir.NotEqualStmt &{A:{Value:Local<7>} B:{Value:Bool<false>}}
+| | | | | | *ir.AssignVarStmt &{Source:{Value:Bool<true>} Target:Local<4>}
+| | | | *ir.BlockStmt BlockStmt (1 blocks)
+| | | | | *ir.Block Block (2 statements)
+| | | | | | *ir.BlockStmt BlockStmt (1 blocks)
+| | | | | | | *ir.Block Block (2 statements)
+| | | | | | | | *ir.IsDefinedStmt &{Source:Local<4>}
+| | | | | | | | *ir.BreakStmt &{Index:1}
+| | | | | | *ir.BlockStmt BlockStmt (1 blocks)
+| | | | | | | *ir.Block Block (5 statements)
+| | | | | | | | *ir.DotStmt &{Source:{Value:Local<0>} Key:{Value:String<2>} Target:Local<8>}
+| | | | | | | | *ir.MakeNumberRefStmt &{Index:1 Target:Local<9>}
+| | | | | | | | *ir.CallStmt &{Func:gt Args:[{Value:Local<8>} {Value:Local<9>}] Result:Local<10>}
+| | | | | | | | *ir.NotEqualStmt &{A:{Value:Local<10>} B:{Value:Bool<false>}}
+| | | | | | | | *ir.AssignVarStmt &{Source:{Value:Bool<true>} Target:Local<4>}
+| | | | *ir.IsDefinedStmt &{Source:Local<4>}
+| | | | *ir.AssignVarOnceStmt &{Source:{Value:Bool<true>} Target:Local<3>}
+| | | *ir.Block Block (2 statements)
+| | | | *ir.IsDefinedStmt &{Source:Local<3>}
+| | | | *ir.AssignVarOnceStmt &{Source:{Value:Local<3>} Target:Local<2>}
+| | | *ir.Block Block (1 statements)
+| | | | *ir.ReturnLocalStmt &{Source:Local<2>}
+`,
+		},
+		{
+			note: "not",
+			module: `
+				package test
+				import future.keywords.not
+
+				p if {
+					not input.x > 0
+				}
+			`,
+			want: `| *ir.Funcs Funcs (1 funcs)
+| | *ir.Func g0.data.test.p (2 params: [Local<0> Local<1>], 3 blocks, path: [g0 test p])
+| | | *ir.Block Block (3 statements)
+| | | | *ir.ResetLocalStmt &{Target:Local<3>}
+| | | | *ir.NotStmt &{Block:Block (6 statements)}
+| | | | | *ir.Block Block (6 statements)
+| | | | | | *ir.DotStmt &{Source:{Value:Local<0>} Key:{Value:String<0>} Target:Local<5>}
+| | | | | | *ir.MakeNumberRefStmt &{Index:1 Target:Local<6>}
+| | | | | | *ir.CallStmt &{Func:gt Args:[{Value:Local<5>} {Value:Local<6>}] Result:Local<7>}
+| | | | | | *ir.NotEqualStmt &{A:{Value:Local<7>} B:{Value:Bool<false>}}
+| | | | | | *ir.AssignVarStmt &{Source:{Value:Bool<true>} Target:Local<4>}
+| | | | | | *ir.IsDefinedStmt &{Source:Local<4>}
+| | | | *ir.AssignVarOnceStmt &{Source:{Value:Bool<true>} Target:Local<3>}
+| | | *ir.Block Block (2 statements)
+| | | | *ir.IsDefinedStmt &{Source:Local<3>}
+| | | | *ir.AssignVarOnceStmt &{Source:{Value:Local<3>} Target:Local<2>}
+| | | *ir.Block Block (1 statements)
+| | | | *ir.ReturnLocalStmt &{Source:Local<2>}
+`,
+		},
+		{
+			note: "not with iteration", // success-cond (Local<4>) distinguishes empty scan from matching scan
+			module: `
+				package test
+				import future.keywords.not
+
+				p if {
+					not { input.xs[i]; i > 0 }
+				}
+			`,
+			want: `| *ir.Funcs Funcs (1 funcs)
+| | *ir.Func g0.data.test.p (2 params: [Local<0> Local<1>], 3 blocks, path: [g0 test p])
+| | | *ir.Block Block (3 statements)
+| | | | *ir.ResetLocalStmt &{Target:Local<3>}
+| | | | *ir.NotStmt &{Block:Block (3 statements)}
+| | | | | *ir.Block Block (3 statements)
+| | | | | | *ir.DotStmt &{Source:{Value:Local<0>} Key:{Value:String<1>} Target:Local<5>}
+| | | | | | *ir.ScanStmt &{Source:Local<5> Key:Local<6> Value:Local<7> Block:Block (6 statements)}
+| | | | | | | *ir.Block Block (6 statements)
+| | | | | | | | *ir.AssignVarStmt &{Source:{Value:Local<6>} Target:Local<8>}
+| | | | | | | | *ir.NotEqualStmt &{A:{Value:Local<7>} B:{Value:Bool<false>}}
+| | | | | | | | *ir.MakeNumberRefStmt &{Index:2 Target:Local<9>}
+| | | | | | | | *ir.CallStmt &{Func:gt Args:[{Value:Local<8>} {Value:Local<9>}] Result:Local<10>}
+| | | | | | | | *ir.NotEqualStmt &{A:{Value:Local<10>} B:{Value:Bool<false>}}
+| | | | | | | | *ir.AssignVarStmt &{Source:{Value:Bool<true>} Target:Local<4>}
+| | | | | | *ir.IsDefinedStmt &{Source:Local<4>}
+| | | | *ir.AssignVarOnceStmt &{Source:{Value:Bool<true>} Target:Local<3>}
+| | | *ir.Block Block (2 statements)
+| | | | *ir.IsDefinedStmt &{Source:Local<3>}
+| | | | *ir.AssignVarOnceStmt &{Source:{Value:Local<3>} Target:Local<2>}
+| | | *ir.Block Block (1 statements)
+| | | | *ir.ReturnLocalStmt &{Source:Local<2>}
+`,
+		},
+	}
+
+	parserOpts := ast.ParserOptions{
+		FutureKeywords: []string{"and", "or", "not"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			m, err := ast.ParseModuleWithOpts("test.rego", tc.module, parserOpts)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			policy, err := New().
+				WithQueries([]QuerySet{{
+					Name:    "test",
+					Queries: []ast.Body{ast.MustParseBody("data.test.p = x")},
+				}}).
+				WithModules([]*ast.Module{m}).
+				WithBuiltinDecls(ast.BuiltinMap).
+				Plan()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var buf bytes.Buffer
+			if err := ir.Pretty(&buf, policy); err != nil {
+				t.Fatal(err)
+			}
+			got := stripIRLocations(buf.String())
+
+			if !strings.Contains(got, tc.want) {
+				t.Errorf("unexpected plan to contain: \n%s\ngot:\n%s", tc.want, got)
+			}
+		})
+	}
+}
+
+var (
+	irLocationFieldRE  = regexp.MustCompile(` Location:\{[^{}]*(?:\{[^{}]*\}[^{}]*)*}`)
+	irLocationInlineRE = regexp.MustCompile(` &\{[0-9]+ [0-9]+ [0-9]+[^}]*}`)
+)
+
+func stripIRLocations(s string) string {
+	s = irLocationFieldRE.ReplaceAllString(s, "")
+	s = irLocationInlineRE.ReplaceAllString(s, "")
+	return s
+}
+
+func TestMultipleNamedQueries(t *testing.T) {
 	q1 := []ast.Body{
 		ast.MustParseBody(`a=1`),
 	}

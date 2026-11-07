@@ -104,6 +104,16 @@ func TestCompilerInitErrors(t *testing.T) {
 			c:    New().WithTarget("plan"),
 			want: errors.New("plan compilation requires at least one entrypoint"),
 		},
+		{
+			note: "unsupported plan format",
+			c:    New().WithPlanFormat("xml"),
+			want: fmt.Errorf("unsupported plan format %q (want one of %v)", "xml", PlanFormats),
+		},
+		{
+			note: "plan format requires plan target",
+			c:    New().WithPlanFormat(PlanFormatProto),
+			want: fmt.Errorf("plan format %q is only valid with target %q", PlanFormatProto, TargetPlan),
+		},
 	}
 
 	for _, tc := range tests {
@@ -490,6 +500,7 @@ p contains "B" if {
 func TestCompilerBundleMergeWithBundleRegoVersion(t *testing.T) {
 	regoV0 := ast.RegoV0.Int()
 	regoV1 := ast.RegoV1.Int()
+	regoV2 := ast.RegoV2.Int()
 	regoDef := ast.RegoV1.Int()
 
 	tests := []struct {
@@ -759,6 +770,106 @@ func TestCompilerBundleMergeWithBundleRegoVersion(t *testing.T) {
 			},
 		},
 		{
+			note: "v1 and v2 bundles, merged as v1",
+			bundles: []*bundle.Bundle{
+				{
+					Manifest: bundle.Manifest{
+						Roots:       &[]string{"a"},
+						RegoVersion: &regoV2,
+					},
+					Data: map[string]any{},
+					Modules: []bundle.ModuleFile{
+						{
+							Path:         "a/test1.rego",
+							URL:          "a/test1.rego",
+							RelativePath: "/test1.rego",
+							Raw:          []byte("package a"),
+						},
+					},
+				},
+				{
+					Manifest: bundle.Manifest{
+						Roots:       &[]string{"b"},
+						RegoVersion: &regoV1,
+						FileRegoVersions: map[string]int{
+							"/test1.rego": 2,
+						},
+					},
+					Data: map[string]any{},
+					Modules: []bundle.ModuleFile{
+						{
+							Path:         "b/test1.rego",
+							URL:          "b/test1.rego",
+							RelativePath: "/test1.rego",
+							Raw:          []byte("package b"),
+						},
+						{
+							Path:         "b/test2.rego",
+							URL:          "b/test2.rego",
+							RelativePath: "/test2.rego",
+							Raw:          []byte("package b"),
+						},
+					},
+				},
+			},
+			regoVersion:          ast.RegoV1,
+			expGlobalRegoVersion: &regoV1,
+			// every v2 module, whether from the global or a per-file rego-version, gets an override
+			expFileRegoVersions: map[string]int{
+				"/a/test1.rego": 2,
+				"/b/test1.rego": 2,
+			},
+		},
+		{
+			note: "v1 and v2 bundles, merged as v2",
+			bundles: []*bundle.Bundle{
+				{
+					Manifest: bundle.Manifest{
+						Roots:       &[]string{"a"},
+						RegoVersion: &regoV2,
+					},
+					Data: map[string]any{},
+					Modules: []bundle.ModuleFile{
+						{
+							Path:         "a/test1.rego",
+							URL:          "a/test1.rego",
+							RelativePath: "/test1.rego",
+							Raw:          []byte("package a"),
+						},
+					},
+				},
+				{
+					Manifest: bundle.Manifest{
+						Roots:       &[]string{"b"},
+						RegoVersion: &regoV1,
+						FileRegoVersions: map[string]int{
+							"/test1.rego": 2,
+						},
+					},
+					Data: map[string]any{},
+					Modules: []bundle.ModuleFile{
+						{
+							Path:         "b/test1.rego",
+							URL:          "b/test1.rego",
+							RelativePath: "/test1.rego",
+							Raw:          []byte("package b"),
+						},
+						{
+							Path:         "b/test2.rego",
+							URL:          "b/test2.rego",
+							RelativePath: "/test2.rego",
+							Raw:          []byte("package b"),
+						},
+					},
+				},
+			},
+			regoVersion:          ast.RegoV2,
+			expGlobalRegoVersion: &regoV2,
+			expFileRegoVersions: map[string]int{
+				"/b/test2.rego": 1,
+			},
+		},
+		{
 			note: "glob per-file overrides",
 			bundles: []*bundle.Bundle{
 				{
@@ -1010,6 +1121,39 @@ func TestCompilerLoadFilesystemWithEnablePrintStatementsTrue(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCompilerProtoPlanIsDeterministic(t *testing.T) {
+	files := map[string]string{
+		"test.rego": `
+			package test
+			import rego.v1
+
+			allow if { input.user == "alice" }
+			deny  if { input.user == "mallory" }
+		`,
+	}
+
+	// Single root keeps Static.Files (source paths) stable across builds.
+	test.WithTempFS(files, func(root string) {
+		build := func() []byte {
+			compiler := New().
+				WithPaths(root).
+				WithTarget(TargetPlan).
+				WithPlanFormat(PlanFormatProto).
+				WithEntrypoints("test/allow", "test/deny")
+			if err := compiler.Build(t.Context()); err != nil {
+				t.Fatal(err)
+			}
+			return append([]byte(nil), compiler.Bundle().PlanModules[0].Raw...)
+		}
+
+		a := build()
+		b := build()
+		if !bytes.Equal(a, b) {
+			t.Fatalf("plan.pb bytes differ across builds (len %d vs %d)", len(a), len(b))
+		}
+	})
 }
 
 func TestCompilerLoadHonorsFilter(t *testing.T) {
@@ -2215,6 +2359,165 @@ q = true`,
 					t.Fatalf("WasmResolver at index %v mismatch\n\nExpected WasmResolvers:\n  %+v\nGot:\n  %+v\n",
 						i, expWasmResolvers, compiler.bundle.Manifest.WasmResolvers)
 				}
+			}
+		})
+	}
+}
+
+func TestCompilerWasmTargetAnnotationEntrypointEscapesSlash(t *testing.T) {
+	files := map[string]string{
+		"test.rego": `
+package has["weird/package"].but
+
+# METADATA
+# entrypoint: true
+it_is := true`,
+	}
+
+	test.WithTestFS(files, true, func(root string, fsys fs.FS) {
+		compiler := New().
+			WithFS(fsys).
+			WithPaths(root).
+			WithTarget("wasm").
+			WithRegoAnnotationEntrypoints(true)
+
+		if err := compiler.Build(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+
+		resolvers := compiler.bundle.Manifest.WasmResolvers
+		if len(resolvers) != 1 {
+			t.Fatalf("expected 1 Wasm resolver, got: %d", len(resolvers))
+		}
+
+		exp := "has/weird%2Fpackage/but/it_is"
+		if resolvers[0].Entrypoint != exp {
+			t.Fatalf("expected entrypoint %q, got %q", exp, resolvers[0].Entrypoint)
+		}
+	})
+}
+
+func TestCompilerWasmTargetAnnotationEntrypointEscapedAndCLI(t *testing.T) {
+	files := map[string]string{
+		"test.rego": `
+package a["b c"]
+
+# METADATA
+# entrypoint: true
+it_is := true
+
+# METADATA
+# entrypoint: true
+z := true`,
+	}
+
+	test.WithTestFS(files, true, func(root string, fsys fs.FS) {
+		compiler := New().
+			WithFS(fsys).
+			WithPaths(root).
+			WithTarget("wasm").
+			WithEntrypoints("a/b c/it_is").
+			WithRegoAnnotationEntrypoints(true)
+
+		if err := compiler.Build(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+
+		var got []string
+		for _, r := range compiler.bundle.Manifest.WasmResolvers {
+			got = append(got, r.Entrypoint)
+		}
+
+		exp := []string{"a/b c/it_is", "a/b%20c/z"}
+		if !slices.Equal(got, exp) {
+			t.Fatalf("expected entrypoints %v, got %v", exp, got)
+		}
+	})
+}
+
+func TestCompilerWasmTargetAnnotationEntrypointInvalidEscapedCLI(t *testing.T) {
+	files := map[string]string{
+		"test.rego": `
+package a["b c"]
+
+# METADATA
+# entrypoint: true
+it_is := true`,
+	}
+
+	test.WithTestFS(files, true, func(root string, fsys fs.FS) {
+		compiler := New().
+			WithFS(fsys).
+			WithPaths(root).
+			WithTarget("wasm").
+			WithEntrypoints("a/b%20c/it_is").
+			WithRegoAnnotationEntrypoints(true)
+
+		err := compiler.Build(t.Context())
+		if err == nil || !strings.Contains(err.Error(), "does not refer to a rule") {
+			t.Fatalf("expected unmapped entrypoint error, got: %v", err)
+		}
+	})
+}
+
+// TestCompilerWasmTargetPackageAnnotationEntrypoint tests that a package-level
+// entrypoint annotation works correctly for wasm target builds without any
+// explicit -e flag. Regression test for https://github.com/open-policy-agent/opa/issues/8854
+func TestCompilerWasmTargetPackageAnnotationEntrypoint(t *testing.T) {
+	files := map[string]string{
+		"complex.rego": `# METADATA
+# entrypoint: true
+package complex
+
+access if {
+	input.user == "u"
+}`,
+	}
+
+	for _, useMemoryFS := range []bool{false, true} {
+		test.WithTestFS(files, useMemoryFS, func(root string, fsys fs.FS) {
+			compiler := New().
+				WithFS(fsys).
+				WithPaths(root).
+				WithTarget("wasm").
+				WithRegoAnnotationEntrypoints(true)
+
+			err := compiler.Build(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(compiler.bundle.WasmModules) != 1 {
+				t.Fatalf("expected 1 Wasm module, got: %d", len(compiler.bundle.WasmModules))
+			}
+
+			expWasmResolvers := []bundle.WasmResolver{
+				{
+					Entrypoint: "complex",
+					Module:     "/policy.wasm",
+				},
+			}
+
+			if len(expWasmResolvers) != len(compiler.bundle.Manifest.WasmResolvers) {
+				t.Fatalf("\nExpected WasmResolvers:\n  %+v\nGot:\n  %+v\n", expWasmResolvers, compiler.bundle.Manifest.WasmResolvers)
+			}
+
+			for i, expWasmResolver := range expWasmResolvers {
+				if !expWasmResolver.Equal(&compiler.bundle.Manifest.WasmResolvers[i]) {
+					t.Fatalf("WasmResolver at index %v mismatch\n\nExpected WasmResolvers:\n  %+v\nGot:\n  %+v\n",
+						i, expWasmResolvers, compiler.bundle.Manifest.WasmResolvers)
+				}
+			}
+
+			// The package-level annotation must be preserved in the output bundle's
+			// source module: pruneBundleEntrypoints should not strip it since the
+			// package itself is always retained in the bundle.
+			if len(compiler.bundle.Modules) != 1 {
+				t.Fatalf("expected 1 module in bundle, got %d", len(compiler.bundle.Modules))
+			}
+			mod := compiler.bundle.Modules[0].Parsed
+			if len(mod.Annotations) != 1 || !mod.Annotations[0].Entrypoint {
+				t.Errorf("expected package-level entrypoint annotation to be preserved in bundle module, got annotations: %v", mod.Annotations)
 			}
 		})
 	}
@@ -3896,4 +4199,97 @@ func (p prettyBundle) String() string {
 	}
 
 	return strings.Join(buf, "\n")
+}
+
+func TestCompilerWithBundleVerificationConfig(t *testing.T) {
+	keyConfigs := map[string]*bundle.KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}
+
+	mod := `package test
+
+p := 7`
+
+	tests := []struct {
+		note   string
+		signed bool
+		vc     *bundle.VerificationConfig
+		expErr string
+	}{
+		{
+			note:   "strict config rejects unsigned bundle",
+			vc:     bundle.NewVerificationConfig(keyConfigs, "foo", "", nil),
+			expErr: "bundle missing .signatures.json file",
+		},
+		{
+			note:   "strict config with no keyid rejects unsigned bundle",
+			vc:     bundle.NewVerificationConfig(keyConfigs, "", "", nil),
+			expErr: "bundle missing .signatures.json file",
+		},
+		{
+			note:   "strict config accepts signed bundle",
+			signed: true,
+			vc:     bundle.NewVerificationConfig(keyConfigs, "foo", "", nil),
+		},
+		{
+			note: "optional signature config accepts unsigned bundle",
+			vc:   bundle.NewVerificationConfig(keyConfigs, "", "", nil).WithOptionalSignature(),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			test.WithTempFS(map[string]string{"bundle.tar.gz": ""}, func(root string) {
+				bundleFile := filepath.Join(root, "bundle.tar.gz")
+
+				b := bundle.Bundle{
+					Manifest: bundle.Manifest{Roots: &[]string{"test"}, Revision: "123"},
+					Data:     map[string]any{},
+					Modules: []bundle.ModuleFile{
+						{
+							URL:    path.Join(bundleFile, "policy.rego"),
+							Path:   "/policy.rego",
+							Raw:    []byte(mod),
+							Parsed: ast.MustParseModule(mod),
+						},
+					},
+				}
+
+				if tc.signed {
+					if err := b.GenerateSignature(bundle.NewSigningConfig("secret", "HS256", ""), "foo", true); err != nil {
+						t.Fatalf("Unexpected error: %v", err)
+					}
+				}
+
+				f, err := os.Create(bundleFile)
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+				if err := bundle.Write(f, b); err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+				if err := f.Close(); err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+
+				err = New().
+					WithPaths(bundleFile).
+					WithAsBundle(true).
+					WithBundleVerificationConfig(tc.vc).
+					Build(t.Context())
+
+				if tc.expErr == "" {
+					if err != nil {
+						t.Fatalf("Unexpected error: %v", err)
+					}
+					return
+				}
+
+				if err == nil {
+					t.Fatal("expected error, got none")
+				}
+				if !strings.Contains(err.Error(), tc.expErr) {
+					t.Fatalf("expected error to contain:\n\n%s\n\ngot:\n\n%v", tc.expErr, err)
+				}
+			})
+		})
+	}
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/open-policy-agent/opa/v1/format"
 	"github.com/open-policy-agent/opa/v1/loader"
 	"github.com/open-policy-agent/opa/v1/refactor"
+	"github.com/open-policy-agent/opa/v1/util"
 )
 
 type moveCommandParams struct {
@@ -40,7 +41,7 @@ func (m *moveCommandParams) regoVersion() ast.RegoVersion {
 	return ast.DefaultRegoVersion
 }
 
-func initRefactor(root *cobra.Command, brand string) {
+func initRefactor(root *cobra.Command) {
 	executable := root.Name()
 
 	var moveCommandParams moveCommandParams
@@ -106,8 +107,8 @@ The 'move' command outputs the below policy to stdout with the package name rewr
 	moveCommand.Flags().BoolVarP(&moveCommandParams.overwrite, "write", "w", false, "overwrite the original source file")
 	addIgnoreFlag(moveCommand.Flags(), &moveCommandParams.ignore)
 	refactorCommand.AddCommand(moveCommand)
-	addV0CompatibleFlag(moveCommand.Flags(), &moveCommandParams.v0Compatible, false)
-	addV1CompatibleFlag(moveCommand.Flags(), &moveCommandParams.v1Compatible, false)
+	addV0CompatibleFlag(moveCommand.Flags(), &moveCommandParams.v0Compatible)
+	addV1CompatibleFlag(moveCommand.Flags(), &moveCommandParams.v1Compatible)
 	root.AddCommand(refactorCommand)
 }
 
@@ -150,24 +151,26 @@ func doMove(params moveCommandParams, args []string, out io.Writer) error {
 			return newError("failed to parse Rego source file: %v", err)
 		}
 
+		var outfile *os.File
+
 		if params.overwrite {
 			info, err := os.Stat(filename)
 			if err != nil {
 				return err
 			}
 
-			outfile, err := os.OpenFile(filename, os.O_WRONLY|os.O_TRUNC, info.Mode())
+			outfile, err = os.OpenFile(filename, os.O_WRONLY|os.O_TRUNC, info.Mode())
 			if err != nil {
 				return newError("failed to open file for writing: %v", err)
 			}
-			defer outfile.Close()
 			out = outfile
 		}
 
-		_, err = out.Write(formatted)
-		if err != nil {
+		if _, err = out.Write(formatted); err != nil {
+			util.CloseIgnore(outfile)
 			return newError("failed writing formatted contents: %v", err)
 		}
+		util.CloseIgnore(outfile)
 	}
 
 	return nil
@@ -185,10 +188,10 @@ func parseSrcDstMap(data []string) (map[string]string, error) {
 		if !ok {
 			return nil, newError("expected mapping of the form <from>:<to>")
 		}
-		keys := obj.Keys()
-		if len(keys) != 1 {
+		if obj.Len() != 1 {
 			return nil, newError("expected mapping of the form <from>:<to>")
 		}
+		keys := obj.Keys()
 		result[keys[0].String()] = obj.Get(keys[0]).String()
 	}
 	return result, nil

@@ -14,15 +14,14 @@ import (
 	"reflect"
 	"runtime"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/open-policy-agent/opa/internal/yaml"
 	"github.com/open-policy-agent/opa/v1/format"
-	"sigs.k8s.io/yaml"
 
 	iCache "github.com/open-policy-agent/opa/v1/topdown/cache"
 
@@ -32,6 +31,24 @@ import (
 	"github.com/open-policy-agent/opa/v1/types"
 	"github.com/open-policy-agent/opa/v1/util"
 )
+
+func TestMain(m *testing.M) {
+	ast.RegisterBuiltin(&ast.Builtin{
+		Name: "test.sleep",
+		Decl: types.NewFunction(
+			types.Args(types.S),
+			types.Nl,
+		),
+	})
+
+	RegisterBuiltinFunc("test.sleep", func(_ BuiltinContext, operands []*ast.Term, iter func(*ast.Term) error) error {
+		d, _ := time.ParseDuration(string(operands[0].Value.(ast.String)))
+		time.Sleep(d)
+		return iter(ast.NullTerm())
+	})
+
+	m.Run()
+}
 
 func TestTopDownQueryIDsUnique(t *testing.T) {
 	t.Parallel()
@@ -327,7 +344,7 @@ func TestTopDownQueryCancellationEvery(t *testing.T) {
 			notes := strings.Split(buf.String(), "\n")
 			notes = notes[:len(notes)-1] // last one is empty-string because each line ends in "\n"
 			if len(notes) == 0 {
-				t.Errorf("expected prints, got nothing")
+				t.Error("expected prints, got nothing")
 			}
 			if len(notes) == len(arr) {
 				t.Errorf("expected less than %d prints, got %d", len(arr), len(notes))
@@ -1559,8 +1576,8 @@ arr := [1, 2, 3, 4, 5]
 					exits[ev.Message]++
 				}
 			}
-			sort.Strings(notes)
-			sort.Strings(tc.notes)
+			slices.Sort(notes)
+			slices.Sort(tc.notes)
 			if !slices.Equal(notes, tc.notes) {
 				t.Errorf("unexpected note traces, expected %v, got %v", tc.notes, notes)
 			}
@@ -1685,6 +1702,20 @@ func TestTopDownEvery(t *testing.T) {
 				}`,
 			notes: n("1", "input", "2", "input"),
 		},
+		{
+			note: "issue-9280 comprehension body, inside an object literal",
+			module: `package test
+				p := {"k": [1 | every x in [1, 2] { print(x) }]}
+			`,
+			notes: n("1", "2"),
+		},
+		{
+			note: "issue-9280 comprehension body, inside a set literal",
+			module: `package test
+				p := {[1 | every x in [1, 2] { print(x) }]}
+			`,
+			notes: n("1", "2"),
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.note, func(t *testing.T) {
@@ -1713,7 +1744,7 @@ func TestTopDownEvery(t *testing.T) {
 			}
 			if !tc.fail {
 				if len(res) == 0 {
-					t.Errorf("unexpected failure, empty query result set")
+					t.Error("unexpected failure, empty query result set")
 				}
 			} else {
 				if len(res) > 0 {
@@ -2130,10 +2161,8 @@ func assertTopDownWithPathAndContext(ctx context.Context, t *testing.T, compiler
 
 	defer store.Abort(ctx, txn)
 
-	var lhs *ast.Term
-	if len(path) == 0 {
-		lhs = ast.NewTerm(ast.DefaultRootRef)
-	} else {
+	lhs := ast.DefaultRootRefTerm
+	if len(path) != 0 {
 		lhs = ast.MustParseTerm("data." + strings.Join(path, "."))
 	}
 
@@ -2223,9 +2252,9 @@ func assertTopDownWithPathAndContext(ctx context.Context, t *testing.T, compiler
 			expected := util.MustUnmarshalJSON([]byte(e))
 
 			if requiresSort {
-				sort.Sort(resultSet(result.([]any)))
+				slices.SortFunc(result.([]any), util.Compare)
 				if sl, ok := expected.([]any); ok {
-					sort.Sort(resultSet(sl))
+					slices.SortFunc(sl, util.Compare)
 				}
 			}
 
@@ -2317,9 +2346,9 @@ func runTopDownPartialTestCase(ctx context.Context, t *testing.T, compiler *ast.
 	}
 
 	if requiresSort {
-		sort.Sort(resultSet(result.([]any)))
+		slices.SortFunc(result.([]any), util.Compare)
 		if sl, ok := expected.([]any); ok {
-			sort.Sort(resultSet(sl))
+			slices.SortFunc(sl, util.Compare)
 		}
 	}
 
@@ -2328,22 +2357,7 @@ func runTopDownPartialTestCase(ctx context.Context, t *testing.T, compiler *ast.
 	}
 }
 
-type resultSet []any
-
-func (rs resultSet) Less(i, j int) bool {
-	return util.Compare(rs[i], rs[j]) < 0
-}
-
-func (rs resultSet) Swap(i, j int) {
-	rs[i], rs[j] = rs[j], rs[i]
-}
-
-func (rs resultSet) Len() int {
-	return len(rs)
-}
-
 func init() {
-
 	ast.RegisterBuiltin(&ast.Builtin{
 		Name: "test.sleep",
 		Decl: types.NewFunction(
@@ -2405,8 +2419,7 @@ func dump(note string, modules map[string]*ast.Module, data any, docpath []strin
 		if len(e) > 0 {
 			exp := util.MustUnmarshalJSON([]byte(e))
 			if requiresSort {
-				sl := exp.([]any)
-				sort.Sort(resultSet(sl))
+				slices.SortFunc(exp.([]any), util.Compare)
 			}
 			rs = append(rs, map[string]any{"x": exp})
 		}

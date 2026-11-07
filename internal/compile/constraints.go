@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"maps"
 	"strings"
+
+	"github.com/open-policy-agent/opa/v1/util"
 )
 
 type Set[T comparable] map[T]struct{}
@@ -148,12 +150,9 @@ func NewConstraintSet(cs ...*Constraint) *ConstraintSet {
 
 // Builtin returns true if all the constraints in the set support the builtin.
 func (cs *ConstraintSet) Builtin(x string) bool {
-	for i := range cs.Constraints {
-		if !cs.Constraints[i].Builtin(x) {
-			return false
-		}
-	}
-	return true
+	return util.Every(cs.Constraints, func(c *Constraint) bool {
+		return c.Builtin(x)
+	})
 }
 
 func (cs *ConstraintSet) AssertBuiltin(x string) error {
@@ -191,10 +190,7 @@ func (cs *ConstraintSet) AssertFeature(x string) error {
 var _ fmt.Stringer = (*ConstraintSet)(nil)
 
 func (cs *ConstraintSet) String() string {
-	result := make([]string, 0, len(cs.Constraints)+1)
-	for i := range cs.Constraints {
-		result = append(result, cs.Constraints[i].String())
-	}
+	result := util.Map(cs.Constraints, (*Constraint).String)
 	return "multi-constraint: " + strings.Join(result, ", ")
 }
 

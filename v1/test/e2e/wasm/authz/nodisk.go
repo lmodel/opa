@@ -3,13 +3,12 @@
 // license that can be found in the LICENSE file.
 
 //go:build !bench_disk
-// +build !bench_disk
 
-// nolint: unused // build tags confuse these linters
 package authz
 
 import "github.com/open-policy-agent/opa/v1/storage/disk"
 
+//nolint:unused
 func diskStorage() (*disk.Options, func() error) {
 	return nil, nil
 }

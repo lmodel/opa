@@ -7,12 +7,14 @@ package metricsexport
 import (
 	"context"
 	"crypto/tls"
+	_ "embed"
 	"fmt"
 	"strings"
 	"time"
 
 	prometheus_client "github.com/prometheus/client_golang/prometheus"
 	otelprometheus "go.opentelemetry.io/contrib/bridges/prometheus"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/sdk/metric"
@@ -20,87 +22,48 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/open-policy-agent/opa/internal/configpolicy"
 	"github.com/open-policy-agent/opa/internal/tlsutil"
 	"github.com/open-policy-agent/opa/v1/config"
-	"github.com/open-policy-agent/opa/v1/util"
+	"github.com/open-policy-agent/opa/v1/version"
 )
 
-const (
-	defaultGRPCAddress      = "localhost:4317"
-	defaultHTTPAddress      = "localhost:4318"
-	defaultExportIntervalMs = 60000
-	defaultServiceName      = "opa"
-	defaultEncryptionScheme = "off"
-)
+type resourceConfig struct {
+	ServiceInstanceID     string `json:"service_instance_id,omitempty"`
+	ServiceNamespace      string `json:"service_namespace,omitempty"`
+	DeploymentEnvironment string `json:"deployment_environment,omitempty"`
+}
 
 type metricsExportConfig struct {
-	Type                  string `json:"type,omitempty"`
-	Address               string `json:"address,omitempty"`
-	ExportIntervalMs      *int   `json:"export_interval_ms,omitempty"`
-	ServiceName           string `json:"service_name,omitempty"`
-	EncryptionScheme      string `json:"encryption,omitempty"`
-	EncryptionSkipVerify  *bool  `json:"allow_insecure_tls,omitempty"`
-	TLSCertFile           string `json:"tls_cert_file,omitempty"`
-	TLSCertPrivateKeyFile string `json:"tls_private_key_file,omitempty"`
-	TLSCACertFile         string `json:"tls_ca_cert_file,omitempty"`
+	Type                  string            `json:"type,omitempty"`
+	Address               string            `json:"address,omitempty"`
+	ExportIntervalMs      *int              `json:"export_interval_ms,omitempty"`
+	ServiceName           string            `json:"service_name,omitempty"`
+	EncryptionScheme      string            `json:"encryption,omitempty"`
+	EncryptionSkipVerify  *bool             `json:"allow_insecure_tls,omitempty"`
+	TLSCertFile           string            `json:"tls_cert_file,omitempty"`
+	TLSCertPrivateKeyFile string            `json:"tls_private_key_file,omitempty"`
+	TLSCACertFile         string            `json:"tls_ca_cert_file,omitempty"`
+	Headers               map[string]string `json:"headers,omitempty"`
+	Resource              resourceConfig    `json:"resource"`
 }
 
-var supportedEncryptionScheme = map[string]struct{}{
-	"off": {}, "tls": {}, "mtls": {},
-}
+//go:embed validate.rego
+var validationModule string
 
-func (c *metricsExportConfig) validateAndInjectDefaults() error {
-	switch strings.ToLower(c.Type) {
-	case "", "otlp/grpc", "otlp/http": // OK
-	default:
-		return fmt.Errorf("unknown metrics_export.type %q, must be \"otlp/grpc\", \"otlp/http\" or \"\" (unset)", c.Type)
-	}
+var validationPolicy = configpolicy.New(
+	"opa/config/metrics_export/validate.rego",
+	validationModule,
+	"data.opa.config.metrics_export = x",
+)
 
-	if c.Address == "" {
-		switch strings.ToLower(c.Type) {
-		case "otlp/grpc":
-			c.Address = defaultGRPCAddress
-		case "otlp/http":
-			c.Address = defaultHTTPAddress
-		}
-	}
-
-	if c.ServiceName == "" {
-		c.ServiceName = defaultServiceName
-	}
-
-	if c.ExportIntervalMs == nil {
-		v := defaultExportIntervalMs
-		c.ExportIntervalMs = &v
-	}
-	if *c.ExportIntervalMs <= 0 {
-		return fmt.Errorf("metrics_export.export_interval_ms must be a positive value, got %d", *c.ExportIntervalMs)
-	}
-
-	if c.EncryptionScheme == "" {
-		c.EncryptionScheme = defaultEncryptionScheme
-	}
-	if _, ok := supportedEncryptionScheme[c.EncryptionScheme]; !ok {
-		return fmt.Errorf("unsupported metrics_export.encryption %q", c.EncryptionScheme)
-	}
-
-	if c.EncryptionSkipVerify == nil {
-		v := false
-		c.EncryptionSkipVerify = &v
-	}
-
-	return nil
+func init() {
+	config.RegisterConfigSpec(config.SpecsFromStruct[metricsExportConfig]("metrics_export")...)
 }
 
 func parseMetricsExportConfig(raw []byte) (*metricsExportConfig, error) {
-	if raw == nil {
-		return &metricsExportConfig{}, nil
-	}
 	var cfg metricsExportConfig
-	if err := util.Unmarshal(raw, &cfg); err != nil {
-		return nil, err
-	}
-	if err := cfg.validateAndInjectDefaults(); err != nil {
+	if _, err := configpolicy.EvalConfigInto(context.TODO(), validationPolicy, raw, &cfg); err != nil {
 		return nil, err
 	}
 	return &cfg, nil
@@ -118,6 +81,23 @@ func httpTLSOption(encryptionScheme string, tlsConfig *tls.Config) otlpmetrichtt
 		return otlpmetrichttp.WithInsecure()
 	}
 	return otlpmetrichttp.WithTLSClientConfig(tlsConfig)
+}
+
+func resourceAttributes(cfg *metricsExportConfig) []attribute.KeyValue {
+	attrs := []attribute.KeyValue{
+		semconv.ServiceNameKey.String(cfg.ServiceName),
+		semconv.ServiceVersionKey.String(version.Version),
+	}
+	if cfg.Resource.ServiceInstanceID != "" {
+		attrs = append(attrs, semconv.ServiceInstanceIDKey.String(cfg.Resource.ServiceInstanceID))
+	}
+	if cfg.Resource.ServiceNamespace != "" {
+		attrs = append(attrs, semconv.ServiceNamespaceKey.String(cfg.Resource.ServiceNamespace))
+	}
+	if cfg.Resource.DeploymentEnvironment != "" {
+		attrs = append(attrs, semconv.DeploymentEnvironmentKey.String(cfg.Resource.DeploymentEnvironment))
+	}
+	return attrs
 }
 
 // Init initializes metrics export based on the provided configuration.
@@ -159,11 +139,17 @@ func Init(ctx context.Context, raw []byte, id string, gatherer prometheus_client
 			otlpmetricgrpc.WithEndpoint(cfg.Address),
 			grpcTLSOption(cfg.EncryptionScheme, tlsConfig),
 		}
+		if len(cfg.Headers) > 0 {
+			opts = append(opts, otlpmetricgrpc.WithHeaders(cfg.Headers))
+		}
 		metricExporter, err = otlpmetricgrpc.New(ctx, opts...)
 	} else {
 		opts := []otlpmetrichttp.Option{
 			otlpmetrichttp.WithEndpoint(cfg.Address),
 			httpTLSOption(cfg.EncryptionScheme, tlsConfig),
+		}
+		if len(cfg.Headers) > 0 {
+			opts = append(opts, otlpmetrichttp.WithHeaders(cfg.Headers))
 		}
 		metricExporter, err = otlpmetrichttp.New(ctx, opts...)
 	}
@@ -171,11 +157,7 @@ func Init(ctx context.Context, raw []byte, id string, gatherer prometheus_client
 		return nil, fmt.Errorf("create OTLP metric exporter: %w", err)
 	}
 
-	res, err := resource.New(ctx,
-		resource.WithAttributes(
-			semconv.ServiceNameKey.String(cfg.ServiceName),
-		),
-	)
+	res, err := resource.New(ctx, resource.WithAttributes(resourceAttributes(cfg)...))
 	if err != nil {
 		return nil, err
 	}

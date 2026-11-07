@@ -1,3 +1,5 @@
+//go:build !go1.27
+
 package cmd
 
 import (
@@ -15,6 +17,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/open-policy-agent/opa/cmd/internal/exec"
 	"github.com/open-policy-agent/opa/internal/file/archive"
@@ -43,10 +47,6 @@ type execResultItemError struct {
 
 func (r execResultItemError) isEmpty() bool {
 	return r.Code == "" && r.Message == ""
-}
-
-func toAnyPtr(a any) *any {
-	return &a
 }
 
 func toStringSlice(a *any) []string {
@@ -146,15 +146,15 @@ func TestExecBasic(t *testing.T) {
 		resultSliceEquals(t, []execResultItem{
 			{
 				Path:   "/test.json",
-				Result: toAnyPtr([]string{"hello"}),
+				Result: new(any([]string{"hello"})),
 			},
 			{
 				Path:   "/test2.yaml",
-				Result: toAnyPtr([]string{"hello"}),
+				Result: new(any([]string{"hello"})),
 			},
 			{
 				Path:   "/test3.yml",
-				Result: toAnyPtr([]string{"hello"}),
+				Result: new(any([]string{"hello"})),
 			},
 		}, output.Result)
 	})
@@ -199,7 +199,7 @@ func TestExecDecisionOption(t *testing.T) {
 		resultSliceEquals(t, []execResultItem{
 			{
 				Path:   "/test.json",
-				Result: toAnyPtr([]string{"hello"}),
+				Result: new(any([]string{"hello"})),
 			},
 		}, output.Result)
 	})
@@ -233,7 +233,7 @@ func TestExecBundleFlag(t *testing.T) {
 		resultSliceEquals(t, []execResultItem{
 			{
 				Path:   "/files/test.json",
-				Result: toAnyPtr([]string{"hello"}),
+				Result: new(any([]string{"hello"})),
 			},
 		}, output.Result)
 	})
@@ -332,7 +332,7 @@ main contains "hello" if {
 					resultSliceEquals(t, []execResultItem{
 						{
 							Path:   "/test.json",
-							Result: toAnyPtr([]string{"hello"}),
+							Result: new(any([]string{"hello"})),
 						},
 					}, output.Result)
 				}
@@ -541,7 +541,7 @@ main contains "hello" if {
 					resultSliceEquals(t, []execResultItem{
 						{
 							Path:   "/test.json",
-							Result: toAnyPtr([]string{"hello"}),
+							Result: new(any([]string{"hello"})),
 						},
 					}, output.Result)
 				}
@@ -848,9 +848,7 @@ main contains "hello" if {
 							// runExec to hang indefinitely. WithContext allows us to cancel the context
 							// when we have the required errors logged.
 							var wg sync.WaitGroup
-							wg.Add(1)
-							go func() {
-								defer wg.Done()
+							wg.Go(func() {
 								err := runExecWithContext(ctx, params)
 								// we cancelled the context, so we expect that error
 								if err != nil && err.Error() != "context canceled" {
@@ -864,7 +862,7 @@ main contains "hello" if {
 									t.Error(err)
 									return
 								}
-							}()
+							})
 
 							test.EventuallyOrFatal(t, 5*time.Second, func() bool {
 								for _, expErr := range tc.expErrs {
@@ -898,7 +896,7 @@ main contains "hello" if {
 							resultSliceEquals(t, []execResultItem{
 								{
 									Path:   "/files/test.json",
-									Result: toAnyPtr([]string{"hello"}),
+									Result: new(any([]string{"hello"})),
 								},
 							}, output.Result)
 						}
@@ -1310,6 +1308,55 @@ func TestFailFlagCases(t *testing.T) {
 	}
 }
 
+func TestExecJSONOutputBytes(t *testing.T) {
+	files := map[string]string{
+		"files/test.json": `{"foo": 7}`,
+		"bundle/x.rego": `package system
+		import rego.v1
+
+		test_fun := x if {
+			x = false
+			x
+		}
+
+		undefined_test if {
+			test_fun
+		}`,
+	}
+
+	test.WithTempFS(files, func(dir string) {
+		var buf bytes.Buffer
+		params := exec.NewParams(&buf)
+		_ = params.OutputFormat.Set("json")
+		params.BundlePaths = []string{dir + "/bundle/"}
+		params.Paths = append(params.Paths, dir+"/files/")
+		params.FailDefined = true
+
+		if err := runExec(params); err != nil {
+			t.Fatal("unexpected error in test:", err)
+		}
+
+		actual := bytes.ReplaceAll(buf.Bytes(), []byte(dir), nil)
+
+		expected := `{
+  "result": [
+    {
+      "path": "/files/test.json",
+      "error": {
+        "code": "opa_undefined_error",
+        "message": "/system/main decision was undefined"
+      }
+    }
+  ]
+}
+`
+
+		if diff := cmp.Diff(expected, string(actual)); diff != "" {
+			t.Errorf("unexpected result (-want, +got):\n%s", diff)
+		}
+	})
+}
+
 func TestExecWithInvalidInputOptions(t *testing.T) {
 	tests := []struct {
 		description string
@@ -1424,58 +1471,57 @@ func TestExecWithInvalidInputOptions(t *testing.T) {
 }
 
 func TestExecMalformedRemoteBundle(t *testing.T) {
-	test.WithTempFS(map[string]string{}, func(dir string) {
-		bundlePath := "/bundles/bundle.tar.gz"
-		// Note(philipc): We add the "raw bundles" flag so that we can stuff a
-		// malformed bundle into the mock bundle server. Otherwise, the server
-		// will just return 503 errors forever, because it won't be able to
-		// build the bundle on its end.
-		s := sdk_test.MustNewServer(
-			sdk_test.RawBundles(true),
-			sdk_test.MockBundle(bundlePath, map[string]string{
-				"example.rego": `
+	bundlePath := "/bundles/bundle.tar.gz"
+	// Note(philipc): We add the "raw bundles" flag so that we can stuff a
+	// malformed bundle into the mock bundle server. Otherwise, the server
+	// will just return 503 errors forever, because it won't be able to
+	// build the bundle on its end.
+	s := sdk_test.MustNewServer(
+		sdk_test.RawBundles(true),
+		sdk_test.MockBundle(bundlePath, map[string]string{
+			"example.rego": `
 				package example
 
 				p := bits.sand(42, 43)  # typo of bits.and
 			`,
-			}))
+		}))
 
-		defer s.Stop()
+	defer s.Stop()
 
-		// Wait for the bundle server to be ready before running exec
-		bundleURL := s.URL() + bundlePath
-		test.EventuallyOrFatal(t, 1*time.Second, func() bool {
-			resp, err := http.Get(bundleURL)
-			if resp != nil {
-				defer resp.Body.Close()
-			}
-			return err == nil && resp.StatusCode == 200
-		})
-
-		var buf bytes.Buffer
-		params := exec.NewParams(&buf)
-		_ = params.OutputFormat.Set("json")
-		params.ConfigOverrides = []string{
-			"services.test.url=" + s.URL(),
-			"bundles.test.resource=" + bundlePath,
+	// Wait for the bundle server to be ready before running exec
+	bundleURL := s.URL() + bundlePath
+	test.EventuallyOrFatal(t, 1*time.Second, func() bool {
+		resp, err := http.Get(bundleURL)
+		if resp != nil {
+			defer resp.Body.Close()
 		}
-
-		// Note(philipc): We can set this timeout almost arbitrarily high or
-		// low-- the test will time out before it ever succeeds, due to the
-		// faulty bundle.
-		params.Timeout = time.Millisecond * 50
-
-		params.Paths = append(params.Paths, dir)
-		err := runExec(params)
-		if err == nil {
-			t.Fatalf("Expected error, got nil instead.")
-		}
-
-		exp := "runtime error: Bundle name: test, Code: bundle_error, HTTPCode: -1, Message: 1 error occurred: /example.rego:4: rego_type_error: undefined function bits.sand"
-		if !strings.HasPrefix(err.Error(), exp) {
-			t.Fatalf("Expected error: %s, got %s", exp, err.Error())
-		}
+		return err == nil && resp.StatusCode == 200
 	})
+
+	var buf bytes.Buffer
+	params := exec.NewParams(&buf)
+	_ = params.OutputFormat.Set("json")
+	params.ConfigOverrides = []string{
+		"services.test.url=" + s.URL(),
+		"bundles.test.resource=" + bundlePath,
+	}
+
+	// The bundle error is returned as soon as the first download fails, well
+	// before this timeout. It only needs to be long enough for startup and
+	// that download to finish on a slow runner; otherwise the download is
+	// cancelled and the error is "context deadline exceeded" instead.
+	params.Timeout = 10 * time.Second
+
+	params.Paths = append(params.Paths, t.TempDir())
+	err := runExec(params)
+	if err == nil {
+		t.Fatal("Expected error, got nil instead.")
+	}
+
+	exp := "runtime error: Bundle name: test, Code: bundle_error, HTTPCode: -1, Message: 1 error occurred: /example.rego:4: rego_type_error: undefined function bits.sand"
+	if !strings.HasPrefix(err.Error(), exp) {
+		t.Fatalf("Expected error: %s, got %s", exp, err.Error())
+	}
 }
 
 func TestExecStopsPlugins(t *testing.T) {
@@ -1521,7 +1567,7 @@ plugins:
 	}
 
 	if !fact.stopped {
-		t.Errorf("expected plugin to be stopped")
+		t.Error("expected plugin to be stopped")
 	}
 }
 

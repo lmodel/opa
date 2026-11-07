@@ -257,6 +257,58 @@ func TestInterValueCache_DefaultConfiguration(t *testing.T) {
 			t.Fatalf("Expected 5 max entries, got %d", act)
 		}
 	})
+
+	t.Run("enabled without max_num_entries uses default max_num_entries", func(t *testing.T) {
+		config, err := ParseCachingConfig([]byte(`{"inter_query_builtin_value_cache": {"named": {"qux": {"disabled": false}}}}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		RegisterDefaultInterQueryBuiltinValueCacheConfig("qux", &NamedValueCacheConfig{
+			MaxNumEntries: &[]int{3}[0],
+		})
+
+		c := NewInterQueryValueCache(t.Context(), config)
+		nc := c.GetCache("qux").(*interQueryValueCacheBucket)
+		nc.Insert(ast.String("a"), "b")
+		if act := nc.maxNumEntries(); act != 3 {
+			t.Fatalf("Expected 3 max entries, got %d", act)
+		}
+	})
+
+	t.Run("enabled without max_num_entries or default is unlimited", func(t *testing.T) {
+		config, err := ParseCachingConfig([]byte(`{"inter_query_builtin_value_cache": {"named": {"quux": {"disabled": false}}}}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		c := NewInterQueryValueCache(t.Context(), config)
+		nc := c.GetCache("quux").(*interQueryValueCacheBucket)
+		nc.Insert(ast.String("a"), "b")
+		if act := nc.maxNumEntries(); act != 0 {
+			t.Fatalf("Expected unlimited max entries, got %d", act)
+		}
+	})
+
+	t.Run("updated to enabled without max_num_entries uses default max_num_entries", func(t *testing.T) {
+		RegisterDefaultInterQueryBuiltinValueCacheConfig("corge", &NamedValueCacheConfig{
+			MaxNumEntries: &[]int{3}[0],
+		})
+
+		c := NewInterQueryValueCache(t.Context(), &Config{})
+		nc := c.GetCache("corge").(*interQueryValueCacheBucket)
+
+		config, err := ParseCachingConfig([]byte(`{"inter_query_builtin_value_cache": {"named": {"corge": {"disabled": false}}}}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		c.UpdateConfig(config)
+
+		nc.Insert(ast.String("a"), "b")
+		if act := nc.maxNumEntries(); act != 3 {
+			t.Fatalf("Expected 3 max entries, got %d", act)
+		}
+	})
 }
 
 func TestInterValueCache_NamedCaches(t *testing.T) {
@@ -342,31 +394,31 @@ func TestInterValueCache_NamedCaches(t *testing.T) {
 		}
 
 		if nc.items.Len() != 0 {
-			t.Fatalf("Expected cache to be empty")
+			t.Fatal("Expected cache to be empty")
 		}
 
 		nc.Insert(ast.StringTerm("a").Value, "b")
 		if nc.items.Len() != 1 {
-			t.Fatalf("Expected cache to have 1 entry")
+			t.Fatal("Expected cache to have 1 entry")
 		}
 		if v, found := nc.Get(ast.StringTerm("a").Value); !found && v != "b" {
-			t.Fatalf("Expected cache hit")
+			t.Fatal("Expected cache hit")
 		}
 
 		nc.Insert(ast.StringTerm("c").Value, "d")
 		if nc.items.Len() != 2 {
-			t.Fatalf("Expected cache to have 2 entries")
+			t.Fatal("Expected cache to have 2 entries")
 		}
 		if v, found := nc.Get(ast.StringTerm("c").Value); !found && v != "d" {
-			t.Fatalf("Expected cache hit")
+			t.Fatal("Expected cache hit")
 		}
 
 		nc.Insert(ast.StringTerm("e").Value, "f")
 		if nc.items.Len() != 2 {
-			t.Fatalf("Expected cache to still have 2 entries")
+			t.Fatal("Expected cache to still have 2 entries")
 		}
 		if v, found := nc.Get(ast.StringTerm("e").Value); !found && v != "f" {
-			t.Fatalf("Expected cache hit")
+			t.Fatal("Expected cache hit")
 		}
 	})
 
@@ -626,14 +678,12 @@ func TestConcurrentInsert(t *testing.T) {
 	wg := sync.WaitGroup{}
 
 	for range 5 {
-		wg.Add(1)
 
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			cacheValue2 := newInterQueryCacheValue(ast.String("bar2"), 5)
 			cache.Insert(ast.String("foo2"), cacheValue2)
-		}()
+		})
 	}
 	wg.Wait()
 
@@ -1029,12 +1079,12 @@ func TestConfigClone(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(original, cloned) {
-		t.Errorf("clone differs from original")
+		t.Error("clone differs from original")
 	}
 
 	// Test that modifying the clone doesn't affect the original
 	*cloned.InterQueryBuiltinCache.MaxSizeBytes = 999
 	if *original.InterQueryBuiltinCache.MaxSizeBytes == 999 {
-		t.Errorf("modifying clone affected original")
+		t.Error("modifying clone affected original")
 	}
 }

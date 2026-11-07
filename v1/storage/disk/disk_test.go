@@ -8,10 +8,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -24,7 +27,6 @@ import (
 	"github.com/open-policy-agent/opa/v1/logging"
 	"github.com/open-policy-agent/opa/v1/storage"
 	"github.com/open-policy-agent/opa/v1/util"
-	"github.com/open-policy-agent/opa/v1/util/test"
 )
 
 type testRead struct {
@@ -107,78 +109,69 @@ func (*testDump) do(t *testing.T, s *Store) {
 func TestPolicies(t *testing.T) {
 	t.Parallel()
 
-	test.WithTempFS(map[string]string{}, func(dir string) {
-		ctx := t.Context()
-		s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: nil})
+	dir := t.TempDir()
+	ctx := t.Context()
+	s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: nil})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close(ctx)
+
+	err = storage.Txn(ctx, s, storage.WriteParams, func(txn storage.Transaction) error {
+		ids, err := s.ListPolicies(ctx, txn)
+		if err != nil {
+			t.Fatal(err)
+		} else if len(ids) > 0 {
+			t.Fatal("unexpected policies found")
+		}
+
+		_, err = s.GetPolicy(ctx, txn, "foo.rego")
+		if err == nil {
+			t.Fatal("expected error")
+		}
+
+		err = s.DeletePolicy(ctx, txn, "foo.rego")
+		if err == nil {
+			t.Fatal("expected error")
+		}
+
+		err = s.UpsertPolicy(ctx, txn, "foo.rego", []byte(`package foo`))
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer s.Close(ctx)
 
-		err = storage.Txn(ctx, s, storage.WriteParams, func(txn storage.Transaction) error {
-			ids, err := s.ListPolicies(ctx, txn)
-			if err != nil {
-				t.Fatal(err)
-			} else if len(ids) > 0 {
-				t.Fatal("unexpected policies found")
-			}
+		ids, err = s.ListPolicies(ctx, txn)
+		if err != nil {
+			t.Fatal(err)
+		} else if len(ids) != 1 || ids[0] != "foo.rego" {
+			t.Fatalf("missing or unexpected policies found: %v", ids)
+		}
 
-			_, err = s.GetPolicy(ctx, txn, "foo.rego")
-			if err == nil {
-				t.Fatal("expected error")
-			}
+		bs, err := s.GetPolicy(ctx, txn, "foo.rego")
+		if err != nil || !bytes.Equal(bs, []byte("package foo")) {
+			t.Fatalf("unexpected error or bad result: err=%v, result=%v", err, string(bs))
+		}
 
-			err = s.DeletePolicy(ctx, txn, "foo.rego")
-			if err == nil {
-				t.Fatal("expected error")
-			}
-
-			err = s.UpsertPolicy(ctx, txn, "foo.rego", []byte(`package foo`))
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			ids, err = s.ListPolicies(ctx, txn)
-			if err != nil {
-				t.Fatal(err)
-			} else if len(ids) != 1 || ids[0] != "foo.rego" {
-				t.Fatalf("missing or unexpected policies found: %v", ids)
-			}
-
-			bs, err := s.GetPolicy(ctx, txn, "foo.rego")
-			if err != nil || !bytes.Equal(bs, []byte("package foo")) {
-				t.Fatalf("unexpected error or bad result: err=%v, result=%v", err, string(bs))
-			}
-
-			err = s.DeletePolicy(ctx, txn, "foo.rego")
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			ids, err = s.ListPolicies(ctx, txn)
-			if err != nil {
-				t.Fatal(err)
-			} else if len(ids) > 0 {
-				t.Fatal("unexpected policies found")
-			}
-
-			return nil
-		})
+		err = s.DeletePolicy(ctx, txn, "foo.rego")
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		ids, err = s.ListPolicies(ctx, txn)
+		if err != nil {
+			t.Fatal(err)
+		} else if len(ids) > 0 {
+			t.Fatal("unexpected policies found")
+		}
+
+		return nil
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestTruncateAbsoluteStoragePath(t *testing.T) {
-	t.Parallel()
-
-	test.WithTempFS(map[string]string{}, func(dir string) {
-		runTruncateTest(t, dir)
-	})
-}
-
-func TestTruncateRelativeStoragePath(t *testing.T) {
 	t.Parallel()
 
 	runTruncateTest(t, t.TempDir())
@@ -311,89 +304,350 @@ func TestTruncateMultipleTxn(t *testing.T) {
 
 	t.Parallel()
 
-	test.WithTempFS(map[string]string{}, func(dir string) {
-		ctx := t.Context()
-		s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: nil, Badger: "memtablesize=4000;valuethreshold=600"})
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer s.Close(ctx)
+	dir := t.TempDir()
+	ctx := t.Context()
+	s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: nil, Badger: "memtablesize=4000;valuethreshold=600"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close(ctx)
 
-		txn := storage.NewTransactionOrDie(ctx, s, storage.WriteParams)
+	txn := storage.NewTransactionOrDie(ctx, s, storage.WriteParams)
 
-		archiveFiles := map[string]string{}
+	archiveFiles := map[string]string{}
 
-		for i := range 20 {
+	for i := range 20 {
 
-			path := fmt.Sprintf("users/user%d/data.json", i)
+		path := fmt.Sprintf("users/user%d/data.json", i)
 
-			obj := map[string][]byte{}
-			obj[fmt.Sprintf("key%d", i)] = bytes.Repeat([]byte("a"), 1<<20) // 1 MB.
+		obj := map[string][]byte{}
+		obj[fmt.Sprintf("key%d", i)] = bytes.Repeat([]byte("a"), 1<<20) // 1 MB.
 
-			bs, err := json.Marshal(obj)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			archiveFiles[path] = string(bs)
-		}
-
-		// additional data file at root
-		archiveFiles["/data.json"] = `{"a": {"b": {"z": true}}}`
-
-		files := make([][2]string, 0, len(archiveFiles))
-		for name, content := range archiveFiles {
-			files = append(files, [2]string{name, content})
-		}
-
-		buf := archive.MustWriteTarGz(files)
-		b, err := bundle.NewReader(buf).WithLazyLoadingMode(true).Read()
+		bs, err := json.Marshal(obj)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		iterator := bundle.NewIterator(b.Raw)
+		archiveFiles[path] = string(bs)
+	}
 
-		params := storage.WriteParams
-		params.BasePaths = []string{""}
-		err = s.Truncate(ctx, txn, params, iterator)
-		if err != nil {
-			t.Fatalf("Unexpected truncate error: %v", err)
-		}
+	// additional data file at root
+	archiveFiles["/data.json"] = `{"a": {"b": {"z": true}}}`
 
-		if err := s.Commit(ctx, txn); err != nil {
-			t.Fatalf("Unexpected commit error: %v", err)
-		}
+	files := make([][2]string, 0, len(archiveFiles))
+	for name, content := range archiveFiles {
+		files = append(files, [2]string{name, content})
+	}
 
-		txn = storage.NewTransactionOrDie(ctx, s)
+	buf := archive.MustWriteTarGz(files)
+	b, err := bundle.NewReader(buf).WithLazyLoadingMode(true).Read()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		_, err = s.Read(ctx, txn, storage.MustParsePath("/users/user19"))
-		if err != nil {
-			t.Fatal(err)
-		}
+	iterator := bundle.NewIterator(b.Raw)
 
-		s.Abort(ctx, txn)
+	params := storage.WriteParams
+	params.BasePaths = []string{""}
+	err = s.Truncate(ctx, txn, params, iterator)
+	if err != nil {
+		t.Fatalf("Unexpected truncate error: %v", err)
+	}
 
-		txn = storage.NewTransactionOrDie(ctx, s)
+	if err := s.Commit(ctx, txn); err != nil {
+		t.Fatalf("Unexpected commit error: %v", err)
+	}
 
-		actual, err := s.Read(ctx, txn, storage.MustParsePath("/a"))
-		if err != nil {
-			t.Fatal(err)
-		}
+	txn = storage.NewTransactionOrDie(ctx, s)
 
-		expected := `
+	_, err = s.Read(ctx, txn, storage.MustParsePath("/users/user19"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.Abort(ctx, txn)
+
+	txn = storage.NewTransactionOrDie(ctx, s)
+
+	actual, err := s.Read(ctx, txn, storage.MustParsePath("/a"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := `
 		{
 			"b": {
 				"z": true
 			}
 		}
 		`
-		jsn := util.MustUnmarshalJSON([]byte(expected))
+	jsn := util.MustUnmarshalJSON([]byte(expected))
 
-		if !reflect.DeepEqual(jsn, actual) {
-			t.Fatalf("Expected reader's read to be %v but got: %v", jsn, actual)
-		}
+	if !reflect.DeepEqual(jsn, actual) {
+		t.Fatalf("Expected reader's read to be %v but got: %v", jsn, actual)
+	}
+}
+
+func TestTruncateSingleLargeDataFile(t *testing.T) {
+	if testing.Short() {
+		t.Skip("too slow for testing.Short")
+	}
+
+	t.Parallel()
+
+	ctx := t.Context()
+	s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{
+		Dir:        t.TempDir(),
+		Partitions: []storage.Path{storage.MustParsePath("/users/*")},
+		Badger:     "memtablesize=4000;valuethreshold=600",
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close(ctx)
+
+	const users = 20
+
+	data := map[string]any{}
+	for i := range users {
+		data[fmt.Sprintf("user%d", i)] = map[string]string{
+			"blob": strings.Repeat("a", 1<<20), // 1 MB
+		}
+	}
+
+	bs, err := json.Marshal(map[string]any{"users": data})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := bundle.NewReader(archive.MustWriteTarGz([][2]string{
+		{"/data.json", string(bs)},
+	})).WithLazyLoadingMode(true).Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txn := storage.NewTransactionOrDie(ctx, s, storage.WriteParams)
+
+	params := storage.WriteParams
+	params.BasePaths = []string{""}
+	if err := s.Truncate(ctx, txn, params, bundle.NewIterator(b.Raw)); err != nil {
+		t.Fatalf("Unexpected truncate error: %v", err)
+	}
+
+	if err := s.Commit(ctx, txn); err != nil {
+		t.Fatalf("Unexpected commit error: %v", err)
+	}
+
+	txn = storage.NewTransactionOrDie(ctx, s)
+	defer s.Abort(ctx, txn)
+
+	for i := range users {
+		path := storage.MustParsePath(fmt.Sprintf("/users/user%d/blob", i))
+		act, err := s.Read(ctx, txn, path)
+		if err != nil {
+			t.Fatalf("read %v: %v", path, err)
+		}
+		if exp := strings.Repeat("a", 1<<20); act != exp {
+			t.Fatalf("read %v: expected %d bytes, got %v", path, len(exp), act)
+		}
+	}
+}
+
+func TestTruncateManyPoliciesMultipleTxn(t *testing.T) {
+	if testing.Short() {
+		t.Skip("too slow for testing.Short")
+	}
+
+	t.Parallel()
+
+	ctx := t.Context()
+	s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{
+		Dir:    t.TempDir(),
+		Badger: "memtablesize=4000;valuethreshold=600",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close(ctx)
+
+	const policies = 20
+
+	files := make([][2]string, 0, policies)
+	for i := range policies {
+		files = append(files, [2]string{
+			fmt.Sprintf("/p%d.rego", i),
+			fmt.Sprintf("package p%d\n\n# %s\np := %d\n", i, strings.Repeat("x", 1<<20), i),
+		})
+	}
+
+	b, err := bundle.NewReader(archive.MustWriteTarGz(files)).WithLazyLoadingMode(true).Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txn := storage.NewTransactionOrDie(ctx, s, storage.WriteParams)
+
+	params := storage.WriteParams
+	params.BasePaths = []string{""}
+	if err := s.Truncate(ctx, txn, params, bundle.NewIterator(b.Raw)); err != nil {
+		t.Fatalf("Unexpected truncate error: %v", err)
+	}
+
+	if err := s.Commit(ctx, txn); err != nil {
+		t.Fatalf("Unexpected commit error: %v", err)
+	}
+
+	txn = storage.NewTransactionOrDie(ctx, s)
+	defer s.Abort(ctx, txn)
+
+	ids, err := s.ListPolicies(ctx, txn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if exp, act := policies, len(ids); exp != act {
+		t.Fatalf("expected %d policies, got %d", exp, act)
+	}
+}
+
+func TestTruncateFailureLeavesUsableTransaction(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: t.TempDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close(ctx)
+
+	expErr := "read failed"
+
+	txn := storage.NewTransactionOrDie(ctx, s, storage.WriteParams)
+
+	params := storage.WriteParams
+	params.BasePaths = []string{""}
+	err = s.Truncate(ctx, txn, params, erroringIterator{err: errors.New(expErr)})
+	if err == nil || !strings.Contains(err.Error(), expErr) {
+		t.Fatalf("expected error containing %q, got %v", expErr, err)
+	}
+
+	s.Abort(ctx, txn) // used to panic
+
+	if err := storage.WriteOne(ctx, s, storage.AddOp, storage.MustParsePath("/foo"), "bar"); err != nil {
+		t.Fatal(err)
+	}
+
+	act, err := storage.ReadOne(ctx, s, storage.MustParsePath("/foo"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if exp := "bar"; act != exp {
+		t.Fatalf("expected %v, got %v", exp, act)
+	}
+}
+
+type erroringIterator struct {
+	err error
+}
+
+func (it erroringIterator) Next() (*storage.Update, error) { return nil, it.err }
+
+func TestTruncateNonObjectInPartition(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		note, data, exp string
+	}{
+		{
+			note: "array",
+			data: `{"users": {"bob": [1, 2, 3]}}`,
+			exp:  "value at /users/bob cannot be partitioned: expected object, found array",
+		},
+		{
+			// A nil map unmarshals without error, so this used to drop bob.
+			note: "null",
+			data: `{"users": {"bob": null}}`,
+			exp:  "value at /users/bob cannot be partitioned: expected object, found null",
+		},
+		{
+			note: "scalar",
+			data: `{"users": {"bob": 7}}`,
+			exp:  "value at /users/bob cannot be partitioned: expected object, found number",
+		},
+	} {
+		t.Run(tc.note, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := t.Context()
+			s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{
+				Dir:        t.TempDir(),
+				Partitions: []storage.Path{storage.MustParsePath("/users/*")},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer s.Close(ctx)
+
+			// /users/* splits one level below the partition.
+			b, err := bundle.NewReader(archive.MustWriteTarGz([][2]string{
+				{"/data.json", tc.data},
+			})).WithLazyLoadingMode(true).Read()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			txn := storage.NewTransactionOrDie(ctx, s, storage.WriteParams)
+
+			params := storage.WriteParams
+			params.BasePaths = []string{""}
+			err = s.Truncate(ctx, txn, params, bundle.NewIterator(b.Raw))
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if !strings.Contains(err.Error(), tc.exp) {
+				t.Fatalf("expected error to contain %q, got %v", tc.exp, err)
+			}
+
+			s.Abort(ctx, txn)
+		})
+	}
+}
+
+func TestTruncateSingleValueTooLarge(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{
+		Dir:    t.TempDir(),
+		Badger: "memtablesize=4000;valuethreshold=600",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close(ctx)
+
+	// Just under valuethreshold, so badger counts the whole value against the
+	// 600 byte max batch size.
+	b, err := bundle.NewReader(archive.MustWriteTarGz([][2]string{
+		{"/data.json", fmt.Sprintf(`{"big": %q}`, strings.Repeat("a", 590))},
+	})).WithLazyLoadingMode(true).Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	txn := storage.NewTransactionOrDie(ctx, s, storage.WriteParams)
+
+	params := storage.WriteParams
+	params.BasePaths = []string{""}
+	err = s.Truncate(ctx, txn, params, bundle.NewIterator(b.Raw))
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if exp := "value at /big is too large to store"; !strings.Contains(err.Error(), exp) {
+		t.Fatalf("expected error to contain %q, got %v", exp, err)
+	}
+
+	s.Abort(ctx, txn)
 }
 
 func TestDataPartitioningValidation(t *testing.T) {
@@ -409,185 +663,183 @@ func TestDataPartitioningValidation(t *testing.T) {
 		}
 	}
 
-	test.WithTempFS(map[string]string{}, func(dir string) {
+	dir := t.TempDir()
+	ctx := t.Context()
 
-		ctx := t.Context()
+	_, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/foo/bar"),
+		storage.MustParsePath("/foo/bar/baz"),
+	}})
 
-		_, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/foo/bar"),
-			storage.MustParsePath("/foo/bar/baz"),
-		}})
+	if err == nil {
+		t.Fatal("expected error")
+	} else if sErr, ok := err.(*storage.Error); !ok {
+		t.Fatal("expected storage error but got:", err)
+	} else if sErr.Code != storage.InternalErr || sErr.Message != "partitions are overlapped: [/foo/bar /foo/bar/baz]" {
+		t.Fatal("unexpected code or message, got:", err)
+	}
 
-		if err == nil {
-			t.Fatal("expected error")
-		} else if sErr, ok := err.(*storage.Error); !ok {
-			t.Fatal("expected storage error but got:", err)
-		} else if sErr.Code != storage.InternalErr || sErr.Message != "partitions are overlapped: [/foo/bar /foo/bar/baz]" {
-			t.Fatal("unexpected code or message, got:", err)
-		}
+	// set up two partitions
+	s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/foo/bar"),
+		storage.MustParsePath("/foo/baz"),
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		// set up two partitions
-		s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/foo/bar"),
-			storage.MustParsePath("/foo/baz"),
-		}})
-		if err != nil {
-			t.Fatal(err)
-		}
+	closeFn(ctx, s)
 
-		closeFn(ctx, s)
+	// init with same settings: nothing wrong
+	s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/foo/baz"),
+		storage.MustParsePath("/foo/bar"),
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		// init with same settings: nothing wrong
-		s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/foo/baz"),
-			storage.MustParsePath("/foo/bar"),
-		}})
-		if err != nil {
-			t.Fatal(err)
-		}
+	closeFn(ctx, s)
 
-		closeFn(ctx, s)
+	// adding another partition
+	s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/foo/baz"),
+		storage.MustParsePath("/foo/bar"),
+		storage.MustParsePath("/foo/qux"),
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		// adding another partition
-		s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/foo/baz"),
-			storage.MustParsePath("/foo/bar"),
-			storage.MustParsePath("/foo/qux"),
-		}})
-		if err != nil {
-			t.Fatal(err)
-		}
+	// We're writing data under the partitions: this affects how
+	// some partition changes are treated: if they don't affect existing
+	// data, they are accepted.
+	err = storage.WriteOne(ctx, s, storage.AddOp, storage.MustParsePath("/foo/corge"), "x")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		// We're writing data under the partitions: this affects how
-		// some partition changes are treated: if they don't affect existing
-		// data, they are accepted.
-		err = storage.WriteOne(ctx, s, storage.AddOp, storage.MustParsePath("/foo/corge"), "x")
-		if err != nil {
-			t.Fatal(err)
-		}
+	err = storage.WriteOne(ctx, s, storage.AddOp, storage.MustParsePath("/deadbeef"), "x")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		err = storage.WriteOne(ctx, s, storage.AddOp, storage.MustParsePath("/deadbeef"), "x")
-		if err != nil {
-			t.Fatal(err)
-		}
+	closeFn(ctx, s)
 
-		closeFn(ctx, s)
+	s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/foo/baz"),
+		storage.MustParsePath("/foo/bar"),
+		storage.MustParsePath("/foo/qux/corge"),
+	}})
+	if err == nil || !strings.Contains(err.Error(),
+		"partitions are backwards incompatible (old: [/foo/bar /foo/baz /foo/qux /system/*], new: [/foo/bar /foo/baz /foo/qux/corge /system/*], missing: [/foo/qux])") {
+		t.Fatal(err)
+	}
 
-		s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/foo/baz"),
-			storage.MustParsePath("/foo/bar"),
-			storage.MustParsePath("/foo/qux/corge"),
-		}})
-		if err == nil || !strings.Contains(err.Error(),
-			"partitions are backwards incompatible (old: [/foo/bar /foo/baz /foo/qux /system/*], new: [/foo/bar /foo/baz /foo/qux/corge /system/*], missing: [/foo/qux])") {
-			t.Fatal(err)
-		}
+	closeFn(ctx, s)
 
-		closeFn(ctx, s)
+	s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/foo/baz"),
+		storage.MustParsePath("/foo/bar"),
+		storage.MustParsePath("/foo/qux"),
+		storage.MustParsePath("/foo/corge"),
+	}})
+	if err == nil || !strings.Contains(err.Error(), "partitions are backwards incompatible (existing data: /foo/corge)") {
+		t.Fatal("expected to find existing key but got:", err)
+	}
 
-		s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/foo/baz"),
-			storage.MustParsePath("/foo/bar"),
-			storage.MustParsePath("/foo/qux"),
-			storage.MustParsePath("/foo/corge"),
-		}})
-		if err == nil || !strings.Contains(err.Error(), "partitions are backwards incompatible (existing data: /foo/corge)") {
-			t.Fatal("expected to find existing key but got:", err)
-		}
+	closeFn(ctx, s)
 
-		closeFn(ctx, s)
+	s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/foo/baz"),
+		storage.MustParsePath("/foo/bar"),
+		storage.MustParsePath("/foo/qux"),
+		storage.MustParsePath("/foo/corge/grault"),
+	}})
+	if err == nil || !strings.Contains(err.Error(), "partitions are backwards incompatible (existing data: /foo/corge)") {
+		t.Fatal("expected to find parent key but got:", err)
+	}
 
-		s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/foo/baz"),
-			storage.MustParsePath("/foo/bar"),
-			storage.MustParsePath("/foo/qux"),
-			storage.MustParsePath("/foo/corge/grault"),
-		}})
-		if err == nil || !strings.Contains(err.Error(), "partitions are backwards incompatible (existing data: /foo/corge)") {
-			t.Fatal("expected to find parent key but got:", err)
-		}
+	closeFn(ctx, s)
 
-		closeFn(ctx, s)
+	s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/foo/baz"),
+		storage.MustParsePath("/foo/bar"),
+		storage.MustParsePath("/foo/qux"),
+		storage.MustParsePath("/deadbeef"),
+	}})
+	if err == nil || !strings.Contains(err.Error(), "partitions are backwards incompatible (existing data: /deadbeef)") {
+		t.Fatal("expected to find existing key but got:", err)
+	}
 
-		s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/foo/baz"),
-			storage.MustParsePath("/foo/bar"),
-			storage.MustParsePath("/foo/qux"),
-			storage.MustParsePath("/deadbeef"),
-		}})
-		if err == nil || !strings.Contains(err.Error(), "partitions are backwards incompatible (existing data: /deadbeef)") {
-			t.Fatal("expected to find existing key but got:", err)
-		}
+	closeFn(ctx, s)
 
-		closeFn(ctx, s)
+	// switching to wildcard partition
+	s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/foo/*"),
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	closeFn(ctx, s)
 
-		// switching to wildcard partition
-		s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/foo/*"),
-		}})
-		if err != nil {
-			t.Fatal(err)
-		}
-		closeFn(ctx, s)
+	// adding another partition
+	s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/fox/in/the/snow/*"),
+		storage.MustParsePath("/foo/*"),
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	closeFn(ctx, s)
 
-		// adding another partition
-		s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/fox/in/the/snow/*"),
-			storage.MustParsePath("/foo/*"),
-		}})
-		if err != nil {
-			t.Fatal(err)
-		}
-		closeFn(ctx, s)
+	// switching to a partition with multiple wildcards
+	s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/fox/in/*/*/*"),
+		storage.MustParsePath("/foo/*"),
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	closeFn(ctx, s)
 
-		// switching to a partition with multiple wildcards
-		s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/fox/in/*/*/*"),
-			storage.MustParsePath("/foo/*"),
-		}})
-		if err != nil {
-			t.Fatal(err)
-		}
-		closeFn(ctx, s)
+	// there is no going back
+	s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/fox/in/the/snow/*"),
+		storage.MustParsePath("/foo/*"),
+	}})
+	if err == nil || !strings.Contains(err.Error(),
+		"partitions are backwards incompatible (old: [/foo/* /fox/in/*/*/* /system/*], new: [/foo/* /fox/in/the/snow/* /system/*], missing: [/fox/in/*/*/*])",
+	) {
+		t.Fatal(err)
+	}
+	closeFn(ctx, s)
 
-		// there is no going back
-		s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/fox/in/the/snow/*"),
-			storage.MustParsePath("/foo/*"),
-		}})
-		if err == nil || !strings.Contains(err.Error(),
-			"partitions are backwards incompatible (old: [/foo/* /fox/in/*/*/* /system/*], new: [/foo/* /fox/in/the/snow/* /system/*], missing: [/fox/in/*/*/*])",
-		) {
-			t.Fatal(err)
-		}
-		closeFn(ctx, s)
-
-		// adding a wildcard partition requires no content on the non-wildcard prefix
-		// we open the db with previously used partitions, write another key, and
-		// re-open with an extra wildcard partition
-		// switching to a partition with multiple wildcards
-		s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/fox/in/*/*/*"),
-			storage.MustParsePath("/foo/*"),
-		}})
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = storage.WriteOne(ctx, s, storage.AddOp, storage.MustParsePath("/peanutbutter/jelly"), true)
-		if err != nil {
-			t.Fatal(err)
-		}
-		closeFn(ctx, s)
-		s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/fox/in/*/*/*"),
-			storage.MustParsePath("/peanutbutter/*"),
-			storage.MustParsePath("/foo/*"),
-		}})
-		if err == nil || !strings.Contains(err.Error(), "partitions are backwards incompatible (existing data: /peanutbutter)") {
-			t.Fatal("expected to find existing key but got:", err)
-		}
-		closeFn(ctx, s)
-	})
+	// adding a wildcard partition requires no content on the non-wildcard prefix
+	// we open the db with previously used partitions, write another key, and
+	// re-open with an extra wildcard partition
+	// switching to a partition with multiple wildcards
+	s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/fox/in/*/*/*"),
+		storage.MustParsePath("/foo/*"),
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = storage.WriteOne(ctx, s, storage.AddOp, storage.MustParsePath("/peanutbutter/jelly"), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	closeFn(ctx, s)
+	s, err = New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/fox/in/*/*/*"),
+		storage.MustParsePath("/peanutbutter/*"),
+		storage.MustParsePath("/foo/*"),
+	}})
+	if err == nil || !strings.Contains(err.Error(), "partitions are backwards incompatible (existing data: /peanutbutter)") {
+		t.Fatal("expected to find existing key but got:", err)
+	}
+	closeFn(ctx, s)
 }
 
 func TestDataPartitioningSystemPartitions(t *testing.T) {
@@ -1145,45 +1397,44 @@ func TestDataPartitioningReadsAndWrites(t *testing.T) {
 		t.Run(tc.note, func(t *testing.T) {
 			t.Parallel()
 
-			test.WithTempFS(map[string]string{}, func(dir string) {
+			dir := t.TempDir()
 
-				partitions := make([]storage.Path, len(tc.partitions))
-				for i := range partitions {
-					partitions[i] = storage.MustParsePath(tc.partitions[i])
-				}
+			partitions := make([]storage.Path, len(tc.partitions))
+			for i := range partitions {
+				partitions[i] = storage.MustParsePath(tc.partitions[i])
+			}
 
-				ctx := t.Context()
-				s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: partitions})
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer s.Close(ctx)
+			ctx := t.Context()
+			s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: partitions})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer s.Close(ctx)
 
-				for _, x := range tc.sequence {
-					switch x := x.(type) {
-					case testCount:
-						x.assert(t, s)
-					case testWrite:
-						executeTestWrite(ctx, t, s, x)
-					case testRead:
-						result, err := storage.ReadOne(ctx, s, storage.MustParsePath(x.path))
-						if err != nil {
-							t.Fatal(err)
-						}
-						var exp any
-						if x.exp != "" {
-							exp = util.MustUnmarshalJSON([]byte(x.exp))
-						}
-						if cmp := util.Compare(result, exp); cmp != 0 {
-							t.Fatalf("expected %v but got %v", x.exp, result)
-						}
-					case testDump:
-						x.do(t, s)
-					default:
-						panic("unexpected type")
+			for _, x := range tc.sequence {
+				switch x := x.(type) {
+				case testCount:
+					x.assert(t, s)
+				case testWrite:
+					executeTestWrite(ctx, t, s, x)
+				case testRead:
+					result, err := storage.ReadOne(ctx, s, storage.MustParsePath(x.path))
+					if err != nil {
+						t.Fatal(err)
 					}
+					var exp any
+					if x.exp != "" {
+						exp = util.MustUnmarshalJSON([]byte(x.exp))
+					}
+					if cmp := util.Compare(result, exp); cmp != 0 {
+						t.Fatalf("expected %v but got %v", x.exp, result)
+					}
+				case testDump:
+					x.do(t, s)
+				default:
+					panic("unexpected type")
 				}
-			})
+			}
 		})
 	}
 
@@ -1301,38 +1552,35 @@ func TestDataPartitioningReadNotFoundErrors(t *testing.T) {
 		t.Run(tc.note, func(t *testing.T) {
 			t.Parallel()
 
-			test.WithTempFS(map[string]string{}, func(dir string) {
+			partitions := make([]storage.Path, len(tc.partitions))
+			for i := range partitions {
+				partitions[i] = storage.MustParsePath(tc.partitions[i])
+			}
 
-				partitions := make([]storage.Path, len(tc.partitions))
-				for i := range partitions {
-					partitions[i] = storage.MustParsePath(tc.partitions[i])
-				}
+			ctx := t.Context()
+			s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: t.TempDir(), Partitions: partitions})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer s.Close(ctx)
 
-				ctx := t.Context()
-				s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: partitions})
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer s.Close(ctx)
-
-				for _, x := range tc.sequence {
-					switch x := x.(type) {
-					case testWrite:
-						executeTestWrite(ctx, t, s, x)
-					case testRead:
-						_, err := storage.ReadOne(ctx, s, storage.MustParsePath(x.path))
-						if err == nil {
-							t.Fatal("expected error")
-						} else if sErr, ok := err.(*storage.Error); !ok {
-							t.Fatal("expected storage error but got:", err)
-						} else if sErr.Code != storage.NotFoundErr {
-							t.Fatal("expected not found error but got:", err)
-						}
-					default:
-						panic("unexpected type")
+			for _, x := range tc.sequence {
+				switch x := x.(type) {
+				case testWrite:
+					executeTestWrite(ctx, t, s, x)
+				case testRead:
+					_, err := storage.ReadOne(ctx, s, storage.MustParsePath(x.path))
+					if err == nil {
+						t.Fatal("expected error")
+					} else if sErr, ok := err.(*storage.Error); !ok {
+						t.Fatal("expected storage error but got:", err)
+					} else if sErr.Code != storage.NotFoundErr {
+						t.Fatal("expected not found error but got:", err)
 					}
+				default:
+					panic("unexpected type")
 				}
-			})
+			}
 		})
 	}
 }
@@ -1457,43 +1705,40 @@ func TestDataPartitioningWriteNotFoundErrors(t *testing.T) {
 		t.Run(tc.note, func(t *testing.T) {
 			t.Parallel()
 
-			test.WithTempFS(map[string]string{}, func(dir string) {
+			partitions := make([]storage.Path, len(tc.partitions))
+			for i := range partitions {
+				partitions[i] = storage.MustParsePath(tc.partitions[i])
+			}
 
-				partitions := make([]storage.Path, len(tc.partitions))
-				for i := range partitions {
-					partitions[i] = storage.MustParsePath(tc.partitions[i])
-				}
+			ctx := t.Context()
+			s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: t.TempDir(), Partitions: partitions})
 
-				ctx := t.Context()
-				s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: partitions})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer s.Close(ctx)
 
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer s.Close(ctx)
-
-				for _, x := range tc.sequence {
-					switch x := x.(type) {
-					case testWrite:
-						executeTestWrite(ctx, t, s, x)
-					case testWriteError:
-						var val any
-						if x.value != "" {
-							val = util.MustUnmarshalJSON([]byte(x.value))
-						}
-						err := storage.WriteOne(ctx, s, x.op, storage.MustParsePath(x.path), val)
-						if err == nil {
-							t.Fatal("expected error")
-						} else if sErr, ok := err.(*storage.Error); !ok {
-							t.Fatal("expected storage error but got:", err)
-						} else if sErr.Code != storage.NotFoundErr {
-							t.Fatal("expected not found error but got:", err)
-						}
-					default:
-						panic("unexpected type")
+			for _, x := range tc.sequence {
+				switch x := x.(type) {
+				case testWrite:
+					executeTestWrite(ctx, t, s, x)
+				case testWriteError:
+					var val any
+					if x.value != "" {
+						val = util.MustUnmarshalJSON([]byte(x.value))
 					}
+					err := storage.WriteOne(ctx, s, x.op, storage.MustParsePath(x.path), val)
+					if err == nil {
+						t.Fatal("expected error")
+					} else if sErr, ok := err.(*storage.Error); !ok {
+						t.Fatal("expected storage error but got:", err)
+					} else if sErr.Code != storage.NotFoundErr {
+						t.Fatal("expected not found error but got:", err)
+					}
+				default:
+					panic("unexpected type")
 				}
-			})
+			}
 		})
 	}
 }
@@ -1505,43 +1750,42 @@ func TestDataPartitioningWriteInvalidPatchError(t *testing.T) {
 		t.Run(pt, func(t *testing.T) {
 			t.Parallel()
 
-			test.WithTempFS(map[string]string{}, func(dir string) {
-				ctx := t.Context()
-				s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-					storage.MustParsePath("/foo"),
-				}})
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer s.Close(ctx)
+			dir := t.TempDir()
+			ctx := t.Context()
+			s, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+				storage.MustParsePath("/foo"),
+			}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer s.Close(ctx)
 
-				err = storage.WriteOne(ctx, s, storage.AddOp, storage.MustParsePath("/foo"), util.MustUnmarshalJSON([]byte(`[1,2,3]`)))
-				if err == nil {
-					t.Fatal("expected error")
-				} else if sErr, ok := err.(*storage.Error); !ok {
-					t.Fatal("expected storage error but got:", err)
-				} else if sErr.Code != storage.InvalidPatchErr {
-					t.Fatal("expected invalid patch error but got:", err)
-				}
+			err = storage.WriteOne(ctx, s, storage.AddOp, storage.MustParsePath("/foo"), util.MustUnmarshalJSON([]byte(`[1,2,3]`)))
+			if err == nil {
+				t.Fatal("expected error")
+			} else if sErr, ok := err.(*storage.Error); !ok {
+				t.Fatal("expected storage error but got:", err)
+			} else if sErr.Code != storage.InvalidPatchErr {
+				t.Fatal("expected invalid patch error but got:", err)
+			}
 
-				err = storage.WriteOne(ctx, s, storage.AddOp, storage.RootPath, util.MustUnmarshalJSON([]byte(`{"foo": [1,2,3]}`)))
-				if err == nil {
-					t.Fatal("expected error")
-				} else if sErr, ok := err.(*storage.Error); !ok {
-					t.Fatal("expected storage error but got:", err)
-				} else if sErr.Code != storage.InvalidPatchErr {
-					t.Fatal("expected invalid patch error but got:", err)
-				}
+			err = storage.WriteOne(ctx, s, storage.AddOp, storage.RootPath, util.MustUnmarshalJSON([]byte(`{"foo": [1,2,3]}`)))
+			if err == nil {
+				t.Fatal("expected error")
+			} else if sErr, ok := err.(*storage.Error); !ok {
+				t.Fatal("expected storage error but got:", err)
+			} else if sErr.Code != storage.InvalidPatchErr {
+				t.Fatal("expected invalid patch error but got:", err)
+			}
 
-				err = storage.WriteOne(ctx, s, storage.AddOp, storage.RootPath, util.MustUnmarshalJSON([]byte(`[1,2,3]`)))
-				if err == nil {
-					t.Fatal("expected error")
-				} else if sErr, ok := err.(*storage.Error); !ok {
-					t.Fatal("expected storage error but got:", err)
-				} else if sErr.Code != storage.InvalidPatchErr {
-					t.Fatal("expected invalid patch error but got:", err)
-				}
-			})
+			err = storage.WriteOne(ctx, s, storage.AddOp, storage.RootPath, util.MustUnmarshalJSON([]byte(`[1,2,3]`)))
+			if err == nil {
+				t.Fatal("expected error")
+			} else if sErr, ok := err.(*storage.Error); !ok {
+				t.Fatal("expected storage error but got:", err)
+			} else if sErr.Code != storage.InvalidPatchErr {
+				t.Fatal("expected invalid patch error but got:", err)
+			}
 		})
 	}
 }
@@ -1561,73 +1805,72 @@ func executeTestWrite(ctx context.Context, t *testing.T, s storage.Store, x test
 func TestDiskTriggers(t *testing.T) {
 	t.Parallel()
 
-	test.WithTempFS(map[string]string{}, func(dir string) {
-		ctx := t.Context()
-		store, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
-			storage.MustParsePath("/foo"),
-		}})
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer store.Close(ctx)
-		writeTxn := storage.NewTransactionOrDie(ctx, store, storage.WriteParams)
-		readTxn := storage.NewTransactionOrDie(ctx, store)
+	dir := t.TempDir()
+	ctx := t.Context()
+	store, err := New(ctx, logging.NewNoOpLogger(), nil, Options{Dir: dir, Partitions: []storage.Path{
+		storage.MustParsePath("/foo"),
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close(ctx)
+	writeTxn := storage.NewTransactionOrDie(ctx, store, storage.WriteParams)
+	readTxn := storage.NewTransactionOrDie(ctx, store)
 
-		_, err = store.Register(ctx, readTxn, storage.TriggerConfig{
-			OnCommit: func(context.Context, storage.Transaction, storage.TriggerEvent) {},
-		})
-
-		if err == nil || !storage.IsInvalidTransaction(err) {
-			t.Fatalf("Expected transaction error: %v", err)
-		}
-
-		store.Abort(ctx, readTxn)
-
-		var event storage.TriggerEvent
-		modifiedPath := storage.MustParsePath("/a")
-		expectedValue := "hello"
-
-		_, err = store.Register(ctx, writeTxn, storage.TriggerConfig{
-			OnCommit: func(ctx context.Context, txn storage.Transaction, evt storage.TriggerEvent) {
-				result, err := store.Read(ctx, txn, modifiedPath)
-				if err != nil || !reflect.DeepEqual(result, expectedValue) {
-					t.Fatalf("Expected result to be hello for trigger read but got: %v (err: %v)", result, err)
-				}
-				event = evt
-			},
-		})
-		if err != nil {
-			t.Fatalf("Failed to register callback: %v", err)
-		}
-
-		if err := store.Write(ctx, writeTxn, storage.ReplaceOp, modifiedPath, expectedValue); err != nil {
-			t.Fatalf("Unexpected write error: %v", err)
-		}
-
-		id := "test"
-		data := []byte("package abc")
-		if err := store.UpsertPolicy(ctx, writeTxn, id, data); err != nil {
-			t.Fatalf("Unexpected upsert error: %v", err)
-		}
-
-		if err := store.Commit(ctx, writeTxn); err != nil {
-			t.Fatalf("Unexpected commit error: %v", err)
-		}
-
-		if event.IsZero() || !event.PolicyChanged() || !event.DataChanged() {
-			t.Fatalf("Expected policy and data change but got: %v", event)
-		}
-
-		expData := storage.DataEvent{Path: modifiedPath, Data: expectedValue, Removed: false}
-		if d := event.Data[0]; !reflect.DeepEqual(expData, d) {
-			t.Fatalf("Expected data event %v, got %v", expData, d)
-		}
-
-		expPolicy := storage.PolicyEvent{ID: id, Data: data, Removed: false}
-		if p := event.Policy[0]; !reflect.DeepEqual(expPolicy, p) {
-			t.Fatalf("Expected policy event %v, got %v", expPolicy, p)
-		}
+	_, err = store.Register(ctx, readTxn, storage.TriggerConfig{
+		OnCommit: func(context.Context, storage.Transaction, storage.TriggerEvent) {},
 	})
+
+	if err == nil || !storage.IsInvalidTransaction(err) {
+		t.Fatalf("Expected transaction error: %v", err)
+	}
+
+	store.Abort(ctx, readTxn)
+
+	var event storage.TriggerEvent
+	modifiedPath := storage.MustParsePath("/a")
+	expectedValue := "hello"
+
+	_, err = store.Register(ctx, writeTxn, storage.TriggerConfig{
+		OnCommit: func(ctx context.Context, txn storage.Transaction, evt storage.TriggerEvent) {
+			result, err := store.Read(ctx, txn, modifiedPath)
+			if err != nil || !reflect.DeepEqual(result, expectedValue) {
+				t.Fatalf("Expected result to be hello for trigger read but got: %v (err: %v)", result, err)
+			}
+			event = evt
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to register callback: %v", err)
+	}
+
+	if err := store.Write(ctx, writeTxn, storage.ReplaceOp, modifiedPath, expectedValue); err != nil {
+		t.Fatalf("Unexpected write error: %v", err)
+	}
+
+	id := "test"
+	data := []byte("package abc")
+	if err := store.UpsertPolicy(ctx, writeTxn, id, data); err != nil {
+		t.Fatalf("Unexpected upsert error: %v", err)
+	}
+
+	if err := store.Commit(ctx, writeTxn); err != nil {
+		t.Fatalf("Unexpected commit error: %v", err)
+	}
+
+	if event.IsZero() || !event.PolicyChanged() || !event.DataChanged() {
+		t.Fatalf("Expected policy and data change but got: %v", event)
+	}
+
+	expData := storage.DataEvent{Path: modifiedPath, Data: expectedValue, Removed: false}
+	if d := event.Data[0]; !reflect.DeepEqual(expData, d) {
+		t.Fatalf("Expected data event %v, got %v", expData, d)
+	}
+
+	expPolicy := storage.PolicyEvent{ID: id, Data: data, Removed: false}
+	if p := event.Policy[0]; !reflect.DeepEqual(expPolicy, p) {
+		t.Fatalf("Expected policy event %v, got %v", expPolicy, p)
+	}
 }
 
 func TestLookup(t *testing.T) {
@@ -1687,7 +1930,7 @@ func TestLookup(t *testing.T) {
 					t.Fatalf("Unexpected error %v", err)
 				}
 
-				if !reflect.DeepEqual(v, obj) {
+				if !maps.EqualFunc(v, obj, slices.Equal) {
 					t.Fatalf("Expected result %v, got %v", obj, result)
 				}
 			case json.RawMessage:
@@ -1707,203 +1950,200 @@ func TestDiskDiagnostics(t *testing.T) {
 	t.Run("no partitions", func(t *testing.T) {
 		t.Parallel()
 
-		test.WithTempFS(nil, func(dir string) {
-			buf := bytes.Buffer{}
-			logger := logging.New()
-			logger.SetOutput(&buf)
-			logger.SetLevel(logging.Debug)
-			store, err := New(ctx, logger, nil, Options{Dir: dir})
-			if err != nil {
-				t.Fatal(err)
-			}
-			// store something, won't show up in the logs yet (they're calculated on startup only)
-			if err := storage.WriteOne(ctx, store, storage.AddOp, storage.MustParsePath("/foo"), util.MustUnmarshalJSON([]byte(`{"baz": 1000}`))); err != nil {
-				t.Fatal(err)
-			}
-			if err := storage.WriteOne(ctx, store, storage.AddOp, storage.MustParsePath("/bar"), util.MustUnmarshalJSON([]byte(`{"quz": 2000}`))); err != nil {
-				t.Fatal(err)
-			}
-			if err := store.Close(ctx); err != nil {
-				t.Fatal(err)
-			}
+		dir := t.TempDir()
+		buf := bytes.Buffer{}
+		logger := logging.New()
+		logger.SetOutput(&buf)
+		logger.SetLevel(logging.Debug)
+		store, err := New(ctx, logger, nil, Options{Dir: dir})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// store something, won't show up in the logs yet (they're calculated on startup only)
+		if err := storage.WriteOne(ctx, store, storage.AddOp, storage.MustParsePath("/foo"), util.MustUnmarshalJSON([]byte(`{"baz": 1000}`))); err != nil {
+			t.Fatal(err)
+		}
+		if err := storage.WriteOne(ctx, store, storage.AddOp, storage.MustParsePath("/bar"), util.MustUnmarshalJSON([]byte(`{"quz": 2000}`))); err != nil {
+			t.Fatal(err)
+		}
+		if err := store.Close(ctx); err != nil {
+			t.Fatal(err)
+		}
 
-			expected := []string{
-				`level=warning msg="no partitions configured"`,
-				`level=debug msg="partition /: key count: 0 (estimated size 0 bytes)"`,
+		expected := []string{
+			`level=warning msg="no partitions configured"`,
+			`level=debug msg="partition /: key count: 0 (estimated size 0 bytes)"`,
+		}
+		for _, exp := range expected {
+			if !strings.Contains(buf.String(), exp) {
+				t.Errorf("expected string %q not found in logs", exp)
 			}
-			for _, exp := range expected {
-				if !strings.Contains(buf.String(), exp) {
-					t.Errorf("expected string %q not found in logs", exp)
-				}
-			}
-			if t.Failed() {
-				t.Log("log output: ", buf.String())
-			}
+		}
+		if t.Failed() {
+			t.Log("log output: ", buf.String())
+		}
 
-			// re-open
-			buf = bytes.Buffer{}
-			logger = logging.New()
-			logger.SetOutput(&buf)
-			logger.SetLevel(logging.Debug)
-			store, err = New(ctx, logger, nil, Options{Dir: dir})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := store.Close(ctx); err != nil {
-				t.Fatal(err)
-			}
+		// re-open
+		buf = bytes.Buffer{}
+		logger = logging.New()
+		logger.SetOutput(&buf)
+		logger.SetLevel(logging.Debug)
+		store, err = New(ctx, logger, nil, Options{Dir: dir})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := store.Close(ctx); err != nil {
+			t.Fatal(err)
+		}
 
-			expected = []string{
-				`level=debug msg="partition /: key count: 2 (estimated size 50 bytes)"`,
+		expected = []string{
+			`level=debug msg="partition /: key count: 2 (estimated size 50 bytes)"`,
+		}
+		for _, exp := range expected {
+			if !strings.Contains(buf.String(), exp) {
+				t.Errorf("expected string %q not found in logs", exp)
 			}
-			for _, exp := range expected {
-				if !strings.Contains(buf.String(), exp) {
-					t.Errorf("expected string %q not found in logs", exp)
-				}
-			}
-			if t.Failed() {
-				t.Log("log oputput: ", buf.String())
-			}
-		})
+		}
+		if t.Failed() {
+			t.Log("log oputput: ", buf.String())
+		}
 	})
 
 	t.Run("two partitions", func(t *testing.T) {
 		t.Parallel()
 
-		test.WithTempFS(nil, func(dir string) {
-			opts := Options{
-				Dir: dir,
-				Partitions: []storage.Path{
-					storage.MustParsePath("/foo"),
-					storage.MustParsePath("/bar"),
-				}}
-			buf := bytes.Buffer{}
-			logger := logging.New()
-			logger.SetOutput(&buf)
-			logger.SetLevel(logging.Debug)
-			store, err := New(ctx, logger, nil, opts)
-			if err != nil {
-				t.Fatal(err)
-			}
+		dir := t.TempDir()
+		opts := Options{
+			Dir: dir,
+			Partitions: []storage.Path{
+				storage.MustParsePath("/foo"),
+				storage.MustParsePath("/bar"),
+			}}
+		buf := bytes.Buffer{}
+		logger := logging.New()
+		logger.SetOutput(&buf)
+		logger.SetLevel(logging.Debug)
+		store, err := New(ctx, logger, nil, opts)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-			// store something, won't show up in the logs yet (they're calculated on startup only)
-			if err := storage.WriteOne(ctx, store, storage.AddOp, storage.MustParsePath("/foo"), util.MustUnmarshalJSON([]byte(`{"baz": 1000}`))); err != nil {
-				t.Fatal(err)
-			}
+		// store something, won't show up in the logs yet (they're calculated on startup only)
+		if err := storage.WriteOne(ctx, store, storage.AddOp, storage.MustParsePath("/foo"), util.MustUnmarshalJSON([]byte(`{"baz": 1000}`))); err != nil {
+			t.Fatal(err)
+		}
 
-			if err := store.Close(ctx); err != nil {
-				t.Fatal(err)
-			}
+		if err := store.Close(ctx); err != nil {
+			t.Fatal(err)
+		}
 
-			expected := []string{
-				`level=debug msg="partition /bar: key count: 0 (estimated size 0 bytes)"`,
-				`level=debug msg="partition /foo: key count: 0 (estimated size 0 bytes)"`,
+		expected := []string{
+			`level=debug msg="partition /bar: key count: 0 (estimated size 0 bytes)"`,
+			`level=debug msg="partition /foo: key count: 0 (estimated size 0 bytes)"`,
+		}
+		for _, exp := range expected {
+			if !strings.Contains(buf.String(), exp) {
+				t.Errorf("expected string %q not found in logs", exp)
 			}
-			for _, exp := range expected {
-				if !strings.Contains(buf.String(), exp) {
-					t.Errorf("expected string %q not found in logs", exp)
-				}
-			}
-			if t.Failed() {
-				t.Log("log oputput: ", buf.String())
-			}
+		}
+		if t.Failed() {
+			t.Log("log oputput: ", buf.String())
+		}
 
-			// re-open
-			buf = bytes.Buffer{}
-			logger = logging.New()
-			logger.SetOutput(&buf)
-			logger.SetLevel(logging.Debug)
-			store, err = New(ctx, logger, nil, opts)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := store.Close(ctx); err != nil {
-				t.Fatal(err)
-			}
+		// re-open
+		buf = bytes.Buffer{}
+		logger = logging.New()
+		logger.SetOutput(&buf)
+		logger.SetLevel(logging.Debug)
+		store, err = New(ctx, logger, nil, opts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := store.Close(ctx); err != nil {
+			t.Fatal(err)
+		}
 
-			expected = []string{
-				`level=debug msg="partition /bar: key count: 0 (estimated size 0 bytes)"`,
-				`level=debug msg="partition /foo: key count: 1 (estimated size 21 bytes)"`,
+		expected = []string{
+			`level=debug msg="partition /bar: key count: 0 (estimated size 0 bytes)"`,
+			`level=debug msg="partition /foo: key count: 1 (estimated size 21 bytes)"`,
+		}
+		for _, exp := range expected {
+			if !strings.Contains(buf.String(), exp) {
+				t.Errorf("expected string %q not found in logs", exp)
 			}
-			for _, exp := range expected {
-				if !strings.Contains(buf.String(), exp) {
-					t.Errorf("expected string %q not found in logs", exp)
-				}
-			}
-			if t.Failed() {
-				t.Log("log oputput: ", buf.String())
-			}
-		})
+		}
+		if t.Failed() {
+			t.Log("log oputput: ", buf.String())
+		}
 	})
 
 	t.Run("patterned partitions", func(t *testing.T) {
 		t.Parallel()
 
-		test.WithTempFS(nil, func(dir string) {
-			opts := Options{Dir: dir,
-				Partitions: []storage.Path{
-					storage.MustParsePath("/foo/*/bar"),
-					storage.MustParsePath("/bar"),
-				}}
-			buf := bytes.Buffer{}
-			logger := logging.New()
-			logger.SetOutput(&buf)
-			logger.SetLevel(logging.Debug)
-			store, err := New(ctx, logger, nil, opts)
-			if err != nil {
-				t.Fatal(err)
-			}
+		dir := t.TempDir()
+		opts := Options{Dir: dir,
+			Partitions: []storage.Path{
+				storage.MustParsePath("/foo/*/bar"),
+				storage.MustParsePath("/bar"),
+			}}
+		buf := bytes.Buffer{}
+		logger := logging.New()
+		logger.SetOutput(&buf)
+		logger.SetLevel(logging.Debug)
+		store, err := New(ctx, logger, nil, opts)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-			// store something, won't show up in the logs yet (they're calculated on startup only)
-			if err := storage.WriteOne(ctx, store, storage.AddOp, storage.MustParsePath("/foo/x/bar"), util.MustUnmarshalJSON([]byte(`{"baz": 1000}`))); err != nil {
-				t.Fatal(err)
-			}
-			if err := storage.WriteOne(ctx, store, storage.AddOp, storage.MustParsePath("/bar"), util.MustUnmarshalJSON([]byte(`{"quz": 1000}`))); err != nil {
-				t.Fatal(err)
-			}
+		// store something, won't show up in the logs yet (they're calculated on startup only)
+		if err := storage.WriteOne(ctx, store, storage.AddOp, storage.MustParsePath("/foo/x/bar"), util.MustUnmarshalJSON([]byte(`{"baz": 1000}`))); err != nil {
+			t.Fatal(err)
+		}
+		if err := storage.WriteOne(ctx, store, storage.AddOp, storage.MustParsePath("/bar"), util.MustUnmarshalJSON([]byte(`{"quz": 1000}`))); err != nil {
+			t.Fatal(err)
+		}
 
-			if err := store.Close(ctx); err != nil {
-				t.Fatal(err)
-			}
+		if err := store.Close(ctx); err != nil {
+			t.Fatal(err)
+		}
 
-			expected := []string{
-				`level=debug msg="partition /bar: key count: 0 (estimated size 0 bytes)"`,
-				`level=debug msg="partition pattern /foo/*/bar: key count: 0 (estimated size 0 bytes)"`,
+		expected := []string{
+			`level=debug msg="partition /bar: key count: 0 (estimated size 0 bytes)"`,
+			`level=debug msg="partition pattern /foo/*/bar: key count: 0 (estimated size 0 bytes)"`,
+		}
+		for _, exp := range expected {
+			if !strings.Contains(buf.String(), exp) {
+				t.Errorf("expected string %q not found in logs", exp)
 			}
-			for _, exp := range expected {
-				if !strings.Contains(buf.String(), exp) {
-					t.Errorf("expected string %q not found in logs", exp)
-				}
-			}
-			if t.Failed() {
-				t.Log("log oputput: ", buf.String())
-			}
+		}
+		if t.Failed() {
+			t.Log("log oputput: ", buf.String())
+		}
 
-			// re-open
-			buf = bytes.Buffer{}
-			logger = logging.New()
-			logger.SetOutput(&buf)
-			logger.SetLevel(logging.Debug)
-			store, err = New(ctx, logger, nil, opts)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := store.Close(ctx); err != nil {
-				t.Fatal(err)
-			}
+		// re-open
+		buf = bytes.Buffer{}
+		logger = logging.New()
+		logger.SetOutput(&buf)
+		logger.SetLevel(logging.Debug)
+		store, err = New(ctx, logger, nil, opts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := store.Close(ctx); err != nil {
+			t.Fatal(err)
+		}
 
-			expected = []string{
-				`level=debug msg="partition /bar: key count: 1 (estimated size 21 bytes)"`,
-				`level=debug msg="partition /foo/x/bar (pattern /foo/*/bar): key count: 1 (estimated size 27 bytes)"`,
+		expected = []string{
+			`level=debug msg="partition /bar: key count: 1 (estimated size 21 bytes)"`,
+			`level=debug msg="partition /foo/x/bar (pattern /foo/*/bar): key count: 1 (estimated size 27 bytes)"`,
+		}
+		for _, exp := range expected {
+			if !strings.Contains(buf.String(), exp) {
+				t.Errorf("expected string %q not found in logs", exp)
 			}
-			for _, exp := range expected {
-				if !strings.Contains(buf.String(), exp) {
-					t.Errorf("expected string %q not found in logs", exp)
-				}
-			}
-			if t.Failed() {
-				t.Log("log oputput: ", buf.String())
-			}
-		})
+		}
+		if t.Failed() {
+			t.Log("log oputput: ", buf.String())
+		}
 	})
 }

@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-policy-agent/opa/v1/logging"
 	"github.com/open-policy-agent/opa/v1/topdown/print"
+	"github.com/open-policy-agent/opa/v1/util"
 )
 
 type loggingPrintHook struct {
@@ -32,7 +33,7 @@ func (h loggingPrintHook) Print(pctx print.Context, msg string) error {
 		fields = make(map[string]any, 1)
 	}
 	fields["line"] = pctx.Location.String()
-	logging.WithContext(h.logger.WithFields(fields), pctx.Context).Info(msg)
+	logging.WithContext(h.logger.WithFields(fields), pctx.Context).Info("%s", msg)
 	return nil
 }
 
@@ -42,19 +43,56 @@ type LoggingHandler struct {
 	logger    logging.Logger
 	inner     http.Handler
 	requestID uint64
+	level     logging.Level
 }
 
-// NewLoggingHandler returns a new http.Handler.
+// NewLoggingHandler returns a new http.Handler that logs the "Received
+// request."/"Sent response." lines at INFO.
 func NewLoggingHandler(logger logging.Logger, inner http.Handler) http.Handler {
+	return NewLoggingHandlerWithLevel(logger, inner, logging.Info)
+}
+
+// NewLoggingHandlerWithLevel returns a new http.Handler that logs the
+// "Received request."/"Sent response." lines at the given level.
+func NewLoggingHandlerWithLevel(logger logging.Logger, inner http.Handler, level logging.Level) http.Handler {
 	return &LoggingHandler{
-		logger:    logger,
-		inner:     inner,
-		requestID: uint64(0),
+		logger: logger,
+		inner:  inner,
+		level:  level,
 	}
+}
+
+// NewDiagnosticLoggingHandler returns a new http.Handler for the read-only
+// diagnostic API's (eg /health, /metrics, etc). Access to these is only
+// logged at DEBUG since they are typically polled frequently by things like
+// Kubernetes probes and Prometheus scrapers, and would otherwise flood logs
+// at the default INFO level.
+func NewDiagnosticLoggingHandler(logger logging.Logger, inner http.Handler) http.Handler {
+	return NewLoggingHandlerWithLevel(logger, inner, logging.Debug)
 }
 
 func (h *LoggingHandler) loggingEnabled(level logging.Level) bool {
 	return level <= h.logger.GetLevel()
+}
+
+// reqRespLoggingEnabled reports whether the "Received request."/"Sent
+// response." log lines should be emitted for this handler.
+func (h *LoggingHandler) reqRespLoggingEnabled() bool {
+	return h.loggingEnabled(h.level)
+}
+
+// logAtLevel emits msg on log at the given level.
+func logAtLevel(log logging.Logger, level logging.Level, msg string) {
+	switch level {
+	case logging.Debug:
+		log.Debug("%s", msg)
+	case logging.Warn:
+		log.Warn("%s", msg)
+	case logging.Error:
+		log.Error("%s", msg)
+	default:
+		log.Info("%s", msg)
+	}
 }
 
 func (h *LoggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +108,7 @@ func (h *LoggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	recorder := newRecorder(h.logger, w, r, rctx.ReqID, h.loggingEnabled(logging.Debug))
 	t0 := time.Now()
 
-	if h.loggingEnabled(logging.Info) {
+	if h.reqRespLoggingEnabled() {
 
 		rctx.ClientAddr = r.RemoteAddr
 		rctx.ReqMethod = r.Method
@@ -100,7 +138,7 @@ func (h *LoggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 				} else {
-					fields["req_body"] = string(bs)
+					fields["req_body"] = util.ByteSliceToString(bs)
 				}
 			}
 
@@ -114,7 +152,7 @@ func (h *LoggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		log := logging.WithContext(h.logger, r.Context())
 		if err == nil {
-			log.WithFields(fields).Info("Received request.")
+			logAtLevel(log.WithFields(fields), h.level, "Received request.")
 		} else {
 			log.WithFields(fields).Error("Failed to read body.")
 		}
@@ -128,7 +166,7 @@ func (h *LoggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		statusCode = recorder.statusCode
 	}
 
-	if h.loggingEnabled(logging.Info) {
+	if h.reqRespLoggingEnabled() {
 		fields := map[string]any{
 			"client_addr":   rctx.ClientAddr,
 			"req_id":        rctx.ReqID,
@@ -169,7 +207,7 @@ func (h *LoggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		logging.WithContext(h.logger.WithFields(fields), r.Context()).Info("Sent response.")
+		logAtLevel(logging.WithContext(h.logger.WithFields(fields), r.Context()), h.level, "Sent response.")
 	}
 }
 

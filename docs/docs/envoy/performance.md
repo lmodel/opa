@@ -110,7 +110,7 @@ layered_runtime:
 
 ### OPA-Envoy Plugin
 
-Now let's deploy OPA as an External Authorization server. Below is a sample configuration for the OPA-Envoy container:
+Now deploy OPA as an External Authorization server. Below is a sample configuration for the OPA-Envoy container:
 
 <EvergreenCodeBlock>
 ```yaml
@@ -145,13 +145,17 @@ containers:
 ```
 </EvergreenCodeBlock>
 
-> 💡 Consider specifying CPU and memory resource requests and limits for the OPA and other containers to prevent
-> deployments from resource starvation.
-> You can also start OPA with the [`GOMAXPROCS`](https://pkg.go.dev/runtime)environment variable to limit the number of
-> cores that OPA can consume.
->
-> 💡 The OPA-Envoy plugin can be configured to listen on a UNIX Domain Socket. A complete example of such a setup
-> can be found [in the opa-envoy-plugin examples](https://github.com/open-policy-agent/opa-envoy-plugin/tree/main/examples/envoy-uds).
+::: tip
+Consider specifying CPU and memory resource requests and limits for the OPA and other containers to prevent
+deployments from resource starvation.
+You can also start OPA with the [`GOMAXPROCS`](https://pkg.go.dev/runtime) environment variable to limit the number of
+cores that OPA can consume.
+:::
+
+::: tip
+The OPA-Envoy plugin can be configured to listen on a UNIX Domain Socket. A complete example of such a setup
+can be found [in the opa-envoy-plugin examples](https://github.com/open-policy-agent/opa-envoy-plugin/tree/main/examples/envoy-uds).
+:::
 
 ### Load Generator and Measurement Tool
 

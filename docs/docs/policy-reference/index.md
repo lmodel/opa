@@ -9,7 +9,7 @@ import BuiltinLegacyRedirect from "@site/src/components/BuiltinLegacyRedirect";
 <BuiltinLegacyRedirect/>
 
 This page is a reference for details of the Rego language and its syntax. See
-our guided [Policy Language](./policy-language) page for a walked introduction.
+the guided [Policy Language](./policy-language) page for a walked introduction.
 There are also detailed sections for
 [built-in functions](./policy-reference/builtins) as well as examples for
 specific keywords such as
@@ -358,6 +358,7 @@ The reference documentation for these functions can be found under
 The following words are reserved and cannot be used as variable names or rule
 names:
 
+- `and` ([Examples](./policy-reference/keywords/logical#and))
 - `as`
 - `contains` ([Examples](./policy-reference/keywords/contains))
 - `data`
@@ -372,6 +373,7 @@ names:
 - `package`
 - `not` ([Examples](./policy-reference/keywords/not))
 - `null`
+- `or` ([Examples](./policy-reference/keywords/logical#or))
 - `some` ([Examples](./policy-reference/keywords/some))
 - `true`
 - `with`
@@ -394,7 +396,9 @@ rule-head-set   = "contains" term [ "if" ] | "[" term "]"
 rule-args       = term { "," term }
 rule-body       = [ "else" [ assign-operator term ] [ "if" ] ] ( "{" query "}" ) | literal
 query           = literal { ( ";" | ( [CR] LF ) ) literal }
-literal         = ( some-decl | expr | "not" ( expr | "{" query "}" ) ) { with-modifier }
+literal         = ( some-decl | expr | logical-expr | "not" ( expr | "{" query "}" | "(" logical-expr ")" ) ) { with-modifier }
+logical-expr    = logical-operand ( "and" | "or" ) logical-operand { ( "and" | "or" ) logical-operand }
+logical-operand = [ "not" ] ( term | expr-call | expr-infix | expr-parens | unary-expr | "{" query "}" | "(" logical-expr { with-modifier } ")" )
 with-modifier   = "with" term "as" term
 some-decl       = "some" term { "," term } { "in" expr }
 expr            = term | expr-call | expr-infix | expr-every | expr-parens | unary-expr

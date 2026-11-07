@@ -16,6 +16,7 @@ import (
 	"slices"
 
 	lstat "github.com/open-policy-agent/opa/v1/plugins/logs/status"
+	"github.com/open-policy-agent/opa/v1/util/channel"
 
 	"github.com/open-policy-agent/opa/v1/logging"
 	"github.com/open-policy-agent/opa/v1/metrics"
@@ -205,7 +206,7 @@ func New(parsedConfig *Config, manager *plugins.Manager) *Plugin {
 		queryCh:        make(chan chan *UpdateRequestV1),
 		logger:         manager.Logger().WithFields(map[string]any{"plugin": Name}),
 		trigger:        make(chan trigger),
-		collectors:     newCollectors(parsedConfig.PrometheusConfig),
+		collectors:     newCollectors(parsedConfig.PrometheusConfig, manager),
 	}
 
 	p.manager.UpdatePluginStatus(Name, &plugins.Status{State: plugins.StateNotReady})
@@ -296,12 +297,12 @@ func (p *Plugin) flush(ctx context.Context) {
 //
 // Deprecated: Use BulkUpdateBundleStatus instead.
 func (p *Plugin) UpdateBundleStatus(status bundle.Status) {
-	util.PushFIFO(p.bundleCh, status, p.metrics, statusBufferDropCounterName)
+	channel.PushFIFO(p.bundleCh, status, p.metrics, statusBufferDropCounterName)
 }
 
 // BulkUpdateBundleStatus notifies the plugin that the policy bundle was updated.
 func (p *Plugin) BulkUpdateBundleStatus(status map[string]*bundle.Status) {
-	util.PushFIFO(p.bulkBundleCh, status, p.metrics, statusBufferDropCounterName)
+	channel.PushFIFO(p.bulkBundleCh, status, p.metrics, statusBufferDropCounterName)
 }
 
 // UpdateDiscoveryStatus notifies the plugin that the discovery bundle was updated.
@@ -571,6 +572,15 @@ func (p *Plugin) updatePrometheusMetrics(u *UpdateRequestV1) {
 	p.collectors.pluginStatus.Reset()
 	for name, plugin := range u.Plugins {
 		p.collectors.pluginStatus.WithLabelValues(name, string(plugin.State)).Set(1)
+	}
+	p.collectors.decisionLogsStatus.Reset()
+	if dl := u.DecisionLogs; dl != nil {
+		p.collectors.decisionLogsStatus.WithLabelValues(dl.Code, dl.HTTPCode.String()).Set(1)
+	}
+	for _, all := range u.Metrics {
+		if all, ok := all.(map[string]any); ok {
+			p.collectors.decisionLogsCounters.update(all)
+		}
 	}
 	p.collectors.lastSuccessfulActivation.Reset()
 	for _, bundle := range u.Bundles {

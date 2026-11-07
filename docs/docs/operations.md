@@ -66,7 +66,7 @@ The mechanisms discussed above ensure that OPA is not asked to answer policy que
 - fail-open: if OPA does not provide a decision, then treat the decision as allowed.
 - fail-closed: if OPA does not provide a decision, then treat the decision as denied.
 
-The choices are more varied if the policy is not making an allow/deny decision, but often there is some analog to fail-open and fail-closed. The key observation is that this logic is entirely the responsibility of the software asking OPA for a policy decision. Despite the fact that what to do when OPA is unavailable is technically a policy question, it is one that we cannot rely on OPA to answer. The right logic can depend on many factors including the likelihood of OPA not making a decision and the cost of allowing or denying a request incorrectly.
+The choices are more varied if the policy is not making an allow/deny decision, but often there is some analog to fail-open and fail-closed. The key observation is that this logic is entirely the responsibility of the software asking OPA for a policy decision. Despite the fact that what to do when OPA is unavailable is technically a policy question, it is one that OPA cannot answer. The right logic can depend on many factors including the likelihood of OPA not making a decision and the cost of allowing or denying a request incorrectly.
 
 In Kubernetes admission control, for example, the Kubernetes admin can choose whether to fail-open or fail-closed, leaving the decision up to the user. And often this is the correct way to build an integration because it is unlikely that there is a universal solution. For example, running an OPA-integration in a development environment might require fail-open, but running exactly the same integration in a production environment might require fail-closed.
 
@@ -88,7 +88,7 @@ valid_semantic_version_tag if {
 }
 ```
 
-We can check whether it is compatible with different versions of OPA:
+The policy's compatibility with different versions of OPA can be checked as follows:
 
 ```bash
 # OK!
@@ -148,6 +148,8 @@ Not providing a capabilities file, or providing a file without an `allow_net` ke
 
 Note that the metaschemas [https://json-schema.org/draft-04/schema](https://json-schema.org/draft-04/schema), [https://json-schema.org/draft-06/schema](https://json-schema.org/draft-06/schema), and [https://json-schema.org/draft-07/schema](https://json-schema.org/draft-07/schema), are always available, even without network access.
 
+This applies both to schemas resolved while type checking a policy, and to schemas compiled at evaluation time by the `json.match_schema` and `json.verify_schema` built-in functions. A schema passed to either built-in may contain a remote `$ref`, and if the host is not permitted, the reference is not fetched and the built-in reports an error instead.
+
 Similarly, the `allow_net` capability restricts what hosts the `http.send` built-in function may send requests to, and what hosts the `net.lookup_ip_addr` built-in function may resolve IP addresses for.
 
 ### Features
@@ -168,12 +170,17 @@ Features present in the list are enabled, while features not present are disable
 
 - `rule_head_ref_string_prefixes`: Enables the use of a [reference in place of name](./policy-language/#rule-heads-containing-references) in the head of rules. This is a subset of `rule_head_refs`, and only covers references where all terms are primitive types, or where only the last element of the ref (the key in the generated object or set) is allowed to be a variable.
 - `rule_head_refs`: Enables general support for [references in rule heads](./policy-language/#rule-heads-containing-references), including [variables at arbitrary locations](./policy-language/#variables-in-rule-head-references). This feature also covers the functionality of `rule_head_ref_string_prefixes`.
+- `keywords_in_refs`: enables the use of keywords, such as `if` and `in`, as terms in references, e.g. `input.in`.
+- `template_strings`: enables [string interpolation](./policy-language/#string-interpolation).
 - `rego_v1_import`: enables use of the `rego.v1` import.
+- `rego_v2_import`: enables use of the `rego.v2` import.
+- `rego_v1`: enables Rego v1 modules, the default Rego syntax in OPA v1.x.
+- `rego_v2`: enables Rego v2 modules, such as those in bundles with `rego_version` `2`, where `and`, `or`, and `not` are keywords without imports. Also enables the `rego.v1` and `rego.v2` imports. In Rego v2 modules, it also implies `keywords_in_refs` and `template_strings`.
 
 ### Future keywords
 
 :::info
-It is recommended to use the `rego.v1` import instead of `future.keywords` imports, as this will ensure that your policy is compatible with the future release of [OPA v1.0](./v0-upgrade/)
+Prior to OPA v1.0, it was recommended to use the `rego.v1` import instead of `future.keywords` imports, as this ensured that a policy was compatible with the [OPA v1.0](./v0-upgrade/) release once it shipped. Since OPA v1.0, v1 syntax is the default and the `rego.v1` import is no longer needed.
 If the `rego.v1` import is present in a module, then `future.keywords.in`, `future.keywords.every`, `future.keywords.if`, and `future.keywords.contains` imports are implied, and not allowed.
 :::
 

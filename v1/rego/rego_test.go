@@ -2,7 +2,6 @@
 // Use of this source code is governed by an Apache2
 // license that can be found in the LICENSE file.
 
-// nolint: goconst // string duplication is for test readability.
 package rego
 
 import (
@@ -28,12 +27,14 @@ import (
 	"github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/ast/location"
 	"github.com/open-policy-agent/opa/v1/bundle"
+	"github.com/open-policy-agent/opa/v1/format"
 	"github.com/open-policy-agent/opa/v1/metrics"
 	"github.com/open-policy-agent/opa/v1/storage"
 	"github.com/open-policy-agent/opa/v1/storage/inmem"
 	"github.com/open-policy-agent/opa/v1/topdown"
 	"github.com/open-policy-agent/opa/v1/topdown/builtins"
 	"github.com/open-policy-agent/opa/v1/topdown/cache"
+	"github.com/open-policy-agent/opa/v1/topdown/print"
 	"github.com/open-policy-agent/opa/v1/types"
 	"github.com/open-policy-agent/opa/v1/util"
 	"github.com/open-policy-agent/opa/v1/util/test"
@@ -94,47 +95,38 @@ p contains x if {
 
 	for _, tc := range tests {
 		t.Run(tc.note, func(t *testing.T) {
-			files := map[string]string{
-				"test.rego": tc.module,
-			}
+			pq, err := New(
+				Load([]string{test.TempDirOf(t, "test.rego", tc.module)}, nil),
+				Query("data.test.p"),
+			).PrepareForEval(t.Context())
+			if tc.expErrs != nil {
+				if err == nil {
+					t.Fatal("Expected error but got nil")
+				}
 
-			test.WithTempFS(files, func(root string) {
-				ctx := t.Context()
-
-				pq, err := New(
-					Load([]string{root}, nil),
-					Query("data.test.p"),
-				).PrepareForEval(ctx)
-
-				if tc.expErrs != nil {
-					if err == nil {
-						t.Fatalf("Expected error but got nil")
-					}
-
-					for _, expErr := range tc.expErrs {
-						if !strings.Contains(err.Error(), expErr) {
-							t.Fatalf("Expected error to contain %q but got: %v", expErr, err)
-						}
-					}
-				} else {
-					if err != nil {
-						t.Fatalf("Unexpected error: %v", err)
-					}
-
-					rs, err := pq.Eval(ctx)
-					if err != nil {
-						t.Fatalf("Unexpected error: %v", err)
-					}
-
-					if len(rs) != 1 {
-						t.Fatalf("Expected exactly one result but got: %v", rs)
-					}
-
-					if reflect.DeepEqual(rs[0].Expressions[0].Value, tc.expResult) {
-						t.Fatalf("Expected %v but got: %v", tc.expResult, rs[0].Expressions[0].Value)
+				for _, expErr := range tc.expErrs {
+					if !strings.Contains(err.Error(), expErr) {
+						t.Fatalf("Expected error to contain %q but got: %v", expErr, err)
 					}
 				}
-			})
+			} else {
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+
+				rs, err := pq.Eval(t.Context())
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+
+				if len(rs) != 1 {
+					t.Fatalf("Expected exactly one result but got: %v", rs)
+				}
+
+				if reflect.DeepEqual(rs[0].Expressions[0].Value, tc.expResult) {
+					t.Fatalf("Expected %v but got: %v", tc.expResult, rs[0].Expressions[0].Value)
+				}
+			}
 		})
 	}
 }
@@ -343,53 +335,107 @@ p contains x if {
 }`,
 			expResult: []string{"a", "b", "c"},
 		},
+		{
+			note:        "v2 module, rego-v2, no capabilities",
+			regoVersion: ast.RegoV2,
+			module: `package test
+
+p contains x if {
+	some x in ["a", "b", "c"]
+	x == "a" or x == "b"
+}`,
+			expResult: []string{"a", "b"},
+		},
+		{
+			note:         "v2 module, rego-v2, v1 capabilities",
+			regoVersion:  ast.RegoV2,
+			capabilities: ast.CapabilitiesForThisVersion(ast.CapabilitiesRegoVersion(ast.RegoV1)),
+			module: `package test
+
+p contains x if {
+	some x in ["a", "b", "c"]
+	x == "a" or x == "b"
+}`,
+			expResult: []string{"a", "b"},
+		},
+		{
+			note:        "v2 module, rego-v2, v2 capabilities without rego_v2 feature",
+			regoVersion: ast.RegoV2,
+			capabilities: func() *ast.Capabilities {
+				caps := ast.CapabilitiesForThisVersion(ast.CapabilitiesRegoVersion(ast.RegoV2))
+
+				feats := make([]string, 0, len(caps.Features))
+				for _, feat := range caps.Features {
+					if feat != ast.FeatureRegoV2 {
+						feats = append(feats, feat)
+					}
+				}
+				caps.Features = feats
+
+				return caps
+			}(),
+			module: `package test
+
+p contains x if {
+	some x in ["a", "b", "c"]
+	x == "a" or x == "b"
+}`,
+			expErrs: []string{
+				"rego_parse_error: illegal capabilities: rego_v2 feature required for parsing v2 Rego",
+			},
+		},
+		{
+			note:        "v2 module, rego-v1, no capabilities",
+			regoVersion: ast.RegoV1,
+			module: `package test
+
+p contains x if {
+	some x in ["a", "b", "c"]
+	x == "a" or x == "b"
+}`,
+			expErrs: []string{
+				"test.rego:5: rego_parse_error: unexpected identifier token: expected \\n or ; or } (hint: `import future.keywords.or` for `x or y` expressions)",
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.note, func(t *testing.T) {
-			files := map[string]string{
-				"test.rego": tc.module,
-			}
+			pq, err := New(
+				SetRegoVersion(tc.regoVersion),
+				Capabilities(tc.capabilities),
+				Load([]string{test.TempDirOf(t, "test.rego", tc.module)}, nil),
+				Query("data.test.p"),
+			).PrepareForEval(t.Context())
 
-			test.WithTempFS(files, func(root string) {
-				ctx := t.Context()
+			if tc.expErrs != nil {
+				if err == nil {
+					t.Fatal("Expected error but got nil")
+				}
 
-				pq, err := New(
-					SetRegoVersion(tc.regoVersion),
-					Capabilities(tc.capabilities),
-					Load([]string{root}, nil),
-					Query("data.test.p"),
-				).PrepareForEval(ctx)
-
-				if tc.expErrs != nil {
-					if err == nil {
-						t.Fatalf("Expected error but got nil")
-					}
-
-					for _, expErr := range tc.expErrs {
-						if !strings.Contains(err.Error(), expErr) {
-							t.Fatalf("Expected error to contain:\n\n%q\n\nbut got:\n\n%v", expErr, err)
-						}
-					}
-				} else {
-					if err != nil {
-						t.Fatalf("Unexpected error: %v", err)
-					}
-
-					rs, err := pq.Eval(ctx)
-					if err != nil {
-						t.Fatalf("Unexpected error: %v", err)
-					}
-
-					if len(rs) != 1 {
-						t.Fatalf("Expected exactly one result but got:\n\n%v", rs)
-					}
-
-					if reflect.DeepEqual(rs[0].Expressions[0].Value, tc.expResult) {
-						t.Fatalf("Expected %v but got: %v", tc.expResult, rs[0].Expressions[0].Value)
+				for _, expErr := range tc.expErrs {
+					if !strings.Contains(err.Error(), expErr) {
+						t.Fatalf("Expected error to contain:\n\n%q\n\nbut got:\n\n%v", expErr, err)
 					}
 				}
-			})
+			} else {
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+
+				rs, err := pq.Eval(t.Context())
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+
+				if len(rs) != 1 {
+					t.Fatalf("Expected exactly one result but got:\n\n%v", rs)
+				}
+
+				if reflect.DeepEqual(rs[0].Expressions[0].Value, tc.expResult) {
+					t.Fatalf("Expected %v but got: %v", tc.expResult, rs[0].Expressions[0].Value)
+				}
+			}
 		})
 	}
 }
@@ -515,6 +561,64 @@ func TestRegoEvalExpressionValue(t *testing.T) {
 				Module("", module),
 			)
 			assertEval(t, r, tc.expected)
+		})
+	}
+}
+
+// TestRegoEvalIssue8302 checks the evaluation-level symptom of #8302: a body
+// with an indirect dependency through a comprehension compiles cleanly but
+// used to evaluate to an empty result set because reorderBodyForSafety
+// scheduled expressions before their inputs were genuinely grounded.
+//
+// Policy shape taken from https://github.com/open-policy-agent/opa/issues/8302.
+func TestRegoEvalIssue8302(t *testing.T) {
+	module := `package test
+
+f(x) := x + 1
+
+a := z if {
+	y = f(x)
+	z = f(y)
+	x = 2
+}
+
+b := z if {
+	y = f([v | v = x][0])
+	z = f(y)
+	x = 2
+}
+
+c := z if {
+	x = 2
+	y = f([v | v = x][0])
+	z = f(y)
+}
+`
+
+	tests := []struct {
+		name string
+		q    string
+		want string
+	}{
+		{"a", "data.test.a", "4"},
+		{"b", "data.test.b", "4"},
+		{"c", "data.test.c", "4"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := New(Query(tc.q), Module("test.rego", module))
+			rs, err := r.Eval(t.Context())
+			if err != nil {
+				t.Fatalf("eval: %v", err)
+			}
+			if len(rs) == 0 {
+				t.Fatal("expected a result, got empty ResultSet (issue #8302 silent-drop symptom)")
+			}
+			got := fmt.Sprint(rs[0].Expressions[0].Value)
+			if got != tc.want {
+				t.Fatalf("got %v, want %v", got, tc.want)
+			}
 		})
 	}
 }
@@ -986,7 +1090,9 @@ func TestRegoDisableIndexingWithMatch(t *testing.T) {
 		t.Context(),
 		EvalQueryTracer(tracer),
 		EvalRuleIndexing(false),
-		EvalInput(map[string]any{"x": 1}),
+		// The match is on the last definition, so early exit stopping there still
+		// leaves the one before evaluated -- which is what this test shows.
+		EvalInput(map[string]any{"y": 1}),
 	)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
@@ -1011,6 +1117,46 @@ func TestRegoDisableIndexingWithMatch(t *testing.T) {
 		if !found {
 			t.Fatalf("Missing expected eval node in trace: %q\nGot: %q\n", expected, evalNodes)
 		}
+	}
+}
+
+// TestRegoRuleIndexMemberWithCompositeValues guards against a regression where
+// building the rule index for `<ref> in <collection>` panicked with "illegal
+// value" whenever the collection contained non-scalar elements (objects,
+// sets, or arrays thereof), since the index trie only knew how to store
+// scalars and arrays of scalars.
+func TestRegoRuleIndexMemberWithCompositeValues(t *testing.T) {
+	mod := `
+	package test
+
+	allow if input.resource in [{"nested": 1}]
+	`
+
+	cases := []struct {
+		note    string
+		input   map[string]any
+		allowed bool
+	}{
+		{"matches composite element", map[string]any{"resource": map[string]any{"nested": 1.0}}, true},
+		{"does not match composite element", map[string]any{"resource": map[string]any{"nested": 2.0}}, false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.note, func(t *testing.T) {
+			rs, err := New(
+				Query("data.test.allow"),
+				Module("test.rego", mod),
+				Input(tc.input),
+			).Eval(t.Context())
+			if err != nil {
+				t.Fatalf("unexpected error (this is the panic path if the fix regresses): %s", err)
+			}
+
+			allowed := len(rs) == 1 && len(rs[0].Expressions) == 1 && rs[0].Expressions[0].Value.(bool)
+			if allowed != tc.allowed {
+				t.Fatalf("expected allowed=%v, got %v (result: %v)", tc.allowed, allowed, rs)
+			}
+		})
 	}
 }
 
@@ -1169,7 +1315,7 @@ func TestPrepareAndEvalNewMetrics(t *testing.T) {
 	}
 
 	if len(originalMetrics.All()) == 0 {
-		t.Errorf("Expected metrics stored on 'originalMetrics' after Prepare()")
+		t.Error("Expected metrics stored on 'originalMetrics' after Prepare()")
 	}
 
 	// Reset the original ones (for testing)
@@ -1188,7 +1334,7 @@ func TestPrepareAndEvalNewMetrics(t *testing.T) {
 	}
 
 	if len(newMetrics.All()) == 0 {
-		t.Errorf("Expected metrics stored on 'newMetrics' after Prepare()")
+		t.Error("Expected metrics stored on 'newMetrics' after Prepare()")
 	}
 }
 
@@ -1203,7 +1349,7 @@ func TestPrepareAndEvalTransaction(t *testing.T) {
 
 	path, ok := storage.ParsePath("/foo")
 	if !ok {
-		t.Fatalf("Unexpected error parsing path")
+		t.Fatal("Unexpected error parsing path")
 	}
 
 	err := storage.MakeDir(ctx, store, txn, path)
@@ -1367,7 +1513,7 @@ func TestPrepareAndEvalOnlyOneErrorOccurredPrintOnce(t *testing.T) {
 		t.Fatal("Expected error but got nil")
 	}
 	if strings.Count(err.Error(), "1 error occurred") > 1 {
-		t.Fatalf("Expected to print '1 error occurred' only once")
+		t.Fatal("Expected to print '1 error occurred' only once")
 	}
 }
 
@@ -1777,7 +1923,7 @@ func TestPreparedPartialResultWithTracer(t *testing.T) {
 	}
 
 	if len(*tracer) == 0 {
-		t.Errorf("Expected buffer tracer to contain > 0 traces")
+		t.Error("Expected buffer tracer to contain > 0 traces")
 	}
 }
 
@@ -1819,7 +1965,7 @@ func TestPreparedPartialResultWithQueryTracer(t *testing.T) {
 	}
 
 	if len(*tracer) == 0 {
-		t.Errorf("Expected buffer tracer to contain > 0 traces")
+		t.Error("Expected buffer tracer to contain > 0 traces")
 	}
 }
 
@@ -2130,95 +2276,67 @@ func TestPreparedQueryGetModules(t *testing.T) {
 }
 
 func TestRegoEvalWithFile(t *testing.T) {
-	files := map[string]string{
-		"x/x.rego": "package x\np = 1",
-		"x/x.json": `{"y": "foo"}`,
+	root := test.TempDirOf(t,
+		"x/x.rego", "package x\np = 1",
+		"x/x.json", `{"y": "foo"}`,
+	)
+
+	pq, err := New(Load([]string{root}, nil), Query("data")).PrepareForEval(t.Context())
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
 	}
 
-	test.WithTempFS(files, func(path string) {
-		ctx := t.Context()
+	rs, err := pq.Eval(t.Context())
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
 
-		pq, err := New(
-			Load([]string{path}, nil),
-			Query("data"),
-		).PrepareForEval(ctx)
-
-		if err != nil {
-			t.Fatalf("Unexpected error: %s", err)
-		}
-
-		rs, err := pq.Eval(ctx)
-		if err != nil {
-			t.Fatalf("Unexpected error: %s", err)
-		}
-
-		assertResultSet(t, rs, `[[{"x":{"p":1,"y":"foo"}}]]`)
-	})
+	assertResultSet(t, rs, `[[{"x":{"p":1,"y":"foo"}}]]`)
 }
 
 func TestRegoEvalWithBundle(t *testing.T) {
-	files := map[string]string{
+	root := test.TempDir(t, map[string]string{
 		"x/x.rego":            "package x\np = data.x.b",
 		"x/data.json":         `{"b": "bar"}`,
 		"other/not-data.json": `{"ignored": "data"}`,
+	})
+
+	pq, err := New(LoadBundle(root), Query("data.x.p")).PrepareForEval(t.Context())
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
 	}
 
-	test.WithTempFS(files, func(path string) {
-		ctx := t.Context()
+	rs, err := pq.Eval(t.Context())
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
 
-		pq, err := New(
-			LoadBundle(path),
-			Query("data.x.p"),
-		).PrepareForEval(ctx)
+	assertResultSet(t, rs, `[["bar"]]`)
 
-		if err != nil {
-			t.Fatalf("Unexpected error: %s", err)
+	mods := pq.Modules()
+	if exp, act := 1, len(mods); exp != act {
+		t.Fatalf("expected %d modules, found %d", exp, act)
+	}
+	for act := range mods {
+		if exp := filepath.Join(root, "x", "x.rego"); exp != act {
+			t.Errorf("expected module name %q, got %q", exp, act)
 		}
-
-		rs, err := pq.Eval(ctx)
-		if err != nil {
-			t.Fatalf("Unexpected error: %s", err)
-		}
-
-		assertResultSet(t, rs, `[["bar"]]`)
-
-		mods := pq.Modules()
-		if exp, act := 1, len(mods); exp != act {
-			t.Fatalf("expected %d modules, found %d", exp, act)
-		}
-		for act := range mods {
-			if exp := filepath.Join(path, "x", "x.rego"); exp != act {
-				t.Errorf("expected module name %q, got %q", exp, act)
-			}
-		}
-	})
+	}
 }
 
 func TestRegoEvalWithBundleURL(t *testing.T) {
-	files := map[string]string{
-		"x/x.rego": "package x\np = data.x.b",
+	root := test.TempDir(t, map[string]string{"x/x.rego": "package x\np = data.x.b"})
+	pq := mustPrepare(t, New(LoadBundle("file://"+root), Query("data.x.p")))
+
+	mods := pq.Modules()
+	if exp, act := 1, len(mods); exp != act {
+		t.Fatalf("expected %d modules, found %d", exp, act)
 	}
-
-	test.WithTempFS(files, func(path string) {
-		ctx := t.Context()
-		pq, err := New(
-			LoadBundle("file://"+path),
-			Query("data.x.p"),
-		).PrepareForEval(ctx)
-		if err != nil {
-			t.Fatalf("Unexpected error: %s", err)
+	for act := range mods {
+		if exp := filepath.Join(root, "x", "x.rego"); exp != act {
+			t.Errorf("expected module name %q, got %q", exp, act)
 		}
-
-		mods := pq.Modules()
-		if exp, act := 1, len(mods); exp != act {
-			t.Fatalf("expected %d modules, found %d", exp, act)
-		}
-		for act := range mods {
-			if exp := filepath.Join(path, "x", "x.rego"); exp != act {
-				t.Errorf("expected module name %q, got %q", exp, act)
-			}
-		}
-	})
+	}
 }
 
 func TestRegoEvalPoliciesInStore(t *testing.T) {
@@ -2425,95 +2543,69 @@ func TestRegoEvalWithRegoV1(t *testing.T) {
 	for _, s := range setup {
 		for _, tc := range tests {
 			t.Run(fmt.Sprintf("%s: %s", s.name, tc.note), func(t *testing.T) {
-				test.WithTempFS(tc.policies, func(path string) {
-					ctx := t.Context()
+				path := test.TempDir(t, tc.policies)
+				ctx := t.Context()
 
-					options := append(s.options(path, tc.policies, t, ctx),
-						Query("data.test"),
-						func(r *Rego) {
-							SetRegoVersion(tc.regoVersion)(r)
-						},
-					)
+				options := append(s.options(path, tc.policies, t, ctx),
+					Query("data.test"),
+					SetRegoVersion(tc.regoVersion),
+				)
 
-					pq, err := New(
-						options...,
-					).PrepareForEval(ctx)
-
-					if tc.expectedErr != "" {
-						if err == nil {
-							t.Fatal("Expected error, got none")
-						}
-						if !strings.Contains(err.Error(), tc.expectedErr) {
-							t.Fatalf("Expected error:\n\n%s\n\ngot:\n\n%s", err, tc.expectedErr)
-						}
-					} else {
-						if err != nil {
-							t.Fatalf("Unexpected error: %s", err)
-						}
-
-						rs, err := pq.Eval(ctx)
-						if err != nil {
-							t.Fatalf("Unexpected error: %s", err)
-						}
-
-						if tc.expectedResult != "" {
-							assertResultSet(t, rs, tc.expectedResult)
-						}
+				pq, err := New(options...).PrepareForEval(ctx)
+				if tc.expectedErr != "" {
+					if err == nil {
+						t.Fatal("Expected error, got none")
 					}
-				})
+					if !strings.Contains(err.Error(), tc.expectedErr) {
+						t.Fatalf("Expected error:\n\n%s\n\ngot:\n\n%s", err, tc.expectedErr)
+					}
+				} else {
+					if err != nil {
+						t.Fatalf("Unexpected error: %s", err)
+					}
+
+					rs, err := pq.Eval(ctx)
+					if err != nil {
+						t.Fatalf("Unexpected error: %s", err)
+					}
+
+					if tc.expectedResult != "" {
+						assertResultSet(t, rs, tc.expectedResult)
+					}
+				}
 			})
 		}
 	}
 }
 
 func TestRegoLoadFilesWithProvidedStore(t *testing.T) {
-	ctx := t.Context()
-	store := mock.New()
+	pq, err := New(
+		Store(mock.New()),
+		Query("data"),
+		Load([]string{test.TempDirOf(t, "x.rego", "package x\np = data.x.b")}, nil),
+	).PrepareForEval(t.Context())
 
-	files := map[string]string{
-		"x.rego": "package x\np = data.x.b",
+	if err == nil {
+		t.Fatal("Expected an error but err == nil")
 	}
-
-	test.WithTempFS(files, func(path string) {
-		pq, err := New(
-			Store(store),
-			Query("data"),
-			Load([]string{path}, nil),
-		).PrepareForEval(ctx)
-
-		if err == nil {
-			t.Fatal("Expected an error but err == nil")
-		}
-
-		if pq.r != nil {
-			t.Fatalf("Expected pq.r == nil, got: %+v", pq)
-		}
-	})
+	if pq.r != nil {
+		t.Fatalf("Expected pq.r == nil, got: %+v", pq)
+	}
 }
 
 func TestRegoLoadBundleWithProvidedStore(t *testing.T) {
-	ctx := t.Context()
-	store := mock.New()
+	pq, err := New(
+		Store(mock.New()),
+		Query("data"),
+		LoadBundle(test.TempDirOf(t, "x/x.rego", "package x\np = data.x.b")),
+	).PrepareForEval(t.Context())
 
-	files := map[string]string{
-		"x/x.rego": "package x\np = data.x.b",
+	if err == nil {
+		t.Fatal("Expected an error but err == nil")
 	}
-
-	test.WithTempFS(files, func(path string) {
-		pq, err := New(
-			Store(store),
-			Query("data"),
-			LoadBundle(path),
-		).PrepareForEval(ctx)
-
-		if err == nil {
-			t.Fatal("Expected an error but err == nil")
-		}
-
-		if pq.r != nil {
-			t.Fatalf("Expected pq.r == nil, got: %+v", pq)
-		}
-	})
+	if pq.r != nil {
+		t.Fatalf("Expected pq.r == nil, got: %+v", pq)
+	}
 }
 
 func TestRegoCustomBuiltinPartialPropagate(t *testing.T) {
@@ -2715,26 +2807,16 @@ func TestPrepareWithEmptyModule(t *testing.T) {
 }
 
 func TestPrepareWithWasmTargetNotSupported(t *testing.T) {
-	files := map[string]string{
+	bundle := LoadBundle(test.TempDir(t, map[string]string{
 		"x/x.rego":     "package x\np = data.x.b",
 		"x/data.json":  `{"b": "bar"}`,
 		"/policy.wasm": `modules-compiled-as-wasm-binary`,
+	}))
+	_, err := New(bundle, Query("data.x.p"), Target("wasm")).PrepareForEval(t.Context())
+
+	if exp := "wasm target not supported"; err == nil || err.Error() != exp {
+		t.Fatalf("Expected error %s, got %s", exp, err)
 	}
-
-	test.WithTempFS(files, func(path string) {
-		ctx := t.Context()
-
-		_, err := New(
-			LoadBundle(path),
-			Query("data.x.p"),
-			Target("wasm"),
-		).PrepareForEval(ctx)
-
-		expected := "wasm target not supported"
-		if err == nil || err.Error() != expected {
-			t.Fatalf("Expected error %s, got %s", expected, err)
-		}
-	})
 }
 
 func TestEvalWithInterQueryCache(t *testing.T) {
@@ -2856,10 +2938,10 @@ func TestEvalWithNDCache(t *testing.T) {
 	if cachedResults, ok := ndBC["http.send"]; ok {
 		err := cachedResults.Iter(func(k, v *ast.Term) error {
 			if _, ok := k.Value.(*ast.Array); !ok {
-				t.Fatalf("http.send failed to store Object key in the ND builtins cache")
+				t.Fatal("http.send failed to store Object key in the ND builtins cache")
 			}
 			if _, ok := v.Value.(ast.Object); !ok {
-				t.Fatalf("http.send failed to store Object value in the ND builtins cache")
+				t.Fatal("http.send failed to store Object value in the ND builtins cache")
 			}
 			return nil
 		})
@@ -2922,7 +3004,7 @@ p if {
 	}
 	_, ok := ndBC["http.send"]
 	if !ok {
-		t.Fatalf("expected http.send cache entry")
+		t.Fatal("expected http.send cache entry")
 	}
 }
 
@@ -2963,7 +3045,7 @@ results contains response if {
 	// Ensure that the cache exists, and has exactly 3 entries.
 	entries, ok := ndBC["http.send"]
 	if !ok {
-		t.Fatalf("expected http.send cache entry")
+		t.Fatal("expected http.send cache entry")
 	}
 	if entries.Len() != 3 {
 		t.Fatalf("expected 3 http.send cache entries, received:\n%v", ndBC)
@@ -3034,6 +3116,83 @@ func TestBuiltinErrorList(t *testing.T) {
 	}
 }
 
+func TestStackTraces(t *testing.T) {
+	module := `package test
+
+p if {
+	q
+}
+
+q if {
+	1 / 0
+}
+`
+	newRego := func(opts ...func(*Rego)) *Rego {
+		return New(append([]func(*Rego){
+			Query("data.test.p"),
+			Module("test.rego", module),
+			StrictBuiltinErrors(true),
+		}, opts...)...)
+	}
+
+	_, err := newRego().Eval(t.Context())
+	topdownErr, ok := err.(*topdown.Error)
+	if !ok {
+		t.Fatal("expected topdown error but got:", err)
+	}
+	if topdownErr.StackTrace != nil {
+		t.Fatal("expected no stack trace by default but got:", topdownErr.StackTrace)
+	}
+
+	_, err = newRego(StackTraces(true)).Eval(t.Context())
+	topdownErr, ok = err.(*topdown.Error)
+	if !ok {
+		t.Fatal("expected topdown error but got:", err)
+	}
+
+	expected := `  test.rego:8: 1 / 0
+  test.rego:4: q
+  1:1: data.test.p`
+
+	if actual := topdownErr.StackTrace.String(); actual != expected {
+		t.Fatalf("expected stack trace\n%s\n\ngot\n%s", expected, actual)
+	}
+}
+
+func TestStackTracesPartial(t *testing.T) {
+	module := `package test
+
+p if {
+	q
+	input.x
+}
+
+q if {
+	1 / 0
+}
+`
+	_, err := New(
+		Query("data.test.p"),
+		Module("test.rego", module),
+		Unknowns([]string{"input"}),
+		StrictBuiltinErrors(true),
+		StackTraces(true),
+	).Partial(t.Context())
+
+	topdownErr, ok := err.(*topdown.Error)
+	if !ok {
+		t.Fatal("expected topdown error but got:", err)
+	}
+
+	if len(topdownErr.StackTrace) == 0 {
+		t.Fatal("expected stack trace on partial evaluation error")
+	}
+
+	if first := topdownErr.StackTrace[0].String(); first != "test.rego:9: 1 / 0" {
+		t.Fatal("unexpected innermost frame:", first)
+	}
+}
+
 func TestTimeSeedingOptions(t *testing.T) {
 
 	ctx := t.Context()
@@ -3068,6 +3227,68 @@ func TestTimeSeedingOptions(t *testing.T) {
 		t.Fatal("expected old wall clock value")
 	}
 
+	// Check that Partial() also gets the configured time, like Eval() does.
+	// time.now_ns is nondeterministic and stays unresolved through partial
+	// eval, so use a custom builtin to observe the wall clock directly.
+	var captured *ast.Term
+	fn := Function1(
+		&Function{
+			Name: "test.capturetime",
+			Decl: types.NewFunction(types.Args(types.N), types.N),
+		},
+		func(bctx BuiltinContext, _ *ast.Term) (*ast.Term, error) {
+			captured = bctx.Time
+			return ast.NumberTerm("1"), nil
+		},
+	)
+
+	_, err = New(Query("test.capturetime(1, x)"), fn, Time(clock), Unknowns([]string{"input.x"})).Partial(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantNS := ast.Number(int64ToJSONNumber(clock.UnixNano()))
+	if !reflect.DeepEqual(captured.Value, wantNS) {
+		t.Fatalf("expected Partial() to use configured time, got %v want %v", captured, wantNS)
+	}
+
+}
+
+// EvalDisableInlining is threaded through the same EvalContext defaults that
+// disableInlining set on the Rego object populates; verify the per-call
+// option actually takes effect instead of being overwritten by the default.
+func TestEvalDisableInliningOption(t *testing.T) {
+	ctx := t.Context()
+	module := `
+package test
+
+p if { q; r }
+q if { s[input] }
+q if { t[input] }
+r if { s[input] }
+s contains 1
+s contains 2
+t contains 3
+`
+	pq, err := New(
+		Query("data.test.p = true"),
+		Module("test.rego", module),
+		Unknowns([]string{"input"}),
+	).PrepareForPartial(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pqs, err := pq.Partial(ctx, EvalDisableInlining([]ast.Ref{ast.MustParseRef("data.test.q")}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, q := range pqs.Queries {
+		if strings.Contains(q.String(), "data.partial.test.q") {
+			return
+		}
+	}
+	t.Fatalf("expected EvalDisableInlining to prevent inlining of data.test.q, got queries %v", pqs.Queries)
 }
 
 func int64ToJSONNumber(i int64) json.Number {
@@ -3300,7 +3521,7 @@ func TestDescriptionRegisterBuiltin1(t *testing.T) {
 	description := "custom-arity-1"
 
 	decl := &Function{
-		Name:        "foo",
+		Name:        "baz",
 		Description: description,
 		Decl: types.NewFunction(
 			types.Args(types.S),
@@ -3311,7 +3532,7 @@ func TestDescriptionRegisterBuiltin1(t *testing.T) {
 	RegisterBuiltin1(decl, func(_ BuiltinContext, _ *ast.Term) (*ast.Term, error) {
 		return ast.StringTerm("bar"), nil
 	})
-	defer unregisterBuiltin("foo")
+	defer unregisterBuiltin("baz")
 
 	got := ast.Builtins[len(ast.Builtins)-1].Description
 	if got != description {
@@ -3452,7 +3673,7 @@ result := test.module("policy.rego")
 			t.Fatalf("rego Eval error: %v", err)
 		}
 		if len(rs) == 0 || len(rs[0].Expressions) == 0 {
-			t.Fatalf("No results")
+			t.Fatal("No results")
 		}
 		got := rs[0].Expressions[0].Value
 		want := "package test\n\nresult := __local0__ if { test.module(\"policy.rego\", __local0__) }"
@@ -3544,5 +3765,442 @@ func TestRegoDataWithModule(t *testing.T) {
 
 	if rs[0].Expressions[0].Value != "admin" {
 		t.Fatalf("Expected 'admin' but got: %v", rs[0].Expressions[0].Value)
+	}
+}
+
+func mustPrepare(t *testing.T, r *Rego) PreparedEvalQuery {
+	t.Helper()
+	pq, err := r.PrepareForEval(t.Context())
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err.Error())
+	}
+	return pq
+}
+
+func TestQueryRegoVersionImports(t *testing.T) {
+	tests := []struct {
+		note        string
+		regoVersion ast.RegoVersion
+		imports     []string
+		query       string
+		allowed     bool
+	}{
+		{
+			note:        "rego.v2, or",
+			regoVersion: ast.RegoV1,
+			imports:     []string{"rego.v2"},
+			query:       "input.a or input.b",
+			allowed:     true,
+		},
+		{
+			note:        "rego.v2, not body",
+			regoVersion: ast.RegoV1,
+			imports:     []string{"rego.v2"},
+			query:       "not { input.a; input.b }",
+			allowed:     true,
+		},
+		{
+			note:        "v0, rego.v2, in",
+			regoVersion: ast.RegoV0,
+			imports:     []string{"rego.v2"},
+			query:       `"b" in ["a", "b"]`,
+			allowed:     true,
+		},
+		{
+			note:        "v0, rego.v2, and",
+			regoVersion: ast.RegoV0,
+			imports:     []string{"rego.v2"},
+			query:       "input.a and input.b",
+			allowed:     false,
+		},
+		{
+			note:        "v0, rego.v1 and rego.v2, or",
+			regoVersion: ast.RegoV0,
+			imports:     []string{"rego.v1", "rego.v2"},
+			query:       "input.a or input.b",
+			allowed:     true,
+		},
+		{
+			note:        "v1, rego.v2 and rego.v1, or",
+			regoVersion: ast.RegoV1,
+			imports:     []string{"rego.v2", "rego.v1"},
+			query:       "input.a or input.b",
+			allowed:     true,
+		},
+		{
+			note:        "v2, or",
+			regoVersion: ast.RegoV2,
+			query:       "input.a or input.b",
+			allowed:     true,
+		},
+		{
+			note:        "v2, and",
+			regoVersion: ast.RegoV2,
+			query:       "input.a and input.b",
+			allowed:     false,
+		},
+		{
+			note:        "v2, not body",
+			regoVersion: ast.RegoV2,
+			query:       "not { input.a; input.b }",
+			allowed:     true,
+		},
+		{
+			// rego.v1 doesn't lower a v2 baseline.
+			note:        "v2, rego.v1, or",
+			regoVersion: ast.RegoV2,
+			imports:     []string{"rego.v1"},
+			query:       "input.a or input.b",
+			allowed:     true,
+		},
+		{
+			note:        "v2, rego.v2, or",
+			regoVersion: ast.RegoV2,
+			imports:     []string{"rego.v2"},
+			query:       "input.a or input.b",
+			allowed:     true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			rs, err := New(
+				Query(tc.query),
+				Imports(tc.imports),
+				SetRegoVersion(tc.regoVersion),
+				Input(map[string]any{"a": true, "b": false}),
+			).Eval(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rs.Allowed() != tc.allowed {
+				t.Fatalf("expected allowed %v but got %v", tc.allowed, rs)
+			}
+		})
+	}
+}
+
+func TestPartialSupportModulesWithRegoV2Import(t *testing.T) {
+	module := `package test
+		import rego.v2
+		
+		p if { q }
+		
+		q if input.a or input.b
+		
+		q if not { input.c; input.d }
+	`
+
+	tests := []struct {
+		note        string
+		regoVersion ast.RegoVersion
+		exp         string
+	}{
+		{
+			note:        "v1",
+			regoVersion: ast.RegoV1,
+			exp: `package partial.test
+
+import future.keywords.not
+import future.keywords.or
+
+q if not { input.c; input.d }
+
+q if input.a or input.b
+`,
+		},
+		{
+			note:        "v0",
+			regoVersion: ast.RegoV0,
+			exp: `package partial.test
+
+import future.keywords.not
+import future.keywords.or
+import rego.v1
+
+q if not { input.c; input.d }
+
+q if input.a or input.b
+`,
+		},
+		{
+			note:        "v2",
+			regoVersion: ast.RegoV2,
+			exp: `package partial.test
+
+q if not { input.c; input.d }
+
+q if input.a or input.b
+`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			pq, err := New(
+				Query("data.test.p = true"),
+				Module("test.rego", module),
+				Unknowns([]string{"input"}),
+				SetRegoVersion(tc.regoVersion),
+			).PrepareForPartial(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			pqs, err := pq.Partial(t.Context(), EvalDisableInlining([]ast.Ref{ast.MustParseRef("data.test.q")}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(pqs.Support) != 1 {
+				t.Fatalf("expected one support module but got %v", pqs.Support)
+			}
+
+			// Support modules are marshalled as in internal/presentation.
+			support := pqs.Support[0]
+			bs, err := format.AstWithOpts(support, format.Opts{IgnoreLocations: true, RegoVersion: support.RegoVersion()})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(bs) != tc.exp {
+				t.Fatalf("expected:\n\n%s\n\nbut got:\n\n%s", tc.exp, bs)
+			}
+
+			if _, err := ast.ParseModuleWithOpts("support.rego", string(bs), ast.ParserOptions{RegoVersion: tc.regoVersion}); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestPrepareForEvalPartialEvalPreservesRuntime(t *testing.T) {
+	runtime := ast.ObjectTerm(ast.Item(ast.StringTerm("foo"), ast.StringTerm("bar")))
+
+	for _, partial := range []bool{false, true} {
+		t.Run(fmt.Sprintf("partial=%v", partial), func(t *testing.T) {
+			var opts []PrepareOption
+			if partial {
+				opts = append(opts, WithPartialEval())
+			}
+
+			pq, err := New(
+				Query("data.test.x"),
+				Runtime(runtime),
+				Module("test.rego", "package test\n\nx := opa.runtime().foo"),
+			).PrepareForEval(t.Context(), opts...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			rs, err := pq.Eval(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(rs) != 1 || rs[0].Expressions[0].Value != "bar" {
+				t.Fatalf("expected \"bar\", got %v", rs)
+			}
+		})
+	}
+}
+
+type countingPrintHook struct{ calls int }
+
+func (h *countingPrintHook) Print(print.Context, string) error {
+	h.calls++
+	return nil
+}
+
+func TestPrepareForEvalPartialEvalPreservesEvalOptions(t *testing.T) {
+	input := map[string]any{"a": "abc"}
+
+	tests := []struct {
+		note   string
+		module string
+		setup  func() (opts []func(*Rego), check func(*testing.T, ResultSet, error))
+	}{
+		{
+			note:   "strict builtin errors",
+			module: "package test\n\nx := to_number(input.a)",
+			setup: func() ([]func(*Rego), func(*testing.T, ResultSet, error)) {
+				return []func(*Rego){StrictBuiltinErrors(true)}, func(t *testing.T, _ ResultSet, err error) {
+					if err == nil {
+						t.Fatal("expected builtin error")
+					}
+				}
+			},
+		},
+		{
+			note:   "builtin error list",
+			module: "package test\n\nx := to_number(input.a)",
+			setup: func() ([]func(*Rego), func(*testing.T, ResultSet, error)) {
+				var errs []topdown.Error
+				return []func(*Rego){BuiltinErrorList(&errs)}, func(t *testing.T, _ ResultSet, err error) {
+					if err != nil {
+						t.Fatal(err)
+					}
+					if len(errs) != 1 {
+						t.Fatalf("expected 1 collected error, got %d", len(errs))
+					}
+				}
+			},
+		},
+		{
+			note:   "print hook",
+			module: "package test\n\nx if print(input.a)",
+			setup: func() ([]func(*Rego), func(*testing.T, ResultSet, error)) {
+				hook := &countingPrintHook{}
+				return []func(*Rego){EnablePrintStatements(true), PrintHook(hook)}, func(t *testing.T, _ ResultSet, err error) {
+					if err != nil {
+						t.Fatal(err)
+					}
+					if hook.calls != 1 {
+						t.Fatalf("expected 1 print call, got %d", hook.calls)
+					}
+				}
+			},
+		},
+		{
+			note:   "generate json",
+			module: "package test\n\nx := input.a",
+			setup: func() ([]func(*Rego), func(*testing.T, ResultSet, error)) {
+				gen := GenerateJSON(func(*ast.Term, *EvalContext) (any, error) { return "custom", nil })
+				return []func(*Rego){gen}, func(t *testing.T, rs ResultSet, err error) {
+					if err != nil {
+						t.Fatal(err)
+					}
+					if len(rs) != 1 || rs[0].Expressions[0].Value != "custom" {
+						t.Fatalf("expected \"custom\", got %v", rs)
+					}
+				}
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		for _, partial := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/partial=%v", tc.note, partial), func(t *testing.T) {
+				opts, check := tc.setup()
+
+				var prepOpts []PrepareOption
+				if partial {
+					prepOpts = append(prepOpts, WithPartialEval())
+				}
+
+				pq, err := New(append(opts, Query("data.test.x"), Module("test.rego", tc.module))...).
+					PrepareForEval(t.Context(), prepOpts...)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				rs, err := pq.Eval(t.Context(), EvalInput(input))
+				check(t, rs, err)
+			})
+		}
+	}
+}
+
+// The residual of an `every` over a known domain has to select the same inputs as
+// evaluating the policy does, for undefined values too, with both kinds of `not`.
+func TestPartialEveryMatchesEval(t *testing.T) {
+	bodies := []string{
+		`every p in input.ps { not input.x[p] > 3 }`,
+		`every p in input.ps { input.x[p] > 3 }`,
+		`every p in input.ps { not input.x[p] == 1 }`,
+		`every p in input.ps { input.x[p] != 1 }`,
+		"every p in input.ps {\n\t\tinput.x[p] > 0\n\t\tnot input.x[p] > 3\n\t}",
+		`every p in input.ps { not input.x[p] }`,
+		"every k, v in input.ps {\n\t\tk != 7\n\t\tnot input.x[v] > 3\n\t}",
+		"every k, v in input.ps {\n\t\tv != 7\n\t\tinput.x[k] > 3\n\t}",
+		`every v in {y | some y in input.ps} { not input.x[v] > 3 }`,
+		"every k, v in {y | some y in input.ps} {\n\t\tv != 7\n\t\tinput.x[k] > 3\n\t}",
+		"x := input.x\n\tevery p in input.ps { not x[p] > 3 }",
+		"x := input.x\n\tevery p in input.ps { x[p] > 3 }",
+	}
+	headers := map[string]string{"not": "", "improved not": "import future.keywords.not\n"}
+
+	var docs []map[string]any
+	values := []any{nil, 1, 5, false}
+	for _, a := range values {
+		for _, b := range values {
+			x := map[string]any{}
+			if a != nil {
+				x["a"] = a
+			}
+			if b != nil {
+				x["b"] = b
+			}
+			docs = append(docs, map[string]any{"x": x}, map[string]any{}) // x without keys, and no x at all
+		}
+	}
+
+	ctx := t.Context()
+	for name, header := range headers {
+		for _, body := range bodies {
+			src := "package test\n" + header + "p if {\n\t" + body + "\n}\n"
+			// the domain: arrays, and objects, from which a set is made as well
+			for _, ps := range []any{
+				[]any{}, []any{"a"}, []any{"c"}, []any{"a", "b"}, []any{"a", "b", "c"},
+				map[string]any{}, map[string]any{"a": "b"}, map[string]any{"a": "b", "b": "a"}, map[string]any{"c": "a", "a": "c"},
+			} {
+				pq, err := New(
+					Module("test.rego", src),
+					Query("data.test.p"),
+					Input(map[string]any{"ps": ps}),
+					Unknowns([]string{"input.x"}),
+				).Partial(ctx)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				for _, q := range pq.Queries {
+					if slices.ContainsFunc(q, (*ast.Expr).IsEvery) {
+						t.Errorf("%s: %q with ps %v: not unrolled: %v", name, body, ps, q)
+					}
+				}
+
+				for _, doc := range docs {
+					// With the improved `not`, partial evaluation drops `x := input.x` when x is
+					// only used inside negations, and with it the need for input.x to exist; it does
+					// for a plain `not` too.
+					if _, ok := doc["x"]; !ok && name == "improved not" && strings.HasPrefix(body, "x := ") {
+						continue
+					}
+					input := map[string]any{"ps": ps}
+					maps.Copy(input, doc)
+
+					rs, err := New(Module("test.rego", src), Query("data.test.p"), Input(input)).Eval(ctx)
+					if err != nil {
+						t.Fatal(err)
+					}
+					want := len(rs) > 0 && rs[0].Expressions[0].Value == true
+
+					// A query is evaluated as the body of a rule, as a bare comparison is a
+					// result even when it is false.
+					got := false
+					for _, q := range pq.Queries {
+						if len(q) == 0 { // always true
+							got = true
+							continue
+						}
+						opts := []func(*Rego){
+							Module("residual.rego", "package residual\n"+header+"r if {\n"+q.String()+"\n}\n"),
+							Query("data.residual.r"),
+							Input(input),
+						}
+						for _, m := range pq.Support {
+							opts = append(opts, ParsedModule(m))
+						}
+						rs, err := New(opts...).Eval(ctx)
+						if err != nil {
+							t.Fatal(err)
+						}
+						got = got || (len(rs) > 0 && rs[0].Expressions[0].Value == true)
+					}
+					if got != want {
+						t.Errorf("%s: %q with ps %v and input %v: residual %v, eval %v\nresidual: %v", name, body, ps, doc, got, want, pq.Queries)
+					}
+				}
+			}
+		}
 	}
 }

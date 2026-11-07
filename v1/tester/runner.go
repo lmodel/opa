@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"regexp"
 	"runtime"
@@ -24,13 +25,16 @@ import (
 	wasm_errors "github.com/open-policy-agent/opa/internal/wasm/sdk/opa/errors"
 	"github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/bundle"
+	"github.com/open-policy-agent/opa/v1/cover"
 	"github.com/open-policy-agent/opa/v1/loader"
 	"github.com/open-policy-agent/opa/v1/metrics"
 	"github.com/open-policy-agent/opa/v1/rego"
 	"github.com/open-policy-agent/opa/v1/storage"
 	"github.com/open-policy-agent/opa/v1/storage/inmem"
 	"github.com/open-policy-agent/opa/v1/topdown"
+	"github.com/open-policy-agent/opa/v1/topdown/builtins"
 	"github.com/open-policy-agent/opa/v1/util"
+	"github.com/open-policy-agent/opa/v1/util/channel"
 )
 
 // TestPrefix declares the prefix for all test rules.
@@ -55,11 +59,7 @@ func RunWithFilter(ctx context.Context, _ loader.Filter, paths ...string) ([]*Re
 	if err != nil {
 		return nil, err
 	}
-	result := []*Result{}
-	for r := range ch {
-		result = append(result, r)
-	}
-	return result, nil
+	return channel.Collect(ch), nil
 }
 
 type SubResult struct {
@@ -72,9 +72,10 @@ type SubResult struct {
 type SubResultMap map[string]*SubResult
 
 func (srm SubResultMap) Update(path ast.Array, trace []*topdown.Event) bool {
+	buf := new(bytes.Buffer)
 	strPath := make([]string, path.Len())
 	for i := range path.Len() {
-		strPath[i] = termToString(path.Elem(i))
+		strPath[i] = termToString(buf, path.Elem(i))
 	}
 	return srm.update(strPath, 0, trace)
 }
@@ -101,7 +102,6 @@ func (srm SubResultMap) update(path []string, i int, trace []*topdown.Event) boo
 	}
 
 	fail := entry.SubResults.update(path, i+1, trace)
-
 	if fail {
 		entry.Fail = true
 	}
@@ -129,22 +129,17 @@ func (pm prefixMatchers) AnyPrefixMatcher(prefix ast.Ref) bool {
 	})
 }
 
-func termToString(t *ast.Term) string {
-	ti, err := ast.ValueToInterface(t.Value, unknownResolver{})
-	if err != nil {
-		return "INVALID"
-	}
-	var str string
-	var ok bool
-	if str, ok = ti.(string); !ok {
-		var buf bytes.Buffer
-		if err := json.NewEncoder(&buf).Encode(ti); err != nil {
-			return "INVALID"
+func termToString(buf *bytes.Buffer, t *ast.Term) string {
+	if ti, err := ast.ValueToInterface(t.Value, unknownResolver{}); err == nil {
+		if str, ok := ti.(string); ok {
+			return str
 		}
-		str = strings.TrimSpace(buf.String())
+		buf.Reset()
+		if err := json.NewEncoder(buf).Encode(ti); err == nil {
+			return strings.TrimSpace(buf.String())
+		}
 	}
-
-	return str
+	return "INVALID"
 }
 
 // Result represents a single test case result.
@@ -173,6 +168,56 @@ func newResult(loc *ast.Location, pkg, name string, duration time.Duration, trac
 		Output:     output,
 		SubResults: SubResultMap{},
 	}
+}
+
+// resultError mirrors the JSON shape *topdown.Error marshals to, which is the
+// form errors take in the output of `opa test --format json`.
+type resultError struct {
+	Code       string             `json:"code,omitempty"`
+	Message    string             `json:"message,omitempty"`
+	Location   *ast.Location      `json:"location,omitempty"`
+	StackTrace topdown.StackTrace `json:"stack_trace,omitempty"`
+}
+
+func (e *resultError) error() error {
+	if e == nil {
+		return nil
+	}
+
+	if e.Code != "" {
+		return &topdown.Error{
+			Code:       e.Code,
+			Message:    e.Message,
+			Location:   e.Location,
+			StackTrace: e.StackTrace,
+		}
+	}
+
+	return errors.New(e.Message)
+}
+
+// resultAlias drops the methods of Result so that unmarshalling into it below
+// doesn't recurse. The anonymous struct shadows the embedded error interface
+// field, which is marshallable but not unmarshallable, with a concrete type.
+type resultAlias Result
+
+// UnmarshalJSON reads back the JSON produced for a Result. Marshalling is left
+// to the default encoder so that existing output is unchanged.
+func (r *Result) UnmarshalJSON(bs []byte) error {
+	aux := struct {
+		*resultAlias
+		Error *resultError `json:"error,omitempty"`
+	}{
+		resultAlias: (*resultAlias)(r),
+	}
+
+	if err := json.Unmarshal(bs, &aux); err != nil {
+		return err
+	}
+
+	r.Error = aux.Error.error()
+
+	return nil
 }
 
 // Pass returns true if the test case passed.
@@ -277,9 +322,14 @@ type Runner struct {
 	compiler              *ast.Compiler
 	store                 storage.Store
 	cover                 topdown.QueryTracer
+	coverNoIndex          *cover.Cover
+	coverNoEarlyExit      *cover.Cover
+	coverageRuns          []cover.Kind
+	coverRunsRegistered   bool
 	trace                 bool
 	enablePrintStatements bool
 	raiseBuiltinErrors    bool
+	stackTraces           bool
 	runtime               *ast.Term
 	timeout               time.Duration
 	modules               map[string]*ast.Module
@@ -290,14 +340,19 @@ type Runner struct {
 	customBuiltins        []*Builtin
 	defaultRegoVersion    ast.RegoVersion
 	parallel              int
+	// seed, when set, seeds non-deterministic builtins via rego.EvalSeed
+	// across all coverage passes, making their results reproducible.
+	seed io.Reader
 }
 
 // NewRunner returns a new runner.
 func NewRunner() *Runner {
 	return &Runner{
-		timeout:            5 * time.Second,
-		defaultRegoVersion: ast.DefaultRegoVersion,
-		parallel:           runtime.NumCPU(),
+		enablePrintStatements: true,
+		timeout:               5 * time.Second,
+		defaultRegoVersion:    ast.DefaultRegoVersion,
+		parallel:              runtime.NumCPU(),
+		coverageRuns:          []cover.Kind{cover.KindIndexExcluded, cover.KindEarlyExit},
 	}
 }
 
@@ -332,6 +387,13 @@ func (r *Runner) RaiseBuiltinErrors(enabled bool) *Runner {
 	return r
 }
 
+// StackTraces sets the runner to record the stack of queries being evaluated
+// when a test errors, reported as topdown.Error.StackTrace.
+func (r *Runner) StackTraces(enabled bool) *Runner {
+	r.stackTraces = enabled
+	return r
+}
+
 type Builtin struct {
 	Decl *ast.Builtin
 	Func func(*rego.Rego)
@@ -356,24 +418,37 @@ func (r *Runner) SetCoverageTracer(tracer topdown.Tracer) *Runner {
 		return r
 	}
 	if qt, ok := tracer.(topdown.QueryTracer); ok {
-		r.cover = qt
-	} else {
-		r.cover = topdown.WrapLegacyTracer(tracer)
+		return r.SetCoverageQueryTracer(qt)
 	}
-	return r
+	return r.SetCoverageQueryTracer(topdown.WrapLegacyTracer(tracer))
 }
 
-// SetCoverageQueryTracer sets the tracer to use to compute coverage.
+// SetCoverageQueryTracer sets the tracer to use to compute coverage. If
+// tracer is a *cover.Cover, the runner also evaluates each test with rule
+// indexing and early exit disabled, tagging any extra coverage they reveal.
+// Which of those supplementary passes run is controlled by SetCoverageRuns.
 func (r *Runner) SetCoverageQueryTracer(tracer topdown.QueryTracer) *Runner {
 	if tracer == nil {
 		return r
 	}
 	r.cover = tracer
+	r.coverRunsRegistered = false
+	return r
+}
+
+// SetCoverageRuns sets which supplementary coverage passes run when the
+// coverage tracer is a *cover.Cover. Each pass re-evaluates tests with an
+// optimization disabled (rule indexing for KindIndexExcluded, early exit for
+// KindEarlyExit) to tag the extra not-covered ranges it reveals. A subset, or
+// an empty slice, skips the unwanted passes and their cost.
+func (r *Runner) SetCoverageRuns(kinds []cover.Kind) *Runner {
+	r.coverageRuns = kinds
 	return r
 }
 
 // CapturePrintOutput captures print() call outputs during evaluation and
-// includes the output in test results.
+// includes the output in test results. If not set, defaults to true. Print
+// output is always disabled in benchmarks.
 func (r *Runner) CapturePrintOutput(yes bool) *Runner {
 	r.enablePrintStatements = yes
 	return r
@@ -385,6 +460,9 @@ func (r *Runner) EnableTracing(yes bool) *Runner {
 	r.trace = yes
 	if r.trace {
 		r.cover = nil
+		r.coverNoIndex = nil
+		r.coverNoEarlyExit = nil
+		r.coverRunsRegistered = false
 	}
 	return r
 }
@@ -452,7 +530,7 @@ func (r *Runner) Run(ctx context.Context, modules map[string]*ast.Module) (chan 
 // RunTests executes tests found in either modules or bundles loaded on the runner.
 // Test results are sent as they complete and may arrive in any order.
 func (r *Runner) RunTests(ctx context.Context, txn storage.Transaction) (chan *Result, error) {
-	return r.runTests(ctx, txn, true, r.runTest, r.parallel)
+	return r.runTests(ctx, txn, r.enablePrintStatements, r.runTest, r.parallel)
 }
 
 // RunBenchmarks executes tests similar to tester.Runner#RunTests but will repeat
@@ -515,7 +593,7 @@ func (r *Runner) setupTestRun(ctx context.Context, txn storage.Transaction, enab
 
 		// Activate the bundle(s) to get their info and policies into the store
 		// the actual compiled policies will be overwritten later.
-		opts := &bundle.ActivateOpts{
+		err := bundle.Activate(&bundle.ActivateOpts{
 			Ctx:           ctx,
 			Store:         r.store,
 			Txn:           txn,
@@ -523,8 +601,7 @@ func (r *Runner) setupTestRun(ctx context.Context, txn storage.Transaction, enab
 			Metrics:       metrics.New(),
 			Bundles:       r.bundles,
 			ParserOptions: ast.ParserOptions{RegoVersion: r.defaultRegoVersion},
-		}
-		err := bundle.Activate(opts)
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -548,6 +625,23 @@ func (r *Runner) setupTestRun(ctx context.Context, txn storage.Transaction, enab
 }
 
 func (r *Runner) runTests(ctx context.Context, txn storage.Transaction, enablePrintStatements bool, runFunc run, parallel int) (chan *Result, error) {
+	// Register the supplementary coverage passes on the baseline *cover.Cover,
+	// honoring the kinds set by SetCoverageRuns. Doing it here (rather than in
+	// the setters) keeps SetCoverageQueryTracer and SetCoverageRuns
+	// order-independent; the guard stops repeated runs (RunBenchmarks or a
+	// --count loop reusing the runner) from registering the passes twice.
+	if cc, ok := r.cover.(*cover.Cover); ok && !r.coverRunsRegistered {
+		if slices.Contains(r.coverageRuns, cover.KindIndexExcluded) {
+			r.coverNoIndex = cover.New()
+			cc.AddRun(cover.KindIndexExcluded, r.coverNoIndex)
+		}
+		if slices.Contains(r.coverageRuns, cover.KindEarlyExit) {
+			r.coverNoEarlyExit = cover.New()
+			cc.AddRun(cover.KindEarlyExit, r.coverNoEarlyExit)
+		}
+		r.coverRunsRegistered = true
+	}
+
 	testRegex, err := r.setupTestRun(ctx, txn, enablePrintStatements)
 	if err != nil {
 		return nil, err
@@ -674,8 +768,6 @@ func rewriteDuplicateTestNames(compiler *ast.Compiler) *ast.Error {
 	return nil
 }
 
-var testCaseFuncRef = ast.InternalTestCase.Ref()
-
 // injectTestCaseFunc will inject a call to the 'internal.test_case' function into partial-object test rules.
 // We attempt to find the earliest point in the rule body where we can inject the call, to ensure that the test-case
 // function is called as early as possible so that we capture as many failed test cases as possible.
@@ -725,7 +817,7 @@ func injectTestCaseFunc(compiler *ast.Compiler) *ast.Error {
 			// Only apply to rules that doesn't have manual use of the test-case function
 			manualCall := false
 			ast.WalkExprs(rule.Body, func(expr *ast.Expr) bool {
-				if expr.IsCall() && expr.Operator().Equal(testCaseFuncRef) {
+				if expr.IsCall() && expr.Operator().Equal(ast.Interned.Refs.InternalTestCase) {
 					manualCall = true
 					return true
 				}
@@ -795,7 +887,7 @@ func injectTestCaseFunc(compiler *ast.Compiler) *ast.Error {
 							}
 
 							highest := 0
-							lowest.Iter(func(k ast.Var, v int) bool {
+							lowest.Iter(func(_ ast.Var, v int) bool {
 								if v > highest {
 									highest = v
 								}
@@ -836,7 +928,7 @@ func injectTestCaseFunc(compiler *ast.Compiler) *ast.Error {
 
 			// Find the earliest point where the test case function can be injected
 			injectBelow := -1
-			injectBelowMap.Iter(func(k, v ast.Value) bool {
+			injectBelowMap.Iter(func(_, v ast.Value) bool {
 				if n, err := strconv.Atoi(string(v.(ast.Number))); err == nil {
 					if n > injectBelow {
 						injectBelow = n
@@ -846,7 +938,8 @@ func injectTestCaseFunc(compiler *ast.Compiler) *ast.Error {
 			})
 
 			testCaseFuncExpr := ast.NewExpr([]*ast.Term{
-				ast.NewTerm(ast.InternalTestCase.Ref()),
+				// Copied, as later compiler stages rewrite this body in place.
+				ast.NewTerm(ast.Interned.Refs.InternalTestCase.Copy()),
 				ast.NewTerm(args),
 			})
 
@@ -934,14 +1027,10 @@ func (r *Runner) runTest(ctx context.Context, txn storage.Transaction, mod *ast.
 	if r.trace {
 		bufferTracer = topdown.NewBufferTracer()
 		tracers = append(tracers, bufferTracer)
-	} else {
+	} else if rule.Head.DocKind() == ast.PartialObjectDoc {
 		t := NewTestQueryTracer()
 		tracers = append(tracers, t)
 		bufferTracer = &t.BufferTracer
-	}
-
-	if r.cover != nil {
-		tracers = append(tracers, r.cover)
 	}
 
 	printbuf := bytes.NewBuffer(nil)
@@ -956,11 +1045,14 @@ func (r *Runner) runTest(ctx context.Context, txn storage.Transaction, mod *ast.
 		rego.Runtime(r.runtime),
 		rego.Target(r.target),
 		rego.PrintHook(topdown.NewPrintHook(printbuf)),
-		rego.BuiltinErrorList(&builtinErrors),
+		rego.StackTraces(r.stackTraces),
 	}
 
-	for _, t := range tracers {
-		opts = append(opts, rego.QueryTracer(t))
+	// Only collect built-in errors when they will be reported below. Supplying
+	// the list unconditionally makes the evaluator hold on to every error a test
+	// raises, and annotate each with a stack trace nothing reads.
+	if r.raiseBuiltinErrors {
+		opts = append(opts, rego.BuiltinErrorList(&builtinErrors))
 	}
 
 	rg := rego.New(opts...)
@@ -973,7 +1065,51 @@ func (r *Runner) runTest(ctx context.Context, txn storage.Transaction, mod *ast.
 	ctx = ast.WithCompiler(ctx, r.compiler)
 
 	t0 := time.Now()
-	rs, err := rg.Eval(ctx)
+
+	// Tracers are passed as EvalOptions below, so only the baseline pass
+	// feeds bufferTracer/TestQueryTracer/r.cover; the supplementary passes
+	// use their own tracer and options.
+	var rs rego.ResultSet
+	pq, err := rg.PrepareForEval(ctx)
+	if err == nil {
+		evalOpts := make([]rego.EvalOption, 0, len(tracers)+4)
+		evalOpts = append(evalOpts, rego.EvalTransaction(txn))
+		if r.seed != nil {
+			evalOpts = append(evalOpts, rego.EvalSeed(r.seed))
+		}
+		for _, t := range tracers {
+			evalOpts = append(evalOpts, rego.EvalQueryTracer(t))
+		}
+		var ndbc builtins.NDBCache
+		if r.cover != nil {
+			evalOpts = append(evalOpts, rego.EvalQueryTracer(r.cover))
+			// Share one non-deterministic builtin cache across all three passes so they take the same path.
+			ndbc = builtins.NDBCache{}
+			evalOpts = append(evalOpts, rego.EvalNDBuiltinCache(ndbc))
+		}
+		rs, err = pq.Eval(ctx, evalOpts...)
+		if err == nil {
+			// Results and errors here are discarded. A supplementary
+			// run is only used for coverage data. We might consider tracking
+			// errors in future if needed.
+			supplementaryBase := []rego.EvalOption{rego.EvalTransaction(txn)}
+			if r.seed != nil {
+				supplementaryBase = append(supplementaryBase, rego.EvalSeed(r.seed))
+			}
+			if r.coverNoIndex != nil {
+				_, _ = pq.Eval(
+					ctx,
+					append(supplementaryBase, cover.NoIndexingEvalOptions(r.coverNoIndex, ndbc)...)...,
+				)
+			}
+			if r.coverNoEarlyExit != nil {
+				_, _ = pq.Eval(
+					ctx,
+					append(supplementaryBase, cover.NoEarlyExitEvalOptions(r.coverNoEarlyExit, ndbc)...)...,
+				)
+			}
+		}
+	}
 	dt := time.Since(t0)
 
 	var trace []*topdown.Event
@@ -1018,12 +1154,10 @@ func subResults(v any, trace []*topdown.Event) (bool, map[string]*SubResult) {
 	var fail bool
 	result := SubResultMap{}
 
-	switch x := v.(type) {
-	case map[string]any:
+	if x, ok := v.(map[string]any); ok {
 		for k, v := range x {
-			sr := subResult(k, v)
-			result[k] = sr
-			if sr.Fail {
+			result[k] = subResult(k, v)
+			if result[k].Fail {
 				fail = true
 			}
 		}
@@ -1097,11 +1231,13 @@ func subResult(n string, v any) *SubResult {
 }
 
 func (r *Runner) runBenchmark(ctx context.Context, txn storage.Transaction, mod *ast.Module, rule *ast.Rule, options BenchmarkOptions) (*Result, bool) {
-	_, rf := ruleName(rule.Head)
+	ruleName, rf := ruleName(rule.Head)
+
 	tr := &Result{
 		Location: rule.Loc(),
 		Package:  mod.Package.Path.String(),
 		Name:     rf.String(), // TODO(sr): test
+		Skip:     strings.HasPrefix(ruleName, SkipTestPrefix),
 	}
 
 	var stop bool

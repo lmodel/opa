@@ -15,13 +15,11 @@ This error is raised when multiple `default` rules are found for a single rule.
 
 ## Examples
 
-A trivial example of a policy that contains this error is this one, where we have two `default`s
-defined for the `allow` rule:
+A trivial example of a policy that contains this error is this one, where two `default`s are defined
+for the `allow` rule:
 
 ```rego
 package policy
-
-import rego.v1
 
 default allow := false
 
@@ -40,16 +38,12 @@ example:
 # main.rego
 package policy
 
-import rego.v1
-
 default allow := false
 ```
 
 ```rego
 # admin.rego
 package policy
-
-import rego.v1
 
 default allow := false
 
@@ -58,11 +52,11 @@ allow if {
 }
 ```
 
-If we were to run OPA loading these two files, we would see the error:
+Running OPA loading these two files produces the error:
 
 ```shell
 $ opa run -s *.rego
-... admin.rego:5: rego_type_error: multiple default rules data.policy.allow found
+... admin.rego:3: rego_type_error: multiple default rules data.policy.allow found
 ```
 
 ## How To Fix It
@@ -70,5 +64,5 @@ $ opa run -s *.rego
 In almost all cases, if you have an error like this: `multiple default rules data.policy.allow found`,
 searching for `default allow` in your Rego files will show up the various duplicates.
 
-Just remember that they could be spread across multiple files, and you want to make sure to check only
-within the package in the error message, `policy` in our example above.
+Remember that they could be spread across multiple files, and you want to make sure to check only
+within the package in the error message, `policy` in the example above.

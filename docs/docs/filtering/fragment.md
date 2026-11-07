@@ -21,7 +21,7 @@ For a step-by-step walkthrough of evaluating a Rego policy _partially_, see [Eva
 
 The translation of data policies into queries (like SQL WHERE clauses) is driven by _partial evaluation (PE)_ of a Rego query.
 
-> With partial evaluation, callers specify that certain inputs or pieces of data are _unknown_. OPA evaluates as much of the policy as possible without touching parts that depend on unknown values.<sup>[1](https://blog.openpolicyagent.org/partial-evaluation-162750eaf422)</sup>
+> With partial evaluation, callers specify that certain inputs or pieces of data are _unknown_. OPA evaluates as much of the policy as possible without touching parts that depend on unknown values.<sup>[1](/blog/partial-evaluation-162750eaf422)</sup>
 
 The _unknown_ values that remain during partial evaluation represent the pieces of data that represent your filter.
 
@@ -31,7 +31,7 @@ When only _known_ values are used, **you can use all of Rego.**
 
 ## Example Preamble
 
-In our running example, we'll assume a table `fruits` with columns `name`, `colour`, and `price`. These **unknown values** are represented with `input.<TABLE>.<COLUMN>` e.g. `input.fruits.name`
+In this running example, assume a table `fruits` exists with columns `name`, `colour`, and `price`.
 
 ```mermaid
 erDiagram
@@ -42,7 +42,29 @@ erDiagram
     }
 ```
 
-Our data filters also depend on user information. These **known values** are represented with `input.user`
+## Context data for Partial Evaluation
+
+### Unknowns: database rows
+
+Database rows are **unknown** at policy evaluation time — OPA does not have access to the database. They are represented in Rego using the convention `input.<TABLE>.<COLUMN>`, e.g. `input.fruits.name` refers to the `name` column of the `fruits` table.
+
+The **METADATA annotation** on the policy package declares which `input` paths are unknown. OPA uses this to know which parts of the policy to leave as conditions rather than evaluate:
+
+```rego title="policy.rego"
+# METADATA
+# scope: package
+# compile:
+#   unknowns: [input.fruits]
+package filters
+
+include if input.fruits.name == "banana"
+```
+
+With `input.fruits` declared as unknown, OPA will not try to resolve `input.fruits.name` during partial evaluation — instead it becomes a column reference in the output SQL.
+
+### Known values: request context
+
+Our data filters also depend on user information. These **known values** are sent to OPA as input at query time and will be substituted during partial evaluation:
 
 ```json
 {
@@ -52,6 +74,8 @@ Our data filters also depend on user information. These **known values** are rep
   "budget": 10
 }
 ```
+
+They are referenced in the policy as `input.user`, e.g. `input.user.budget`. Because they are not listed in `unknowns`, OPA resolves them to their concrete values during partial evaluation.
 
 ## Simple comparisons
 
@@ -174,7 +198,7 @@ If your filtering rules use other built-ins with _known values_, that's OK -- se
 
 Many Rego constructs are available for building filters, with certain restrictions:
 
-1. `every` may not be used with _unknown_ values
+1. `every` may not be used with _unknown_ values, unless it ranges over a known collection (see [`every`](../policy-reference/keywords/every#partial-evaluation))
 2. `default` rules (or functions) may not be used in combination with _unknown_ values
 
 Nonetheless, you can use rules and functions to structure your policy, as long as these restrictions are observed:

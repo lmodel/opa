@@ -34,19 +34,32 @@ import (
 
 // NewOCI returns a new Downloader that can be started.
 func NewOCI(config Config, client rest.Client, path, storePath string) *OCIDownloader {
+	localStoreIsTemp := false
+	if storePath == "" {
+		var err error
+		storePath, err = os.MkdirTemp("", "opa-oci-*")
+		if err != nil {
+			panic(err)
+		}
+		localStoreIsTemp = true
+	}
+
 	localstore, err := oci.New(storePath)
 	if err != nil {
+		if localStoreIsTemp {
+			_ = os.RemoveAll(storePath)
+		}
 		panic(err)
 	}
 	return &OCIDownloader{
-		config:         config,
-		path:           path,
-		localStorePath: storePath,
-		client:         client,
-		trigger:        make(chan chan struct{}),
-		stop:           make(chan chan struct{}),
-		logger:         client.Logger(),
-		store:          localstore,
+		config:           config,
+		path:             path,
+		localStorePath:   storePath,
+		localStoreIsTemp: localStoreIsTemp,
+		client:           client,
+		stop:             make(chan chan struct{}),
+		logger:           client.Logger(),
+		store:            localstore,
 	}
 }
 
@@ -99,17 +112,24 @@ func (d *OCIDownloader) SetCache(etag string) {
 // Trigger can be used to control when the downloader attempts to download
 // a new bundle in manual triggering mode.
 func (d *OCIDownloader) Trigger(ctx context.Context) error {
-	done := make(chan error)
+	d.stateMtx.Lock()
+	if d.stopped {
+		d.stateMtx.Unlock()
+		return errors.New("downloader stopped")
+	}
+	d.triggerWG.Add(1)
+	d.stateMtx.Unlock()
+
+	done := make(chan error, 1)
 
 	go func() {
+		defer d.triggerWG.Done()
+
 		err := d.oneShot(ctx)
 		if err != nil {
 			d.logger.Error("OCI - Bundle download failed: %v.", err)
-			if ctx.Err() == nil {
-				done <- err
-			}
 		}
-		close(done)
+		done <- err
 	}()
 
 	select {
@@ -129,20 +149,29 @@ func (d *OCIDownloader) Start(ctx context.Context) {
 
 // Stop tells the Downloader to stop downloading bundles.
 func (d *OCIDownloader) Stop(context.Context) {
-	if *d.config.Trigger == plugins.TriggerManual {
+	d.stopOnce.Do(func() {
+		d.stateMtx.Lock()
+		d.stopped = true
+		d.stateMtx.Unlock()
+
+		if *d.config.Trigger == plugins.TriggerPeriodic {
+			done := make(chan struct{})
+			d.stop <- done
+			<-done
+		}
+
+		d.triggerWG.Wait()
+		d.cleanupLocalStore()
+	})
+}
+
+func (d *OCIDownloader) cleanupLocalStore() {
+	if !d.localStoreIsTemp {
 		return
 	}
-
-	d.mtx.Lock()
-	defer d.mtx.Unlock()
-
-	if d.stopped {
-		return
+	if err := os.RemoveAll(d.localStorePath); err != nil {
+		d.logger.Error("OCI - Failed to remove temporary store %q: %v.", d.localStorePath, err)
 	}
-
-	done := make(chan struct{})
-	d.stop <- done
-	<-done
 }
 
 func (d *OCIDownloader) doStart(context.Context) {
@@ -155,7 +184,6 @@ func (d *OCIDownloader) doStart(context.Context) {
 	done := <-d.stop // blocks until there's something to read
 	cancel()
 	d.wg.Wait()
-	d.stopped = true
 	close(done)
 }
 
@@ -229,6 +257,8 @@ func (d *OCIDownloader) download(ctx context.Context, m metrics.Metrics) (*downl
 	d.client = d.client.WithHeader("Prefer", preferValue)
 
 	m.Timer(metrics.BundleRequest).Start()
+	defer m.Timer(metrics.BundleRequest).Stop()
+
 	desc, err := d.pull(ctx, d.path)
 	if err != nil {
 		return &downloaderResponse{}, fmt.Errorf("failed to pull %s: %w", d.path, err)
@@ -239,14 +269,8 @@ func (d *OCIDownloader) download(ctx context.Context, m metrics.Metrics) (*downl
 		return nil, err
 	}
 
-	tarballDescriptor := ocispec.Descriptor{}
-	for _, descriptor := range manifest.Layers {
-		if descriptor.MediaType == "application/vnd.oci.image.layer.v1.tar+gzip" {
-			tarballDescriptor = descriptor
-			break
-		}
-	}
-	if tarballDescriptor.MediaType == "" {
+	tarballDescriptor, ok := bundleLayer(manifest)
+	if !ok {
 		return nil, errors.New("no tarball descriptor found in the layers")
 	}
 	etag := tarballDescriptor.Digest.Hex()
@@ -261,27 +285,39 @@ func (d *OCIDownloader) download(ctx context.Context, m metrics.Metrics) (*downl
 		}, nil
 	}
 	fileReader, err := os.Open(bundleFilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer fileReader.Close()
 
 	cnt := &count{}
 	r := io.TeeReader(fileReader, cnt)
 	tee := io.TeeReader(r, &buf)
 
-	if err != nil {
-		return nil, err
-	}
 	loader := bundle.NewTarballLoaderWithBaseURL(tee, d.localStorePath)
+
+	// Setting the size limit on the loader allows early exit in the case
+	// of any file exceeding the limit, without the file getting loaded
+	if d.sizeLimitBytes != nil {
+		loader = loader.WithSizeLimitBytes(*d.sizeLimitBytes)
+	}
+
 	reader := bundle.NewCustomReader(loader).
 		WithMetrics(m).
 		WithBundleVerificationConfig(d.bvc).
 		WithBundleEtag(etag).
 		WithRegoVersion(d.bundleParserOpts.RegoVersion).
-		WithProcessAnnotations(d.bundleParserOpts.ProcessAnnotation)
+		WithProcessAnnotations(d.bundleParserOpts.ProcessAnnotation).
+		WithBundlePersistence(d.persist)
+
+	if d.sizeLimitBytes != nil {
+		reader = reader.WithSizeLimitBytes(*d.sizeLimitBytes)
+	}
+
 	bundleInfo, err := reader.Read()
 	if err != nil {
 		return &downloaderResponse{}, fmt.Errorf("unexpected error %w", err)
 	}
-
-	m.Timer(metrics.BundleRequest).Stop()
 
 	return &downloaderResponse{
 		b:        &bundleInfo,
@@ -452,6 +488,9 @@ func (t *ociTarget) Fetch(ctx context.Context, target ocispec.Descriptor) (io.Re
 	return resp.Body, nil
 }
 
+// Exists is required by oraslib.ReadOnlyTarget, through content.ReadOnlyStorage,
+// but nothing calls it: oraslib.Copy only probes the destination, and
+// cas.Proxy.Exists, the one path that would reach a source, is unused in oras-go.
 func (t *ociTarget) Exists(ctx context.Context, target ocispec.Descriptor) (bool, error) {
 	rc, err := t.Fetch(ctx, target)
 	if err != nil {
@@ -483,10 +522,31 @@ func (t *pluginRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 	return http.DefaultTransport.RoundTrip(req)
 }
 
+// maxIndexDepth bounds how far manifestFromDesc descends through nested image
+// indexes before giving up.
+const maxIndexDepth = 4
+
+// bundleLayer returns the layer holding the bundle tarball, if the manifest has one.
+func bundleLayer(manifest *ocispec.Manifest) (ocispec.Descriptor, bool) {
+	for _, layer := range manifest.Layers {
+		if layer.MediaType == ocispec.MediaTypeImageLayerGzip {
+			return layer, true
+		}
+	}
+	return ocispec.Descriptor{}, false
+}
+
 func manifestFromDesc(ctx context.Context, target oraslib.Target, desc *ocispec.Descriptor) (*ocispec.Manifest, error) {
+	return manifestFromDescDepth(ctx, target, *desc, 0, map[digest.Digest]struct{}{desc.Digest: {}})
+}
+
+// visited holds the digests already walked. Descriptors are content-addressed,
+// so a digest seen twice resolves the same way twice; skipping repeats keeps a
+// wide, deeply nested index from costing an exponential number of fetches.
+func manifestFromDescDepth(ctx context.Context, target oraslib.Target, desc ocispec.Descriptor, depth int, visited map[digest.Digest]struct{}) (*ocispec.Manifest, error) {
 	var manifest ocispec.Manifest
 
-	descReader, err := target.Fetch(ctx, *desc)
+	descReader, err := target.Fetch(ctx, desc)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch descriptor with digest %q: %w", desc.Digest, err)
 	}
@@ -501,9 +561,43 @@ func manifestFromDesc(ctx context.Context, target oraslib.Target, desc *ocispec.
 		return nil, fmt.Errorf("unable to unmarshal manifest: %w", err)
 	}
 
-	if len(manifest.Layers) < 1 {
+	if len(manifest.Layers) > 0 {
+		return &manifest, nil
+	}
+
+	var index ocispec.Index
+	if err := json.Unmarshal(descBytes, &index); err != nil || len(index.Manifests) == 0 {
 		return nil, errors.New("no layers in manifest")
 	}
 
-	return &manifest, nil
+	if depth >= maxIndexDepth {
+		return nil, fmt.Errorf("image index %q is nested more than %d levels deep", desc.Digest, maxIndexDepth)
+	}
+
+	var errs []error
+	for _, entry := range index.Manifests {
+		// buildx attaches provenance and SBOM manifests to the index under an
+		// "unknown" platform; they never carry a bundle.
+		if entry.Platform != nil && entry.Platform.OS == "unknown" && entry.Platform.Architecture == "unknown" {
+			continue
+		}
+
+		if _, ok := visited[entry.Digest]; ok {
+			continue
+		}
+		visited[entry.Digest] = struct{}{}
+
+		child, err := manifestFromDescDepth(ctx, target, entry, depth+1, visited)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if _, ok := bundleLayer(child); ok {
+			return child, nil
+		}
+	}
+
+	errs = append(errs, fmt.Errorf("no manifest in image index %q contains a %s layer", desc.Digest, ocispec.MediaTypeImageLayerGzip))
+
+	return nil, errors.Join(errs...)
 }

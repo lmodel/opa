@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/open-policy-agent/opa/v1/ast"
@@ -25,10 +27,10 @@ func initVersion(root *cobra.Command, brand string) {
 		Use:   "version",
 		Short: `Print the version of ` + brand,
 		Long:  `Show version and build information for ` + brand + `.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			return env.CmdFlags.CheckEnvironmentVariables(cmd)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			cmd.SilenceErrors = true
 			cmd.SilenceUsage = true
 			return generateCmdOutput(os.Stdout, check)
@@ -60,6 +62,10 @@ func generateCmdOutput(out io.Writer, check bool) error {
 
 	fmt.Fprintln(out, "WebAssembly: "+wasmAvailable)
 
+	if isStaticBinary(os.Args[0]) {
+		fmt.Fprintln(out, "Note: the _static binaries are deprecated and will not be published in a future release. The regular binary is statically linked too.")
+	}
+
 	if check {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -71,6 +77,10 @@ func generateCmdOutput(out io.Writer, check bool) error {
 		}
 	}
 	return nil
+}
+
+func isStaticBinary(arg0 string) bool {
+	return strings.HasSuffix(filepath.Base(arg0), "_static")
 }
 
 func checkOPAUpdate(ctx context.Context, out io.Writer) error {

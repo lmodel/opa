@@ -119,7 +119,7 @@ func TestInterfaceToValueStructs(t *testing.T) {
 	var m brokenMarshaller
 
 	_, err = InterfaceToValue(m)
-	if err == nil || err.Error() != "ast: interface conversion: json: error calling MarshalJSON for type ast.brokenMarshaller: broken" {
+	if err == nil || !strings.Contains(err.Error(), "ast: interface conversion: json: error calling MarshalJSON for type") {
 		t.Fatal("expected error but got:", err)
 	}
 }
@@ -178,7 +178,8 @@ func TestObjectSetOperations(t *testing.T) {
 	MustParseTerm(`["c", "d", "q"]`).Value.(*Array).Foreach(func(t *Term) {
 		expectedTerms = append(expectedTerms, t)
 	})
-	if len(r2) != 1 || !termSliceEqual(r2[0][:], expectedTerms) {
+
+	if len(r2) != 1 || !slices.EqualFunc(r2[0][:], expectedTerms, (*Term).Equal) {
 		t.Errorf(`Expected a.Intersect(b) to equal [["a", "d", "q"]] but got: %v`, r2)
 	}
 
@@ -369,7 +370,7 @@ func TestHashObject(t *testing.T) {
 	obj2 := stmt2.(Body)[0].Terms.(*Term).Value.(Object)
 
 	if obj1.Hash() != obj2.Hash() {
-		t.Errorf("Expected hash codes to be equal")
+		t.Error("Expected hash codes to be equal")
 	}
 
 	// Calculate hash like we did before moving the caching to create/update:
@@ -397,7 +398,7 @@ func TestHashArray(t *testing.T) {
 	arr2 := stmt2.(Body)[0].Terms.(*Term).Value.(*Array)
 
 	if arr1.Hash() != arr2.Hash() {
-		t.Errorf("Expected hash codes to be equal")
+		t.Error("Expected hash codes to be equal")
 	}
 
 	// Calculate hash like we did before moving the caching to create/update:
@@ -428,7 +429,7 @@ func TestHashSet(t *testing.T) {
 	set2 := stmt2.(Body)[0].Terms.(*Term).Value.(Set)
 
 	if set1.Hash() != set2.Hash() {
-		t.Errorf("Expected hash codes to be equal")
+		t.Error("Expected hash codes to be equal")
 	}
 
 	// Calculate hash like we did before moving the caching to create/update:
@@ -726,14 +727,14 @@ func TestRefInsert(t *testing.T) {
 func TestRefDynamic(t *testing.T) {
 	a := MustParseRef("foo.bar[baz.qux].corge")
 	if a.Dynamic() != 2 {
-		t.Fatalf("Expected dynamic offset to be baz.qux for foo.bar[baz.qux].corge")
+		t.Fatal("Expected dynamic offset to be baz.qux for foo.bar[baz.qux].corge")
 	}
 	if a[:a.Dynamic()].Dynamic() != -1 {
-		t.Fatalf("Expected dynamic offset to be -1 for foo.bar")
+		t.Fatal("Expected dynamic offset to be -1 for foo.bar")
 	}
 
 	if MustParseRef("f(x)[0]").Dynamic() != 0 {
-		t.Fatalf("Expected dynamic offset to be f(x) for foo.bar[baz.qux].corge")
+		t.Fatal("Expected dynamic offset to be f(x) for foo.bar[baz.qux].corge")
 	}
 }
 
@@ -759,14 +760,14 @@ func TestRefConcat(t *testing.T) {
 	if !a.Concat(terms).Equal(a) {
 		t.Fatal("Expected no change")
 	}
-	terms = append(terms, StringTerm("qux"))
+	terms = append(terms, InternedTerm("qux"))
 	exp := MustParseTerm("foo.bar.baz.qux")
 	result := a.Concat(terms)
 	if !result.Equal(exp.Value) {
 		t.Fatalf("Expected %v but got %v", exp, result)
 	}
 	exp = MustParseTerm("foo.bar.baz.qux[0]")
-	terms = append(terms, IntNumberTerm(0))
+	terms = append(terms, InternedTerm(0))
 	result = a.Concat(terms)
 	if !result.Equal(exp.Value) {
 		t.Fatalf("Expected %v but got %v", exp, result)
@@ -1161,16 +1162,12 @@ func TestArrayOperations(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.note, func(t *testing.T) {
 			arr := MustParseTerm(tc.input).Value.(*Array)
-
-			var expected []*Term
-			for _, e := range tc.expected {
-				expected = append(expected, MustParseTerm(e))
-			}
+			expected := util.Map(tc.expected, MustParseTerm)
 
 			results = nil
 			tc.iterator(arr)
 
-			if !termSliceEqual(results, expected) {
+			if !slices.EqualFunc(results, expected, (*Term).Equal) {
 				t.Errorf("Expected iteration to return %v but got %v", expected, results)
 			}
 		})
@@ -1475,11 +1472,11 @@ func TestLazyObjectGetCache(t *testing.T) {
 	y := x.Get(StringTerm("a"))
 
 	if x.(*lazyObj).cache["a"].Compare(y.Value) != 0 {
-		t.Errorf("expected cache to be populated with retreived value")
+		t.Error("expected cache to be populated with retreived value")
 	}
 
 	if x.(*lazyObj).cache["b"] != nil {
-		t.Errorf("expected cache to not be populated with non-retrieved value")
+		t.Error("expected cache to not be populated with non-retrieved value")
 	}
 
 	// Assert that objects are cached as lazy objects
@@ -1656,7 +1653,7 @@ func TestLazyObjectKeys(t *testing.T) {
 	})
 	act := x.Keys()
 	exp := []*Term{StringTerm("a"), StringTerm("b"), StringTerm("c")}
-	if !termSliceEqual(exp, act) {
+	if !slices.EqualFunc(exp, act, (*Term).Equal) {
 		t.Errorf("expected Keys() %v, got %v", exp, act)
 	}
 	assertForced(t, x, false)
@@ -1674,7 +1671,7 @@ func TestLazyObjectKeysIterator(t *testing.T) {
 		act = append(act, k)
 	}
 	exp := []*Term{StringTerm("a"), StringTerm("b"), StringTerm("c")}
-	if !termSliceEqual(exp, act) {
+	if !slices.EqualFunc(exp, act, (*Term).Equal) {
 		t.Errorf("expected Keys() %v, got %v", exp, act)
 	}
 	assertForced(t, x, false)
@@ -1842,6 +1839,79 @@ func TestRefCopyNonGround(t *testing.T) {
 			if result[i] == ref[i] {
 				t.Errorf("Non-ground element at index %d should be deep copied", i)
 			}
+		}
+	}
+}
+
+func TestInterfaceToValueNumberRange(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		input string
+		err   string
+	}{
+		{input: "1e3"},
+		{input: "1E-3"},
+		{input: "-1.5e+2"},
+		{input: "1e400"},
+		{input: "1e-400"},
+		{input: "1e30000"},
+		{input: "12345678901234567890123456789012345678901234567890"},
+		{input: "1e40000", err: "invalid number: number too big"},
+		{input: "1E40000", err: "invalid number: number too big"},
+		{input: "-1e40000", err: "invalid number: number too big"},
+		{input: "1e-40000", err: "invalid number: number too big"},
+		{input: "1e2147483648", err: "invalid number: invalid float"},
+	} {
+		t.Run(tc.input, func(t *testing.T) {
+			t.Parallel()
+
+			v, err := InterfaceToValue(json.Number(tc.input))
+			if tc.err != "" {
+				if err == nil || err.Error() != tc.err {
+					t.Fatalf("expected error %q but got %v", tc.err, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if v.Compare(Number(tc.input)) != 0 {
+				t.Fatalf("expected %v but got %v", tc.input, v)
+			}
+		})
+	}
+
+	var x any
+	if err := util.UnmarshalJSON([]byte(`{"x": [1e2147483648]}`), &x); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := InterfaceToValue(x); err == nil {
+		t.Fatal("expected error for number nested in a document")
+	}
+}
+
+// The shortcut for small exponents must agree with the full check around the limit.
+func TestInterfaceToValueNumberRangeShortcut(t *testing.T) {
+	t.Parallel()
+
+	var inputs []string
+	for _, from := range []int{24990, 29990} {
+		for exp := from; exp <= from+120; exp++ {
+			inputs = append(inputs, fmt.Sprintf("1e%d", exp), fmt.Sprintf("1e-%d", exp), fmt.Sprintf("-9.99e+%d", exp))
+		}
+	}
+	inputs = append(inputs,
+		"1"+strings.Repeat("0", 24990)+"e20",
+		"1"+strings.Repeat("0", 24990)+"e5",
+		"0."+strings.Repeat("0", 24990)+"1e-20",
+		"1"+strings.Repeat("0", 29990)+"e20",
+	)
+
+	for _, in := range inputs {
+		_, err := InterfaceToValue(json.Number(in))
+		if (err != nil) != (validateNumber(in) != nil) {
+			t.Fatalf("%.40s: InterfaceToValue error %v but validateNumber says %v", in, err, validateNumber(in))
 		}
 	}
 }

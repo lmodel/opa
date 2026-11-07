@@ -2,6 +2,7 @@ package ast
 
 import (
 	"path"
+	"slices"
 	"testing"
 
 	"github.com/open-policy-agent/opa/v1/util/test"
@@ -37,6 +38,12 @@ func TestParserCatchesIllegalCapabilities(t *testing.T) {
 			capabilities: Capabilities{},
 			expErr:       "illegal capabilities: rego_v1 feature required for parsing v1 Rego",
 		},
+		{
+			note:         "v2, no rego_v2 feature",
+			regoVersion:  RegoV2,
+			capabilities: Capabilities{},
+			expErr:       "illegal capabilities: rego_v2 feature required for parsing v2 Rego",
+		},
 	}
 
 	for _, tc := range tests {
@@ -70,6 +77,10 @@ func TestParserCatchesIllegalFutureKeywordsBasedOnCapabilities(t *testing.T) {
 		{
 			note:        "v1",
 			regoVersion: RegoV1,
+		},
+		{
+			note:        "v2",
+			regoVersion: RegoV2,
 		},
 	}
 
@@ -141,13 +152,209 @@ func TestParserCapabilitiesWithWildcardOptInAndOlderOPA(t *testing.T) {
 		t.Fatal("expected error")
 	} else if errs, ok := err.(Errors); !ok || len(errs) != 1 {
 		t.Fatal("expected exactly one error but got:", err)
-	} else if errs[0].Code != ParseErr || errs[0].Location.Row != 7 || errs[0].Message != "unexpected identifier token: expected \\n or ; or }" {
+	} else if errs[0].Code != ParseErr || errs[0].Location.Row != 7 || errs[0].Message != "unexpected identifier token: expected \\n or ; or } (hint: `import future.keywords.in` for `x in xs` expressions)" {
 		t.Fatal("unexpected error:", err)
 	}
 }
 
-func TestLoadCapabilitiesVersion(t *testing.T) {
+func TestParserCapabilitiesFutureKeywordOptIn(t *testing.T) {
+	tests := []struct {
+		note       string
+		advertised []string
+		module     string
+		expErr     bool
+	}{
+		{
+			note:       "in advertised, specific import",
+			advertised: []string{"in"},
+			module: `package test
+				import future.keywords.in
+				p { 1 in [1, 2] }`,
+		},
+		{
+			note:       "in advertised, wildcard import",
+			advertised: []string{"in"},
+			module: `package test
+				import future.keywords
+				p { 1 in [1, 2] }`,
+		},
+		{
+			note:       "in advertised, wildcard import, not used",
+			advertised: []string{"in"},
+			module: `package test
+				import future.keywords
+				p { not {input.a; input.b} }`,
+			expErr: true,
+		},
+		{
+			note:       "every advertised, specific import",
+			advertised: []string{"every"},
+			module: `package test
+				import future.keywords.every
+				p { every x in [1, 2] { x } }`,
+		},
+		{
+			note:       "every advertised, wildcard import",
+			advertised: []string{"every"},
+			module: `package test
+				import future.keywords
+				p { every x in [1, 2] { x } }`,
+		},
+		{
+			note:       "every advertised, wildcard import, not used",
+			advertised: []string{"every"},
+			module: `package test
+				import future.keywords
+				p { not {input.a; input.b} }`,
+			expErr: true,
+		},
+		{
+			note:       "contains advertised, specific import",
+			advertised: []string{"contains"},
+			module: `package test
+				import future.keywords.contains
+				p contains "a" { true }`,
+		},
+		{
+			note:       "contains advertised, wildcard import",
+			advertised: []string{"contains"},
+			module: `package test
+				import future.keywords
+				p contains "a" { true }`,
+		},
+		{
+			note:       "contains advertised, wildcard import, not used",
+			advertised: []string{"contains"},
+			module: `package test
+				import future.keywords
+				p { not {input.a; input.b} }`,
+			expErr: true,
+		},
+		{
+			note:       "if advertised, specific import",
+			advertised: []string{"if"},
+			module: `package test
+				import future.keywords.if
+				p if { true }`,
+		},
+		{
+			note:       "if advertised, wildcard import",
+			advertised: []string{"if"},
+			module: `package test
+				import future.keywords
+				p if { true }`,
+		},
+		{
+			note:       "if advertised, wildcard import, not used",
+			advertised: []string{"if"},
+			module: `package test
+				import future.keywords
+				p { not {input.a; input.b} }`,
+			expErr: true,
+		},
+		{
+			note:       "not advertised, specific import",
+			advertised: []string{"not"},
+			module: `package test
+				import future.keywords.not
+				p { not {input.a; input.b} }`,
+		},
+		{
+			note:       "not advertised, wildcard import",
+			advertised: []string{"not"},
+			module: `package test
+				import future.keywords
+				p { not {input.a; input.b} }`,
+		},
+		{
+			note:       "not advertised, wildcard import, and used",
+			advertised: []string{"not"},
+			module: `package test
+				import future.keywords
+				p { input.a and input.b }`,
+			expErr: true,
+		},
+		{
+			note:       "and advertised, specific import",
+			advertised: []string{"and"},
+			module: `package test
+				import future.keywords.and
+				p { input.a and input.b }`,
+		},
+		{
+			note:       "and advertised, wildcard import",
+			advertised: []string{"and"},
+			module: `package test
+				import future.keywords
+				p { input.a and input.b }`,
+		},
+		{
+			note:       "and advertised, wildcard import, not used",
+			advertised: []string{"and"},
+			module: `package test
+				import future.keywords
+				p { not {input.a; input.b} }`,
+			expErr: true,
+		},
+		{
+			note:       "or advertised, specific import",
+			advertised: []string{"or"},
+			module: `package test
+				import future.keywords.or
+				p { input.a or input.b }`,
+		},
+		{
+			note:       "or advertised, wildcard import",
+			advertised: []string{"or"},
+			module: `package test
+				import future.keywords
+				p { input.a or input.b }`,
+		},
+		{
+			note:       "or advertised, wildcard import, not used",
+			advertised: []string{"or"},
+			module: `package test
+				import future.keywords
+				p { not {input.a; input.b} }`,
+			expErr: true,
+		},
+		{
+			note:       "and and or advertised, wildcard import",
+			advertised: []string{"and", "or"},
+			module: `package test
+				import future.keywords
+				p { input.a and input.b or input.c }`,
+		},
+		{
+			note:       "and and or advertised, wildcard import, not used",
+			advertised: []string{"and", "or"},
+			module: `package test
+				import future.keywords
+				p { not (input.a or input.b) }`,
+			expErr: true,
+		},
+	}
 
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			opts := ParserOptions{
+				Capabilities: &Capabilities{FutureKeywords: tc.advertised},
+				RegoVersion:  RegoV0, // lock it down to v0 to get every future keyword
+			}
+
+			mod, err := ParseModuleWithOpts("test.rego", tc.module, opts)
+			if tc.expErr {
+				if err == nil {
+					t.Fatalf("expected error, got: %v", mod)
+				}
+			} else if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestLoadCapabilitiesVersion(t *testing.T) {
 	capabilitiesVersions, err := LoadCapabilitiesVersions()
 	if err != nil {
 		t.Fatal("expected success", err)
@@ -180,6 +387,89 @@ func TestLoadCapabilitiesFile(t *testing.T) {
 		}
 	})
 
+}
+
+func TestCapabilitiesForThisVersion(t *testing.T) {
+	v0Features := []string{
+		FeatureKeywordsInRefs,
+		FeatureRegoV1,
+		FeatureRegoV1Import,
+		FeatureRegoV2,
+		FeatureRegoV2Import,
+		FeatureRefHeadStringPrefixes,
+		FeatureRefHeads,
+	}
+	v0Keywords := []string{"and", "contains", "every", "if", "in", "not", "or"}
+
+	tests := []struct {
+		note        string
+		regoVersion RegoVersion
+		features    []string
+		keywords    []string
+	}{
+		{
+			note:        "v0",
+			regoVersion: RegoV0,
+			features:    v0Features,
+			keywords:    v0Keywords,
+		},
+		{
+			note:        "v0 compat v1",
+			regoVersion: RegoV0CompatV1,
+			features:    v0Features,
+			keywords:    v0Keywords,
+		},
+		{
+			note:        "v1",
+			regoVersion: RegoV1,
+			features: []string{
+				FeatureKeywordsInRefs,
+				FeatureRegoV1,
+				FeatureRegoV2,
+				FeatureRegoV2Import,
+				FeatureTemplateStrings,
+			},
+			keywords: []string{"and", "not", "or"},
+		},
+		{
+			// Every future keyword is a keyword in v2.
+			note:        "v2",
+			regoVersion: RegoV2,
+			features: []string{
+				FeatureKeywordsInRefs,
+				FeatureRegoV1,
+				FeatureRegoV1Import,
+				FeatureRegoV2,
+				FeatureRegoV2Import,
+				FeatureTemplateStrings,
+			},
+		},
+		{
+			// Unknown versions get the default capabilities.
+			note:        "unknown",
+			regoVersion: RegoVersion(99),
+			features: []string{
+				FeatureKeywordsInRefs,
+				FeatureRegoV1,
+				FeatureRegoV2,
+				FeatureRegoV2Import,
+				FeatureTemplateStrings,
+			},
+			keywords: []string{"and", "not", "or"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			c := CapabilitiesForThisVersion(CapabilitiesRegoVersion(tc.regoVersion))
+			if !slices.Equal(c.Features, tc.features) {
+				t.Fatalf("expected features %v but got %v", tc.features, c.Features)
+			}
+			if !slices.Equal(c.FutureKeywords, tc.keywords) {
+				t.Fatalf("expected future keywords %v but got %v", tc.keywords, c.FutureKeywords)
+			}
+		})
+	}
 }
 
 func TestCapabilitiesAddBuiltinSorted(t *testing.T) {
@@ -217,12 +507,27 @@ func TestCapabilitiesAddBuiltinSorted(t *testing.T) {
 }
 
 func TestCapabilitiesMinimumCompatibleVersion(t *testing.T) {
-
 	tests := []struct {
-		note    string
-		module  string
-		version string
+		note        string
+		module      string
+		regoVersion RegoVersion
+		version     string
 	}{
+		{
+			note: "empty package (v0)",
+			module: `
+				package x
+			`,
+			version: "0.17.0",
+		},
+		{
+			note:        "empty package (v1)",
+			regoVersion: RegoV1,
+			module: `
+				package x
+			`,
+			version: "1.0.0",
+		},
 		{
 			note: "builtins",
 			module: `
@@ -274,13 +579,71 @@ func TestCapabilitiesMinimumCompatibleVersion(t *testing.T) {
 				import rego.v1`,
 			version: "0.59.0",
 		},
+		{
+			note: "keywords (not)",
+			module: `
+				package x
+				import future.keywords.not
+			`,
+			version: "1.17.0",
+		},
+		{
+			note: "keywords (and)",
+			module: `
+				package x
+				import future.keywords.and
+			`,
+			version: "1.20.0",
+		},
+		{
+			note: "keywords (or)",
+			module: `
+				package x
+				import future.keywords.or
+			`,
+			version: "1.20.0",
+		},
+		{
+			// The wildcard import requires every keyword the module's
+			// rego-version allows, so the newest of them decides the version.
+			note:        "keywords (wildcard import, v0 module)",
+			regoVersion: RegoV0,
+			module: `
+				package x
+				import future.keywords
+			`,
+			version: "1.20.0",
+		},
+		{
+			note:        "keywords (wildcard import, v1 module)",
+			regoVersion: RegoV1,
+			module: `
+				package x
+				import future.keywords
+			`,
+			version: "1.20.0",
+		},
+		{
+			note:        "keywords (wildcard import, v2 module)",
+			regoVersion: RegoV2,
+			module: `
+				package x
+				import future.keywords
+			`,
+			version: "1.22.0",
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.note, func(t *testing.T) {
+			regoVersion := RegoV0
+			if tc.regoVersion != RegoUndefined {
+				regoVersion = tc.regoVersion
+			}
+
 			c := MustCompileModulesWithOpts(map[string]string{"test.rego": tc.module}, CompileOpts{
 				ParserOptions: ParserOptions{
-					RegoVersion: RegoV0,
+					RegoVersion: regoVersion,
 				},
 			})
 			minVersion, found := c.Required.MinimumCompatibleVersion()

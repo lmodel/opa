@@ -7,11 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/open-policy-agent/opa/v1/util"
 )
@@ -201,10 +201,7 @@ func BenchmarkObjectFind(b *testing.B) {
 }
 
 func BenchmarkObjectInsert(b *testing.B) {
-	nums := make([]*Term, 0, 100)
-	for i := range 100 {
-		nums = append(nums, InternedTerm(i))
-	}
+	nums := slices.Collect(InternedIntRange(0, 100))
 
 	b.Run("existing key and value", func(b *testing.B) {
 		obj := newobject(0)
@@ -275,13 +272,10 @@ func BenchmarkObjectCreationAndLookup(b *testing.B) {
 }
 
 // insert           38148     30049 ns/op   58912 B/op     528 allocs/op
-// terms_array      65698     17079 ns/op   34680 B/op     506 allocs/op
+// terms_array      106726    11183 ns/op	34968 B/op       7 allocs/op
 func BenchmarkObjectCreateWithInsertVsTermsArray(b *testing.B) {
 	n := 500
-	interned := make([]*Term, n)
-	for i := range n {
-		interned[i] = InternedTerm(i)
-	}
+	interned := slices.Collect(InternedIntRange(0, n))
 
 	b.Run("insert", func(b *testing.B) {
 		for b.Loop() {
@@ -479,6 +473,27 @@ func BenchmarkSetMembership(b *testing.B) {
 	}
 }
 
+// 418.1 ns/op	     760 B/op	      16 allocs/op // was
+// 337.4 ns/op	     760 B/op	       7 allocs/op // now
+func BenchmarkNewObject(b *testing.B) {
+	kvs := [][2]*Term{
+		{InternedTerm(1), InternedTerm(1)},
+		{InternedTerm(2), InternedTerm(2)},
+		{InternedTerm(3), InternedTerm(3)},
+		{InternedTerm(4), InternedTerm(4)},
+		{InternedTerm(5), InternedTerm(5)},
+		{InternedTerm(6), InternedTerm(6)},
+		{InternedTerm(7), InternedTerm(7)},
+		{InternedTerm(8), InternedTerm(8)},
+		{InternedTerm(9), InternedTerm(9)},
+		{InternedTerm(10), InternedTerm(10)},
+	}
+
+	for b.Loop() {
+		_ = NewObject(kvs...)
+	}
+}
+
 // 241.9 ns/op	     472 B/op	      10 allocs/op
 // 207.7 ns/op	     424 B/op	       9 allocs/op
 func BenchmarkSetCopy(b *testing.B) {
@@ -489,6 +504,8 @@ func BenchmarkSetCopy(b *testing.B) {
 }
 
 // 396.9 ns/op	     664 B/op	      19 allocs/op
+// 198.7 ns/op	     688 B/op	       7 allocs/op
+// 199.2 ns/op	     672 B/op	       6 allocs/op
 func BenchmarkObjectCopy(b *testing.B) {
 	o := NewObject(
 		Item(InternedTerm("a"), InternedTerm(1)),
@@ -513,6 +530,73 @@ func BenchmarkArrayCopy(b *testing.B) {
 			b.ResetTimer()
 			for b.Loop() {
 				_ = arr.Copy()
+			}
+		})
+	}
+}
+
+// BenchmarkArraySet is one Array.Set on an array of n elements. Set keeps the
+// cached hash up to date, and it does so by swapping the one element's hash
+// into the sum rather than resumming arr.hashs, so the cost does not follow n:
+//
+//	        resumming    swapping in
+//	   5       6.9 ns         5.3 ns
+//	  50      26.9 ns         5.3 ns
+//	 500     493.4 ns         5.3 ns
+//	5000      5179 ns         5.4 ns
+func BenchmarkArraySet(b *testing.B) {
+	sizes := []int{5, 50, 500, 5000}
+	for _, n := range sizes {
+		b.Run(strconv.Itoa(n), func(b *testing.B) {
+			elems := make([]*Term, n)
+			for i := range elems {
+				elems[i] = IntNumberTerm(i)
+			}
+			arr := NewArray(elems...)
+			v := IntNumberTerm(-1)
+
+			b.ReportAllocs()
+			b.ResetTimer()
+
+			for b.Loop() {
+				arr.Set(n/2, v)
+			}
+		})
+	}
+}
+
+// BenchmarkArrayFill is what that costs in aggregate: setting every element of
+// an array of n elements once. Linear in n, where resumming on each Set made
+// it quadratic -- 1000x at n=5000.
+//
+//	        resumming    swapping in
+//	   5      34.7 ns        27.8 ns
+//	  50     930.6 ns       274.0 ns
+//	 500    244842 ns        2598 ns
+//	5000  26854962 ns       26813 ns
+//
+// This is the shape a large array literal in a policy takes on its way through
+// the compiler, where each Transform pass rebuilds the array element by
+// element: compiling a rule holding a 16000 element array spent 95% of its
+// time in rehash.
+func BenchmarkArrayFill(b *testing.B) {
+	sizes := []int{5, 50, 500, 5000}
+	for _, n := range sizes {
+		b.Run(strconv.Itoa(n), func(b *testing.B) {
+			elems := make([]*Term, n)
+			for i := range elems {
+				elems[i] = IntNumberTerm(i)
+			}
+			arr := NewArray(elems...)
+			v := IntNumberTerm(-1)
+
+			b.ReportAllocs()
+			b.ResetTimer()
+
+			for b.Loop() {
+				for i := range n {
+					arr.Set(i, v)
+				}
 			}
 		})
 	}
@@ -658,7 +742,7 @@ func BenchmarkObjectStringInterfaces(b *testing.B) {
 
 func BenchmarkObjectConstruction(b *testing.B) {
 	sizes := []int{5, 50, 500, 5000, 50000, 500000}
-	seed := time.Now().UnixNano()
+	const seed = 67 // fixed, so the key order does not vary between runs
 
 	b.Run("shuffled keys", func(b *testing.B) {
 		for _, n := range sizes {
@@ -758,6 +842,60 @@ func BenchmarkArrayEquality(b *testing.B) {
 			}
 		})
 	}
+}
+
+// Before and after [*object.Equal]:
+// ----------------------------------------------
+// pointer_equality-16         711834544       1.6 ns/op       0 B/op       0 allocs/op (no change)
+//
+// shallow_copy_equality-16        59499      7230 ns/op       0 B/op       0 allocs/op
+// shallow_copy_equality-16     49511161        24 ns/op       0 B/op       0 allocs/op (huge ns/op reduction)
+//
+// deep_copy_equality-16          161464      7217 ns/op       0 B/op       0 allocs/op
+// deep_copy_equality-16          236464	  4954 ns/op       0 B/op       0 allocs/op (decent ns/op reduction)
+func BenchmarkObjectEquality(b *testing.B) {
+	keys := []string{
+		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+		"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+	}
+	itms := make([][2]*Term, len(keys))
+	for i, k := range keys {
+		itms[i][0] = InternedTerm(k)
+		itms[i][1] = IntNumberTerm(i)
+	}
+
+	base := ObjectTerm(itms...)
+	for i := range itms {
+		itms[i][1] = base
+	}
+
+	objA := ObjectTerm(itms...)
+	objB := ObjectTerm(itms...)
+	objC := objB.Copy()
+
+	b.Run("pointer equality", func(b *testing.B) {
+		for b.Loop() {
+			if !objA.Equal(objA) { //nolint:gocritic // "suspicious method call with the same argument and receiver"
+				b.Fatal("expected equal")
+			}
+		}
+	})
+
+	b.Run("shallow copy equality", func(b *testing.B) {
+		for b.Loop() {
+			if !objA.Equal(objB) {
+				b.Fatal("expected equal")
+			}
+		}
+	})
+
+	b.Run("deep copy equality", func(b *testing.B) {
+		for b.Loop() {
+			if !objA.Equal(objC) {
+				b.Fatal("expected equal")
+			}
+		}
+	})
 }
 
 func BenchmarkSetString(b *testing.B) {
@@ -1131,5 +1269,27 @@ func BenchmarkTemplateStringToStringEscapeControl(b *testing.B) {
 
 	if exp := `$"Hello \n{foo}, \t\{bar}!"`; s != exp {
 		b.Fatalf("expected %q but got %q", exp, s)
+	}
+}
+
+// 13.00 ns/op	       0 B/op	       0 allocs/op // json.Number.Int64()
+// 4.738 ns/op	       0 B/op	       0 allocs/op // util.Atoi64()
+func BenchmarkNumberInt64(b *testing.B) {
+	num := Number("1234567890")
+	for b.Loop() {
+		if x, ok := num.Int64(); !ok || x != 1234567890 {
+			b.Fatalf("expected %d but got %d", 1234567890, x)
+		}
+	}
+}
+
+// 35.42 ns/op	      64 B/op	       2 allocs/op // json.Number.Int64()
+// 2.549 ns/op	       0 B/op	       0 allocs/op // util.Atoi64()
+func BenchmarkNumberInt64Fail(b *testing.B) {
+	num := Number("12345.67890")
+	for b.Loop() {
+		if _, ok := num.Int64(); ok {
+			b.Fatal("expected failure")
+		}
 	}
 }

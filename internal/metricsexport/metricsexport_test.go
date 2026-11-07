@@ -5,9 +5,14 @@
 package metricsexport
 
 import (
+	"maps"
+	"slices"
 	"testing"
 
 	prometheus_client "github.com/prometheus/client_golang/prometheus"
+
+	"github.com/open-policy-agent/opa/v1/config"
+	"github.com/open-policy-agent/opa/v1/version"
 )
 
 func TestParseMetricsExportConfigDefaults(t *testing.T) {
@@ -50,6 +55,38 @@ func TestParseMetricsExportConfigCustomInterval(t *testing.T) {
 	}
 	if cfg.ExportIntervalMs == nil || *cfg.ExportIntervalMs != 30000 {
 		t.Fatalf("expected export_interval_ms to be 30000, got %v", *cfg.ExportIntervalMs)
+	}
+}
+
+func TestResourceAttributes(t *testing.T) {
+	raw := []byte(`{"service_name": "svc", "resource": {"service_instance_id": "pod-1", "service_namespace": "ns", "deployment_environment": "qa"}}`)
+	cfg, err := parseMetricsExportConfig(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]string{}
+	for _, kv := range resourceAttributes(cfg) {
+		got[string(kv.Key)] = kv.Value.AsString()
+	}
+	want := map[string]string{
+		"service.name":           "svc",
+		"service.version":        version.Version,
+		"service.instance.id":    "pod-1",
+		"service.namespace":      "ns",
+		"deployment.environment": "qa",
+	}
+	if !maps.Equal(got, want) {
+		t.Fatalf("expected %v, got %v", want, got)
+	}
+}
+
+func TestResourceAttributesDefaults(t *testing.T) {
+	cfg, err := parseMetricsExportConfig([]byte(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if attrs := resourceAttributes(cfg); len(attrs) != 2 {
+		t.Fatalf("expected only service.name and service.version, got %v", attrs)
 	}
 }
 
@@ -123,4 +160,29 @@ func TestInitHTTPWithGatherer(t *testing.T) {
 		t.Fatal("expected non-nil MeterProvider")
 	}
 	_ = mp.Shutdown(t.Context())
+}
+
+// TestConfigNoWarningsForKnownMetricsExportOptions verifies the metrics_export
+// spec registered by this package lets config.ParseConfig recognize the
+// section's options.
+func TestConfigNoWarningsForKnownMetricsExportOptions(t *testing.T) {
+	raw := []byte(`{"metrics_export": {"type": "otlp/grpc", "export_interval_ms": 30000, "encryption": "tls", "resource": {"service_instance_id": "pod-1"}}}`)
+	conf, err := config.ParseConfig(raw, "id")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(conf.Warnings) != 0 {
+		t.Fatalf("expected no warnings, got %v", conf.Warnings)
+	}
+}
+
+func TestConfigWarnsOnUnknownMetricsExportOption(t *testing.T) {
+	conf, err := config.ParseConfig([]byte(`{"metrics_export": {"typo": "otlp/grpc"}}`), "id")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `unknown configuration option "metrics_export.typo" encountered`
+	if !slices.Contains(conf.Warnings, want) {
+		t.Fatalf("expected warning %q, got %v", want, conf.Warnings)
+	}
 }

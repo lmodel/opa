@@ -354,7 +354,7 @@ func TestTemplateStrings(t *testing.T) {
 
 			if tc.wantErr != "" {
 				if len(errs) == 0 {
-					t.Fatalf("Expected errors, got none")
+					t.Fatal("Expected errors, got none")
 				}
 				var found bool
 				for _, err := range errs {
@@ -395,6 +395,7 @@ func TestIllegalTokens(t *testing.T) {
 	}{
 		{input: `墳`},
 		{input: `0e`, wantErr: true},
+		{input: "\u00a0", wantErr: true},
 	}
 
 	for _, tc := range tests {

@@ -11,13 +11,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/olekukonko/tablewriter"
-	"github.com/olekukonko/tablewriter/pkg/twwidth"
 	"github.com/olekukonko/tablewriter/renderer"
 	"github.com/olekukonko/tablewriter/tw"
 	"golang.org/x/text/cases"
@@ -32,10 +31,15 @@ import (
 	"github.com/open-policy-agent/opa/v1/rego"
 	"github.com/open-policy-agent/opa/v1/storage"
 	"github.com/open-policy-agent/opa/v1/topdown"
+	"github.com/open-policy-agent/opa/v1/util"
 )
 
-// DefaultProfileSortOrder is the default ordering unless something is specified in the CLI
-var DefaultProfileSortOrder = []string{"total_time_ns", "num_eval", "num_redo", "file", "line"}
+var (
+	// DefaultProfileSortOrder is the default ordering unless something is specified in the CLI
+	DefaultProfileSortOrder = []string{"total_time_ns", "num_eval", "num_redo", "file", "line"}
+
+	statKeys = []string{"min", "max", "mean", "90%", "99%"}
+)
 
 // DepAnalysisOutput contains the result of dependency analysis to be presented.
 type DepAnalysisOutput struct {
@@ -51,7 +55,6 @@ func (o DepAnalysisOutput) JSON(w io.Writer) error {
 
 // Pretty outputs o to w in a human-readable format.
 func (o DepAnalysisOutput) Pretty(w io.Writer) error {
-
 	var headers []string
 	var rows [][]string
 
@@ -97,21 +100,12 @@ func (o DepAnalysisOutput) Pretty(w io.Writer) error {
 		}
 	}
 
-	if err := table.Render(); err != nil {
-		return err
-	}
-
-	return nil
+	return table.Render()
 }
 
 func (o DepAnalysisOutput) sort() {
-	sort.Slice(o.Base, func(i, j int) bool {
-		return o.Base[i].Compare(o.Base[j]) < 0
-	})
-
-	sort.Slice(o.Virtual, func(i, j int) bool {
-		return o.Virtual[i].Compare(o.Virtual[j]) < 0
-	})
+	slices.SortFunc(o.Base, ast.RefCompare)
+	slices.SortFunc(o.Virtual, ast.RefCompare)
 }
 
 // Output contains the result of evaluation to be presented.
@@ -159,10 +153,11 @@ func NewOutputErrors(err error) []OutputError {
 
 		case *topdown.Error:
 			errs = []OutputError{{
-				Code:     typedErr.Code,
-				Message:  typedErr.Message,
-				Location: typedErr.Location,
-				err:      typedErr,
+				Code:       typedErr.Code,
+				Message:    typedErr.Message,
+				Location:   typedErr.Location,
+				StackTrace: typedErr.StackTrace,
+				err:        typedErr,
 			}}
 		case *storage.Error:
 			errs = []OutputError{{
@@ -192,6 +187,17 @@ func NewOutputErrors(err error) []OutputError {
 				}
 			}
 		default:
+			// Unwrap wrapped errors (e.g. the bundle loader's
+			// fmt.Errorf("bundle %s: %w", ...)) to report the structured errors
+			// they hide individually rather than as one opaque string (#3663).
+			// Keep the wrapper's message if unwrapping reveals nothing structured.
+			hasStructuredCode := func(e OutputError) bool { return e.Code != "" }
+			if inner := errors.Unwrap(err); inner != nil {
+				if unwrapped := NewOutputErrors(inner); slices.ContainsFunc(unwrapped, hasStructuredCode) {
+					return unwrapped
+				}
+			}
+
 			// Any errors which don't have a structure we know about
 			// are converted to their string representation only.
 			errs = []OutputError{{
@@ -230,6 +236,9 @@ func (e OutputErrors) Error() string {
 		if l, ok := err.Details.(string); ok {
 			s = append(s, l)
 		}
+		if len(err.StackTrace) > 0 {
+			s = append(s, "\nTraceback:\n"+err.StackTrace.String())
+		}
 	}
 
 	return prefix + strings.Join(s, "\n")
@@ -243,7 +252,9 @@ type OutputError struct {
 	Code     string        `json:"code,omitempty"`
 	Location *ast.Location `json:"location,omitempty"`
 	Details  any           `json:"details,omitempty"`
-	err      error
+	// StackTrace is set for topdown errors when stack traces are enabled.
+	StackTrace topdown.StackTrace `json:"stack_trace,omitempty"`
+	err        error
 }
 
 func (j OutputError) Error() string {
@@ -298,6 +309,8 @@ func Pretty(w io.Writer, errW io.Writer, r Output) error {
 
 type PrettyOptions struct {
 	TraceOpts topdown.PrettyTraceOptions
+	// UndefinedPrintsEmpty causes undefined results to be printed as empty instead of "undefined", when true.
+	UndefinedPrintsEmpty bool
 }
 
 // PrettyWithOptions prints all of r to w in a human-readable format, errors are written to errW
@@ -312,7 +325,11 @@ func PrettyWithOptions(w io.Writer, errW io.Writer, r Output, opts PrettyOptions
 			return err
 		}
 	} else if r.undefined() {
-		fmt.Fprintln(w, "undefined")
+		if opts.UndefinedPrintsEmpty {
+			fmt.Fprintln(w)
+		} else {
+			fmt.Fprintln(w, "undefined")
+		}
 	} else if r.Result != nil {
 		if err := prettyResult(w, r.Result, r.limit); err != nil {
 			return err
@@ -364,16 +381,16 @@ func Source(w io.Writer, errW io.Writer, r Output) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprintln(w, string(bs))
+		w.Write(append(bs, '\n'))
 	}
 
 	for i := range r.Partial.Support {
 		fmt.Fprintf(w, "# Module %d\n", i+1)
-		bs, err := format.AstWithOpts(r.Partial.Support[i], format.Opts{IgnoreLocations: true, RegoVersion: r.Partial.Support[i].RegoVersion()})
+		bs, err := format.AstWithOpts(r.Partial.Support[i], format.Opts{IgnoreLocations: true, RegoVersionSpan: r.Partial.Support[i].RegoVersionSpan()})
 		if err != nil {
 			return err
 		}
-		fmt.Fprint(w, string(bs))
+		w.Write(bs)
 	}
 
 	return nil
@@ -397,14 +414,13 @@ func Raw(w io.Writer, errW io.Writer, r Output) error {
 				if err != nil {
 					return err
 				}
-
-				fmt.Fprint(w, string(bytes))
+				w.Write(bytes)
 			}
 
 			if i+1 >= len(rs.Expressions) {
-				fmt.Fprintln(w, "")
+				w.Write([]byte{'\n'})
 			} else {
-				fmt.Fprint(w, " ")
+				w.Write([]byte{' '})
 			}
 		}
 	}
@@ -473,7 +489,7 @@ func prettyPartial(w io.Writer, pq *rego.PartialQueries) error {
 	)
 
 	for i := range pq.Queries {
-		f, _, err := prettyASTNode(pq.Queries[i], ast.DefaultRegoVersion)
+		f, err := prettyASTNode(pq.Queries[i], ast.RegoVersionSpanOf(ast.DefaultRegoVersion))
 		if err != nil {
 			return err
 		}
@@ -483,7 +499,7 @@ func prettyPartial(w io.Writer, pq *rego.PartialQueries) error {
 	}
 
 	for i, s := range pq.Support {
-		f, _, err := prettyASTNode(s, s.RegoVersion())
+		f, err := prettyASTNode(s, s.RegoVersionSpan())
 		if err != nil {
 			return err
 		}
@@ -496,19 +512,13 @@ func prettyPartial(w io.Writer, pq *rego.PartialQueries) error {
 }
 
 // prettyASTNode is used for pretty-printing the result of partial eval
-func prettyASTNode(x any, regoVersion ast.RegoVersion) (string, int, error) {
-	bs, err := format.AstWithOpts(x, format.Opts{IgnoreLocations: true, RegoVersion: regoVersion})
+func prettyASTNode(x any, regoVersion ast.RegoVersionSpan) (string, error) {
+	bs, err := format.AstWithOpts(x, format.Opts{IgnoreLocations: true, RegoVersionSpan: regoVersion})
 	if err != nil {
-		return "", 0, fmt.Errorf("format error: %w", err)
+		return "", fmt.Errorf("format error: %w", err)
 	}
-	var maxLineWidth int
-	s := strings.Trim(strings.ReplaceAll(string(bs), "\t", "  "), "\n")
-	for line := range strings.SplitSeq(s, "\n") {
-		if width := twwidth.Width(line); width > maxLineWidth {
-			maxLineWidth = width
-		}
-	}
-	return s, maxLineWidth, nil
+
+	return strings.Trim(strings.ReplaceAll(util.ByteSliceToString(bs), "\t", "  "), "\n"), nil
 }
 
 func prettyMetrics(w io.Writer, m metrics.Metrics, limit int) error {
@@ -522,8 +532,6 @@ func prettyMetrics(w io.Writer, m metrics.Metrics, limit int) error {
 	}
 	return nil
 }
-
-var statKeys = []string{"min", "max", "mean", "90%", "99%"}
 
 func prettyAggregatedMetrics(w io.Writer, ms map[string]any, limit int) error {
 	keys := make([]string, 1, 1+len(statKeys))
@@ -645,14 +653,10 @@ func printPrettyRow(table *tablewriter.Table, keys []resultKey, result rego.Resu
 			buf = append(buf, err.Error())
 			continue
 		}
-		buf = append(buf, checkStrLimit(string(js), prettyLimit))
+		buf = append(buf, checkStrLimit(util.ByteSliceToString(js), prettyLimit))
 	}
 
-	cells := make([]any, len(buf))
-	for i, s := range buf {
-		cells[i] = s
-	}
-	_ = table.Append(cells...)
+	_ = table.Append(util.ToSliceOf[any](buf)...)
 }
 
 func generateTableMetrics(writer io.Writer) *tablewriter.Table {
@@ -696,17 +700,13 @@ func populateTableMetrics(m metrics.Metrics, table *tablewriter.Table, prettyLim
 	for varName, varValueInterface := range m.All() {
 		val, ok := varValueInterface.(map[string]any)
 		if !ok {
-			line := make([]string, 0, 2)
-			varValue := checkStrLimit(fmt.Sprintf("%v", varValueInterface), prettyLimit)
-			line = append(line, varName, varValue)
-			lines = append(lines, line)
+			varValue := checkStrLimit(fmt.Sprint(varValueInterface), prettyLimit)
+			lines = append(lines, []string{varName, varValue})
 		} else {
 			for k, v := range val {
-				line := make([]string, 0, 2)
 				newVarName := fmt.Sprintf("%v_%v", varName, k)
-				value := checkStrLimit(fmt.Sprintf("%v", v), prettyLimit)
-				line = append(line, newVarName, value)
-				lines = append(lines, line)
+				value := checkStrLimit(fmt.Sprint(v), prettyLimit)
+				lines = append(lines, []string{newVarName, value})
 			}
 		}
 	}
@@ -725,7 +725,7 @@ func populateTableAggregatedMetrics(ms map[string]any, table *tablewriter.Table,
 		line = append(line, name)
 		vs := vals.(map[string]any)
 		for _, k := range statKeys {
-			line = append(line, checkStrLimit(fmt.Sprintf("%v", vs[k]), prettyLimit))
+			line = append(line, checkStrLimit(fmt.Sprint(vs[k]), prettyLimit))
 		}
 		lines = append(lines, line)
 	}
@@ -738,8 +738,8 @@ func populateTableAggregatedMetrics(ms map[string]any, table *tablewriter.Table,
 }
 
 func sortMetricRows(data [][]string) {
-	sort.Slice(data, func(i, j int) bool {
-		return data[i][0] < data[j][0]
+	slices.SortFunc(data, func(a, b []string) int {
+		return strings.Compare(a[0], b[0])
 	})
 }
 
@@ -747,16 +747,6 @@ type resultKey struct {
 	varName   string
 	exprIndex int
 	exprText  string
-}
-
-func resultKeyLess(a, b resultKey) bool {
-	if a.varName != "" {
-		if b.varName == "" {
-			return true
-		}
-		return a.varName < b.varName
-	}
-	return a.exprIndex < b.exprIndex
 }
 
 func (rk resultKey) string() string {
@@ -777,9 +767,7 @@ func generateResultKeys(rs rego.ResultSet) []resultKey {
 	keys := []resultKey{}
 	if len(rs) != 0 {
 		for k := range rs[0].Bindings {
-			keys = append(keys, resultKey{
-				varName: k,
-			})
+			keys = append(keys, resultKey{varName: k})
 		}
 
 		for i, expr := range rs[0].Expressions {
@@ -791,8 +779,11 @@ func generateResultKeys(rs rego.ResultSet) []resultKey {
 			}
 		}
 
-		sort.Slice(keys, func(i, j int) bool {
-			return resultKeyLess(keys[i], keys[j])
+		slices.SortFunc(keys, func(a, b resultKey) int {
+			if c := strings.Compare(a.varName, b.varName); c != 0 {
+				return c
+			}
+			return a.exprIndex - b.exprIndex
 		})
 	}
 	return keys

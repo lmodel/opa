@@ -6,11 +6,11 @@ package debug
 
 import (
 	"fmt"
-	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/open-policy-agent/opa/v1/ast"
+	"github.com/open-policy-agent/opa/v1/util"
 )
 
 type Variable interface {
@@ -29,8 +29,9 @@ type Variable interface {
 }
 
 type namedVar struct {
-	name  string
-	value ast.Value
+	name              string
+	value             ast.Value
+	maxVariableLength int
 }
 
 func (nv namedVar) Name() string {
@@ -42,17 +43,18 @@ func (nv namedVar) Type() string {
 }
 
 func (nv namedVar) Value() string {
-	return truncatedString(nv.value.String(), 100)
+	return truncatedString(nv.value.String(), nv.maxVariableLength)
 }
 
 type variableGetter func() []namedVar
 
 type variableManager struct {
-	getters []variableGetter
+	getters           []variableGetter
+	maxVariableLength int
 }
 
-func newVariableManager() *variableManager {
-	return &variableManager{}
+func newVariableManager(maxVariableLength int) *variableManager {
+	return &variableManager{maxVariableLength: maxVariableLength}
 }
 
 func (vs *variableManager) addVars(getter variableGetter) VarRef {
@@ -93,20 +95,26 @@ func (vs *variableManager) vars(varRef VarRef) ([]Variable, error) {
 	vars := make([]Variable, len(namedVar))
 
 	for i, nv := range namedVar {
+		nv.maxVariableLength = vs.maxVariableLength
 		vars[i] = variable{
 			v:   nv,
 			ref: vs.subVars(nv.value),
 		}
 	}
 
-	slices.SortFunc(vars, func(a, b Variable) int {
+	return util.SortedFunc(vars, func(a, b Variable) int {
 		return strings.Compare(a.Name(), b.Name())
-	})
-
-	return vars, nil
+	}), nil
 }
 
+// truncatedString truncates s to at most max characters. When max <= 3 it returns
+// s unchanged to avoid a negative slice index (s[:max-2]) and to prevent producing
+// output longer than max. Otherwise strings longer than max are truncated to
+// s[:max-2] + "...".
 func truncatedString(s string, max int) string {
+	if max <= 3 {
+		return s
+	}
 	if len(s) > max {
 		return s[:max-2] + "..."
 	}

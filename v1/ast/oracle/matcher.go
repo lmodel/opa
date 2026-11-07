@@ -23,7 +23,7 @@ func createMatcher(t *target) func(ast.Node, *ast.Compiler, *ast.Module, *matchR
 			}
 		} else if t.isVar {
 			if targetVar, ok := t.term.Value.(ast.Var); ok {
-				matchVar(targetVar, t.term, node, compiler, parsed, result)
+				matchVar(targetVar, t.term, node, compiler, result)
 			}
 		}
 	}
@@ -58,10 +58,8 @@ func matchRef(targetRef ast.Ref, node ast.Node, compiler *ast.Compiler, parsed *
 	if parsed != nil {
 		prefix := nodeRef.ConstantPrefix()
 		for _, imp := range parsed.Imports {
-			if path, ok := imp.Path.Value.(ast.Ref); ok {
-				if prefix.HasPrefix(path) {
-					result.addRef(imp.Path.Location)
-				}
+			if path, ok := imp.Path.Value.(ast.Ref); ok && prefix.HasPrefix(path) {
+				result.addRef(imp.Path.Location)
 			}
 		}
 	}
@@ -70,7 +68,7 @@ func matchRef(targetRef ast.Ref, node ast.Node, compiler *ast.Compiler, parsed *
 // matchVar searches for variable definitions in a node.
 // Variables can be declared in-place (e.g., function args, iteration vars),
 // so targetLocation is used to skip self-definition at the declaration site.
-func matchVar(v ast.Var, targetTerm *ast.Term, node ast.Node, compiler *ast.Compiler, parsed *ast.Module, result *matchResult) {
+func matchVar(v ast.Var, targetTerm *ast.Term, node ast.Node, compiler *ast.Compiler, result *matchResult) {
 	targetLocation := targetTerm.Location
 
 	switch n := node.(type) {
@@ -159,8 +157,7 @@ func (r *matchResult) addVarIfNotSelf(
 		return
 	}
 
-	v, ok := term.Value.(ast.Var)
-	if !ok || v.Compare(targetVar) != 0 {
+	if !targetVar.Equal(term.Value) {
 		return
 	}
 
@@ -184,13 +181,7 @@ func (r *matchResult) addRef(loc *ast.Location) {
 
 // termMatchesVar checks if a term contains a variable matching the given name.
 func termMatchesVar(t *ast.Term, name ast.Var) bool {
-	if t == nil {
-		return false
-	}
-
-	v, ok := t.Value.(ast.Var)
-
-	return ok && v.Equal(name)
+	return t != nil && name.Equal(t.Value)
 }
 
 // findRulesDefinition looks up rules for a given ref. Rules appear in various

@@ -70,13 +70,13 @@ directly.
 
 ### Use indexed statements
 
-The linear-time fragment ensures that the cost of evaluation is no larger than the size of the policy. OPA lets you write non-linear policies, because sometimes you need to, and because sometimes it's convenient. The blog on [partial evaluation](https://blog.openpolicyagent.org/partial-evaluation-162750eaf422) describes one mechanism for converting non-linear policies into linear policies.
+The linear-time fragment ensures that the cost of evaluation is no larger than the size of the policy. OPA lets you write non-linear policies, because sometimes you need to, and because sometimes it's convenient. The blog on [partial evaluation](/blog/partial-evaluation-162750eaf422) describes one mechanism for converting non-linear policies into linear policies.
 
 But as the size of the policy grows, the cost of evaluation grows with it. Sometimes the policy can grow large enough that even the linear-fragment fails to meet the performance budget.
 
 In the linear fragment, OPA includes special algorithms that **index rules efficiently**, sometimes making evaluation constant-time, even as the policy grows. The more effective the indexing is the fewer rules need to be evaluated.
 
-Here is an example policy from the [rule-indexing blog](https://blog.openpolicyagent.org/optimizing-opa-rule-indexing-59f03f17caf3) giving the details for these algorithms. See the rest of this section for details on indexed statements.
+Here is an example policy from the [rule-indexing blog](/blog/optimizing-opa-rule-indexing-59f03f17caf3) giving the details for these algorithms. See the rest of this section for details on indexed statements.
 
 ```rego
 package indexed
@@ -93,13 +93,13 @@ allow if {
 allow if {
     input.method == "GET"
     input.path == ["accounts", "report"]
-    roles[input.user][_] == "admin"
+    "admin" in roles[input.user]
 }
 
 allow if {
     input.method == "POST"
     input.path == ["accounts"]
-    roles[input.user][_] == "admin"
+    "admin" in roles[input.user]
 }
 
 roles := {
@@ -122,26 +122,172 @@ roles := {
 
 #### Equality statements
 
-For simple equality statements (`=` and `==`) to be indexed one side must be a non-nested reference that does not contain any variables and the other side must be a variable, scalar, or array (which may contain scalars and variables). For example:
+For simple equality statements (`=` and `==`) to be indexed one side must be a non-nested reference that does not contain any variables and the other side must be a variable, scalar, or array (which may contain scalars and variables).
 
-| Expression                  | Indexed | Reason (for not indexing)    |
-| --------------------------- | ------- | ---------------------------- |
-| `input.x`                   | yes     |                              |
-| `input.x == "foo"`          | yes     |                              |
-| `input.x.y == "bar"`        | yes     |                              |
-| `input.x == ["foo", i]`     | yes     |                              |
-| `input.x[i] == "foo"`       | no      | reference contains variables |
-| `input.x[input.y] == "foo"` | no      | reference is nested          |
+A reference whose **last** element is a variable is indexed as well, as long as the other side is a scalar. The indexer then indexes the ground prefix of the reference, selecting the rules whose scalar occurs among the values found there — the exact match is still established when the rule body is evaluated. For example:
+
+| Expression                  | Indexed | Notes                                                 |
+| --------------------------- | ------- | ----------------------------------------------------- |
+| `input.x`                   | yes     |                                                       |
+| `input.x == "foo"`          | yes     |                                                       |
+| `input.x.y == "bar"`        | yes     |                                                       |
+| `input.x == ["foo", i]`     | yes     |                                                       |
+| `input.x[i] == "foo"`       | yes     | ground prefix `input.x` is indexed                    |
+| `input.x[_] == "foo"`       | yes     | ground prefix `input.x` is indexed                    |
+| `input.x[input.y] == "foo"` | yes     | ground prefix `input.x` is indexed                    |
+| `input.x[i].y == "foo"`     | no      | variable is not the reference's last element          |
+| `input.x[i] == ["foo"]`     | no      | non-scalar value on a reference containing a variable |
 
 #### Glob statements
 
-For `glob.match(pattern, delimiter, match)` statements to be indexed the pattern must be recognized by the indexer and the match be a non-nested reference that does not contain any variables. The indexer recognizes patterns containing the normal glob (`*`) operator but not the super glob (`**`) or character pattern matching operators.
+For `glob.match(pattern, delimiter, match)` statements to be indexed the pattern must be recognized by the indexer and the match be a non-nested reference that does not contain any variables. The indexer recognizes patterns containing the normal glob (`*`) operator but not the super glob (`**`) or character pattern matching operators. The `*` operator is only recognized when it forms a complete delimiter-separated segment of the pattern; for example, `"a*"` with delimiter `[":"]` is not indexed because the `*` is embedded in a larger segment. When several delimiters are given, any of them separates a segment. Statements that pass `null` as the delimiter are never indexed.
 
-| Expression                                   | Indexed | Reason (for not indexing)  |
-| -------------------------------------------- | ------- | -------------------------- |
-| `glob.match("foo:*:bar", [":"], input.x)`    | yes     |                            |
-| `glob.match("foo:**:bar", [":"], input.x)`   | no      | pattern contains `**`      |
-| `glob.match("foo:*:bar", [":"], input.x[i])` | no      | match contains variable(s) |
+| Expression                                     | Indexed | Notes                      |
+| ---------------------------------------------- | ------- | -------------------------- |
+| `glob.match("foo:*:bar", [":"], input.x)`      | yes     |                            |
+| `glob.match("foo:**:bar", [":"], input.x)`     | no      | pattern contains `**`      |
+| `glob.match("foo:*:bar", [":"], input.x[i])`   | no      | match contains variable(s) |
+| `glob.match("a*", [":"], input.x)`             | no      | `*` embedded in a segment  |
+| `glob.match("foo:*/bar", [":", "/"], input.x)` | yes     | any delimiter separates    |
+| `glob.match("foo:*:bar", null, input.x)`       | no      | delimiter is `null`        |
+
+#### Prefix and suffix statements
+
+For `startswith(search, base)` and `strings.any_prefix_match(search, base)` statements to be indexed the search operand must be a non-nested reference that does not contain any variables, and every base string must be known at compile time — a literal, or a variable previously assigned one. `strings.any_prefix_match` holds if any base string matches, so each of its base strings is indexed as an alternative; a base collection holding anything other than strings is not indexed at all, since indexing only part of it would exclude rules the rest would have matched. `endswith` and `strings.any_suffix_match` are indexed under the same conditions.
+
+The prefixes recorded for one reference are held in a radix trie, so a lookup walks the input value once no matter how many prefixes are indexed. A rule set with ten prefixes and one with ten thousand cost the same to look up. Several base strings do make the search operand a reference the rule reaches by more than one value, which affects what else the rule is indexed on — see [Several values for one reference](#several-values-for-one-reference).
+
+Capturing the result (`allowed := startswith(input.path, "/api")`) is not indexed: a rule producing `false` still has to be evaluated.
+
+| Expression                                               | Indexed | Notes                                     |
+| -------------------------------------------------------- | ------- | ----------------------------------------- |
+| `startswith(input.path, "/api")`                         | yes     |                                           |
+| `x := input.path; startswith(x, "/api")`                 | yes     | variable resolved to ref via assignment   |
+| `strings.any_prefix_match(input.path, ["/a", "/b"])`     | yes     | each base string is an alternative        |
+| `strings.any_prefix_match(input.path, {"/a", "/b"})`     | yes     | set literals work the same as arrays      |
+| `strings.any_prefix_match(input.path, "/api")`           | yes     | a single base string is like `startswith` |
+| `endswith(input.path, ".gz")`                            | yes     | anchored to the end instead               |
+| `strings.any_suffix_match(input.path, [".go", ".rego"])` | yes     | each base string is an alternative        |
+| `startswith(input.path, input.prefix)`                   | no      | base is not known until evaluation        |
+| `strings.any_prefix_match(input.path, input.bases)`      | no      | base is not known until evaluation        |
+| `strings.any_prefix_match(input.path, ["/a", input.b])`  | no      | base collection is not all literals       |
+| `startswith(input.path[i], "/api")`                      | no      | search contains variable(s)               |
+| `x := startswith(input.path, "/api"); x == true`         | no      | result is captured                        |
+
+:::info
+A prefix or suffix statement is indexed the way `glob.match` is, and shares its one rough edge: a rule whose search operand turns out not to be a string is excluded by the index, so the type error the call would have raised is not raised. This only shows with [strict built-in errors](./policy-language#errors) enabled, where the query would otherwise have failed rather than been undefined.
+:::
+
+#### Membership (`in`) statements
+
+For `value in collection` statements to be indexed, the value must be a scalar (or a variable previously assigned a scalar), and the collection must be either a non-nested reference without variables, or a literal set, array, or object.
+
+Both directions of membership are supported:
+
+| Expression                                | Indexed | Notes                                   |
+| ----------------------------------------- | ------- | --------------------------------------- |
+| `input.role in {"admin", "user"}`         | yes     |                                         |
+| `"admin" in input.roles`                  | yes     |                                         |
+| `input.roles[_] == "admin"`               | yes     | treated as `"admin" in input.roles`     |
+| `x := input.role; x in {"admin", "user"}` | yes     | variable resolved to ref via assignment |
+| `{"nested": "obj"} in input.items`        | no      | non-scalar membership value             |
+| `some k, v in input.obj; v == "admin"`    | no      | three-operand `in` not indexed          |
+
+A lookup for `"admin" in input.roles` walks `input.roles`, so its cost grows with the collection. For large collections, prefer an object and `input.roles["admin"]`; see [Use objects over arrays](#use-objects-over-arrays).
+
+#### Bare reference statements
+
+A bare reference used as a boolean check (without an explicit comparison) is also indexed. The indexer selects rules that reference the ref and skips rules that don't — the actual truthiness check still happens during evaluation.
+
+| Expression   | Indexed | Notes                         |
+| ------------ | ------- | ----------------------------- |
+| `input.x`    | yes     |                               |
+| `input.x.y`  | yes     |                               |
+| `input.x[i]` | no      | reference contains a variable |
+
+A reference into base data whose last element is the only variable in it is a lookup in the collection at the ground prefix, and is indexed on that last element:
+
+```rego
+allow if data.groups.admins.members[input.subject]
+```
+
+The collection's keys are not known when the index is built, so the index asks the collection as the lookup runs — one hash lookup, whatever the collection holds, and nothing stored per member. Reading it then, rather than at build time, also means a collection whose data has since changed, or that a `with` statement has replaced, is seen as it is now.
+
+Only an object is indexed this way. A set would answer the same question, but base data comes from JSON and holds none; the only thing an array can be asked for is a position, which tells a ruleset's rules apart only where their lengths differ. Nor is `input.subject in data.groups.admins.members` indexed — `in` asks after the collection's _values_, which is a walk for either.
+
+The collection is only asked about where every candidate is going to be evaluated anyway. A ruleset whose definitions all produce the same value lets evaluation stop at the first that holds, and asking about all of them to exclude any would be the work evaluation was about to do. Partial evaluation always asks, since its residual is built from every candidate, and so does a ruleset that cannot stop early — a partial set or object, or definitions that disagree on the value.
+
+| Expression                                    | Indexed | Notes                          |
+| --------------------------------------------- | ------- | ------------------------------ |
+| `data.groups.devs.members[input.subject]`     | yes     | asks the collection for a key  |
+| `data.groups[input.g].members[input.subject]` | no      | prefix contains a variable     |
+| `data.groups.devs.members[input.subject[i]]`  | no      | key contains a variable        |
+| `input.groups.devs.members[input.subject]`    | no      | collection is not in base data |
+
+#### Logical (`and`/`or`) statements
+
+Statements joined by the [`and` and `or` keywords](./policy-reference/keywords/logical) are indexed on the indexable statements found inside their operands, following the rules above. An `and` requires both of its operands, so each is indexed on its own and an operand with nothing indexable in it still leaves the other to narrow the rule. An `or` requires only one of its operands, so it is indexed only when every operand has something indexable: an operand that doesn't could be satisfied by any input, leaving nothing the rule can be excluded on. Combining the two multiplies the ways a rule can be reached, as in `{input.a == 1 or input.a == 2} and {input.b == 1 or input.b == 2}`, which has four; past 32 for a single rule only the conditions common to every combination are indexed.
+
+| Expression                             | Indexed | Notes                                 |
+| -------------------------------------- | ------- | ------------------------------------- |
+| `input.x == 1 and input.y == 2`        | yes     | both operands narrow the rule         |
+| `input.x == 1 and count(input.y) == 3` | yes     | indexed on `input.x` only             |
+| `input.x == 1 or input.x == 2`         | yes     | either value of `input.x` matches     |
+| `input.x == 1 or input.y == 2`         | yes     | both operands are indexed             |
+| `input.x == 1 or count(input.y) == 3`  | no      | `count(...)` is not indexable         |
+| `not (input.x == 1 and input.y == 2)`  | no      | negated expressions are never indexed |
+
+#### Several values for one reference
+
+Some statements leave a rule with more than one value for a single reference: `strings.any_prefix_match` with several base strings, or `in` over a collection. The rule is indexed under each of those values.
+
+Where the rule is indexed below that reference depends on the statement. The values of an `in` collection converge on one continuation, so the rule goes on being indexed on everything else it constrains, however many such references it has — as long as they are scalars. A collection holding arrays, objects or sets cannot converge, so that reference ends the rule's path the way base strings do. The base strings of a `strings.any_prefix_match` or `strings.any_suffix_match` are leaves of the radix trie described above, which cannot converge, so that reference is the last level of the index the rule appears on — whatever it constrains below is left to evaluation.
+
+The indexer orders references carrying alternatives after every other one, so a rule's single-valued constraints are indexed first either way.
+
+| Rule body                                                                                              | Indexed on           |
+| ------------------------------------------------------------------------------------------------------ | -------------------- |
+| `strings.any_prefix_match(input.path, ["/a", "/b"]); input.method == "GET"`                            | both references      |
+| `input.x in {1, 2}; input.y == 3`                                                                      | both references      |
+| `input.x in {1, 2}; input.y in {3, 4}`                                                                 | both references      |
+| `strings.any_prefix_match(input.path, ["/a", "/b"]); input.x in {1, 2}`                                | both references      |
+| `input.x in [[1], [2]]; input.y == 3`                                                                  | one reference        |
+| `strings.any_prefix_match(input.p, ["/a", "/b"]); strings.any_suffix_match(input.n, [".go", ".rego"])` | one of the two       |
+| `strings.any_prefix_match(input.p, ["/a", "/b"]); strings.any_suffix_match(input.p, [".go", ".rego"])` | one end of `input.p` |
+
+A reference reached by base strings is ordered after one reached by an `in` collection, so only a rule that reaches _two_ references by base strings loses one of them — and which of the two the author wrote first does not decide which is lost.
+
+Requiring base strings at both ends of the _same_ reference runs into the same limit from the other direction. The two sets are leaves of two tries, and a leaf cannot be made to depend on the other trie's answer, so the index tests one end and leaves the other to evaluation. Indexing both would admit a value matching either one, where the rule requires both, so it would hand more rules to evaluation than testing one end does. The end kept is the one whose shortest base string is longest: a set admits a value matching any one of its bases, so its shortest base is what decides how much it admits — `["/"]` admits every absolute path however many longer prefixes sit beside it.
+
+#### References rooted at a local variable
+
+Building a reference on top of a local variable does not defeat the indexer. When the head of a reference is a variable that was assigned a reference earlier in the rule body, the indexer resolves that head and indexes the statement as if the whole reference had been spelled out: `x := input; x.foo == "a"` is indexed just like `input.foo == "a"`.
+
+The head must resolve to a reference rooted at `input` or `data`, and the resolved reference is then subject to exactly the same conditions as one written out by hand. A head that resolves to a document produced by another rule is not indexed, since the indexer only looks up base documents. `in`, `glob.match` and the prefix and suffix statements benefit from the same resolution: the compiler hoists their reference operand into a local variable of its own, which the indexer then resolves.
+
+The resolution also applies where a local stands in for a whole value rather than the head of a reference, chained assignments included, and inside the operands of an `and` or `or`, where a local assigned in the enclosing rule body still resolves.
+
+A local assigned a scalar can also stand anywhere inside a reference: `x := "foo"; data.policy[x].yz == "v"` is indexed as `data.policy.foo.yz == "v"` is, and so is a reference holding a local assigned such a local.
+
+| Expression                                           | Indexed | Notes                                             |
+| ---------------------------------------------------- | ------- | ------------------------------------------------- |
+| `x := input; x.foo == "a"`                           | yes     | indexed as `input.foo == "a"`                     |
+| `x := input.a.b; x.c == "a"`                         | yes     | indexed as `input.a.b.c == "a"`                   |
+| `x := input.a; y := x; y.b == "a"`                   | yes     | chains of assignments resolve                     |
+| `x := input.role; y := x; y == "a"`                  | yes     | indexed as `input.role == "a"`                    |
+| `x := input; "a" in x.foo`                           | yes     |                                                   |
+| `x := input; glob.match("a/*", ["/"], x.foo)`        | yes     |                                                   |
+| `x := input; startswith(x.foo, "a/")`                | yes     |                                                   |
+| `x := input; endswith(x.foo, ".gz")`                 | yes     |                                                   |
+| `x := input; x.foo`                                  | yes     | bare reference                                    |
+| `x := input; x.foo[i] == "a"`                        | yes     | ground prefix `input.foo` is indexed              |
+| `x := "foo"; data.policy[x].yz == "v"`               | yes     | indexed as `data.policy.foo.yz == "v"`            |
+| `x := "foo"; y := x; input.a[y] == 1`                | yes     | chains of assignments resolve                     |
+| `x := "devs"; data.groups[x].members[input.subject]` | yes     | a [collection lookup](#bare-reference-statements) |
+| `x := input; x.foo[i].bar == "a"`                    | no      | variable is not the last element                  |
+| `x := {"a": 1}; x.a == 1`                            | no      | head does not resolve to a reference              |
+| `x := some_rule; x.foo == "a"`                       | no      | resolved reference is a virtual document          |
+| `f(x) if x.foo == "a"`                               | no      | head is a function argument                       |
 
 ### Early Exit in Rule Evaluation
 
@@ -304,7 +450,7 @@ the policy should generate a document like this:
 ```
 
 Since multiple ports could be exposed on a single interface, the policy must use a <GlossaryTooltip term="comprehensions">comprehension</GlossaryTooltip> to
-aggregate the port values by the interface names. To implement this logic in Rego, we would write:
+aggregate the port values by the interface names. To implement this logic in Rego:
 
 ```rego
 some i
@@ -317,7 +463,7 @@ However, with comprehension indexing, the query remains O(n) because OPA only co
 _once_. In this case, the comprehension is evaluated and all possible values of `ports` are computed
 at once. These values are indexed by the assignments of `intf`.
 
-To implement the policy above we could write:
+To implement the policy above:
 
 ```rego
 package example
@@ -428,7 +574,7 @@ When the sort criteria is not provided `total_time_ns` has the highest sort prio
 while `line` has the lowest.
 
 The `num_gen_expr` represents the number of expressions generated for a given statement on a particular line. For example,
-let's take the following policy:
+take the following policy:
 
 ```rego
 package test
@@ -441,7 +587,7 @@ p if {
 }
 ```
 
-If we profile the above policy we would get something like the following output:
+Profiling the above policy produces something like the following output:
 
 ```
 +----------+----------+----------+--------------+-------------+
@@ -455,8 +601,7 @@ If we profile the above policy we would get something like the following output:
 +----------+----------+----------+--------------+-------------+
 ```
 
-The first entry indicates that line `test.rego:8` has a `EVAL/REDO` count of `3`. If we look at the expression on line `test.rego:8`
-i.e. `x = a + b * c` it's not immediately clear why this line has a `EVAL/REDO` count of `3`. But we also notice that there
+The first entry indicates that line `test.rego:8` has a `EVAL/REDO` count of `3`. Looking at the expression on line `test.rego:8`, i.e. `x = a + b * c`, it is not immediately clear why this line has a `EVAL/REDO` count of `3`. Note also that there
 are `3` generated expressions (i.e. `NUM GEN EXPR`) at line `test.rego:8`. This is because the compiler rewrites the above policy to
 something like below:
 
@@ -797,7 +942,7 @@ PASS: 2/2
 #### Example: Benchmark RBAC unit tests and compare with `benchstat`
 
 The benchmark output formats default to `pretty`, but support a `gobench` format which complies with the
-[Golang Benchmark Data Format](https://go.googlesource.com/proposal/+/master/design/14313-benchmark-format.md).
+[Go Benchmark Data Format](https://go.googlesource.com/proposal/+/master/design/14313-benchmark-format.md).
 This allows for usage of tools like [benchstat](https://pkg.go.dev/golang.org/x/perf/cmd/benchstat?utm_source=godoc) to gain additional
 insight into the benchmark results and to diff between benchmark results.
 
@@ -844,7 +989,7 @@ DataRbacTestUserHasRoleDev                          229 ± 0%
 DataRbacTestUserHasRoleNegative                     235 ± 0%
 ```
 
-If later on a change was introduced that altered the performance we can run again:
+If a change is later introduced that alters performance, run again:
 
 ```bash
 opa test -v --bench --count 10 --format gobench ./rbac.rego ./rbac_test.rego | tee ./new.txt
@@ -859,7 +1004,7 @@ PASS: 2/2
 
 (Repeated 10 times)
 
-Then we can compare the results via:
+Compare the results via:
 
 ```bash
 benchstat ./old.txt ./new.txt
@@ -915,6 +1060,18 @@ Memory usage also scales linearly with the number of rules loaded into OPA. For 
 loading 10,000 rules that implement an ACL-style authorization policy consumes approximately
 130MB of RAM while 100,000 rules implementing the same policy (but with 10x more tuples to check)
 consumes approximately 1.1GB of RAM.
+
+These estimates describe the memory needed to keep policies and data loaded, rather than
+peak memory usage during bundle updates. When applying a snapshot bundle, OPA prepares
+the new data and compiles the new policies while the previous state is still active.
+This can temporarily increase memory usage above the steady-state level. Account for
+this peak when setting memory limits, and measure representative bundle updates while
+OPA is serving queries.
+
+The [in-memory store read optimization](#in-memory-store-read-optimization) also affects
+memory usage and update costs: precomputing AST values increases the store's memory
+footprint and write cost, while avoiding repeated conversions during policy evaluation.
+Measure updates with the store configuration you intend to use.
 
 By default, OPA stores policy and data in-memory. OPA's disk storage feature allows policy and data to be stored on disk. See [this](./storage/#disk) for more details.
 
@@ -975,6 +1132,8 @@ statements that would otherwise generate support rules.
 
 During normal operation, data values read from storage are converted to an AST representation that is used during policy evaluation.
 This conversion can be expensive both in execution time and in memory usage, especially for large data values.
+Large arrays are affected the most: objects are converted lazily, key by key, as they're accessed, but an array is converted in full as soon as it's referenced.
+Even an expression that only checks whether the array is defined, like `data.feeds` in a rule body, pays the full conversion cost on every evaluation.
 The default in-memory store can be configured to optimize for read speed by precomputing the AST representation of data values during storage write operations.
 This removes the time spent converting raw data values to AST during policy evaluation, improving performance.
 
@@ -991,7 +1150,7 @@ For high-performance use cases:
 
 - Write your policies to minimize iteration and search.
   - Use objects instead of arrays when you have a unique identifier for the elements of the array.
-  - Consider [partial-evaluation](https://blog.openpolicyagent.org/partial-evaluation-162750eaf422) to compile non-linear policies to linear policies.
-- Write your policies with indexed statements so that [rule-indexing](https://blog.openpolicyagent.org/optimizing-opa-rule-indexing-59f03f17caf3) is effective.
+  - Consider [partial-evaluation](/blog/partial-evaluation-162750eaf422) to compile non-linear policies to linear policies.
+- Write your policies with indexed statements so that [rule-indexing](/blog/optimizing-opa-rule-indexing-59f03f17caf3) is effective.
 - Use the profiler to help identify portions of the policy that would benefit the most from improved performance.
 - Use the benchmark tools to help get real world timing data and detect policy performance changes.

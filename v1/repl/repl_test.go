@@ -2,7 +2,6 @@
 // Use of this source code is governed by an Apache2
 // license that can be found in the LICENSE file.
 
-// nolint: goconst // string duplication is for test readability.
 package repl
 
 import (
@@ -13,9 +12,13 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/reeflective/readline"
+	"github.com/reeflective/readline/inputrc"
 
 	"github.com/open-policy-agent/opa/internal/presentation"
 	"github.com/open-policy-agent/opa/v1/ast"
@@ -212,7 +215,7 @@ r = 3 if { true }`)
 	}
 	buf.Reset()
 
-	result := repl.complete("")
+	result := repl.completeCandidates("")
 	expected := []string{
 		"data.a.b.c.p",
 		"data.a.b.c.q",
@@ -220,31 +223,31 @@ r = 3 if { true }`)
 		"data.repl.s",
 	}
 
-	sort.Strings(result)
-	sort.Strings(expected)
+	slices.Sort(result)
+	slices.Sort(expected)
 
-	if !reflect.DeepEqual(result, expected) {
+	if !slices.Equal(result, expected) {
 		t.Fatalf("Expected %v but got: %v", expected, result)
 	}
 
-	result = repl.complete("data.a.b")
+	result = repl.completeCandidates("data.a.b")
 	expected = []string{
 		"data.a.b.c.p",
 		"data.a.b.c.q",
 		"data.a.b.d.r",
 	}
 
-	sort.Strings(result)
-	sort.Strings(expected)
+	slices.Sort(result)
+	slices.Sort(expected)
 
-	if !reflect.DeepEqual(result, expected) {
+	if !slices.Equal(result, expected) {
 		t.Fatalf("Expected %v but got: %v", expected, result)
 	}
 
-	result = repl.complete("data.a.b.c.p[x]")
+	result = repl.completeCandidates("data.a.b.c.p[x]")
 	expected = []string{}
 
-	if !reflect.DeepEqual(result, expected) {
+	if !slices.Equal(result, expected) {
 		t.Fatalf("Expected %v but got: %v", expected, result)
 	}
 
@@ -255,14 +258,400 @@ r = 3 if { true }`)
 		t.Fatalf("Unexpected error: %v", err)
 	}
 
-	result = repl.complete("x")
-	expected = []string{
-		"xyz",
-	}
+	result = repl.completeCandidates("x")
+	expected = []string{"xyz"}
 
-	if !reflect.DeepEqual(result, expected) {
+	if !slices.Equal(result, expected) {
 		t.Fatalf("Expected %v but got: %v", expected, result)
 	}
+}
+
+func TestREPLBracketedPasteTabNotCompleted(t *testing.T) {
+	feed := func(seq string) (line string, completerCalls int) {
+		store := newTestStore()
+		var buf bytes.Buffer
+		repl := newRepl(store, &buf)
+		// Seed a completion candidate so a tab has something to complete to.
+		if err := repl.OneShot(t.Context(), "import data.foo.bar as barbaz"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		shell := repl.newShell()
+		shell.Completer = func(l []rune, c int) readline.Completions {
+			completerCalls++
+			return repl.complete(l, c)
+		}
+
+		silenceStdout(t)
+
+		shell.Keys.Feed(false, []rune(seq)...)
+		got, err := shell.Readline()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		return got, completerCalls
+	}
+
+	const (
+		bpStart = "\x1b[200~"
+		bpEnd   = "\x1b[201~"
+		payload = "x = [\"a\",\tbarbaz]"
+	)
+
+	// Bracketed paste: the tab must survive and completion must not fire.
+	if got, calls := feed(bpStart + payload + bpEnd + "\r"); got != payload || calls != 0 {
+		t.Fatalf("bracketed paste corrupted (regression of #962): got %q (want %q), completer called %d time(s) (want 0)", got, payload, calls)
+	}
+
+	// Sanity check: a raw tab (no paste markers) does trigger completion, which
+	// is the behaviour bracketed paste protects against. This guards the test
+	// itself from silently passing due to a mis-wired completer.
+	if _, calls := feed(payload + "\r"); calls == 0 {
+		t.Fatal("expected a raw tab to invoke the completer; test setup is not exercising completion")
+	}
+}
+
+func TestREPLAcceptLine(t *testing.T) {
+	repl := newRepl(newTestStore(), &bytes.Buffer{})
+
+	cases := []struct {
+		note   string
+		input  string
+		accept bool
+	}{
+		{note: "complete query", input: "1 + 1", accept: true},
+		{note: "complete assignment", input: "x := 1", accept: true},
+		{note: "unterminated rule body", input: "p if {", accept: false},
+		{note: "partial rule body", input: "p if {\n\tx := 1", accept: false},
+		{note: "closed rule body", input: "p if {\n\tx := 1\n}", accept: true},
+		{note: "unterminated collection", input: "x := [1,", accept: false},
+		// A blank line ends input that will never parse, so the error is reported.
+		{note: "blank line flushes", input: "p if {\n", accept: true},
+		{note: "whitespace line flushes", input: "p if {\n  ", accept: true},
+		{note: "empty line", input: "", accept: true},
+		{note: "command", input: "unset x", accept: true},
+		{note: "exit command", input: "exit", accept: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.note, func(t *testing.T) {
+			if got := repl.acceptLine([]rune(tc.input)); got != tc.accept {
+				t.Fatalf("acceptLine(%q) = %v, want %v", tc.input, got, tc.accept)
+			}
+		})
+	}
+
+	t.Run("multi-line buffering disabled", func(t *testing.T) {
+		repl := newRepl(newTestStore(), &bytes.Buffer{}).DisableMultiLineBuffering(true)
+		if !repl.acceptLine([]rune("p if {")) {
+			t.Fatal("expected incomplete input to be accepted when multi-line buffering is disabled")
+		}
+	})
+}
+
+// silenceStdout redirects the terminal escapes readline renders to os.Stdout.
+// Safe because these tests do not run in parallel.
+func silenceStdout(t *testing.T) {
+	t.Helper()
+
+	devnull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatalf("open devnull: %v", err)
+	}
+
+	orig := os.Stdout
+	os.Stdout = devnull
+
+	t.Cleanup(func() {
+		os.Stdout = orig
+		devnull.Close()
+	})
+}
+
+func TestREPLMultilineHistoryBlock(t *testing.T) {
+	silenceStdout(t)
+
+	historyPath := filepath.Join(t.TempDir(), "history")
+	var buf bytes.Buffer
+	repl := New(newTestStore(), historyPath, &buf, "", 0, "").WithStderrWriter(&buf)
+	shell := repl.newShell()
+
+	// Neither of the first two lines parses on its own.
+	shell.Keys.Feed(false, []rune("p if {\rx := 1\r}\r")...)
+
+	got, err := shell.Readline()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	const want = "p if {\nx := 1\n}"
+	if got != want {
+		t.Fatalf("expected the whole block to be returned as one input, got %q (want %q)", got, want)
+	}
+
+	if repl.history.Len() != 1 {
+		t.Fatalf("expected 1 history entry for the block, got %d: %v", repl.history.Len(), repl.history.Dump())
+	}
+	if entry := lineAt(t, repl.history, 0); entry != want {
+		t.Fatalf("history entry = %q, want %q", entry, want)
+	}
+
+	reloaded, err := newREPLHistory(historyPath)
+	if err != nil {
+		t.Fatalf("unexpected error reloading history: %v", err)
+	}
+	if reloaded.Len() != 1 || lineAt(t, reloaded, 0) != want {
+		t.Fatalf("expected the block to be persisted intact, got %v", reloaded.Dump())
+	}
+
+	if err := repl.oneShot(t.Context(), got, true); err != nil {
+		t.Fatalf("unexpected error evaluating block: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Rule 'p' defined") {
+		t.Fatalf("expected the rule to be defined, got output: %q", buf.String())
+	}
+	if len(repl.buffer) != 0 {
+		t.Fatalf("expected no buffered input after evaluating a block, got %v", repl.buffer)
+	}
+}
+
+func TestREPLMultilineContinuationPrompt(t *testing.T) {
+	read, write, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe: %v", err)
+	}
+
+	var rendered bytes.Buffer
+	copied := make(chan struct{})
+	go func() {
+		io.Copy(&rendered, read)
+		close(copied)
+	}()
+
+	orig := os.Stdout
+	os.Stdout = write
+
+	repl := New(newTestStore(), "", &bytes.Buffer{}, "", 0, "")
+	shell := repl.newShell()
+	shell.Keys.Feed(false, []rune("p if {\rx := 1\r}\r")...)
+	_, readErr := shell.Readline()
+
+	os.Stdout = orig
+	write.Close()
+	<-copied
+
+	if readErr != nil {
+		t.Fatalf("unexpected error: %v", readErr)
+	}
+
+	// The line being typed carries the REPL's continuation prompt, the ones
+	// above it the editor's column.
+	if out := rendered.String(); !strings.Contains(out, repl.bufferPrompt) || !strings.Contains(out, "│") {
+		t.Fatalf("expected the block's continuation lines to be marked, rendered: %q", out)
+	}
+}
+
+func TestREPLMultilineBlockParseError(t *testing.T) {
+	var buf bytes.Buffer
+	repl := newRepl(newTestStore(), &buf)
+
+	err := repl.oneShot(t.Context(), "p if {\n", true)
+	if err == nil {
+		t.Fatal("expected a parse error for an unterminated block")
+	}
+	if len(repl.buffer) != 0 {
+		t.Fatalf("expected the block to be flushed, got buffered input %v", repl.buffer)
+	}
+}
+
+func TestREPLBlockNavigation(t *testing.T) {
+	silenceStdout(t)
+
+	historyPath := filepath.Join(t.TempDir(), "history")
+	if err := os.WriteFile(historyPath, []byte("a := 1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	repl := New(newTestStore(), historyPath, &buf, "", 0, "").WithStderrWriter(&buf)
+	shell := repl.newShell()
+
+	// Type two lines of a block, move back up to the second one, and comment it
+	// out. With the default bindings the up arrow would have discarded the block
+	// in favour of the "a := 1" history entry.
+	const upArrow = "\x1b[A"
+	shell.Keys.Feed(false, []rune("p if {\rx := 1\r"+upArrow+"# \r")...)
+
+	got, err := shell.Readline()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	const want = "p if {\n# x := 1\n"
+	if got != want {
+		t.Fatalf("expected the up arrow to move within the block: got %q, want %q", got, want)
+	}
+}
+
+func TestREPLBlockNavigationRespectsUserBinds(t *testing.T) {
+	var buf bytes.Buffer
+	repl := newRepl(newTestStore(), &buf)
+	shell := repl.newShell()
+
+	const upArrow = `\M-[A`
+	key := inputrc.Unescape(upArrow)
+	if err := shell.Config.Bind("emacs", key, "beginning-of-line", false); err != nil {
+		t.Fatal(err)
+	}
+
+	repl.bindBlockNavigation(shell)
+
+	if got := shell.Config.Binds["emacs"][key].Action; got != "beginning-of-line" {
+		t.Fatalf("user binding overwritten: up arrow is bound to %q", got)
+	}
+}
+
+func TestREPLLoopNonInteractiveInput(t *testing.T) {
+	// runLoop feeds input as a non-terminal reader; it fails if Loop doesn't
+	// return before the deadline (a regression would hang or spin here).
+	runLoop := func(t *testing.T, input string) (string, error) {
+		t.Helper()
+
+		var buf bytes.Buffer
+		repl := New(newTestStore(), "", &buf, "", 0, "").
+			WithStderrWriter(&buf).
+			WithConsoleInput(strings.NewReader(input))
+
+		done := make(chan error, 1)
+		go func() { done <- repl.Loop(t.Context()) }()
+
+		select {
+		case err := <-done:
+			return buf.String(), err
+		case <-time.After(10 * time.Second):
+			t.Fatal("Loop did not return for non-interactive input; it should stop at EOF, not block or spin")
+			return "", nil
+		}
+	}
+
+	t.Run("evaluates piped lines and stops at EOF", func(t *testing.T) {
+		out, err := runLoop(t, "1 + 1\n2 + 3\n")
+		if err != nil {
+			t.Fatalf("Loop returned error: %v", err)
+		}
+		if !strings.Contains(out, "2") || !strings.Contains(out, "5") {
+			t.Fatalf("expected both piped queries to be evaluated, got: %q", out)
+		}
+	})
+
+	t.Run("exit command stops the loop", func(t *testing.T) {
+		// Anything after "exit" must not be evaluated.
+		out, err := runLoop(t, "exit\n1 + 1\n")
+		if err != nil {
+			t.Fatalf("Loop returned error: %v", err)
+		}
+		if strings.Contains(out, "2") {
+			t.Fatalf("expected input after exit to be ignored, got: %q", out)
+		}
+	})
+
+	t.Run("empty input returns immediately at EOF", func(t *testing.T) {
+		if _, err := runLoop(t, ""); err != nil {
+			t.Fatalf("Loop returned error for empty input: %v", err)
+		}
+	})
+}
+
+func TestREPLHistoryMigratesLegacyFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "history")
+
+	// A legacy peterh/liner history file: one command per line, plain text.
+	legacy := "a := 1\ndata.a.b.c\n"
+	if err := os.WriteFile(path, []byte(legacy), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	h, err := newREPLHistory(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Prior history must be preserved, in order, rather than silently dropped.
+	if got := []string{lineAt(t, h, 0), lineAt(t, h, 1)}; !reflect.DeepEqual(got, []string{"a := 1", "data.a.b.c"}) {
+		t.Fatalf("legacy history not preserved: got %v", got)
+	}
+
+	// The file must have been rewritten in the JSON-lines format so a later
+	// launch reads it natively.
+	bs, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, line := range strings.Split(strings.TrimSpace(string(bs)), "\n") {
+		var item replHistoryItem
+		if err := json.Unmarshal([]byte(line), &item); err != nil {
+			t.Fatalf("line %d not migrated to JSON: %q (%v)", i, line, err)
+		}
+	}
+
+	// Reloading the migrated file yields the same entries (no double-counting).
+	h2, err := newREPLHistory(path)
+	if err != nil {
+		t.Fatalf("unexpected error reloading: %v", err)
+	}
+	if h2.Len() != 2 {
+		t.Fatalf("expected 2 entries after reload, got %d", h2.Len())
+	}
+}
+
+func TestREPLHistoryDoesNotPersistControlInput(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "history")
+	h, err := newREPLHistory(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// "exit" is control input, never a query, so it must not be recorded.
+	if _, err := h.Write("exit"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.Write("  EXIT  "); err != nil { // parsed case-insensitively
+		t.Fatal(err)
+	}
+	if h.Len() != 0 {
+		t.Fatalf("exit should not be persisted, got %d entries", h.Len())
+	}
+
+	// While paused (exit prompt on screen), confirmation answers are dropped.
+	h.pause()
+	if _, err := h.Write("y"); err != nil {
+		t.Fatal(err)
+	}
+	if h.Len() != 0 {
+		t.Fatalf("paused history should not persist, got %d entries", h.Len())
+	}
+
+	// Resuming restores normal persistence, and "y" is a legitimate query.
+	h.resume()
+	if _, err := h.Write("y"); err != nil {
+		t.Fatal(err)
+	}
+	// Consecutive duplicates collapse, matching readline's file source.
+	if _, err := h.Write("y"); err != nil {
+		t.Fatal(err)
+	}
+	if h.Len() != 1 || lineAt(t, h, 0) != "y" {
+		t.Fatalf("expected single \"y\" entry, got %d entries", h.Len())
+	}
+}
+
+func lineAt(t *testing.T, h *replHistory, pos int) string {
+	t.Helper()
+	line, err := h.GetLine(pos)
+	if err != nil {
+		t.Fatalf("GetLine(%d): %v", pos, err)
+	}
+	return line
 }
 
 func TestDump(t *testing.T) {
@@ -675,7 +1064,28 @@ func TestTypes(t *testing.T) {
 			t.Fatalf("Expected output to contain %q but got: %v", exp[i], output)
 		}
 	}
+}
 
+func TestUndefined(t *testing.T) {
+	bbuf := new(bytes.Buffer)
+	repl := newRepl(inmem.New(), bbuf)
+
+	assertOutput := func(input, exp string) {
+		if err := repl.OneShot(t.Context(), input); err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if got := strings.TrimSpace(bbuf.String()); got != exp {
+			t.Fatalf("Expected output to be %q but got: %v", exp, got)
+		}
+		bbuf.Reset()
+	}
+
+	assertOutput("input.undefined", "undefined")
+
+	bbuf.Reset()
+	repl = repl.DisableUndefinedOutput(true)
+
+	assertOutput("input.undefined", "")
 }
 
 func TestUnknown(t *testing.T) {
@@ -1022,6 +1432,183 @@ func TestOneShotRefHeadRulePrinted(t *testing.T) {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 	expectOutput(t, buffer.String(), "Rule 'foo.bar.baz' defined in package repl. Type 'show' to see rules.\n")
+}
+
+// Ref head rules can be defined interactively, i.e. without the `if` keyword
+// and a rule body, see https://github.com/open-policy-agent/opa/issues/5498
+func TestOneShotRefHeadRuleDefinition(t *testing.T) {
+	tests := []struct {
+		note  string
+		stmts []string
+		exp   []string
+	}{
+		{
+			note:  "number key",
+			stmts: []string{`a[0] := 1`, `a`},
+			exp: []string{
+				"Rule 'a[0]' defined in package repl. Type 'show' to see rules.\n",
+				"{\n  \"0\": 1\n}\n",
+			},
+		},
+		{
+			note:  "string key",
+			stmts: []string{`a["foo"] := "bar"`, `a`},
+			exp: []string{
+				"Rule 'a.foo' defined in package repl. Type 'show' to see rules.\n",
+				"{\n  \"foo\": \"bar\"\n}\n",
+			},
+		},
+		{
+			note:  "distinct keys are kept",
+			stmts: []string{`a[0] := 1`, `a[1] := 2`, `a`},
+			exp: []string{
+				"Rule 'a[0]' defined in package repl. Type 'show' to see rules.\n",
+				"Rule 'a[1]' defined in package repl. Type 'show' to see rules.\n",
+				"{\n  \"0\": 1,\n  \"1\": 2\n}\n",
+			},
+		},
+		{
+			note:  "same key is re-defined",
+			stmts: []string{`a[0] := 1`, `a[1] := 2`, `a[0] := 3`, `a`},
+			exp: []string{
+				"Rule 'a[0]' defined in package repl. Type 'show' to see rules.\n",
+				"Rule 'a[1]' defined in package repl. Type 'show' to see rules.\n",
+				"Rule 'a[0]' re-defined in package repl. Type 'show' to see rules.\n",
+				"{\n  \"0\": 3,\n  \"1\": 2\n}\n",
+			},
+		},
+		{
+			note:  "complete rule replaces keys",
+			stmts: []string{`a[0] := 1`, `a := 2`, `a`},
+			exp: []string{
+				"Rule 'a[0]' defined in package repl. Type 'show' to see rules.\n",
+				"Rule 'a' re-defined in package repl. Type 'show' to see rules.\n",
+				"2\n",
+			},
+		},
+		{
+			note:  "dotted ref",
+			stmts: []string{`p.q.r := 1`, `p.q.s := 2`, `p`},
+			exp: []string{
+				"Rule 'p.q.r' defined in package repl. Type 'show' to see rules.\n",
+				"Rule 'p.q.s' defined in package repl. Type 'show' to see rules.\n",
+				"{\n  \"q\": {\n    \"r\": 1,\n    \"s\": 2\n  }\n}\n",
+			},
+		},
+		{
+			note:  "assignment to var key is unsafe",
+			stmts: []string{`a[i] := 1`},
+			exp:   []string{""},
+		},
+		{
+			note:  "eq statement defines rule",
+			stmts: []string{`p.q.r = 1`, `p.q.r`},
+			exp: []string{
+				"Rule 'p.q.r' defined in package repl. Type 'show' to see rules.\n",
+				"1\n",
+			},
+		},
+		{
+			// The rule isn't re-defined, the statement is a query about the
+			// existing document.
+			note:  "eq statement about defined rule is a query",
+			stmts: []string{`p.q.r := 1`, `p.q.r = 1`, `p.q.r = 2`, `p.q[i] = 1`},
+			exp: []string{
+				"Rule 'p.q.r' defined in package repl. Type 'show' to see rules.\n",
+				"true\n",
+				"undefined\n",
+				"┌─────┐\n│  i  │\n├─────┤\n│ \"r\" │\n└─────┘\n",
+			},
+		},
+		{
+			note:  "data ref is a query",
+			stmts: []string{`data.foo.bar = 1`, `show`},
+			exp: []string{
+				"undefined\n",
+				"no rules defined\n",
+			},
+		},
+		{
+			note:  "input ref is a query",
+			stmts: []string{`input.foo.bar = 1`, `show`},
+			exp: []string{
+				"undefined\n",
+				"no rules defined\n",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			ctx := t.Context()
+			var buffer bytes.Buffer
+			repl := newRepl(inmem.New(), &buffer)
+
+			for i, stmt := range tc.stmts {
+				buffer.Reset()
+				err := repl.OneShot(ctx, stmt)
+				if tc.exp[i] == "" {
+					if err == nil {
+						t.Fatalf("%q: expected error but got output: %q", stmt, buffer.String())
+					}
+					continue
+				}
+				if err != nil {
+					t.Fatalf("%q: unexpected error: %v", stmt, err)
+				}
+				if act := buffer.String(); act != tc.exp[i] {
+					t.Fatalf("%q: expected output %q but got %q", stmt, tc.exp[i], act)
+				}
+			}
+		})
+	}
+}
+
+// Ref head rules are identified by their ref, e.g. "unset a[0]" and
+// "unset foo.bar.baz".
+func TestUnsetRefHeadRule(t *testing.T) {
+	ctx := t.Context()
+	var buffer bytes.Buffer
+	repl := newRepl(inmem.New(), &buffer)
+
+	for _, stmt := range []string{`a[0] := 1`, `a[1] := 2`, `foo.bar.baz if true`} {
+		if err := repl.OneShot(ctx, stmt); err != nil {
+			t.Fatalf("%q: unexpected error: %v", stmt, err)
+		}
+	}
+
+	// Unsetting a key leaves the other keys of the document in place.
+	buffer.Reset()
+	if err := repl.OneShot(ctx, `unset a[0]`); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if err := repl.OneShot(ctx, `a`); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	expectOutput(t, buffer.String(), "{\n  \"1\": 2\n}\n")
+
+	// Unsetting a prefix of the ref removes all rules under it.
+	buffer.Reset()
+	if err := repl.OneShot(ctx, `unset a`); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if err := repl.OneShot(ctx, `unset foo.bar.baz`); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if err := repl.OneShot(ctx, `show`); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	expectOutput(t, buffer.String(), "package repl\n")
+
+	buffer.Reset()
+	if err := repl.OneShot(ctx, `unset foo.bar.baz`); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	expectOutput(t, buffer.String(), "warning: no matching rules in current module\n")
+
+	if err := repl.OneShot(ctx, `unset a[x]`); err == nil {
+		t.Fatal("Expected error for non-ground ref")
+	}
 }
 
 func TestOneShotBufferedExpr(t *testing.T) {
@@ -1401,6 +1988,115 @@ func TestOneShot_RegoVersion(t *testing.T) {
 					expErrs: []string{
 						"rego_compile_error: variables must not shadow data (use a different variable name)",
 					},
+				},
+			},
+		},
+		{
+			note:        "v1, logical keywords used, not imported",
+			regoVersion: ast.RegoV1,
+			actions: []action{
+				{
+					line:    "true or false",
+					expErrs: []string{"rego_unsafe_var_error: var or is unsafe (hint: `import future.keywords.or` to import a future keyword)"},
+				},
+			},
+		},
+		{
+			note:        "v1, logical keywords used in rule, rego.v2 imported",
+			regoVersion: ast.RegoV1,
+			actions: []action{
+				{
+					line: "import rego.v2",
+				},
+				{
+					line:      "a if { input.x or true }",
+					expOutput: "Rule 'a' defined in package repl. Type 'show' to see rules.\n",
+				},
+			},
+		},
+		{
+			note:        "v1, logical keywords used in query, rego.v2 imported",
+			regoVersion: ast.RegoV1,
+			actions: []action{
+				{
+					line: "import rego.v2",
+				},
+				{
+					line:      "true and not { false }",
+					expOutput: "true\n",
+				},
+			},
+		},
+		{
+			note:        "v0, keywords used in rule, rego.v2 imported",
+			regoVersion: ast.RegoV0,
+			actions: []action{
+				{
+					line: "import rego.v2",
+				},
+				{
+					line:      "a contains 2 if { input.x or true }",
+					expOutput: "Rule 'a' defined in package repl. Type 'show' to see rules.\n",
+				},
+			},
+		},
+		{
+			note:        "v0, keywords used in query, rego.v2 imported",
+			regoVersion: ast.RegoV0,
+			actions: []action{
+				{
+					line: "import rego.v2",
+				},
+				{
+					line:      "2 in [2] and true",
+					expOutput: "true\n",
+				},
+			},
+		},
+		{
+			note:        "v2, keywords not used",
+			regoVersion: ast.RegoV2,
+			actions: []action{
+				{
+					line: "a[2] { true }",
+					expErrs: []string{
+						"rego_parse_error: `if` keyword is required before rule body",
+						"rego_parse_error: `contains` keyword is required for partial set rules",
+					},
+				},
+			},
+		},
+		{
+			note:        "v2, logical keywords used in rule",
+			regoVersion: ast.RegoV2,
+			actions: []action{
+				{
+					line:      "a if { input.x or true }",
+					expOutput: "Rule 'a' defined in package repl. Type 'show' to see rules.\n",
+				},
+			},
+		},
+		{
+			note:        "v2, logical keywords used in query",
+			regoVersion: ast.RegoV2,
+			actions: []action{
+				{
+					line:      "true and not { false; false }",
+					expOutput: "true\n",
+				},
+			},
+		},
+		{
+			// rego.v1 doesn't lower a v2 baseline.
+			note:        "v2, logical keywords used in query, rego.v1 imported",
+			regoVersion: ast.RegoV2,
+			actions: []action{
+				{
+					line: "import rego.v1",
+				},
+				{
+					line:      "true or false",
+					expOutput: "true\n",
 				},
 			},
 		},
@@ -2884,6 +3580,337 @@ p {
 	}
 }
 
+type replAction struct {
+	line      string
+	expOutput string
+	expErrs   []string
+}
+
+func runReplActions(t *testing.T, repl *REPL, buffer *bytes.Buffer, actions []replAction) {
+	t.Helper()
+
+	ctx := t.Context()
+
+	for _, action := range actions {
+		buffer.Reset()
+		err := repl.OneShot(ctx, action.line)
+
+		if len(action.expErrs) != 0 {
+			if err == nil {
+				t.Fatalf("%q: expected error but got: %s", action.line, buffer.String())
+			}
+			for _, e := range action.expErrs {
+				if !strings.Contains(err.Error(), e) {
+					t.Fatalf("%q: expected error to contain:\n\n%q\n\nbut got:\n\n%v", action.line, e, err)
+				}
+			}
+		} else {
+			if err != nil {
+				t.Fatalf("%q: unexpected error: %v", action.line, err)
+			}
+			expectOutput(t, buffer.String(), action.expOutput)
+		}
+	}
+}
+
+func TestEvalLogicalKeywords(t *testing.T) {
+	tests := []struct {
+		note    string
+		actions []replAction
+	}{
+		{
+			note: "and, implicit operands",
+			actions: []replAction{
+				{line: "import future.keywords.and"},
+				{line: "1 == 1 and 2 == 2", expOutput: "true\n"},
+			},
+		},
+		{
+			note: "and, lhs undefined",
+			actions: []replAction{
+				{line: "import future.keywords.and"},
+				{line: "1 == 2 and 2 == 2", expOutput: "undefined\n"},
+			},
+		},
+		{
+			note: "and, explicit operands",
+			actions: []replAction{
+				{line: "import future.keywords.and"},
+				{line: "{x := 1; x == 1} and {y := 2; y == 2}", expOutput: "true\n"},
+			},
+		},
+		{
+			note: "and, implicit operands binding vars",
+			actions: []replAction{
+				{line: "import future.keywords.and"},
+				{line: "x = 1 and y = 2", expErrs: []string{"var x is unsafe", "var y is unsafe"}},
+			},
+		},
+		{
+			note: "or, lhs undefined",
+			actions: []replAction{
+				{line: "import future.keywords.or"},
+				{line: "1 == 2 or 1 == 1", expOutput: "true\n"},
+			},
+		},
+		{
+			note: "or, both operands undefined",
+			actions: []replAction{
+				{line: "import future.keywords.or"},
+				{line: "1 == 2 or 1 == 3", expOutput: "undefined\n"},
+			},
+		},
+		{
+			note: "or, nested through explicit body",
+			actions: []replAction{
+				{line: "import future.keywords"},
+				{line: "1 == 2 or {1 == 1 and {not false}}", expOutput: "true\n"},
+			},
+		},
+		{
+			note: "wildcard future import",
+			actions: []replAction{
+				{line: "import future.keywords"},
+				{line: "false or 1 == 1 and 2 == 2", expOutput: "true\n"},
+			},
+		},
+		{
+			note: "import and expression in same submission",
+			actions: []replAction{
+				{line: "import future.keywords.and\n1 == 1 and 2 == 2", expOutput: "true\n"},
+			},
+		},
+		{
+			note: "keyword not imported",
+			actions: []replAction{
+				{
+					line: "1 == 1 and 2 == 2",
+					expErrs: []string{
+						"var and is unsafe (hint: `import future.keywords.and` to import a future keyword)",
+					},
+				},
+			},
+		},
+		{
+			note: "and inside every body",
+			actions: []replAction{
+				{line: "import future.keywords"},
+				{line: "every x in [1, 2] { x > 0 and x < 3 }", expOutput: "true\n"},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		for _, regoVersion := range []ast.RegoVersion{ast.RegoV0, ast.RegoV1} {
+			t.Run(regoVersion.String()+", "+tc.note, func(t *testing.T) {
+				var buffer bytes.Buffer
+				repl := newRepl(newTestStore(), &buffer).WithRegoVersion(regoVersion)
+				runReplActions(t, repl, &buffer, tc.actions)
+			})
+		}
+	}
+}
+
+func TestEvalLogicalKeywordsRules(t *testing.T) {
+	tests := []struct {
+		note        string
+		regoVersion ast.RegoVersion
+		actions     []replAction
+	}{
+		{
+			note:        "v0, rule with or, show, unset",
+			regoVersion: ast.RegoV0,
+			actions: []replAction{
+				{line: "import future.keywords.or"},
+				{
+					line:      "p { 1 == 2 or 1 == 1 }",
+					expOutput: "Rule 'p' defined in package repl. Type 'show' to see rules.\n",
+				},
+				{line: "p", expOutput: "true\n"},
+				{line: "show", expOutput: `package repl
+
+import future.keywords.or
+
+p {
+	1 == 2 or 1 == 1
+}
+`},
+				{line: "unset p"},
+				{line: "p", expErrs: []string{"var p is unsafe"}},
+			},
+		},
+		{
+			note:        "v1, rule with or, show, unset",
+			regoVersion: ast.RegoV1,
+			actions: []replAction{
+				{line: "import future.keywords.or"},
+				{
+					line:      "p if { 1 == 2 or 1 == 1 }",
+					expOutput: "Rule 'p' defined in package repl. Type 'show' to see rules.\n",
+				},
+				{line: "p", expOutput: "true\n"},
+				{line: "show", expOutput: `package repl
+
+import future.keywords.or
+
+p if 1 == 2 or 1 == 1
+`},
+				{line: "unset p"},
+				{line: "p", expErrs: []string{"var p is unsafe"}},
+			},
+		},
+		{
+			note:        "v1, keyword import dropped on package switch",
+			regoVersion: ast.RegoV1,
+			actions: []replAction{
+				{line: "import future.keywords.and"},
+				{line: "package foo"},
+				{
+					line: "1 == 1 and 2 == 2",
+					expErrs: []string{
+						"var and is unsafe (hint: `import future.keywords.and` to import a future keyword)",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			var buffer bytes.Buffer
+			repl := newRepl(newTestStore(), &buffer).WithRegoVersion(tc.regoVersion)
+			runReplActions(t, repl, &buffer, tc.actions)
+		})
+	}
+}
+
+// Parse errors are buffered as (potentially) incomplete input, which is why an
+// or expression missing its keyword import produces no output at all.
+func TestEvalLogicalKeywordsParseErrorBuffering(t *testing.T) {
+	tests := []struct {
+		note           string
+		bufferDisabled bool
+		expErrs        []string
+	}{
+		{
+			note:           "buffering enabled",
+			bufferDisabled: false,
+		},
+		{
+			note:           "buffering disabled",
+			bufferDisabled: true,
+			expErrs:        []string{"rego_parse_error"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			var buffer bytes.Buffer
+			repl := newRepl(newTestStore(), &buffer).
+				WithRegoVersion(ast.RegoV1).
+				DisableMultiLineBuffering(tc.bufferDisabled)
+
+			runReplActions(t, repl, &buffer, []replAction{
+				{line: "p if { 1 == 2 or 1 == 1 }", expErrs: tc.expErrs},
+			})
+		})
+	}
+}
+
+func TestEvalLogicalKeywordsPartial(t *testing.T) {
+	tests := []struct {
+		note    string
+		actions []replAction
+	}{
+		{
+			note: "or query",
+			actions: []replAction{
+				{line: "import future.keywords.or"},
+				{line: "unknown input"},
+				{line: "input.x == 1 or input.y == 2", expOutput: `┌─────────┬────────────────────────────┐
+│ Query 1 │ input.x = 1 or input.y = 2 │
+└─────────┴────────────────────────────┘
+`},
+			},
+		},
+		{
+			note: "and query",
+			actions: []replAction{
+				{line: "import future.keywords.and"},
+				{line: "unknown input"},
+				{line: "input.x == 1 and input.y == 2", expOutput: `┌─────────┬─────────────────────────────┐
+│ Query 1 │ input.x = 1 and input.y = 2 │
+└─────────┴─────────────────────────────┘
+`},
+			},
+		},
+		{
+			note: "and through rule",
+			actions: []replAction{
+				{line: "import future.keywords"},
+				{line: "unknown input"},
+				{
+					line:      "p if { input.a and input.b }",
+					expOutput: "Rule 'p' defined in package repl. Type 'show' to see rules.\n",
+				},
+				{line: "p", expOutput: `┌─────────┬─────────────────────┐
+│ Query 1 │ input.a and input.b │
+└─────────┴─────────────────────┘
+`},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		for _, regoVersion := range []ast.RegoVersion{ast.RegoV0, ast.RegoV1} {
+			t.Run(regoVersion.String()+", "+tc.note, func(t *testing.T) {
+				var buffer bytes.Buffer
+				repl := newRepl(inmem.New(), &buffer).WithRegoVersion(regoVersion)
+				runReplActions(t, repl, &buffer, tc.actions)
+			})
+		}
+	}
+}
+
+func TestEvalLogicalKeywordsTrace(t *testing.T) {
+	for _, regoVersion := range []ast.RegoVersion{ast.RegoV0, ast.RegoV1} {
+		t.Run(regoVersion.String(), func(t *testing.T) {
+			var buffer bytes.Buffer
+			repl := newRepl(newTestStore(), &buffer).WithRegoVersion(regoVersion)
+
+			runReplActions(t, repl, &buffer, []replAction{
+				{line: "import future.keywords.or"},
+				{line: "trace"},
+				{line: "1 == 2 or 1 == 1", expOutput: `query:1     Enter equal(1, 2) or equal(1, 1)
+query:1     | Eval equal(1, 2) or equal(1, 1)
+query:1     | Enter equal(1, 2)
+query:1     | | Eval equal(1, 2)
+query:1     | | Fail equal(1, 2)
+query:1     | Enter equal(1, 1)
+query:1     | | Eval equal(1, 1)
+query:1     | | Exit equal(1, 1) early
+query:1     | Redo equal(1, 1)
+query:1     | | Redo equal(1, 1)
+query:1     | Exit equal(1, 2) or equal(1, 1)
+query:1     Redo equal(1, 2) or equal(1, 1)
+query:1     | Redo equal(1, 2) or equal(1, 1)
+true
+`},
+			})
+		})
+	}
+}
+
+func TestEvalNotBodyRegoV1(t *testing.T) {
+	var buffer bytes.Buffer
+	repl := newRepl(newTestStore(), &buffer).WithRegoVersion(ast.RegoV1)
+
+	runReplActions(t, repl, &buffer, []replAction{
+		{line: "import future.keywords.not"},
+		{line: "not {1 == 2}", expOutput: "true\n"},
+	})
+}
+
 func TestEvalPackage(t *testing.T) {
 	ctx := t.Context()
 	store := newTestStore()
@@ -3091,6 +4118,51 @@ func TestStrictBuiltinErrors(t *testing.T) {
 
 	if !strings.Contains(result, "divide by zero") {
 		t.Fatal("expected divide by zero error")
+	}
+}
+
+func TestTraceback(t *testing.T) {
+	ctx := t.Context()
+	store := newTestStore()
+	var buffer bytes.Buffer
+
+	repl := newRepl(store, &buffer)
+
+	if err := repl.OneShot(ctx, "strict-builtin-errors"); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if err := repl.OneShot(ctx, "1/0"); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if result := buffer.String(); strings.Contains(result, "Traceback:") {
+		t.Fatal("expected no traceback before enabling it, got:", result)
+	}
+
+	buffer.Reset()
+
+	if err := repl.OneShot(ctx, "traceback"); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if err := repl.OneShot(ctx, "1/0"); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	result := buffer.String()
+	if !strings.Contains(result, "Traceback:") {
+		t.Fatal("expected traceback, got:", result)
+	}
+	if !strings.Contains(result, "1:1: 1/0") {
+		t.Fatal("expected a frame for the query, got:", result)
+	}
+
+	buffer.Reset()
+
+	if err := repl.OneShot(ctx, "show debug"); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if !strings.Contains(buffer.String(), `"traceback": true`) {
+		t.Fatal("expected traceback to be reported by show debug, got:", buffer.String())
 	}
 }
 
@@ -3341,7 +4413,7 @@ func TestCapabilities(t *testing.T) {
 			t.Fatalf("Unexpected error: %v", err)
 		}
 	} else {
-		t.Fatalf("Expected error on http.send")
+		t.Fatal("Expected error on http.send")
 	}
 }
 

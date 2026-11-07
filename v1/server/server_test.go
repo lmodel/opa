@@ -2,7 +2,6 @@
 // Use of this source code is governed by an Apache2
 // license that can be found in the LICENSE file.
 
-// nolint: goconst // string duplication is for test readability.
 package server
 
 import (
@@ -68,7 +67,7 @@ import (
 	prom "github.com/prometheus/client_golang/prometheus"
 )
 
-func init() {
+func TestMain(m *testing.M) {
 	ast.RegisterBuiltin(&ast.Builtin{
 		Name: "test.set_outgoing",
 		Decl: astTypes.NewFunction(nil, astTypes.B),
@@ -83,6 +82,8 @@ func init() {
 			return iter(ast.BooleanTerm(true))
 		},
 	)
+
+	m.Run()
 }
 
 type tr struct {
@@ -128,6 +129,21 @@ func TestUnversionedGetHealthCheckOnlyBundlePlugin(t *testing.T) {
 	// The heath check should now respond as healthy
 	req = newReqUnversioned(http.MethodGet, "/health?bundles=true", "")
 	validateDiagnosticRequest(t, f, req, 200, `{}`)
+}
+
+func TestUnversionedGetHealthCheckNamesNotActivatedBundles(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+
+	bp := pluginBundle.New(&pluginBundle.Config{Bundles: map[string]*pluginBundle.Source{
+		"authz": {},
+		"data":  {},
+	}}, f.server.manager)
+	f.server.manager.Register(pluginBundle.Name, bp)
+
+	req := newReqUnversioned(http.MethodGet, "/health?bundles=true", "")
+	validateDiagnosticRequest(t, f, req, 500, `{"error":"one or more bundles are not activated: authz, data"}`)
 }
 
 func TestUnversionedGetHealthCheckDiscoveryWithBundle(t *testing.T) {
@@ -1206,46 +1222,45 @@ func TestCompileV1Observability(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	test.WithTempFS(nil, func(root string) {
-		disk, err := disk.New(ctx, logging.NewNoOpLogger(), nil, disk.Options{Dir: root})
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer disk.Close(ctx)
-		f := newFixtureWithStore(t, disk)
 
-		err = f.v1(http.MethodPut, "/policies/test", `package test
+	disk, err := disk.New(ctx, logging.NewNoOpLogger(), nil, disk.Options{Dir: t.TempDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer disk.Close(ctx)
+	f := newFixtureWithStore(t, disk)
+
+	err = f.v1(http.MethodPut, "/policies/test", `package test
 	import rego.v1
 
 	p if { input.x = 1 }`, 200, "")
-		if err != nil {
-			t.Fatal(err)
-		}
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		compileReq := newReqV1(http.MethodPost, "/compile?metrics&explain=full", `{
+	compileReq := newReqV1(http.MethodPost, "/compile?metrics&explain=full", `{
 		"query": "data.test.p = true"
 	}`)
 
-		f.reset()
-		f.server.Handler.ServeHTTP(f.recorder, compileReq)
+	f.reset()
+	f.server.Handler.ServeHTTP(f.recorder, compileReq)
 
-		var response types.CompileResponseV1
-		if err := json.NewDecoder(f.recorder.Body).Decode(&response); err != nil {
-			t.Fatal(err)
-		}
+	var response types.CompileResponseV1
+	if err := json.NewDecoder(f.recorder.Body).Decode(&response); err != nil {
+		t.Fatal(err)
+	}
 
-		if len(response.Explanation) == 0 {
-			t.Fatal("Expected non-empty explanation")
-		}
+	if len(response.Explanation) == 0 {
+		t.Fatal("Expected non-empty explanation")
+	}
 
-		assertMetricsExist(t, response.Metrics, []string{
-			"timer_rego_partial_eval_ns",
-			"timer_rego_query_compile_ns",
-			"timer_rego_query_parse_ns",
-			"timer_server_handler_ns",
-			"counter_disk_read_keys",
-			"timer_disk_read_ns",
-		})
+	assertMetricsExist(t, response.Metrics, []string{
+		"timer_rego_partial_eval_ns",
+		"timer_rego_query_compile_ns",
+		"timer_rego_query_parse_ns",
+		"timer_server_handler_ns",
+		"counter_disk_read_keys",
+		"timer_disk_read_ns",
 	})
 }
 
@@ -1273,6 +1288,212 @@ func TestCompileV1UnsafeBuiltin(t *testing.T) {
 
 	if err := f.v1(http.MethodPost, `/compile`, query, 400, expResp); err != nil {
 		t.Fatalf("Expected bad request but got %v", f.recorder)
+	}
+}
+
+// TestServerLogicalKeywords covers the `and`/`or` keywords across the APIs that
+// take Rego from a client: policy upload, data evaluation, ad-hoc queries and
+// the compile API.
+func TestServerLogicalKeywords(t *testing.T) {
+	t.Parallel()
+
+	v0Module := `package test
+		import future.keywords.and
+		import future.keywords.or
+
+		allow {
+			input.user == "alice" or (input.role == "admin" and input.verified)
+		}`
+
+	v1Module := `package test
+		import future.keywords.and
+		import future.keywords.or
+
+		allow if {
+			input.user == "alice" or (input.role == "admin" and input.verified)
+		}`
+
+	v2ImportModule := `package test
+		import rego.v2
+
+		allow if {
+			input.user == "alice" or (input.role == "admin" and input.verified)
+		}`
+
+	v2Module := `package test
+		allow if {
+			input.user == "alice" or (input.role == "admin" and input.verified)
+		}`
+
+	expQuery := func(s string) string {
+		body := ast.MustParseBodyWithOpts(s, ast.ParserOptions{FutureKeywords: []string{"and", "or"}})
+		return fmt.Sprintf(`{"result": {"queries": [%v]}}`, string(util.MustMarshalJSON(body)))
+	}
+
+	tests := []struct {
+		note        string
+		regoVersion ast.RegoVersion
+		trs         []tr
+	}{
+		{
+			note: "put policy, evaluate data",
+			trs: []tr{
+				{http.MethodPut, "/policies/logical", v1Module, 200, ""},
+				{http.MethodPost, "/data/test/allow", `{"input": {"user": "alice"}}`, 200, `{"result": true}`},
+				{http.MethodPost, "/data/test/allow", `{"input": {"role": "admin", "verified": true}}`, 200, `{"result": true}`},
+				{http.MethodPost, "/data/test/allow", `{"input": {"role": "admin", "verified": false}}`, 200, `{}`},
+			},
+		},
+		{
+			note:        "put policy, evaluate data (v0 rego-version)",
+			regoVersion: ast.RegoV0,
+			trs: []tr{
+				{http.MethodPut, "/policies/logical", v0Module, 200, ""},
+				{http.MethodPost, "/data/test/allow", `{"input": {"user": "alice"}}`, 200, `{"result": true}`},
+				{http.MethodPost, "/data/test/allow", `{"input": {"role": "admin", "verified": false}}`, 200, `{}`},
+			},
+		},
+		{
+			note: "put policy, rego.v2 import, evaluate data",
+			trs: []tr{
+				{http.MethodPut, "/policies/logical", v2ImportModule, 200, ""},
+				{http.MethodPost, "/data/test/allow", `{"input": {"user": "alice"}}`, 200, `{"result": true}`},
+				{http.MethodPost, "/data/test/allow", `{"input": {"role": "admin", "verified": true}}`, 200, `{"result": true}`},
+				{http.MethodPost, "/data/test/allow", `{"input": {"role": "admin", "verified": false}}`, 200, `{}`},
+			},
+		},
+		{
+			note:        "put policy, rego.v2 import, evaluate data (v0 rego-version)",
+			regoVersion: ast.RegoV0,
+			trs: []tr{
+				{http.MethodPut, "/policies/logical", v2ImportModule, 200, ""},
+				{http.MethodPost, "/data/test/allow", `{"input": {"user": "alice"}}`, 200, `{"result": true}`},
+				{http.MethodPost, "/data/test/allow", `{"input": {"role": "admin", "verified": false}}`, 200, `{}`},
+			},
+		},
+		{
+			note: "put policy, wildcard future.keywords import",
+			trs: []tr{
+				{http.MethodPut, "/policies/logical", `package test
+					import future.keywords
+					
+					allow if {
+						input.user == "alice" or (input.role == "admin" and input.verified)
+					}`, 200, ""},
+				{http.MethodPost, "/data/test/allow", `{"input": {"user": "alice"}}`, 200, `{"result": true}`},
+			},
+		},
+		{
+			note: "put policy without import is rejected",
+			trs: []tr{
+				{http.MethodPut, "/policies/logical", `package test
+					allow if {
+						input.user == "alice" or input.role == "admin"
+					}`, 400, ""},
+			},
+		},
+		{
+			note: "compile policy",
+			trs: []tr{
+				{http.MethodPut, "/policies/logical", v1Module, 200, ""},
+				{http.MethodPost, "/compile", `{
+					"unknowns": ["input"],
+					"query": "data.test.allow = true"
+				}`, 200, expQuery(`input.user = "alice" or input.role = "admin" and input.verified`)},
+			},
+		},
+		{
+			note: "compile policy, rego.v2 import",
+			trs: []tr{
+				{http.MethodPut, "/policies/logical", v2ImportModule, 200, ""},
+				{http.MethodPost, "/compile", `{
+					"unknowns": ["input"],
+					"query": "data.test.allow = true"
+				}`, 200, expQuery(`input.user = "alice" or input.role = "admin" and input.verified`)},
+			},
+		},
+		{
+			// PE saves logical expressions whole, so the residual query
+			// still refers to input paths that were not declared unknown.
+			// Clients of the compile API need to expect that.
+			note: "compile does not narrow operands using known input",
+			trs: []tr{
+				{http.MethodPut, "/policies/logical", v1Module, 200, ""},
+				{http.MethodPost, "/compile", `{
+					"unknowns": ["input.role"],
+					"input": {"user": "bob", "verified": true},
+					"query": "data.test.allow = true"
+				}`, 200, expQuery(`input.user = "alice" or input.role = "admin" and input.verified`)},
+			},
+		},
+		{
+			// The keywords are import-gated, and neither the query nor the
+			// compile API accepts imports, so there is no way to enable them
+			// for an ad-hoc query. Pinned so a future imports field shows up
+			// here as a deliberate change.
+			note: "keywords are unavailable in ad-hoc queries",
+			trs: []tr{
+				{http.MethodPost, "/query", `{"query": "input.a or input.b"}`, 400, ""},
+				{http.MethodPost, "/compile", `{"query": "input.a or input.b"}`, 400, ""},
+			},
+		},
+		{
+			note:        "put policy, evaluate data (v2 rego-version)",
+			regoVersion: ast.RegoV2,
+			trs: []tr{
+				{http.MethodPut, "/policies/logical", v2Module, 200, ""},
+				{http.MethodPost, "/data/test/allow", `{"input": {"user": "alice"}}`, 200, `{"result": true}`},
+				{http.MethodPost, "/data/test/allow", `{"input": {"role": "admin", "verified": true}}`, 200, `{"result": true}`},
+				{http.MethodPost, "/data/test/allow", `{"input": {"role": "admin", "verified": false}}`, 200, `{}`},
+			},
+		},
+		{
+			// rego.v1 doesn't lower a v2 baseline.
+			note:        "put policy, rego.v1 import, evaluate data (v2 rego-version)",
+			regoVersion: ast.RegoV2,
+			trs: []tr{
+				{http.MethodPut, "/policies/logical", `package test
+					import rego.v1
+
+					allow if {
+						input.user == "alice" or (input.role == "admin" and input.verified)
+					}`, 200, ""},
+				{http.MethodPost, "/data/test/allow", `{"input": {"user": "alice"}}`, 200, `{"result": true}`},
+			},
+		},
+		{
+			note:        "compile policy (v2 rego-version)",
+			regoVersion: ast.RegoV2,
+			trs: []tr{
+				{http.MethodPut, "/policies/logical", v2Module, 200, ""},
+				{http.MethodPost, "/compile", `{
+					"unknowns": ["input"],
+					"query": "data.test.allow = true"
+				}`, 200, expQuery(`input.user = "alice" or input.role = "admin" and input.verified`)},
+			},
+		},
+		{
+			// At a v2 baseline the keywords need no import, so ad-hoc queries can use them.
+			note:        "keywords are available in ad-hoc queries (v2 rego-version)",
+			regoVersion: ast.RegoV2,
+			trs: []tr{
+				{http.MethodPost, "/query", `{"query": "input.a or input.b"}`, 200, ""},
+				{http.MethodPost, "/compile", `{"query": "input.a or input.b", "unknowns": ["input"]}`, 200, ""},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			if tc.regoVersion != ast.RegoUndefined {
+				executeRequests(t, tc.trs, variant{
+					name: tc.regoVersion.String(),
+					opts: []any{plugins.WithParserOptions(ast.ParserOptions{RegoVersion: tc.regoVersion})},
+				})
+			} else {
+				executeRequests(t, tc.trs)
+			}
+		})
 	}
 }
 
@@ -1586,7 +1807,11 @@ p = true if { false }`
     		        "file": "test",
     		        "row": 5
     		      },
-    		      "message": "complete rules must not produce multiple outputs"
+    		      "message": "rule data.testmod.p produced conflicting values:\n  true at test:4\n  false at test:5",
+    		      "stack_trace": [
+    		        {"query_id": 2, "location": {"col": 16, "file": "test", "row": 5}},
+    		        {"query_id": 0, "location": {"col": 1, "file": "", "row": 1}}
+    		      ]
     		    }
     		  ],
     		  "message": "error(s) occurred while evaluating query"
@@ -1632,8 +1857,13 @@ p = true if { false }`
 				}
 			}`},
 			{http.MethodPatch, "/data/a%2Fb", `[{"op": "add", "path": "/e%2Ff", "value": 2}]`, 204, ""},
+			{http.MethodPut, "/data/%31/data", `1`, 204, ""},
+			{http.MethodGet, "/data/1", "", 200, `{"result": {"data": 1}}`},
 			{http.MethodPost, "/data", "", 200, `{
 				"result": {
+					"1": {
+						"data": 1
+					},
 					"a/b": {
 						"c/d": 1,
 						"e/f": 2
@@ -1666,7 +1896,11 @@ p = true if { false }`
 					  "file": "test",
 					  "row": 7,
 					  "col": 12
-					}
+					},
+					"stack_trace": [
+					  {"query_id": 1, "location": {"file": "test", "row": 7, "col": 12}},
+					  {"query_id": 0, "location": {"file": "", "row": 1, "col": 1}}
+					]
 				  }
 				]
 			  }`},
@@ -1688,7 +1922,11 @@ p = true if { false }`
 					  "file": "test",
 					  "row": 7,
 					  "col": 12
-					}
+					},
+					"stack_trace": [
+					  {"query_id": 1, "location": {"file": "test", "row": 7, "col": 12}},
+					  {"query_id": 0, "location": {"file": "", "row": 1, "col": 1}}
+					]
 				  }
 				]
 			  }`},
@@ -1707,23 +1945,21 @@ p = true if { false }`
 
 	for _, tc := range tests {
 		t.Run(tc.note, func(t *testing.T) {
-			test.WithTempFS(nil, func(root string) {
-				ctx, cancel := context.WithCancel(t.Context())
-				defer cancel()
-				disk, err := disk.New(ctx, logging.NewNoOpLogger(), nil, disk.Options{Dir: root})
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer disk.Close(ctx)
-				executeRequests(t, tc.reqs,
-					variant{"inmem", nil},
-					variant{"disk", []any{
-						func(s *Server) {
-							s.WithStore(disk)
-						},
-					}},
-				)
-			})
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			disk, err := disk.New(ctx, logging.NewNoOpLogger(), nil, disk.Options{Dir: t.TempDir()})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer disk.Close(ctx)
+			executeRequests(t, tc.reqs,
+				variant{"inmem", nil},
+				variant{"disk", []any{
+					func(s *Server) {
+						s.WithStore(disk)
+					},
+				}},
+			)
 		})
 	}
 }
@@ -1733,38 +1969,37 @@ func TestDataV1Metrics(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	test.WithTempFS(nil, func(root string) {
-		disk, err := disk.New(ctx, logging.NewNoOpLogger(), nil, disk.Options{Dir: root})
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer disk.Close(ctx)
 
-		f := newFixtureWithStore(t, disk)
-		put := newReqV1(http.MethodPut, `/data?metrics`, `{"foo":"bar"}`)
-		f.server.Handler.ServeHTTP(f.recorder, put)
+	disk, err := disk.New(ctx, logging.NewNoOpLogger(), nil, disk.Options{Dir: t.TempDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer disk.Close(ctx)
 
-		if f.recorder.Code != 200 {
-			t.Fatalf("Expected success but got %v", f.recorder)
-		}
+	f := newFixtureWithStore(t, disk)
+	put := newReqV1(http.MethodPut, `/data?metrics`, `{"foo":"bar"}`)
+	f.server.Handler.ServeHTTP(f.recorder, put)
 
-		var result types.DataResponseV1
-		err = util.UnmarshalJSON(f.recorder.Body.Bytes(), &result)
-		if err != nil {
-			t.Fatalf("Unexpected error while unmarshalling result: %v", err)
-		}
+	if f.recorder.Code != 200 {
+		t.Fatalf("Expected success but got %v", f.recorder)
+	}
 
-		assertMetricsExist(t, result.Metrics, []string{
-			"counter_disk_read_keys",
-			"counter_disk_deleted_keys",
-			"counter_disk_written_keys",
-			"counter_disk_read_bytes",
-			"timer_rego_input_parse_ns",
-			"timer_server_handler_ns",
-			"timer_disk_read_ns",
-			"timer_disk_write_ns",
-			"timer_disk_commit_ns",
-		})
+	var result types.DataResponseV1
+	err = util.UnmarshalJSON(f.recorder.Body.Bytes(), &result)
+	if err != nil {
+		t.Fatalf("Unexpected error while unmarshalling result: %v", err)
+	}
+
+	assertMetricsExist(t, result.Metrics, []string{
+		"counter_disk_read_keys",
+		"counter_disk_deleted_keys",
+		"counter_disk_written_keys",
+		"counter_disk_read_bytes",
+		"timer_rego_input_parse_ns",
+		"timer_server_handler_ns",
+		"timer_disk_read_ns",
+		"timer_disk_write_ns",
+		"timer_disk_commit_ns",
 	})
 }
 
@@ -1945,6 +2180,8 @@ func mustGZIPPayload(payload []byte) []byte {
 
 // generateJSONBenchmarkData returns a map of `k` keys and `v` key/value pairs.
 // Taken from topdown/topdown_bench_test.go
+//
+//nolint:unparam // always called with value 100, but useful to be able to change easily
 func generateJSONBenchmarkData(k, v int) map[string]any {
 	// create array of null values that can be iterated over
 	keys := make([]any, k)
@@ -2112,7 +2349,7 @@ func TestDataPostV1CompressedDecodingLimits(t *testing.T) {
 			payload:           []byte{},
 			forceContentLen:   2048, // Server should ignore this header entirely.
 			expRespHTTPStatus: 400,
-			expErrorMsg:       "request body too large",
+			expErrorMsg:       "request body too large: 2 KiB exceeds limit of 1024 bytes (server.decoding.max_length)",
 		},
 		{
 			note:              "empty message, gzip, malicious Content-Length",
@@ -2120,7 +2357,7 @@ func TestDataPostV1CompressedDecodingLimits(t *testing.T) {
 			payload:           mustGZIPPayload([]byte{}),
 			forceContentLen:   2048, // Server should ignore this header entirely.
 			expRespHTTPStatus: 400,
-			expErrorMsg:       "request body too large",
+			expErrorMsg:       "request body too large: 2 KiB exceeds limit of 1024 bytes (server.decoding.max_length)",
 		},
 		{
 			note:                  "basic - malicious size field, expect reject on gzip payload length",
@@ -2152,7 +2389,7 @@ func TestDataPostV1CompressedDecodingLimits(t *testing.T) {
 			payload:           util.MustMarshalJSON(generateJSONBenchmarkData(100, 100)),
 			expRespHTTPStatus: 400,
 			maxLen:            512,
-			expErrorMsg:       "request body too large",
+			expErrorMsg:       "exceeds limit of 512 bytes (server.decoding.max_length)",
 		},
 		{
 			note:                "basic, large payload, expect reject on Content-Length, chunked encoding",
@@ -2160,6 +2397,14 @@ func TestDataPostV1CompressedDecodingLimits(t *testing.T) {
 			payload:             util.MustMarshalJSON(generateJSONBenchmarkData(100, 100)),
 			expRespHTTPStatus:   200,
 			maxLen:              134217728,
+		},
+		{
+			note:                "basic, large payload, expect reject on max_length, chunked encoding",
+			wantChunkedEncoding: true,
+			payload:             util.MustMarshalJSON(generateJSONBenchmarkData(100, 100)),
+			expRespHTTPStatus:   400,
+			maxLen:              512,
+			expErrorMsg:         "request body too large: exceeds limit of 512 bytes (server.decoding.max_length)",
 		},
 		{
 			note:              "basic, gzip, large payload",
@@ -2176,7 +2421,7 @@ func TestDataPostV1CompressedDecodingLimits(t *testing.T) {
 			expRespHTTPStatus: 400,
 			maxLen:            1024,
 			gzipMaxLen:        10,
-			expErrorMsg:       "gzip payload too large",
+			expErrorMsg:       "request body too large: decompressed size exceeds limit of 10 bytes (server.decoding.gzip.max_length)",
 		},
 	}
 
@@ -2632,125 +2877,167 @@ func TestBundleScope(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	test.WithTempFS(nil, func(root string) {
-		disk, err := disk.New(ctx, logging.NewNoOpLogger(), nil, disk.Options{Dir: root})
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer disk.Close(ctx)
 
-		for _, v := range []variant{
-			{"inmem", nil},
-			{"disk", []any{func(s *Server) { s.WithStore(disk) }}},
-		} {
-			t.Run(v.name, func(t *testing.T) {
-				f := newFixture(t, v.opts...)
+	disk, err := disk.New(ctx, logging.NewNoOpLogger(), nil, disk.Options{Dir: t.TempDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer disk.Close(ctx)
 
-				txn := storage.NewTransactionOrDie(ctx, f.server.store, storage.WriteParams)
+	for _, v := range []variant{
+		{"inmem", nil},
+		{"disk", []any{func(s *Server) { s.WithStore(disk) }}},
+	} {
+		t.Run(v.name, func(t *testing.T) {
+			f := newFixture(t, v.opts...)
 
-				if err := bundle.WriteManifestToStore(ctx, f.server.store, txn, "test-bundle", bundle.Manifest{
-					Revision: "AAAAA",
-					Roots:    &[]string{"a/b/c", "x/y", "foobar"},
-				}); err != nil {
-					t.Fatal(err)
-				}
+			txn := storage.NewTransactionOrDie(ctx, f.server.store, storage.WriteParams)
 
-				if err := f.server.store.UpsertPolicy(ctx, txn, "someid", []byte(`package x.y.z`)); err != nil {
-					t.Fatal(err)
-				}
+			if err := bundle.WriteManifestToStore(ctx, f.server.store, txn, "test-bundle", bundle.Manifest{
+				Revision: "AAAAA",
+				Roots:    &[]string{"a/b/c", "x/y", "foobar", "q/foo bar"},
+			}); err != nil {
+				t.Fatal(err)
+			}
 
-				if err := f.server.store.Commit(ctx, txn); err != nil {
-					t.Fatal(err)
-				}
+			if err := f.server.store.UpsertPolicy(ctx, txn, "someid", []byte(`package x.y.z`)); err != nil {
+				t.Fatal(err)
+			}
 
-				cases := []tr{
-					{
-						method: "PUT",
-						path:   "/data/a/b",
-						body:   "1",
-						code:   http.StatusBadRequest,
-						resp:   `{"code": "invalid_parameter", "message": "path a/b is owned by bundle \"test-bundle\""}`,
-					},
-					{
-						method: "PUT",
-						path:   "/data/a/b/c",
-						body:   "1",
-						code:   http.StatusBadRequest,
-						resp:   `{"code": "invalid_parameter", "message": "path a/b/c is owned by bundle \"test-bundle\""}`,
-					},
-					{
-						method: "PUT",
-						path:   "/data/a/b/c/d",
-						body:   "1",
-						code:   http.StatusBadRequest,
-						resp:   `{"code": "invalid_parameter", "message": "path a/b/c/d is owned by bundle \"test-bundle\""}`,
-					},
-					{
-						method: "PUT",
-						path:   "/data/a/b/d",
-						body:   "1",
-						code:   http.StatusNoContent,
-					},
-					{
-						method: "PATCH",
-						path:   "/data/a",
-						body:   `[{"path": "/b/c", "op": "add", "value": 1}]`,
-						code:   http.StatusBadRequest,
-						resp:   `{"code": "invalid_parameter", "message": "path a/b/c is owned by bundle \"test-bundle\""}`,
-					},
-					{
-						method: "DELETE",
-						path:   "/data/a",
-						code:   http.StatusBadRequest,
-						resp:   `{"code": "invalid_parameter", "message": "path a is owned by bundle \"test-bundle\""}`,
-					},
-					{
-						method: "PUT",
-						path:   "/policies/test1",
-						body:   `package a.b`,
-						code:   http.StatusBadRequest,
-						resp:   `{"code": "invalid_parameter", "message": "path a/b is owned by bundle \"test-bundle\""}`,
-					},
-					{
-						method: "PUT",
-						path:   "/policies/someid",
-						body:   `package other.path`,
-						code:   http.StatusBadRequest,
-						resp:   `{"code": "invalid_parameter", "message": "path x/y/z is owned by bundle \"test-bundle\""}`,
-					},
-					{
-						method: "DELETE",
-						path:   "/policies/someid",
-						code:   http.StatusBadRequest,
-						resp:   `{"code": "invalid_parameter", "message": "path x/y/z is owned by bundle \"test-bundle\""}`,
-					},
-					{
-						method: "PUT",
-						path:   "/data/foo/bar",
-						body:   "1",
-						code:   http.StatusNoContent,
-					},
-					{
-						method: "PUT",
-						path:   "/data/foo",
-						body:   "1",
-						code:   http.StatusNoContent,
-					},
-					{
-						method: "PUT",
-						path:   "/data",
-						body:   `{"a": "b"}`,
-						code:   http.StatusBadRequest,
-						resp:   `{"code": "invalid_parameter", "message": "can't write to document root with bundle roots configured"}`,
-					},
-				}
+			if err := f.server.store.Commit(ctx, txn); err != nil {
+				t.Fatal(err)
+			}
 
-				if err := f.v1TestRequests(cases); err != nil {
-					t.Fatal(err)
-				}
-			})
-		}
-	})
+			cases := []tr{
+				{
+					method: "PUT",
+					path:   "/data/a/b",
+					body:   "1",
+					code:   http.StatusBadRequest,
+					resp:   `{"code": "invalid_parameter", "message": "path a/b is owned by bundle \"test-bundle\""}`,
+				},
+				{
+					method: "PUT",
+					path:   "/data/a/b/c",
+					body:   "1",
+					code:   http.StatusBadRequest,
+					resp:   `{"code": "invalid_parameter", "message": "path a/b/c is owned by bundle \"test-bundle\""}`,
+				},
+				{
+					method: "PUT",
+					path:   "/data/a/b/c/d",
+					body:   "1",
+					code:   http.StatusBadRequest,
+					resp:   `{"code": "invalid_parameter", "message": "path a/b/c/d is owned by bundle \"test-bundle\""}`,
+				},
+				{
+					method: "PUT",
+					path:   "/data/a/b/d",
+					body:   "1",
+					code:   http.StatusNoContent,
+				},
+				{
+					method: "PATCH",
+					path:   "/data/a",
+					body:   `[{"path": "/b/c", "op": "add", "value": 1}]`,
+					code:   http.StatusBadRequest,
+					resp:   `{"code": "invalid_parameter", "message": "path a/b/c is owned by bundle \"test-bundle\""}`,
+				},
+				{
+					method: "DELETE",
+					path:   "/data/a",
+					code:   http.StatusBadRequest,
+					resp:   `{"code": "invalid_parameter", "message": "path a is owned by bundle \"test-bundle\""}`,
+				},
+				{
+					method: "PUT",
+					path:   "/policies/test1",
+					body:   `package a.b`,
+					code:   http.StatusBadRequest,
+					resp:   `{"code": "invalid_parameter", "message": "path a/b is owned by bundle \"test-bundle\""}`,
+				},
+				{
+					method: "PUT",
+					path:   "/policies/someid",
+					body:   `package other.path`,
+					code:   http.StatusBadRequest,
+					resp:   `{"code": "invalid_parameter", "message": "path x/y/z is owned by bundle \"test-bundle\""}`,
+				},
+				{
+					method: "DELETE",
+					path:   "/policies/someid",
+					code:   http.StatusBadRequest,
+					resp:   `{"code": "invalid_parameter", "message": "path x/y/z is owned by bundle \"test-bundle\""}`,
+				},
+				{
+					method: "PUT",
+					path:   "/data/foo/bar",
+					body:   "1",
+					code:   http.StatusNoContent,
+				},
+				{
+					method: "PUT",
+					path:   "/data/foo",
+					body:   "1",
+					code:   http.StatusNoContent,
+				},
+				{
+					method: "PUT",
+					path:   "/data",
+					body:   `{"a": "b"}`,
+					code:   http.StatusBadRequest,
+					resp:   `{"code": "invalid_parameter", "message": "can't write to document root with bundle roots configured"}`,
+				},
+				// A root segment that needs escaping must still be recognized as
+				// owned; the request path arrives percent-encoded.
+				{
+					method: "PUT",
+					path:   "/data/q/foo%20bar",
+					body:   "1",
+					code:   http.StatusBadRequest,
+					resp:   `{"code": "invalid_parameter", "message": "path q/foo bar is owned by bundle \"test-bundle\""}`,
+				},
+				{
+					method: "PUT",
+					path:   "/data/q/foo%20bar/x",
+					body:   "1",
+					code:   http.StatusBadRequest,
+					resp:   `{"code": "invalid_parameter", "message": "path q/foo bar/x is owned by bundle \"test-bundle\""}`,
+				},
+				{
+					method: "PATCH",
+					path:   "/data/q",
+					body:   `[{"path": "/foo bar", "op": "add", "value": 1}]`,
+					code:   http.StatusBadRequest,
+					resp:   `{"code": "invalid_parameter", "message": "path q/foo bar is owned by bundle \"test-bundle\""}`,
+				},
+				{
+					method: "PUT",
+					path:   "/policies/test2",
+					body:   `package q["foo bar"]`,
+					code:   http.StatusBadRequest,
+					resp:   `{"code": "invalid_parameter", "message": "path q/foo bar is owned by bundle \"test-bundle\""}`,
+				},
+				// ...but a sibling that merely shares a prefix is not owned.
+				{
+					method: "PUT",
+					path:   "/data/q/foo",
+					body:   "1",
+					code:   http.StatusNoContent,
+				},
+				{
+					method: "PUT",
+					path:   "/policies/test3",
+					body:   `package q.foo`,
+					code:   http.StatusOK,
+				},
+			}
+
+			if err := f.v1TestRequests(cases); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
 }
 
 func TestBundleScopeMultiBundle(t *testing.T) {
@@ -2991,7 +3278,7 @@ func TestDataGetExplainFull(t *testing.T) {
 		}
 	}
 	if exitEvent < 0 {
-		t.Fatalf("Expected one exit node but found none")
+		t.Fatal("Expected one exit node but found none")
 	}
 
 	_, ok := explain[exitEvent].Node.(ast.Body)
@@ -3408,6 +3695,104 @@ func TestDataProvenanceMultiBundle(t *testing.T) {
 	}
 }
 
+const ruleLabelsTestModule = `package test
+
+import rego.v1
+
+# METADATA
+# labels:
+#   id: allow-admin
+allow if input.role == "admin"
+`
+
+func TestDataPostRuleLabels(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t, plugins.WithParserOptions(ast.ParserOptions{ProcessAnnotation: true}))
+
+	if err := f.v1(http.MethodPut, "/policies/test", ruleLabelsTestModule, 200, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedLabels := []map[string]any{{"id": "allow-admin"}}
+
+	tests := []struct {
+		note string
+		path string
+		exp  []map[string]any
+	}{
+		{note: "no param", path: "/data/test/allow", exp: nil},
+		{note: "rule_labels", path: "/data/test/allow?rule_labels", exp: expectedLabels},
+		{note: "rule_labels=true", path: "/data/test/allow?rule_labels=true", exp: expectedLabels},
+		{note: "rule_labels=false", path: "/data/test/allow?rule_labels=false", exp: nil},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			req := newReqV1(http.MethodPost, tc.path, `{"input": {"role": "admin"}}`)
+			f.reset()
+			f.server.Handler.ServeHTTP(f.recorder, req)
+
+			var result types.DataResponseV1
+			if err := util.NewJSONDecoder(f.recorder.Body).Decode(&result); err != nil {
+				t.Fatalf("Unexpected JSON decode error: %v", err)
+			}
+
+			if diff := cmp.Diff(tc.exp, result.RuleLabels); diff != "" {
+				t.Errorf("Unexpected rule labels (-want, +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDataGetRuleLabels(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t, plugins.WithParserOptions(ast.ParserOptions{ProcessAnnotation: true}))
+
+	if err := f.v1(http.MethodPut, "/policies/test", ruleLabelsTestModule, 200, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	req := newReqV1(http.MethodGet, `/data/test/allow?rule_labels&input={"role":"admin"}`, "")
+	f.reset()
+	f.server.Handler.ServeHTTP(f.recorder, req)
+
+	var result types.DataResponseV1
+	if err := util.NewJSONDecoder(f.recorder.Body).Decode(&result); err != nil {
+		t.Fatalf("Unexpected JSON decode error: %v", err)
+	}
+
+	expectedLabels := []map[string]any{{"id": "allow-admin"}}
+	if diff := cmp.Diff(expectedLabels, result.RuleLabels); diff != "" {
+		t.Errorf("Unexpected rule labels (-want, +got):\n%s", diff)
+	}
+}
+
+func TestQueryPostRuleLabels(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t, plugins.WithParserOptions(ast.ParserOptions{ProcessAnnotation: true}))
+
+	if err := f.v1(http.MethodPut, "/policies/test", ruleLabelsTestModule, 200, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	req := newReqV1(http.MethodPost, "/query?rule_labels", `{"query": "data.test.allow", "input": {"role": "admin"}}`)
+	f.reset()
+	f.server.Handler.ServeHTTP(f.recorder, req)
+
+	var result types.QueryResponseV1
+	if err := util.NewJSONDecoder(f.recorder.Body).Decode(&result); err != nil {
+		t.Fatalf("Unexpected JSON decode error: %v", err)
+	}
+
+	expectedLabels := []map[string]any{{"id": "allow-admin"}}
+	if diff := cmp.Diff(expectedLabels, result.RuleLabels); diff != "" {
+		t.Errorf("Unexpected rule labels (-want, +got):\n%s", diff)
+	}
+}
+
 func TestDataMetricsEval(t *testing.T) {
 	t.Parallel()
 
@@ -3417,67 +3802,66 @@ func TestDataMetricsEval(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	test.WithTempFS(nil, func(root string) {
-		disk, err := disk.New(ctx, logging.NewNoOpLogger(), nil, disk.Options{Dir: root})
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer disk.Close(ctx)
 
-		f := newFixtureWithStore(t, disk)
+	disk, err := disk.New(ctx, logging.NewNoOpLogger(), nil, disk.Options{Dir: t.TempDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer disk.Close(ctx)
 
-		// Make a request to evaluate `data`
-		testDataMetrics(t, f, http.MethodPost, "/data?metrics", "", []string{
-			"counter_server_query_cache_hit",
-			"counter_disk_read_keys",
-			"counter_disk_read_bytes",
-			"timer_rego_input_parse_ns",
-			"timer_rego_query_compile_ns",
-			"timer_rego_query_eval_ns",
-			"timer_server_handler_ns",
-			"timer_disk_read_ns",
-			"timer_rego_external_resolve_ns",
-		})
+	f := newFixtureWithStore(t, disk)
 
-		// Repeat previous request, expect to have hit the query cache
-		// so fewer timers should have been reported.
-		testDataMetrics(t, f, http.MethodPost, "/data?metrics", "", []string{
-			"counter_server_query_cache_hit",
-			"counter_disk_read_keys",
-			"counter_disk_read_bytes",
-			"timer_disk_read_ns",
-			"timer_rego_external_resolve_ns",
-			"timer_rego_input_parse_ns",
-			"timer_rego_query_eval_ns",
-			"timer_server_handler_ns",
-		})
+	// Make a request to evaluate `data`
+	testDataMetrics(t, f, http.MethodPost, "/data?metrics", "", []string{
+		"counter_server_query_cache_hit",
+		"counter_disk_read_keys",
+		"counter_disk_read_bytes",
+		"timer_rego_input_parse_ns",
+		"timer_rego_query_compile_ns",
+		"timer_rego_query_eval_ns",
+		"timer_server_handler_ns",
+		"timer_disk_read_ns",
+		"timer_rego_external_resolve_ns",
+	})
 
-		// Exercise the PUT, PATCH, and DELETE endpoints.
-		testDataMetrics(t, f, http.MethodPut, "/data/example?metrics", "{}", []string{
-			"counter_disk_read_keys",
-			"counter_disk_written_keys",
-			"timer_disk_commit_ns",
-			"timer_disk_read_ns",
-			"timer_disk_write_ns",
-			"timer_rego_input_parse_ns",
-			"timer_server_handler_ns",
-		})
+	// Repeat previous request, expect to have hit the query cache
+	// so fewer timers should have been reported.
+	testDataMetrics(t, f, http.MethodPost, "/data?metrics", "", []string{
+		"counter_server_query_cache_hit",
+		"counter_disk_read_keys",
+		"counter_disk_read_bytes",
+		"timer_disk_read_ns",
+		"timer_rego_external_resolve_ns",
+		"timer_rego_input_parse_ns",
+		"timer_rego_query_eval_ns",
+		"timer_server_handler_ns",
+	})
 
-		testDataMetrics(t, f, http.MethodPatch, "/data/example?metrics", "[]", []string{
-			"timer_disk_commit_ns",
-			"timer_rego_input_parse_ns",
-			"timer_server_handler_ns",
-		})
+	// Exercise the PUT, PATCH, and DELETE endpoints.
+	testDataMetrics(t, f, http.MethodPut, "/data/example?metrics", "{}", []string{
+		"counter_disk_read_keys",
+		"counter_disk_written_keys",
+		"timer_disk_commit_ns",
+		"timer_disk_read_ns",
+		"timer_disk_write_ns",
+		"timer_rego_input_parse_ns",
+		"timer_server_handler_ns",
+	})
 
-		testDataMetrics(t, f, http.MethodDelete, "/data/example?metrics", "{}", []string{
-			"counter_disk_deleted_keys",
-			"counter_disk_read_keys",
-			"counter_disk_read_bytes",
-			"timer_disk_commit_ns",
-			"timer_disk_read_ns",
-			"timer_disk_write_ns",
-			"timer_server_handler_ns",
-		})
+	testDataMetrics(t, f, http.MethodPatch, "/data/example?metrics", "[]", []string{
+		"timer_disk_commit_ns",
+		"timer_rego_input_parse_ns",
+		"timer_server_handler_ns",
+	})
+
+	testDataMetrics(t, f, http.MethodDelete, "/data/example?metrics", "{}", []string{
+		"counter_disk_deleted_keys",
+		"counter_disk_read_keys",
+		"counter_disk_read_bytes",
+		"timer_disk_commit_ns",
+		"timer_disk_read_ns",
+		"timer_disk_write_ns",
+		"timer_server_handler_ns",
 	})
 }
 
@@ -3637,7 +4021,7 @@ r contains x if { z[x] = 4 }`
 				}
 
 				if len(response) != 0 {
-					t.Fatalf("Expected empty wrapper object")
+					t.Fatal("Expected empty wrapper object")
 				}
 			}
 		})
@@ -4381,6 +4765,46 @@ func TestDecisionLoggingWithHTTPRequestContext(t *testing.T) {
 	}
 }
 
+// TestDecisionLoggingWithCancelledRequestContext ensures a cancelled/expired request
+// context doesn't reach the decision logger, since that can race a mask/drop policy
+// eval inside the logger and cause the decision event to be dropped.
+func TestDecisionLoggingWithCancelledRequestContext(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+
+	var loggedCtxErr error
+	var loggedCalls int
+
+	f.server = f.server.WithDecisionLoggerWithErr(func(ctx context.Context, _ *Info) error {
+		loggedCalls++
+		loggedCtxErr = ctx.Err()
+		return nil
+	})
+
+	req := newReqV1("GET", "/data/undefined", "")
+
+	ctx, cancel := context.WithCancel(req.Context())
+	cancel() // simulate a client disconnect / request timeout before the decision is logged
+	req = req.WithContext(ctx)
+
+	// The request context is already cancelled before the handler even runs, so the
+	// eval itself may race the cancellation and return either a successful result or
+	// an eval_cancel_error; that outcome isn't what's under test here. What matters is
+	// that the decision logger still runs exactly once, with a context that isn't
+	// cancelled.
+	f.recorder = httptest.NewRecorder()
+	f.server.Handler.ServeHTTP(f.recorder, req)
+
+	if loggedCalls != 1 {
+		t.Fatalf("Expected exactly 1 decision log call but got: %d", loggedCalls)
+	}
+
+	if loggedCtxErr != nil {
+		t.Fatalf("Expected the decision logger's context to not be cancelled, got: %v", loggedCtxErr)
+	}
+}
+
 func TestDecisionLogging(t *testing.T) {
 	t.Parallel()
 
@@ -4720,59 +5144,58 @@ func TestQueryV1(t *testing.T) {
 		t.Run(tc.note, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
-			test.WithTempFS(nil, func(root string) {
-				disk, err := disk.New(ctx, logging.NewNoOpLogger(), nil, disk.Options{Dir: root})
-				if err != nil {
-					t.Fatal(err)
+
+			disk, err := disk.New(ctx, logging.NewNoOpLogger(), nil, disk.Options{Dir: t.TempDir()})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer disk.Close(ctx)
+
+			var opts []any
+			if tc.regoVersion != ast.RegoUndefined {
+				opts = append(opts, plugins.WithParserOptions(ast.ParserOptions{RegoVersion: tc.regoVersion}))
+			}
+
+			f := newFixtureWithStore(t, disk, opts...)
+			get := newReqV1(http.MethodGet, fmt.Sprintf(`/query?q=%s&metrics`, tc.query), "")
+			f.server.Handler.ServeHTTP(f.recorder, get)
+
+			if tc.expErr {
+				if f.recorder.Code != 400 {
+					t.Fatalf("Expected error but got %v", f.recorder)
 				}
-				defer disk.Close(ctx)
-
-				var opts []any
-				if tc.regoVersion != ast.RegoUndefined {
-					opts = append(opts, plugins.WithParserOptions(ast.ParserOptions{RegoVersion: tc.regoVersion}))
+			} else {
+				if f.recorder.Code != 200 {
+					t.Fatalf("Expected success but got %v", f.recorder)
 				}
 
-				f := newFixtureWithStore(t, disk, opts...)
-				get := newReqV1(http.MethodGet, fmt.Sprintf(`/query?q=%s&metrics`, tc.query), "")
-				f.server.Handler.ServeHTTP(f.recorder, get)
-
-				if tc.expErr {
-					if f.recorder.Code != 400 {
-						t.Fatalf("Expected error but got %v", f.recorder)
-					}
-				} else {
-					if f.recorder.Code != 200 {
-						t.Fatalf("Expected success but got %v", f.recorder)
-					}
-
-					var expected types.QueryResponseV1
-					err = util.UnmarshalJSON([]byte(`{
+				var expected types.QueryResponseV1
+				err = util.UnmarshalJSON([]byte(`{
 		"result": [{"a":[1,2,3],"i":0,"x":1},{"a":[1,2,3],"i":1,"x":2},{"a":[1,2,3],"i":2,"x":3}]
 	}`), &expected)
-					if err != nil {
-						panic(err)
-					}
-
-					var result types.QueryResponseV1
-					err = util.UnmarshalJSON(f.recorder.Body.Bytes(), &result)
-					if err != nil {
-						t.Fatalf("Unexpected error while unmarshalling result: %v", err)
-					}
-
-					assertMetricsExist(t, result.Metrics, []string{
-						"counter_disk_read_keys",
-						"timer_rego_query_compile_ns",
-						"timer_rego_query_eval_ns",
-						// "timer_server_handler_ns", // TODO(sr): we're not consistent about timing this?
-						"timer_disk_read_ns",
-					})
-
-					result.Metrics = nil
-					if !reflect.DeepEqual(result, expected) {
-						t.Fatalf("Expected:\n\n%v\n\nbut got:\n\n%v", expected, result)
-					}
+				if err != nil {
+					panic(err)
 				}
-			})
+
+				var result types.QueryResponseV1
+				err = util.UnmarshalJSON(f.recorder.Body.Bytes(), &result)
+				if err != nil {
+					t.Fatalf("Unexpected error while unmarshalling result: %v", err)
+				}
+
+				assertMetricsExist(t, result.Metrics, []string{
+					"counter_disk_read_keys",
+					"timer_rego_query_compile_ns",
+					"timer_rego_query_eval_ns",
+					// "timer_server_handler_ns", // TODO(sr): we're not consistent about timing this?
+					"timer_disk_read_ns",
+				})
+
+				result.Metrics = nil
+				if !reflect.DeepEqual(result, expected) {
+					t.Fatalf("Expected:\n\n%v\n\nbut got:\n\n%v", expected, result)
+				}
+			}
 		})
 	}
 }
@@ -5111,6 +5534,90 @@ func TestAuthorization(t *testing.T) {
 	}
 }
 
+func TestAuthorizationEncodedSlash(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	store := inmem.NewFromObject(map[string]any{
+		"policy1":       map[string]any{"allow": map[string]any{"public": true}},
+		"policy1/allow": map[string]any{"secret": true},
+	})
+	m, err := plugins.New([]byte{}, "test", store)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := m.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	authzPolicy := `package system.authz
+
+		default allow := false
+
+		allow if input.path == ["v1", "data", "policy1", "allow"]
+
+		allow if input.path == ["v1", "compile", "policy1", "allow"]
+		`
+
+	txn := storage.NewTransactionOrDie(ctx, store, storage.WriteParams)
+	if err := store.UpsertPolicy(ctx, txn, "test", []byte(authzPolicy)); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := store.Commit(ctx, txn); err != nil {
+		t.Fatal(err)
+	}
+
+	server, err := New().
+		WithAddresses([]string{"localhost:8182"}).
+		WithStore(store).
+		WithManager(m).
+		WithAuthorization(AuthorizationBasic).
+		Init(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		method   string
+		path     string
+		body     string
+		accept   string
+		expCode  int
+		expValue string
+	}{
+		{method: http.MethodGet, path: "/v1/data/policy1/allow", expCode: http.StatusOK, expValue: `{"result":{"public":true}}`},
+		{method: http.MethodGet, path: "/v1/data/policy1%2Fallow", expCode: http.StatusUnauthorized},
+		{method: http.MethodGet, path: "/v1/data/policy1%2fallow", expCode: http.StatusUnauthorized},
+		{method: http.MethodGet, path: "/v1/data/policy1%252Fallow", expCode: http.StatusUnauthorized},
+		{method: http.MethodPut, path: "/v1/data/policy1%2Fallow", body: `{}`, expCode: http.StatusUnauthorized},
+		{method: http.MethodPost, path: "/v1/compile/policy1%2Fallow", body: `{}`, accept: "application/vnd.opa.multitarget+json", expCode: http.StatusOK},
+		{method: http.MethodPost, path: "/v1/compile/policy1%252Fallow", body: `{}`, accept: "application/vnd.opa.multitarget+json", expCode: http.StatusUnauthorized},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.method+" "+tc.path, func(t *testing.T) {
+			req, err := http.NewRequest(tc.method, "http://localhost:8182"+tc.path, strings.NewReader(tc.body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tc.accept != "" {
+				req.Header.Set("Accept", tc.accept)
+			}
+
+			recorder := httptest.NewRecorder()
+			server.Handler.ServeHTTP(recorder, req)
+			if recorder.Code != tc.expCode {
+				t.Fatalf("expected code %d but got %d: %s", tc.expCode, recorder.Code, recorder.Body)
+			}
+			if tc.expValue != "" && strings.TrimSpace(recorder.Body.String()) != tc.expValue {
+				t.Fatalf("expected body %s but got %s", tc.expValue, recorder.Body)
+			}
+		})
+	}
+}
+
 func TestAuthorizationUsesInterQueryCache(t *testing.T) {
 	t.Parallel()
 
@@ -5351,7 +5858,7 @@ func TestServerClearsCompilerConflictCheck(t *testing.T) {
 
 	// internal helpers should now give the new compiler back
 	if f.server.getCompiler() != c {
-		t.Fatalf("Expected to get the updated compiler")
+		t.Fatal("Expected to get the updated compiler")
 	}
 }
 
@@ -5729,7 +6236,7 @@ func newStreamedReqUnversioned(method string, path string, body io.Reader) *http
 
 func mustUnmarshalTrace(t types.TraceV1) (trace types.TraceV1Raw) {
 	if err := json.Unmarshal(t, &trace); err != nil {
-		panic("not reached")
+		panic(err)
 	}
 	return trace
 }
@@ -6107,7 +6614,7 @@ func TestDistributedTracingEnabled(t *testing.T) {
 		}}`)
 
 	ctx := t.Context()
-	_, _, _, err := distributedtracing.Init(ctx, c, "foo")
+	_, _, _, _, err := distributedtracing.Init(ctx, c, "foo")
 	if err != nil {
 		t.Fatalf("Unexpected error initializing gRPC trace exporter %v", err)
 	}
@@ -6116,7 +6623,7 @@ func TestDistributedTracingEnabled(t *testing.T) {
 		"type": "http"
 		}}`)
 
-	_, _, _, err = distributedtracing.Init(ctx, c, "foo")
+	_, _, _, _, err = distributedtracing.Init(ctx, c, "foo")
 	if err != nil {
 		t.Fatalf("Unexpected error initializing HTTP trace exporter %v", err)
 	}
@@ -6149,15 +6656,15 @@ func TestDistributedTracingResourceAttributes(t *testing.T) {
 		attributes[semconv.DeploymentEnvironmentKey])
 
 	ctx := t.Context()
-	_, traceProvider, resource, err := distributedtracing.Init(ctx, c, "foo")
+	_, traceProvider, resource, _, err := distributedtracing.Init(ctx, c, "foo")
 	if err != nil {
 		t.Fatalf("Unexpected error initializing trace exporter %v", err)
 	}
 	if traceProvider == nil {
-		t.Fatalf("Tracer provider was not initialized")
+		t.Fatal("Tracer provider was not initialized")
 	}
 	if resource == nil {
-		t.Fatalf("Resource was not initialized")
+		t.Fatal("Resource was not initialized")
 	}
 	if len(resource.Attributes()) != 5 {
 		t.Fatalf("Unexpected resource attributes count. Expected: %v, Got: %v", 5, len(resource.Attributes()))

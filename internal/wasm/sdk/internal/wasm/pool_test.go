@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/open-policy-agent/opa/internal/wasm/sdk/internal/wasm"
+	sdk_errors "github.com/open-policy-agent/opa/internal/wasm/sdk/opa/errors"
 	wasm_util "github.com/open-policy-agent/opa/internal/wasm/util"
 	"github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/bundle"
@@ -222,23 +223,53 @@ func initPoolWithData(t *testing.T, size uint32, module string, entrypoint strin
 	}
 
 	if testPool.Size() != 1 {
-		t.Fatalf("Expected a single vm to be initialized with data")
+		t.Fatal("Expected a single vm to be initialized with data")
 	}
 
 	parsedDataAddr, parsedData := testPool.ParsedData()
 	if parsedDataAddr == 0 {
-		t.Fatalf("Expected parsedDataAddr to be non-nil")
+		t.Fatal("Expected parsedDataAddr to be non-nil")
 	}
 
 	if len(parsedData) == 0 {
-		t.Fatalf("Expected parsedData to be non-nil")
+		t.Fatal("Expected parsedData to be non-nil")
 	}
 
 	vm := testPool.Wait(0)
 	if vm == nil {
-		t.Fatalf("Expected non-nil initial vm")
+		t.Fatal("Expected non-nil initial vm")
 	}
 
 	testPool.Release(vm, metrics.New())
 	return testPool
+}
+
+// TestPoolAcquireCancelledContext ensures that acquiring a VM with an already
+// cancelled context surfaces a cancellation error in the SDK's error vocabulary
+// (sdk_errors.IsCancel), rather than a bare context error. This matters when a
+// deadline shared with PrepareForEval is exhausted before Eval reaches Acquire.
+func TestPoolAcquireCancelledContext(t *testing.T) {
+	module := `package test
+	p = true
+	`
+	testPool := initPoolWithData(t, 1, module, "test/p", []byte(`{}`))
+
+	// Hold the only VM so the next Acquire cannot take an available slot and
+	// must observe the cancelled context.
+	held, err := testPool.Acquire(context.Background(), metrics.New())
+	if err != nil {
+		t.Fatalf("unexpected error acquiring initial vm: %s", err)
+	}
+	defer testPool.Release(held, metrics.New())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err = testPool.Acquire(ctx, metrics.New())
+	if err == nil {
+		t.Fatal("expected error acquiring with cancelled context")
+	}
+	if !sdk_errors.IsCancel(err) {
+		t.Fatalf("expected sdk_errors.IsCancel, got %[1]v (%[1]T)", err)
+	}
 }

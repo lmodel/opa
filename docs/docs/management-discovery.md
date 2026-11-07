@@ -160,9 +160,9 @@ default them to the value from the boot configuration.
 
 ### Example
 
-Let's see an example of how the discovery feature can be used to dynamically
+The following example shows how the discovery feature can be used to dynamically
 configure an OPA to download one of two bundles based on a label in the boot
-configuration. Let's say the label `region` indicates the region in which the
+configuration. Assume the label `region` indicates the region in which the
 OPA is running and it's value will decide the bundle to download.
 
 Below is a policy file which generates an OPA configuration.
@@ -280,9 +280,20 @@ bundle before activating it. The format of the `.signatures.json` file and the v
 regular bundles. Since the discovered configuration ignores changes to the `discovery` section, any key used for
 signature verification of a discovery bundle **CANNOT** be modified via discovery.
 
-> 🚨 We recommend that if you are using discovery you should be signing the discovery bundles because those bundles
-> include the keys used to verify the non-discovery bundles. However, OPA does not enforce that recommendation. You may use
-> unsigned discovery bundles that themselves require non-discovery bundles to be signed.
+:::warning
+It is recommended to sign discovery bundles because those bundles
+include the keys used to verify the non-discovery bundles. However, OPA does not enforce that recommendation. You may use
+unsigned discovery bundles that themselves require non-discovery bundles to be signed.
+
+Note that a discovered configuration may _omit_ the `keys` section, which disables signature enforcement for every bundle
+loaded afterwards. An unsigned discovery bundle therefore places the verification of all other bundles in the hands of
+whoever serves it, which is not recommended.
+:::
+
+Verification is enforced when a `discovery.signing` block is present, whatever it contains; a discovery bundle with
+no `.signatures.json` file is then rejected.
+Configuring top-level `keys` without a `discovery.signing` block is _not_ an opt-in: the signature is verified
+when present, but a discovery bundle without one is activated, and OPA logs a warning at startup.
 
 To enable signature verification for discovery bundles, add the `signing` field to your discovery configuration and define the verification key:
 
@@ -328,8 +339,8 @@ configuration will always be used.
 
 ## Ecosystem Projects
 
-Configuring OPA using Discovery Bundles is a powerful production feature.
+Configuring OPA using Discovery Bundles is a production-grade feature.
 
 <EcosystemEmbed feature="wasm-integration">
-Wasm is a great way to integrate OPA into applications where the Go SDK is unavailable.
+Wasm can be used to integrate OPA into applications where the Go SDK is unavailable.
 </EcosystemEmbed>

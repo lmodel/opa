@@ -136,11 +136,12 @@ func toFieldNode(op string, r ast.Ref, v ast.Value, opts *Opts, refOK bool) *uca
 	}
 }
 
-var reversed = map[string]string{
-	"lt":  "gte",
-	"lte": "gt",
-	"gt":  "lte",
-	"gte": "lt",
+// mirrored maps a comparison to the one that holds with its operands swapped.
+var mirrored = map[string]string{
+	"lt":  "gt",
+	"lte": "gte",
+	"gt":  "lt",
+	"gte": "lte",
 }
 
 // callToNode converts a call expression to a UCASTNode, and flips the arguments
@@ -160,9 +161,9 @@ func callToNode(e *ast.Expr, f ast.Ref, flip bool, opts *Opts) *ucast.UCASTNode 
 		ast.GreaterThan.Name,
 		ast.GreaterThanEq.Name:
 		refOK = true
-	case ast.StartsWith.Name:
-	case ast.EndsWith.Name:
-	case ast.Contains.Name:
+	case ast.StartsWith.Name,
+		ast.EndsWith.Name,
+		ast.Contains.Name:
 	case ast.Member.Name:
 		op = "in"
 	default:
@@ -172,7 +173,7 @@ func callToNode(e *ast.Expr, f ast.Ref, flip bool, opts *Opts) *ucast.UCASTNode 
 	i := 1
 	if flip {
 		i = 0
-		op = cmp.Or(reversed[op], op) // optionally replace operator
+		op = cmp.Or(mirrored[op], op) // optionally replace operator
 	}
 
 	fn := toFieldNode(op, f, e.Operand(i).Value, opts, refOK)
@@ -208,8 +209,8 @@ func translateField(field string, translations map[string]any) string {
 	if tableMapping := translations[before]; tableMapping != nil {
 		if tableMapping, ok := tableMapping.(map[string]any); ok {
 			// See if there's a $table ref for the short unknown, and remap.
-			if tableName, ok := tableMapping["$table"]; ok {
-				outTable = tableName.(string)
+			if tableName, ok := tableMapping["$table"].(string); ok {
+				outTable = tableName
 				// swap, make believe we picked up '<outTable>.name', not 'name'
 				before, after, found = outTable, before, true
 				outColumn = after
@@ -220,13 +221,13 @@ func translateField(field string, translations map[string]any) string {
 	if tableMapping, ok := translations[before]; ok {
 		if tableMapping, ok := tableMapping.(map[string]any); ok {
 			// See if there's a mapping for the table name, and remap.
-			if tableName, ok := tableMapping["$self"]; ok {
-				outTable = tableName.(string) // XXX: be more cautious about the type
+			if tableName, ok := tableMapping["$self"].(string); ok {
+				outTable = tableName
 			}
 			// If we have a column name, try remapping it.
 			if found {
-				if columnName, ok := tableMapping[after]; ok {
-					outColumn = columnName.(string)
+				if columnName, ok := tableMapping[after].(string); ok {
+					outColumn = columnName
 				}
 			}
 		}
