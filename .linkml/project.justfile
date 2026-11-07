@@ -15,3 +15,15 @@ gen-linkml:
 [group('model development')]
 check-linkml:
   uv run python scripts/opa_to_linkml.py --check
+
+# ============ Upstream ============
+
+# Report whether OPA has released past the merged tag, and what moved on its default branch
+[group('model development')]
+check-upstream:
+  uv run python scripts/check_upstream_release.py
+
+# Write tests/upstream_tree.tsv from OPA's tree at a commit, after a merge of its release
+[group('model development')]
+pin-opa-tree commit:
+  uv run python scripts/pin_opa_tree.py {{commit}}
