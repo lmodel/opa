@@ -1,0 +1,32 @@
+{
+  "body": {
+    "input": {
+      "x": 1
+    }
+  },
+  "headers": {
+    "Accept-Encoding": [
+      "identity"
+    ],
+    "Connection": [
+      "close"
+    ],
+    "Content-Length": [
+      "19"
+    ],
+    "Content-Type": [
+      "application/json"
+    ],
+    "User-Agent": [
+      "Python-urllib/3.14"
+    ]
+  },
+  "method": "POST",
+  "params": {},
+  "path": [
+    "v1",
+    "data",
+    "http",
+    "example"
+  ]
+}

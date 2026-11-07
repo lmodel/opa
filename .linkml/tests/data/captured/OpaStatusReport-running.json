@@ -1,0 +1,2478 @@
+{
+  "labels": {
+    "id": "0e82b58c-d645-408e-9117-82be944ae3b4",
+    "region": "eu-west-1",
+    "version": "1.22.2"
+  },
+  "bundles": {
+    "authz": {
+      "name": "authz",
+      "active_revision": "rev-1",
+      "last_successful_activation": "2026-11-07T10:29:09.233910056Z",
+      "type": "snapshot",
+      "size": 591,
+      "last_successful_download": "2026-11-07T10:29:09.228259994Z",
+      "last_successful_request": "2026-11-07T10:29:09.228259994Z",
+      "last_request": "2026-11-07T10:29:09.228259994Z",
+      "metrics": {
+        "timer_bundle_request_ns": 1839947,
+        "timer_rego_load_bundles_ns": 6822186,
+        "timer_rego_module_compile_ns": 763891,
+        "timer_rego_module_parse_ns": 617634
+      }
+    },
+    "missing": {
+      "name": "missing",
+      "last_successful_activation": "0001-01-01T00:00:00Z",
+      "last_successful_download": "0001-01-01T00:00:00Z",
+      "last_successful_request": "0001-01-01T00:00:00Z",
+      "last_request": "2026-11-07T10:29:10.665010202Z",
+      "code": "bundle_error",
+      "message": "server replied with Not Found",
+      "metrics": {
+        "timer_bundle_request_ns": 706977
+      },
+      "http_code": 404
+    }
+  },
+  "decision_logs": {
+    "code": "decision_log_error",
+    "message": "log upload failed, server replied with HTTP 500 Internal Server Error",
+    "http_code": 500
+  },
+  "metrics": {
+    "prometheus": {
+      "counter_decision_logs_chunks_upload_failed": 1,
+      "counter_status_dropped_buffer_limit_exceeded": 2,
+      "go_cgo_go_to_c_calls_calls_total": {
+        "name": "go_cgo_go_to_c_calls_calls_total",
+        "help": "Count of calls made from Go to C by the current process. Sourced from /cgo/go-to-c-calls:calls.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200060696Z"
+            }
+          }
+        ],
+        "unit": "calls"
+      },
+      "go_cpu_classes_gc_mark_assist_cpu_seconds_total": {
+        "name": "go_cpu_classes_gc_mark_assist_cpu_seconds_total",
+        "help": "Estimated total CPU time goroutines spent performing GC tasks to assist the GC and prevent it from falling behind the application. This metric is an overestimate, and not directly comparable to system CPU time measurements. Compare only with other /cpu/classes metrics. Sourced from /cpu/classes/gc/mark/assist:cpu-seconds.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0.002487053,
+              "createdTimestamp": "2026-11-07T10:29:09.200064467Z"
+            }
+          }
+        ],
+        "unit": "cpu_seconds"
+      },
+      "go_cpu_classes_gc_mark_dedicated_cpu_seconds_total": {
+        "name": "go_cpu_classes_gc_mark_dedicated_cpu_seconds_total",
+        "help": "Estimated total CPU time spent performing GC tasks on processors (as defined by GOMAXPROCS) dedicated to those tasks. This metric is an overestimate, and not directly comparable to system CPU time measurements. Compare only with other /cpu/classes metrics. Sourced from /cpu/classes/gc/mark/dedicated:cpu-seconds.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0.011635018,
+              "createdTimestamp": "2026-11-07T10:29:09.200066721Z"
+            }
+          }
+        ],
+        "unit": "cpu_seconds"
+      },
+      "go_cpu_classes_gc_mark_idle_cpu_seconds_total": {
+        "name": "go_cpu_classes_gc_mark_idle_cpu_seconds_total",
+        "help": "Estimated total CPU time spent performing GC tasks on spare CPU resources that the Go scheduler could not otherwise find a use for. This should be subtracted from the total GC CPU time to obtain a measure of compulsory GC CPU time. This metric is an overestimate, and not directly comparable to system CPU time measurements. Compare only with other /cpu/classes metrics. Sourced from /cpu/classes/gc/mark/idle:cpu-seconds.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0.016787751,
+              "createdTimestamp": "2026-11-07T10:29:09.200071317Z"
+            }
+          }
+        ],
+        "unit": "cpu_seconds"
+      },
+      "go_cpu_classes_gc_pause_cpu_seconds_total": {
+        "name": "go_cpu_classes_gc_pause_cpu_seconds_total",
+        "help": "Estimated total CPU time spent with the application paused by the GC. Even if only one thread is running during the pause, this is computed as GOMAXPROCS times the pause latency because nothing else can be executing. This is the exact sum of samples in /sched/pauses/total/gc:seconds if each sample is multiplied by GOMAXPROCS at the time it is taken. This metric is an overestimate, and not directly comparable to system CPU time measurements. Compare only with other /cpu/classes metrics. Sourced from /cpu/classes/gc/pause:cpu-seconds.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0.001875775,
+              "createdTimestamp": "2026-11-07T10:29:09.200073082Z"
+            }
+          }
+        ],
+        "unit": "cpu_seconds"
+      },
+      "go_cpu_classes_gc_total_cpu_seconds_total": {
+        "name": "go_cpu_classes_gc_total_cpu_seconds_total",
+        "help": "Estimated total CPU time spent performing GC tasks. This metric is an overestimate, and not directly comparable to system CPU time measurements. Compare only with other /cpu/classes metrics. Sum of all metrics in /cpu/classes/gc. Sourced from /cpu/classes/gc/total:cpu-seconds.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0.032785597,
+              "createdTimestamp": "2026-11-07T10:29:09.200074487Z"
+            }
+          }
+        ],
+        "unit": "cpu_seconds"
+      },
+      "go_cpu_classes_idle_cpu_seconds_total": {
+        "name": "go_cpu_classes_idle_cpu_seconds_total",
+        "help": "Estimated total available CPU time not spent executing any Go or Go runtime code. In other words, the part of /cpu/classes/total:cpu-seconds that was unused. This metric is an overestimate, and not directly comparable to system CPU time measurements. Compare only with other /cpu/classes metrics. Sourced from /cpu/classes/idle:cpu-seconds.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 3.493574023,
+              "createdTimestamp": "2026-11-07T10:29:09.200076257Z"
+            }
+          }
+        ],
+        "unit": "cpu_seconds"
+      },
+      "go_cpu_classes_scavenge_assist_cpu_seconds_total": {
+        "name": "go_cpu_classes_scavenge_assist_cpu_seconds_total",
+        "help": "Estimated total CPU time spent returning unused memory to the underlying platform in response eagerly to memory pressure. This metric is an overestimate, and not directly comparable to system CPU time measurements. Compare only with other /cpu/classes metrics. Sourced from /cpu/classes/scavenge/assist:cpu-seconds.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 1.6e-07,
+              "createdTimestamp": "2026-11-07T10:29:09.200077988Z"
+            }
+          }
+        ],
+        "unit": "cpu_seconds"
+      },
+      "go_cpu_classes_scavenge_background_cpu_seconds_total": {
+        "name": "go_cpu_classes_scavenge_background_cpu_seconds_total",
+        "help": "Estimated total CPU time spent performing background tasks to return unused memory to the underlying platform. This metric is an overestimate, and not directly comparable to system CPU time measurements. Compare only with other /cpu/classes metrics. Sourced from /cpu/classes/scavenge/background:cpu-seconds.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 1.98e-07,
+              "createdTimestamp": "2026-11-07T10:29:09.200079584Z"
+            }
+          }
+        ],
+        "unit": "cpu_seconds"
+      },
+      "go_cpu_classes_scavenge_total_cpu_seconds_total": {
+        "name": "go_cpu_classes_scavenge_total_cpu_seconds_total",
+        "help": "Estimated total CPU time spent performing tasks that return unused memory to the underlying platform. This metric is an overestimate, and not directly comparable to system CPU time measurements. Compare only with other /cpu/classes metrics. Sum of all metrics in /cpu/classes/scavenge. Sourced from /cpu/classes/scavenge/total:cpu-seconds.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 3.58e-07,
+              "createdTimestamp": "2026-11-07T10:29:09.200081069Z"
+            }
+          }
+        ],
+        "unit": "cpu_seconds"
+      },
+      "go_cpu_classes_total_cpu_seconds_total": {
+        "name": "go_cpu_classes_total_cpu_seconds_total",
+        "help": "Estimated total available CPU time for user Go code or the Go runtime, as defined by GOMAXPROCS. In other words, GOMAXPROCS integrated over the wall-clock duration this process has been executing for. This metric is an overestimate, and not directly comparable to system CPU time measurements. Compare only with other /cpu/classes metrics. Sum of all metrics in /cpu/classes. Sourced from /cpu/classes/total:cpu-seconds.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 3.638562372,
+              "createdTimestamp": "2026-11-07T10:29:09.200082508Z"
+            }
+          }
+        ],
+        "unit": "cpu_seconds"
+      },
+      "go_cpu_classes_user_cpu_seconds_total": {
+        "name": "go_cpu_classes_user_cpu_seconds_total",
+        "help": "Estimated total CPU time spent running user Go code. This may also include some small amount of time spent in the Go runtime. This metric is an overestimate, and not directly comparable to system CPU time measurements. Compare only with other /cpu/classes metrics. Sourced from /cpu/classes/user:cpu-seconds.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0.112202394,
+              "createdTimestamp": "2026-11-07T10:29:09.200083865Z"
+            }
+          }
+        ],
+        "unit": "cpu_seconds"
+      },
+      "go_gc_cleanups_executed_cleanups_total": {
+        "name": "go_gc_cleanups_executed_cleanups_total",
+        "help": "Approximate total count of cleanup functions (created by runtime.AddCleanup) executed by the runtime. Subtract /gc/cleanups/queued:cleanups to approximate cleanup queue length. Useful for detecting slow cleanups holding up the queue. Sourced from /gc/cleanups/executed:cleanups.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200085353Z"
+            }
+          }
+        ],
+        "unit": "cleanups"
+      },
+      "go_gc_cleanups_queued_cleanups_total": {
+        "name": "go_gc_cleanups_queued_cleanups_total",
+        "help": "Approximate total count of cleanup functions (created by runtime.AddCleanup) queued by the runtime for execution. Subtract from /gc/cleanups/executed:cleanups to approximate cleanup queue length. Useful for detecting slow cleanups holding up the queue. Sourced from /gc/cleanups/queued:cleanups.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200086751Z"
+            }
+          }
+        ],
+        "unit": "cleanups"
+      },
+      "go_gc_cycles_automatic_gc_cycles_total": {
+        "name": "go_gc_cycles_automatic_gc_cycles_total",
+        "help": "Count of completed GC cycles generated by the Go runtime. Sourced from /gc/cycles/automatic:gc-cycles.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 9,
+              "createdTimestamp": "2026-11-07T10:29:09.200088441Z"
+            }
+          }
+        ],
+        "unit": "gc_cycles"
+      },
+      "go_gc_cycles_forced_gc_cycles_total": {
+        "name": "go_gc_cycles_forced_gc_cycles_total",
+        "help": "Count of completed GC cycles forced by the application. Sourced from /gc/cycles/forced:gc-cycles.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200089782Z"
+            }
+          }
+        ],
+        "unit": "gc_cycles"
+      },
+      "go_gc_cycles_total_gc_cycles_total": {
+        "name": "go_gc_cycles_total_gc_cycles_total",
+        "help": "Count of all completed GC cycles. Sourced from /gc/cycles/total:gc-cycles.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 9,
+              "createdTimestamp": "2026-11-07T10:29:09.200091310Z"
+            }
+          }
+        ],
+        "unit": "gc_cycles"
+      },
+      "go_gc_duration_seconds": {
+        "name": "go_gc_duration_seconds",
+        "help": "A summary of the wall-time pause (stop-the-world) duration in garbage collection cycles.",
+        "type": "SUMMARY",
+        "metric": [
+          {
+            "summary": {
+              "sampleCount": "9",
+              "sampleSum": 0.000598197,
+              "quantile": [
+                {
+                  "quantile": 0,
+                  "value": 3.1604e-05
+                },
+                {
+                  "quantile": 0.25,
+                  "value": 4.472e-05
+                },
+                {
+                  "quantile": 0.5,
+                  "value": 4.6261e-05
+                },
+                {
+                  "quantile": 0.75,
+                  "value": 5.2848e-05
+                },
+                {
+                  "quantile": 1,
+                  "value": 0.000187814
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "go_gc_finalizers_executed_finalizers_total": {
+        "name": "go_gc_finalizers_executed_finalizers_total",
+        "help": "Total count of finalizer functions (created by runtime.SetFinalizer) executed by the runtime. Subtract /gc/finalizers/queued:finalizers to approximate finalizer queue length. Useful for detecting finalizers overwhelming the queue, either by being too slow, or by there being too many of them. Sourced from /gc/finalizers/executed:finalizers.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200092838Z"
+            }
+          }
+        ],
+        "unit": "finalizers"
+      },
+      "go_gc_finalizers_queued_finalizers_total": {
+        "name": "go_gc_finalizers_queued_finalizers_total",
+        "help": "Total count of finalizer functions (created by runtime.SetFinalizer) and queued by the runtime for execution. Subtract from /gc/finalizers/executed:finalizers to approximate finalizer queue length. Useful for detecting slow finalizers holding up the queue. Sourced from /gc/finalizers/queued:finalizers.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200094120Z"
+            }
+          }
+        ],
+        "unit": "finalizers"
+      },
+      "go_gc_gogc_percent": {
+        "name": "go_gc_gogc_percent",
+        "help": "Heap size target percentage configured by the user, otherwise 100. This value is set by the GOGC environment variable, and the runtime/debug.SetGCPercent function. Sourced from /gc/gogc:percent.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 100
+            }
+          }
+        ],
+        "unit": "percent"
+      },
+      "go_gc_gomemlimit_bytes": {
+        "name": "go_gc_gomemlimit_bytes",
+        "help": "Go runtime memory limit configured by the user, otherwise math.MaxInt64. This value is set by the GOMEMLIMIT environment variable, and the runtime/debug.SetMemoryLimit function. Sourced from /gc/gomemlimit:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 9223372036854776000
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_gc_heap_allocs_by_size_bytes": {
+        "name": "go_gc_heap_allocs_by_size_bytes",
+        "help": "Distribution of heap allocations by approximate size. Bucket counts increase monotonically. Note that this does not include tiny objects as defined by /gc/heap/tiny/allocs:objects, only tiny blocks. Sourced from /gc/heap/allocs-by-size:bytes.",
+        "type": "HISTOGRAM",
+        "metric": [
+          {
+            "histogram": {
+              "sampleCount": "246709",
+              "sampleSum": 22933040,
+              "bucket": [
+                {
+                  "cumulativeCount": "8244",
+                  "upperBound": 8.999999999999998
+                },
+                {
+                  "cumulativeCount": "119252",
+                  "upperBound": 24.999999999999996
+                },
+                {
+                  "cumulativeCount": "195176",
+                  "upperBound": 64.99999999999999
+                },
+                {
+                  "cumulativeCount": "229915",
+                  "upperBound": 144.99999999999997
+                },
+                {
+                  "cumulativeCount": "242270",
+                  "upperBound": 320.99999999999994
+                },
+                {
+                  "cumulativeCount": "244754",
+                  "upperBound": 704.9999999999999
+                },
+                {
+                  "cumulativeCount": "246077",
+                  "upperBound": 1536.9999999999998
+                },
+                {
+                  "cumulativeCount": "246316",
+                  "upperBound": 3200.9999999999995
+                },
+                {
+                  "cumulativeCount": "246525",
+                  "upperBound": 6528.999999999999
+                },
+                {
+                  "cumulativeCount": "246584",
+                  "upperBound": 13568.999999999998
+                },
+                {
+                  "cumulativeCount": "246629",
+                  "upperBound": 27264.999999999996
+                }
+              ]
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_gc_heap_allocs_bytes_total": {
+        "name": "go_gc_heap_allocs_bytes_total",
+        "help": "Cumulative sum of memory allocated to the heap by the application. Sourced from /gc/heap/allocs:bytes.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 22933040,
+              "createdTimestamp": "2026-11-07T10:29:09.200101529Z"
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_gc_heap_allocs_objects_total": {
+        "name": "go_gc_heap_allocs_objects_total",
+        "help": "Cumulative count of heap allocations triggered by the application. Note that this does not include tiny objects as defined by /gc/heap/tiny/allocs:objects, only tiny blocks. Sourced from /gc/heap/allocs:objects.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 246709,
+              "createdTimestamp": "2026-11-07T10:29:09.200102760Z"
+            }
+          }
+        ],
+        "unit": "objects"
+      },
+      "go_gc_heap_frees_by_size_bytes": {
+        "name": "go_gc_heap_frees_by_size_bytes",
+        "help": "Distribution of freed heap allocations by approximate size. Bucket counts increase monotonically. Note that this does not include tiny objects as defined by /gc/heap/tiny/allocs:objects, only tiny blocks. Sourced from /gc/heap/frees-by-size:bytes.",
+        "type": "HISTOGRAM",
+        "metric": [
+          {
+            "histogram": {
+              "sampleCount": "195312",
+              "sampleSum": 16055816,
+              "bucket": [
+                {
+                  "cumulativeCount": "6627",
+                  "upperBound": 8.999999999999998
+                },
+                {
+                  "cumulativeCount": "97841",
+                  "upperBound": 24.999999999999996
+                },
+                {
+                  "cumulativeCount": "154321",
+                  "upperBound": 64.99999999999999
+                },
+                {
+                  "cumulativeCount": "181266",
+                  "upperBound": 144.99999999999997
+                },
+                {
+                  "cumulativeCount": "192085",
+                  "upperBound": 320.99999999999994
+                },
+                {
+                  "cumulativeCount": "193924",
+                  "upperBound": 704.9999999999999
+                },
+                {
+                  "cumulativeCount": "194930",
+                  "upperBound": 1536.9999999999998
+                },
+                {
+                  "cumulativeCount": "195068",
+                  "upperBound": 3200.9999999999995
+                },
+                {
+                  "cumulativeCount": "195207",
+                  "upperBound": 6528.999999999999
+                },
+                {
+                  "cumulativeCount": "195242",
+                  "upperBound": 13568.999999999998
+                },
+                {
+                  "cumulativeCount": "195270",
+                  "upperBound": 27264.999999999996
+                }
+              ]
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_gc_heap_frees_bytes_total": {
+        "name": "go_gc_heap_frees_bytes_total",
+        "help": "Cumulative sum of heap memory freed by the garbage collector. Sourced from /gc/heap/frees:bytes.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 16055816,
+              "createdTimestamp": "2026-11-07T10:29:09.200105670Z"
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_gc_heap_frees_objects_total": {
+        "name": "go_gc_heap_frees_objects_total",
+        "help": "Cumulative count of heap allocations whose storage was freed by the garbage collector. Note that this does not include tiny objects as defined by /gc/heap/tiny/allocs:objects, only tiny blocks. Sourced from /gc/heap/frees:objects.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 195312,
+              "createdTimestamp": "2026-11-07T10:29:09.200106838Z"
+            }
+          }
+        ],
+        "unit": "objects"
+      },
+      "go_gc_heap_goal_bytes": {
+        "name": "go_gc_heap_goal_bytes",
+        "help": "Heap size target for the end of the GC cycle. Sourced from /gc/heap/goal:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 11760474
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_gc_heap_live_bytes": {
+        "name": "go_gc_heap_live_bytes",
+        "help": "Heap memory occupied by live objects that were marked by the previous GC. Sourced from /gc/heap/live:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 5635408
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_gc_heap_objects_objects": {
+        "name": "go_gc_heap_objects_objects",
+        "help": "Number of objects, live or unswept, occupying heap memory. Sourced from /gc/heap/objects:objects.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 51397
+            }
+          }
+        ],
+        "unit": "objects"
+      },
+      "go_gc_heap_tiny_allocs_objects_total": {
+        "name": "go_gc_heap_tiny_allocs_objects_total",
+        "help": "Count of small allocations that are packed together into blocks. These allocations are counted separately from other allocations because each individual allocation is not tracked by the runtime, only their block. Each block is already accounted for in allocs-by-size and frees-by-size. Sourced from /gc/heap/tiny/allocs:objects.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 12024,
+              "createdTimestamp": "2026-11-07T10:29:09.200111661Z"
+            }
+          }
+        ],
+        "unit": "objects"
+      },
+      "go_gc_limiter_last_enabled_gc_cycle": {
+        "name": "go_gc_limiter_last_enabled_gc_cycle",
+        "help": "GC cycle the last time the GC CPU limiter was enabled. This metric is useful for diagnosing the root cause of an out-of-memory error, because the limiter trades memory for CPU time when the GC's CPU time gets too high. This is most likely to occur with use of SetMemoryLimit. The first GC cycle is cycle 1, so a value of 0 indicates that it was never enabled. Sourced from /gc/limiter/last-enabled:gc-cycle.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 0
+            }
+          }
+        ],
+        "unit": "gc_cycle"
+      },
+      "go_gc_pauses_seconds": {
+        "name": "go_gc_pauses_seconds",
+        "help": "Deprecated. Prefer the identical /sched/pauses/total/gc:seconds. Sourced from /gc/pauses:seconds.",
+        "type": "HISTOGRAM",
+        "metric": [
+          {
+            "histogram": {
+              "sampleCount": "18",
+              "sampleSum": 0.000197248,
+              "bucket": [
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 6.399999999999999e-08
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 6.399999999999999e-07
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 7.167999999999999e-06
+                },
+                {
+                  "cumulativeCount": "17",
+                  "upperBound": 8.191999999999999e-05
+                },
+                {
+                  "cumulativeCount": "18",
+                  "upperBound": 0.0009175039999999999
+                },
+                {
+                  "cumulativeCount": "18",
+                  "upperBound": 0.010485759999999998
+                },
+                {
+                  "cumulativeCount": "18",
+                  "upperBound": 0.11744051199999998
+                }
+              ]
+            }
+          }
+        ],
+        "unit": "seconds"
+      },
+      "go_gc_scan_globals_bytes": {
+        "name": "go_gc_scan_globals_bytes",
+        "help": "The total amount of global variable space that is scannable. Sourced from /gc/scan/globals:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 455402
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_gc_scan_heap_bytes": {
+        "name": "go_gc_scan_heap_bytes",
+        "help": "The total amount of heap space that is scannable. Sourced from /gc/scan/heap:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 3593968
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_gc_scan_stack_bytes": {
+        "name": "go_gc_scan_stack_bytes",
+        "help": "The number of bytes of stack that were scanned last GC cycle. Sourced from /gc/scan/stack:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 34256
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_gc_scan_total_bytes": {
+        "name": "go_gc_scan_total_bytes",
+        "help": "The total amount space that is scannable. Sum of all metrics in /gc/scan. Sourced from /gc/scan/total:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 4083626
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_gc_stack_starting_size_bytes": {
+        "name": "go_gc_stack_starting_size_bytes",
+        "help": "The stack size of new goroutines. Sourced from /gc/stack/starting-size:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 4096
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_godebug_non_default_behavior_allowmultiplevcs_events_total": {
+        "name": "go_godebug_non_default_behavior_allowmultiplevcs_events_total",
+        "help": "The number of non-default behaviors executed by the cmd/go package due to a non-default GODEBUG=allowmultiplevcs=... setting. Sourced from /godebug/non-default-behavior/allowmultiplevcs:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200123089Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_containermaxprocs_events_total": {
+        "name": "go_godebug_non_default_behavior_containermaxprocs_events_total",
+        "help": "The number of non-default behaviors executed by the runtime package due to a non-default GODEBUG=containermaxprocs=... setting. Sourced from /godebug/non-default-behavior/containermaxprocs:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200124555Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_cryptocustomrand_events_total": {
+        "name": "go_godebug_non_default_behavior_cryptocustomrand_events_total",
+        "help": "The number of non-default behaviors executed by the crypto package due to a non-default GODEBUG=cryptocustomrand=... setting. Sourced from /godebug/non-default-behavior/cryptocustomrand:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200125782Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_embedfollowsymlinks_events_total": {
+        "name": "go_godebug_non_default_behavior_embedfollowsymlinks_events_total",
+        "help": "The number of non-default behaviors executed by the cmd/go package due to a non-default GODEBUG=embedfollowsymlinks=... setting. Sourced from /godebug/non-default-behavior/embedfollowsymlinks:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200127170Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_execerrdot_events_total": {
+        "name": "go_godebug_non_default_behavior_execerrdot_events_total",
+        "help": "The number of non-default behaviors executed by the os/exec package due to a non-default GODEBUG=execerrdot=... setting. Sourced from /godebug/non-default-behavior/execerrdot:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200128444Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_fips140ems_events_total": {
+        "name": "go_godebug_non_default_behavior_fips140ems_events_total",
+        "help": "The number of non-default behaviors executed by the crypto/tls package due to a non-default GODEBUG=fips140ems=... setting. Sourced from /godebug/non-default-behavior/fips140ems:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200129699Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_gocachehash_events_total": {
+        "name": "go_godebug_non_default_behavior_gocachehash_events_total",
+        "help": "The number of non-default behaviors executed by the cmd/go package due to a non-default GODEBUG=gocachehash=... setting. Sourced from /godebug/non-default-behavior/gocachehash:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200130941Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_gocachetest_events_total": {
+        "name": "go_godebug_non_default_behavior_gocachetest_events_total",
+        "help": "The number of non-default behaviors executed by the cmd/go package due to a non-default GODEBUG=gocachetest=... setting. Sourced from /godebug/non-default-behavior/gocachetest:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200132119Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_gocacheverify_events_total": {
+        "name": "go_godebug_non_default_behavior_gocacheverify_events_total",
+        "help": "The number of non-default behaviors executed by the cmd/go package due to a non-default GODEBUG=gocacheverify=... setting. Sourced from /godebug/non-default-behavior/gocacheverify:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200133355Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_gotestjsonbuildtext_events_total": {
+        "name": "go_godebug_non_default_behavior_gotestjsonbuildtext_events_total",
+        "help": "The number of non-default behaviors executed by the cmd/go package due to a non-default GODEBUG=gotestjsonbuildtext=... setting. Sourced from /godebug/non-default-behavior/gotestjsonbuildtext:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200138889Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_htmlmetacontenturlescape_events_total": {
+        "name": "go_godebug_non_default_behavior_htmlmetacontenturlescape_events_total",
+        "help": "The number of non-default behaviors executed by the html/template package due to a non-default GODEBUG=htmlmetacontenturlescape=... setting. Sourced from /godebug/non-default-behavior/htmlmetacontenturlescape:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200140699Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_http2client_events_total": {
+        "name": "go_godebug_non_default_behavior_http2client_events_total",
+        "help": "The number of non-default behaviors executed by the net/http package due to a non-default GODEBUG=http2client=... setting. Sourced from /godebug/non-default-behavior/http2client:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200141968Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_http2server_events_total": {
+        "name": "go_godebug_non_default_behavior_http2server_events_total",
+        "help": "The number of non-default behaviors executed by the net/http package due to a non-default GODEBUG=http2server=... setting. Sourced from /godebug/non-default-behavior/http2server:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200143113Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_httpcookiemaxnum_events_total": {
+        "name": "go_godebug_non_default_behavior_httpcookiemaxnum_events_total",
+        "help": "The number of non-default behaviors executed by the net/http package due to a non-default GODEBUG=httpcookiemaxnum=... setting. Sourced from /godebug/non-default-behavior/httpcookiemaxnum:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200144383Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_httplaxcontentlength_events_total": {
+        "name": "go_godebug_non_default_behavior_httplaxcontentlength_events_total",
+        "help": "The number of non-default behaviors executed by the net/http package due to a non-default GODEBUG=httplaxcontentlength=... setting. Sourced from /godebug/non-default-behavior/httplaxcontentlength:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200145767Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_httpmuxgo121_events_total": {
+        "name": "go_godebug_non_default_behavior_httpmuxgo121_events_total",
+        "help": "The number of non-default behaviors executed by the net/http package due to a non-default GODEBUG=httpmuxgo121=... setting. Sourced from /godebug/non-default-behavior/httpmuxgo121:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200147103Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_httpservecontentkeepheaders_events_total": {
+        "name": "go_godebug_non_default_behavior_httpservecontentkeepheaders_events_total",
+        "help": "The number of non-default behaviors executed by the net/http package due to a non-default GODEBUG=httpservecontentkeepheaders=... setting. Sourced from /godebug/non-default-behavior/httpservecontentkeepheaders:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200148570Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_httpservecontentmaxranges_events_total": {
+        "name": "go_godebug_non_default_behavior_httpservecontentmaxranges_events_total",
+        "help": "The number of non-default behaviors executed by the net/http package due to a non-default GODEBUG=httpservecontentmaxranges=... setting. Sourced from /godebug/non-default-behavior/httpservecontentmaxranges:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200153415Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_installgoroot_events_total": {
+        "name": "go_godebug_non_default_behavior_installgoroot_events_total",
+        "help": "The number of non-default behaviors executed by the go/build package due to a non-default GODEBUG=installgoroot=... setting. Sourced from /godebug/non-default-behavior/installgoroot:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200154681Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_multipartmaxheaders_events_total": {
+        "name": "go_godebug_non_default_behavior_multipartmaxheaders_events_total",
+        "help": "The number of non-default behaviors executed by the mime/multipart package due to a non-default GODEBUG=multipartmaxheaders=... setting. Sourced from /godebug/non-default-behavior/multipartmaxheaders:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200155960Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_multipartmaxparts_events_total": {
+        "name": "go_godebug_non_default_behavior_multipartmaxparts_events_total",
+        "help": "The number of non-default behaviors executed by the mime/multipart package due to a non-default GODEBUG=multipartmaxparts=... setting. Sourced from /godebug/non-default-behavior/multipartmaxparts:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200157217Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_multipathtcp_events_total": {
+        "name": "go_godebug_non_default_behavior_multipathtcp_events_total",
+        "help": "The number of non-default behaviors executed by the net package due to a non-default GODEBUG=multipathtcp=... setting. Sourced from /godebug/non-default-behavior/multipathtcp:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200158530Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_netedns0_events_total": {
+        "name": "go_godebug_non_default_behavior_netedns0_events_total",
+        "help": "The number of non-default behaviors executed by the net package due to a non-default GODEBUG=netedns0=... setting. Sourced from /godebug/non-default-behavior/netedns0:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200160118Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_panicnil_events_total": {
+        "name": "go_godebug_non_default_behavior_panicnil_events_total",
+        "help": "The number of non-default behaviors executed by the runtime package due to a non-default GODEBUG=panicnil=... setting. Sourced from /godebug/non-default-behavior/panicnil:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200161470Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_randautoseed_events_total": {
+        "name": "go_godebug_non_default_behavior_randautoseed_events_total",
+        "help": "The number of non-default behaviors executed by the math/rand package due to a non-default GODEBUG=randautoseed=... setting. Sourced from /godebug/non-default-behavior/randautoseed:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200162863Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_randseednop_events_total": {
+        "name": "go_godebug_non_default_behavior_randseednop_events_total",
+        "help": "The number of non-default behaviors executed by the math/rand package due to a non-default GODEBUG=randseednop=... setting. Sourced from /godebug/non-default-behavior/randseednop:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200164079Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_rsa1024min_events_total": {
+        "name": "go_godebug_non_default_behavior_rsa1024min_events_total",
+        "help": "The number of non-default behaviors executed by the crypto/rsa package due to a non-default GODEBUG=rsa1024min=... setting. Sourced from /godebug/non-default-behavior/rsa1024min:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200165322Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_tarinsecurepath_events_total": {
+        "name": "go_godebug_non_default_behavior_tarinsecurepath_events_total",
+        "help": "The number of non-default behaviors executed by the archive/tar package due to a non-default GODEBUG=tarinsecurepath=... setting. Sourced from /godebug/non-default-behavior/tarinsecurepath:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200166552Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_tlsmaxrsasize_events_total": {
+        "name": "go_godebug_non_default_behavior_tlsmaxrsasize_events_total",
+        "help": "The number of non-default behaviors executed by the crypto/tls package due to a non-default GODEBUG=tlsmaxrsasize=... setting. Sourced from /godebug/non-default-behavior/tlsmaxrsasize:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200167808Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_tlssha1_events_total": {
+        "name": "go_godebug_non_default_behavior_tlssha1_events_total",
+        "help": "The number of non-default behaviors executed by the crypto/tls package due to a non-default GODEBUG=tlssha1=... setting. Sourced from /godebug/non-default-behavior/tlssha1:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200169441Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_updatemaxprocs_events_total": {
+        "name": "go_godebug_non_default_behavior_updatemaxprocs_events_total",
+        "help": "The number of non-default behaviors executed by the runtime package due to a non-default GODEBUG=updatemaxprocs=... setting. Sourced from /godebug/non-default-behavior/updatemaxprocs:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200170666Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_urlmaxqueryparams_events_total": {
+        "name": "go_godebug_non_default_behavior_urlmaxqueryparams_events_total",
+        "help": "The number of non-default behaviors executed by the net/url package due to a non-default GODEBUG=urlmaxqueryparams=... setting. Sourced from /godebug/non-default-behavior/urlmaxqueryparams:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200171939Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_urlstrictcolons_events_total": {
+        "name": "go_godebug_non_default_behavior_urlstrictcolons_events_total",
+        "help": "The number of non-default behaviors executed by the net/url package due to a non-default GODEBUG=urlstrictcolons=... setting. Sourced from /godebug/non-default-behavior/urlstrictcolons:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200173148Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_winreadlinkvolume_events_total": {
+        "name": "go_godebug_non_default_behavior_winreadlinkvolume_events_total",
+        "help": "The number of non-default behaviors executed by the os package due to a non-default GODEBUG=winreadlinkvolume=... setting. Sourced from /godebug/non-default-behavior/winreadlinkvolume:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200174412Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_winsymlink_events_total": {
+        "name": "go_godebug_non_default_behavior_winsymlink_events_total",
+        "help": "The number of non-default behaviors executed by the os package due to a non-default GODEBUG=winsymlink=... setting. Sourced from /godebug/non-default-behavior/winsymlink:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200175591Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_x509negativeserial_events_total": {
+        "name": "go_godebug_non_default_behavior_x509negativeserial_events_total",
+        "help": "The number of non-default behaviors executed by the crypto/x509 package due to a non-default GODEBUG=x509negativeserial=... setting. Sourced from /godebug/non-default-behavior/x509negativeserial:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200176953Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_x509rsacrt_events_total": {
+        "name": "go_godebug_non_default_behavior_x509rsacrt_events_total",
+        "help": "The number of non-default behaviors executed by the crypto/x509 package due to a non-default GODEBUG=x509rsacrt=... setting. Sourced from /godebug/non-default-behavior/x509rsacrt:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200178194Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_x509sha256skid_events_total": {
+        "name": "go_godebug_non_default_behavior_x509sha256skid_events_total",
+        "help": "The number of non-default behaviors executed by the crypto/x509 package due to a non-default GODEBUG=x509sha256skid=... setting. Sourced from /godebug/non-default-behavior/x509sha256skid:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200179424Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_x509sslcertoverrideplatform_events_total": {
+        "name": "go_godebug_non_default_behavior_x509sslcertoverrideplatform_events_total",
+        "help": "The number of non-default behaviors executed by the crypto/x509 package due to a non-default GODEBUG=x509sslcertoverrideplatform=... setting. Sourced from /godebug/non-default-behavior/x509sslcertoverrideplatform:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200180902Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_x509usefallbackroots_events_total": {
+        "name": "go_godebug_non_default_behavior_x509usefallbackroots_events_total",
+        "help": "The number of non-default behaviors executed by the crypto/x509 package due to a non-default GODEBUG=x509usefallbackroots=... setting. Sourced from /godebug/non-default-behavior/x509usefallbackroots:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200182220Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_x509usepolicies_events_total": {
+        "name": "go_godebug_non_default_behavior_x509usepolicies_events_total",
+        "help": "The number of non-default behaviors executed by the crypto/x509 package due to a non-default GODEBUG=x509usepolicies=... setting. Sourced from /godebug/non-default-behavior/x509usepolicies:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200183454Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_godebug_non_default_behavior_zipinsecurepath_events_total": {
+        "name": "go_godebug_non_default_behavior_zipinsecurepath_events_total",
+        "help": "The number of non-default behaviors executed by the archive/zip package due to a non-default GODEBUG=zipinsecurepath=... setting. Sourced from /godebug/non-default-behavior/zipinsecurepath:events.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0,
+              "createdTimestamp": "2026-11-07T10:29:09.200184646Z"
+            }
+          }
+        ],
+        "unit": "events"
+      },
+      "go_goroutines": {
+        "name": "go_goroutines",
+        "help": "Number of goroutines that currently exist.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 17
+            }
+          }
+        ]
+      },
+      "go_info": {
+        "name": "go_info",
+        "help": "Information about the Go environment.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "label": [
+              {
+                "name": "version",
+                "value": "go1.27.3"
+              }
+            ],
+            "gauge": {
+              "value": 1
+            }
+          }
+        ]
+      },
+      "go_memory_classes_heap_free_bytes": {
+        "name": "go_memory_classes_heap_free_bytes",
+        "help": "Memory that is completely free and eligible to be returned to the underlying system, but has not been. This metric is the runtime's estimate of free address space that is backed by physical memory. Sourced from /memory/classes/heap/free:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 630784
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memory_classes_heap_objects_bytes": {
+        "name": "go_memory_classes_heap_objects_bytes",
+        "help": "Memory occupied by live objects and dead objects that have not yet been marked free by the garbage collector. Sourced from /memory/classes/heap/objects:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 6877224
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memory_classes_heap_released_bytes": {
+        "name": "go_memory_classes_heap_released_bytes",
+        "help": "Memory that is completely free and has been returned to the underlying system. This metric is the runtime's estimate of free address space that is still mapped into the process, but is not backed by physical memory. Sourced from /memory/classes/heap/released:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 1179648
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memory_classes_heap_stacks_bytes": {
+        "name": "go_memory_classes_heap_stacks_bytes",
+        "help": "Memory allocated from the heap that is reserved for stack space, whether or not it is currently in-use. Currently, this represents all stack memory for goroutines. It also includes all OS thread stacks in non-cgo programs. Note that stacks may be allocated differently in the future, and this may change. Sourced from /memory/classes/heap/stacks:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 786432
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memory_classes_heap_unused_bytes": {
+        "name": "go_memory_classes_heap_unused_bytes",
+        "help": "Memory that is reserved for heap objects but is not currently used to hold heap objects. Sourced from /memory/classes/heap/unused:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 3108824
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memory_classes_metadata_mcache_free_bytes": {
+        "name": "go_memory_classes_metadata_mcache_free_bytes",
+        "help": "Memory that is reserved for runtime mcache structures, but not in-use. Sourced from /memory/classes/metadata/mcache/free:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 6888
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memory_classes_metadata_mcache_inuse_bytes": {
+        "name": "go_memory_classes_metadata_mcache_inuse_bytes",
+        "help": "Memory that is occupied by runtime mcache structures that are currently being used. Sourced from /memory/classes/metadata/mcache/inuse:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 9184
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memory_classes_metadata_mspan_free_bytes": {
+        "name": "go_memory_classes_metadata_mspan_free_bytes",
+        "help": "Memory that is reserved for runtime mspan structures, but not in-use. Sourced from /memory/classes/metadata/mspan/free:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 10880
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memory_classes_metadata_mspan_inuse_bytes": {
+        "name": "go_memory_classes_metadata_mspan_inuse_bytes",
+        "help": "Memory that is occupied by runtime mspan structures that are currently being used. Sourced from /memory/classes/metadata/mspan/inuse:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 168640
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memory_classes_metadata_other_bytes": {
+        "name": "go_memory_classes_metadata_other_bytes",
+        "help": "Memory that is reserved for or used to hold runtime metadata. Sourced from /memory/classes/metadata/other:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 3757296
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memory_classes_os_stacks_bytes": {
+        "name": "go_memory_classes_os_stacks_bytes",
+        "help": "Stack memory allocated by the underlying operating system. In non-cgo programs this metric is currently zero. This may change in the future.In cgo programs this metric includes OS thread stacks allocated directly from the OS. Currently, this only accounts for one stack in c-shared and c-archive build modes, and other sources of stacks from the OS are not measured. This too may change in the future. Sourced from /memory/classes/os-stacks:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 0
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memory_classes_other_bytes": {
+        "name": "go_memory_classes_other_bytes",
+        "help": "Memory used by execution trace buffers, structures for debugging the runtime, finalizer and profiler specials, and more. Sourced from /memory/classes/other:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 737114
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memory_classes_profiling_buckets_bytes": {
+        "name": "go_memory_classes_profiling_buckets_bytes",
+        "help": "Memory that is used by the stack trace hash map used for profiling. Sourced from /memory/classes/profiling/buckets:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 1460406
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memory_classes_total_bytes": {
+        "name": "go_memory_classes_total_bytes",
+        "help": "All memory mapped by the Go runtime into the current process as read-write. Note that this does not include memory mapped by code called via cgo or via the syscall package. Sum of all metrics in /memory/classes. Sourced from /memory/classes/total:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 18733320
+            }
+          }
+        ],
+        "unit": "bytes"
+      },
+      "go_memstats_alloc_bytes": {
+        "name": "go_memstats_alloc_bytes",
+        "help": "Number of bytes allocated in heap and currently in use. Equals to /memory/classes/heap/objects:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 6877224
+            }
+          }
+        ]
+      },
+      "go_memstats_alloc_bytes_total": {
+        "name": "go_memstats_alloc_bytes_total",
+        "help": "Total number of bytes allocated in heap until now, even if released already. Equals to /gc/heap/allocs:bytes.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 22933040
+            }
+          }
+        ]
+      },
+      "go_memstats_buck_hash_sys_bytes": {
+        "name": "go_memstats_buck_hash_sys_bytes",
+        "help": "Number of bytes used by the profiling bucket hash table. Equals to /memory/classes/profiling/buckets:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 1460406
+            }
+          }
+        ]
+      },
+      "go_memstats_frees_total": {
+        "name": "go_memstats_frees_total",
+        "help": "Total number of heap objects frees. Equals to /gc/heap/frees:objects + /gc/heap/tiny/allocs:objects.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 207336
+            }
+          }
+        ]
+      },
+      "go_memstats_gc_sys_bytes": {
+        "name": "go_memstats_gc_sys_bytes",
+        "help": "Number of bytes used for garbage collection system metadata. Equals to /memory/classes/metadata/other:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 3757296
+            }
+          }
+        ]
+      },
+      "go_memstats_heap_alloc_bytes": {
+        "name": "go_memstats_heap_alloc_bytes",
+        "help": "Number of heap bytes allocated and currently in use, same as go_memstats_alloc_bytes. Equals to /memory/classes/heap/objects:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 6877224
+            }
+          }
+        ]
+      },
+      "go_memstats_heap_idle_bytes": {
+        "name": "go_memstats_heap_idle_bytes",
+        "help": "Number of heap bytes waiting to be used. Equals to /memory/classes/heap/released:bytes + /memory/classes/heap/free:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 1810432
+            }
+          }
+        ]
+      },
+      "go_memstats_heap_inuse_bytes": {
+        "name": "go_memstats_heap_inuse_bytes",
+        "help": "Number of heap bytes that are in use. Equals to /memory/classes/heap/objects:bytes + /memory/classes/heap/unused:bytes",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 9986048
+            }
+          }
+        ]
+      },
+      "go_memstats_heap_objects": {
+        "name": "go_memstats_heap_objects",
+        "help": "Number of currently allocated objects. Equals to /gc/heap/objects:objects.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 51397
+            }
+          }
+        ]
+      },
+      "go_memstats_heap_released_bytes": {
+        "name": "go_memstats_heap_released_bytes",
+        "help": "Number of heap bytes released to OS. Equals to /memory/classes/heap/released:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 1179648
+            }
+          }
+        ]
+      },
+      "go_memstats_heap_sys_bytes": {
+        "name": "go_memstats_heap_sys_bytes",
+        "help": "Number of heap bytes obtained from system. Equals to /memory/classes/heap/objects:bytes + /memory/classes/heap/unused:bytes + /memory/classes/heap/released:bytes + /memory/classes/heap/free:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 11796480
+            }
+          }
+        ]
+      },
+      "go_memstats_last_gc_time_seconds": {
+        "name": "go_memstats_last_gc_time_seconds",
+        "help": "Number of seconds since 1970 of last garbage collection.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 1794047350.08864
+            }
+          }
+        ]
+      },
+      "go_memstats_mallocs_total": {
+        "name": "go_memstats_mallocs_total",
+        "help": "Total number of heap objects allocated, both live and gc-ed. Semantically a counter version for go_memstats_heap_objects gauge. Equals to /gc/heap/allocs:objects + /gc/heap/tiny/allocs:objects.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 258733
+            }
+          }
+        ]
+      },
+      "go_memstats_mcache_inuse_bytes": {
+        "name": "go_memstats_mcache_inuse_bytes",
+        "help": "Number of bytes in use by mcache structures. Equals to /memory/classes/metadata/mcache/inuse:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 9184
+            }
+          }
+        ]
+      },
+      "go_memstats_mcache_sys_bytes": {
+        "name": "go_memstats_mcache_sys_bytes",
+        "help": "Number of bytes used for mcache structures obtained from system. Equals to /memory/classes/metadata/mcache/inuse:bytes + /memory/classes/metadata/mcache/free:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 16072
+            }
+          }
+        ]
+      },
+      "go_memstats_mspan_inuse_bytes": {
+        "name": "go_memstats_mspan_inuse_bytes",
+        "help": "Number of bytes in use by mspan structures. Equals to /memory/classes/metadata/mspan/inuse:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 168640
+            }
+          }
+        ]
+      },
+      "go_memstats_mspan_sys_bytes": {
+        "name": "go_memstats_mspan_sys_bytes",
+        "help": "Number of bytes used for mspan structures obtained from system. Equals to /memory/classes/metadata/mspan/inuse:bytes + /memory/classes/metadata/mspan/free:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 179520
+            }
+          }
+        ]
+      },
+      "go_memstats_next_gc_bytes": {
+        "name": "go_memstats_next_gc_bytes",
+        "help": "Number of heap bytes when next garbage collection will take place. Equals to /gc/heap/goal:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 11760474
+            }
+          }
+        ]
+      },
+      "go_memstats_other_sys_bytes": {
+        "name": "go_memstats_other_sys_bytes",
+        "help": "Number of bytes used for other system allocations. Equals to /memory/classes/other:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 737114
+            }
+          }
+        ]
+      },
+      "go_memstats_stack_inuse_bytes": {
+        "name": "go_memstats_stack_inuse_bytes",
+        "help": "Number of bytes obtained from system for stack allocator in non-CGO environments. Equals to /memory/classes/heap/stacks:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 786432
+            }
+          }
+        ]
+      },
+      "go_memstats_stack_sys_bytes": {
+        "name": "go_memstats_stack_sys_bytes",
+        "help": "Number of bytes obtained from system for stack allocator. Equals to /memory/classes/heap/stacks:bytes + /memory/classes/os-stacks:bytes.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 786432
+            }
+          }
+        ]
+      },
+      "go_memstats_sys_bytes": {
+        "name": "go_memstats_sys_bytes",
+        "help": "Number of bytes obtained from system. Equals to /memory/classes/total:byte.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 18733320
+            }
+          }
+        ]
+      },
+      "go_sched_gomaxprocs_threads": {
+        "name": "go_sched_gomaxprocs_threads",
+        "help": "The current runtime.GOMAXPROCS setting, or the number of operating system threads that can execute user-level Go code simultaneously. Sourced from /sched/gomaxprocs:threads.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 4
+            }
+          }
+        ],
+        "unit": "threads"
+      },
+      "go_sched_goroutines_created_goroutines_total": {
+        "name": "go_sched_goroutines_created_goroutines_total",
+        "help": "Count of goroutines created since program start. Sourced from /sched/goroutines-created:goroutines.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 185,
+              "createdTimestamp": "2026-11-07T10:29:09.200205757Z"
+            }
+          }
+        ],
+        "unit": "goroutines"
+      },
+      "go_sched_goroutines_goroutines": {
+        "name": "go_sched_goroutines_goroutines",
+        "help": "Count of live goroutines. Sourced from /sched/goroutines:goroutines.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 27
+            }
+          }
+        ],
+        "unit": "goroutines"
+      },
+      "go_sched_goroutines_not_in_go_goroutines": {
+        "name": "go_sched_goroutines_not_in_go_goroutines",
+        "help": "Approximate count of goroutines running or blocked in a system call or cgo call. Not guaranteed to add up to /sched/goroutines:goroutines with other goroutine metrics. Sourced from /sched/goroutines/not-in-go:goroutines.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 1
+            }
+          }
+        ],
+        "unit": "goroutines"
+      },
+      "go_sched_goroutines_runnable_goroutines": {
+        "name": "go_sched_goroutines_runnable_goroutines",
+        "help": "Approximate count of goroutines ready to execute, but not executing. Not guaranteed to add up to /sched/goroutines:goroutines with other goroutine metrics. Sourced from /sched/goroutines/runnable:goroutines.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 0
+            }
+          }
+        ],
+        "unit": "goroutines"
+      },
+      "go_sched_goroutines_running_goroutines": {
+        "name": "go_sched_goroutines_running_goroutines",
+        "help": "Approximate count of goroutines executing. Always less than or equal to /sched/gomaxprocs:threads. Not guaranteed to add up to /sched/goroutines:goroutines with other goroutine metrics. Sourced from /sched/goroutines/running:goroutines.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 2
+            }
+          }
+        ],
+        "unit": "goroutines"
+      },
+      "go_sched_goroutines_waiting_goroutines": {
+        "name": "go_sched_goroutines_waiting_goroutines",
+        "help": "Approximate count of goroutines waiting on a resource (I/O or sync primitives). Not guaranteed to add up to /sched/goroutines:goroutines with other goroutine metrics. Sourced from /sched/goroutines/waiting:goroutines.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 24
+            }
+          }
+        ],
+        "unit": "goroutines"
+      },
+      "go_sched_latencies_seconds": {
+        "name": "go_sched_latencies_seconds",
+        "help": "Distribution of the time goroutines have spent in the scheduler in a runnable state before actually running. Bucket counts increase monotonically. Sourced from /sched/latencies:seconds.",
+        "type": "HISTOGRAM",
+        "metric": [
+          {
+            "histogram": {
+              "sampleCount": "154",
+              "sampleSum": 0.00070432,
+              "bucket": [
+                {
+                  "cumulativeCount": "42",
+                  "upperBound": 6.399999999999999e-08
+                },
+                {
+                  "cumulativeCount": "85",
+                  "upperBound": 6.399999999999999e-07
+                },
+                {
+                  "cumulativeCount": "122",
+                  "upperBound": 7.167999999999999e-06
+                },
+                {
+                  "cumulativeCount": "148",
+                  "upperBound": 8.191999999999999e-05
+                },
+                {
+                  "cumulativeCount": "154",
+                  "upperBound": 0.0009175039999999999
+                },
+                {
+                  "cumulativeCount": "154",
+                  "upperBound": 0.010485759999999998
+                },
+                {
+                  "cumulativeCount": "154",
+                  "upperBound": 0.11744051199999998
+                }
+              ]
+            }
+          }
+        ],
+        "unit": "seconds"
+      },
+      "go_sched_pauses_stopping_gc_seconds": {
+        "name": "go_sched_pauses_stopping_gc_seconds",
+        "help": "Distribution of individual GC-related stop-the-world stopping latencies. This is the time it takes from deciding to stop the world until all Ps are stopped. This is a subset of the total GC-related stop-the-world time (/sched/pauses/total/gc:seconds). During this time, some threads may be executing. Bucket counts increase monotonically. Sourced from /sched/pauses/stopping/gc:seconds.",
+        "type": "HISTOGRAM",
+        "metric": [
+          {
+            "histogram": {
+              "sampleCount": "18",
+              "sampleSum": 0.000143296,
+              "bucket": [
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 6.399999999999999e-08
+                },
+                {
+                  "cumulativeCount": "3",
+                  "upperBound": 6.399999999999999e-07
+                },
+                {
+                  "cumulativeCount": "9",
+                  "upperBound": 7.167999999999999e-06
+                },
+                {
+                  "cumulativeCount": "17",
+                  "upperBound": 8.191999999999999e-05
+                },
+                {
+                  "cumulativeCount": "18",
+                  "upperBound": 0.0009175039999999999
+                },
+                {
+                  "cumulativeCount": "18",
+                  "upperBound": 0.010485759999999998
+                },
+                {
+                  "cumulativeCount": "18",
+                  "upperBound": 0.11744051199999998
+                }
+              ]
+            }
+          }
+        ],
+        "unit": "seconds"
+      },
+      "go_sched_pauses_stopping_other_seconds": {
+        "name": "go_sched_pauses_stopping_other_seconds",
+        "help": "Distribution of individual non-GC-related stop-the-world stopping latencies. This is the time it takes from deciding to stop the world until all Ps are stopped. This is a subset of the total non-GC-related stop-the-world time (/sched/pauses/total/other:seconds). During this time, some threads may be executing. Bucket counts increase monotonically. Sourced from /sched/pauses/stopping/other:seconds.",
+        "type": "HISTOGRAM",
+        "metric": [
+          {
+            "histogram": {
+              "sampleCount": "0",
+              "sampleSum": 0,
+              "bucket": [
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 6.399999999999999e-08
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 6.399999999999999e-07
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 7.167999999999999e-06
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 8.191999999999999e-05
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 0.0009175039999999999
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 0.010485759999999998
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 0.11744051199999998
+                }
+              ]
+            }
+          }
+        ],
+        "unit": "seconds"
+      },
+      "go_sched_pauses_total_gc_seconds": {
+        "name": "go_sched_pauses_total_gc_seconds",
+        "help": "Distribution of individual GC-related stop-the-world pause latencies. This is the time from deciding to stop the world until the world is started again. Some of this time is spent getting all threads to stop (this is measured directly in /sched/pauses/stopping/gc:seconds), during which some threads may still be running. Bucket counts increase monotonically. Sourced from /sched/pauses/total/gc:seconds.",
+        "type": "HISTOGRAM",
+        "metric": [
+          {
+            "histogram": {
+              "sampleCount": "18",
+              "sampleSum": 0.000197248,
+              "bucket": [
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 6.399999999999999e-08
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 6.399999999999999e-07
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 7.167999999999999e-06
+                },
+                {
+                  "cumulativeCount": "17",
+                  "upperBound": 8.191999999999999e-05
+                },
+                {
+                  "cumulativeCount": "18",
+                  "upperBound": 0.0009175039999999999
+                },
+                {
+                  "cumulativeCount": "18",
+                  "upperBound": 0.010485759999999998
+                },
+                {
+                  "cumulativeCount": "18",
+                  "upperBound": 0.11744051199999998
+                }
+              ]
+            }
+          }
+        ],
+        "unit": "seconds"
+      },
+      "go_sched_pauses_total_other_seconds": {
+        "name": "go_sched_pauses_total_other_seconds",
+        "help": "Distribution of individual non-GC-related stop-the-world pause latencies. This is the time from deciding to stop the world until the world is started again. Some of this time is spent getting all threads to stop (measured directly in /sched/pauses/stopping/other:seconds). Bucket counts increase monotonically. Sourced from /sched/pauses/total/other:seconds.",
+        "type": "HISTOGRAM",
+        "metric": [
+          {
+            "histogram": {
+              "sampleCount": "0",
+              "sampleSum": 0,
+              "bucket": [
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 6.399999999999999e-08
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 6.399999999999999e-07
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 7.167999999999999e-06
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 8.191999999999999e-05
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 0.0009175039999999999
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 0.010485759999999998
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 0.11744051199999998
+                }
+              ]
+            }
+          }
+        ],
+        "unit": "seconds"
+      },
+      "go_sched_threads_total_threads": {
+        "name": "go_sched_threads_total_threads",
+        "help": "The current count of live threads that are owned by the Go runtime. Sourced from /sched/threads/total:threads.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 9
+            }
+          }
+        ],
+        "unit": "threads"
+      },
+      "go_sync_mutex_wait_total_seconds_total": {
+        "name": "go_sync_mutex_wait_total_seconds_total",
+        "help": "Approximate cumulative time goroutines have spent blocked on a sync.Mutex, sync.RWMutex, or runtime-internal lock. This metric is useful for identifying global changes in lock contention. Collect a mutex or block profile using the runtime/pprof package for more detailed contention data. Sourced from /sync/mutex/wait/total:seconds.",
+        "type": "COUNTER",
+        "metric": [
+          {
+            "counter": {
+              "value": 0.000200432,
+              "createdTimestamp": "2026-11-07T10:29:09.200223277Z"
+            }
+          }
+        ],
+        "unit": "seconds"
+      },
+      "go_threads": {
+        "name": "go_threads",
+        "help": "Number of OS threads created.",
+        "type": "GAUGE",
+        "metric": [
+          {
+            "gauge": {
+              "value": 9
+            }
+          }
+        ]
+      },
+      "http_request_duration_seconds": {
+        "name": "http_request_duration_seconds",
+        "help": "A histogram of duration for requests.",
+        "type": "HISTOGRAM",
+        "metric": [
+          {
+            "label": [
+              {
+                "name": "code",
+                "value": "200"
+              },
+              {
+                "name": "handler",
+                "value": "health"
+              },
+              {
+                "name": "method",
+                "value": "get"
+              }
+            ],
+            "histogram": {
+              "sampleCount": "1",
+              "sampleSum": 0.000411471,
+              "bucket": [
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 1e-06
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 5e-06
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 1e-05
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 5e-05
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 0.0001
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 0.0005
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 0.001
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 0.01
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 0.1
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 1
+                }
+              ],
+              "createdTimestamp": "2026-11-07T10:29:09.690132555Z"
+            }
+          },
+          {
+            "label": [
+              {
+                "name": "code",
+                "value": "200"
+              },
+              {
+                "name": "handler",
+                "value": "v1/data"
+              },
+              {
+                "name": "method",
+                "value": "get"
+              }
+            ],
+            "histogram": {
+              "sampleCount": "2",
+              "sampleSum": 0.001188851,
+              "bucket": [
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 1e-06
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 5e-06
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 1e-05
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 5e-05
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 0.0001
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 0.0005
+                },
+                {
+                  "cumulativeCount": "2",
+                  "upperBound": 0.001
+                },
+                {
+                  "cumulativeCount": "2",
+                  "upperBound": 0.01
+                },
+                {
+                  "cumulativeCount": "2",
+                  "upperBound": 0.1
+                },
+                {
+                  "cumulativeCount": "2",
+                  "upperBound": 1
+                }
+              ],
+              "createdTimestamp": "2026-11-07T10:29:09.691566119Z"
+            }
+          },
+          {
+            "label": [
+              {
+                "name": "code",
+                "value": "200"
+              },
+              {
+                "name": "handler",
+                "value": "v1/data"
+              },
+              {
+                "name": "method",
+                "value": "post"
+              }
+            ],
+            "histogram": {
+              "sampleCount": "2",
+              "sampleSum": 0.000920266,
+              "bucket": [
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 1e-06
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 5e-06
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 1e-05
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 5e-05
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 0.0001
+                },
+                {
+                  "cumulativeCount": "2",
+                  "upperBound": 0.0005
+                },
+                {
+                  "cumulativeCount": "2",
+                  "upperBound": 0.001
+                },
+                {
+                  "cumulativeCount": "2",
+                  "upperBound": 0.01
+                },
+                {
+                  "cumulativeCount": "2",
+                  "upperBound": 0.1
+                },
+                {
+                  "cumulativeCount": "2",
+                  "upperBound": 1
+                }
+              ],
+              "createdTimestamp": "2026-11-07T10:29:09.693588297Z"
+            }
+          },
+          {
+            "label": [
+              {
+                "name": "code",
+                "value": "200"
+              },
+              {
+                "name": "handler",
+                "value": "v1/query"
+              },
+              {
+                "name": "method",
+                "value": "post"
+              }
+            ],
+            "histogram": {
+              "sampleCount": "1",
+              "sampleSum": 0.000414047,
+              "bucket": [
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 1e-06
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 5e-06
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 1e-05
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 5e-05
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 0.0001
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 0.0005
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 0.001
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 0.01
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 0.1
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 1
+                }
+              ],
+              "createdTimestamp": "2026-11-07T10:29:09.696511642Z"
+            }
+          },
+          {
+            "label": [
+              {
+                "name": "code",
+                "value": "500"
+              },
+              {
+                "name": "handler",
+                "value": "v1/data"
+              },
+              {
+                "name": "method",
+                "value": "post"
+              }
+            ],
+            "histogram": {
+              "sampleCount": "1",
+              "sampleSum": 0.000484508,
+              "bucket": [
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 1e-06
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 5e-06
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 1e-05
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 5e-05
+                },
+                {
+                  "cumulativeCount": "0",
+                  "upperBound": 0.0001
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 0.0005
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 0.001
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 0.01
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 0.1
+                },
+                {
+                  "cumulativeCount": "1",
+                  "upperBound": 1
+                }
+              ],
+              "createdTimestamp": "2026-11-07T10:29:09.695552975Z"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "plugins": {
+    "bundle": {
+      "state": "NOT_READY"
+    },
+    "decision_logs": {
+      "state": "OK"
+    },
+    "discovery": {
+      "state": "OK"
+    },
+    "status": {
+      "state": "OK"
+    }
+  }
+}

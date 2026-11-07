@@ -1,0 +1,116 @@
+---
+# A feature no shipped capabilities file names.
+builtins:
+  - name: abs
+    decl:
+      type: function
+      args:
+        - type: number
+          name: x
+          description: the number
+      result:
+        type: number
+        name: y
+  - name: plus
+    infix: +
+    decl:
+      type: function
+      args:
+        - type: number
+        - type: number
+      result:
+        type: number
+  - name: count
+    decl:
+      type: function
+      args:
+        - type: any
+          of:
+            - type: string
+            - type: array
+              dynamic:
+                type: any
+            - type: object
+              dynamic:
+                key:
+                  type: any
+                value:
+                  type: any
+            - type: set
+              of:
+                type: any
+      result:
+        type: number
+  - name: io.jwt.decode
+    decl:
+      type: function
+      args:
+        - type: string
+      result:
+        type: array
+        static:
+          - type: object
+            static:
+              - key: alg
+                value:
+                  type: string
+            dynamic:
+              key:
+                type: string
+              value:
+                type: any
+          - type: string
+  - name: print
+    decl:
+      type: function
+      variadic:
+        type: any
+    nondeterministic: true
+  - name: re_match
+    deprecated: true
+    decl:
+      type: function
+      args:
+        - type: string
+        - type: string
+      result:
+        type: boolean
+  - name: walk
+    relation: true
+    decl:
+      type: function
+      args:
+        - type: any
+      result:
+        type: array
+        static:
+          - type: array
+            dynamic:
+              type: any
+          - type: any
+  - name: null_example
+    decl:
+      type: function
+      args:
+        - type: 'null'
+      result:
+        type: boolean
+    categories:
+      - types
+    description: A function taking null.
+future_keywords:
+  - and
+  - not
+  - or
+wasm_abi_versions:
+  - version: 1
+    minor_version: 1
+  - version: 1
+    minor_version: 2
+features:
+  - keywords_in_refs
+  - rego_v1
+  - time_travel
+allow_net:
+  - example.com
+  - 192.0.2.1

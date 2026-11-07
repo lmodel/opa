@@ -1,0 +1,46 @@
+---
+# Written by scripts/opa_to_linkml.py from OPA's files. Edit the script, not this file.
+id: https://w3id.org/lmodel/opa
+name: opa
+title: Open Policy Agent (OPA)
+description: >-
+  A LinkML model of eight of the JSON formats Open Policy Agent defines: the IR plan, the
+  bundle manifest, the authorization policy input, the capabilities document, the built-in
+  function metadata, the version index, the decision log event and the status report. Each
+  module renders one format and keeps OPA's keys, so the schema checks a document OPA writes
+  as it is, with no key renamed. The lokf adapt copy renames seven keys LOKF defines with
+  another meaning.
+version: 1.22.2
+source: >-
+  https://github.com/open-policy-agent/opa/tree/482d9e368c2ddfed67ced59259fa6a247bb5f1e5
+license: Apache-2.0
+see_also:
+  - https://lmodel.github.io/opa
+  - https://www.openpolicyagent.org/docs
+annotations:
+  upstream_tag: v1.22.2
+  upstream_commit: 482d9e368c2ddfed67ced59259fa6a247bb5f1e5
+  upstream_release_date: '2026-11-05'
+  upstream_license: Apache-2.0
+prefixes:
+  openpolicyagent: https://w3id.org/lmodel/opa/
+  linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
+default_prefix: openpolicyagent
+default_range: string
+imports:
+  - linkml:types
+  - common
+  - capabilities
+  - builtin_metadata
+  - version_index
+  - authorization_input
+  - bundle_manifest
+  - ir_plan
+  - decision_log
+  - status_report
+keywords:
+  - policy as code
+  - Open Policy Agent
+  - Rego
+  - CNCF

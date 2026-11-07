@@ -1,0 +1,1002 @@
+{
+   "@context": {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "linkml": "https://w3id.org/linkml/",
+      "opa_manifest": "https://openpolicyagent.org/schemas/bundle/v1/manifest.schema.json#/$defs/",
+      "opa_plan": "https://openpolicyagent.org/schemas/ir/v1/plan.schema.json#/$defs/",
+      "openpolicyagent": "https://w3id.org/lmodel/opa/",
+      "schema": "http://schema.org/",
+      "skos": "http://www.w3.org/2004/02/skos/core#",
+      "@vocab": "https://w3id.org/lmodel/opa/",
+      "body": {
+         "@id": "body"
+      },
+      "col": {
+         "@type": "xsd:integer",
+         "@id": "col"
+      },
+      "end_col": {
+         "@type": "xsd:integer",
+         "@id": "end_col"
+      },
+      "end_row": {
+         "@type": "xsd:integer",
+         "@id": "end_row"
+      },
+      "file": {
+         "@type": "xsd:integer",
+         "@id": "file"
+      },
+      "of": {
+         "@type": "@id",
+         "@id": "of"
+      },
+      "stmt": {
+         "@type": "@id",
+         "@id": "stmt"
+      },
+      "array": {
+         "@type": "xsd:integer",
+         "@id": "array"
+      },
+      "value": {
+         "@type": "@id",
+         "@id": "value"
+      },
+      "dynamic": {
+         "@type": "@id",
+         "@id": "dynamic"
+      },
+      "static": {
+         "@type": "@id",
+         "@id": "static"
+      },
+      "client_certificates": {
+         "@type": "@id",
+         "@id": "client_certificates"
+      },
+      "headers": {
+         "@type": "@id",
+         "@id": "headers"
+      },
+      "identity": {
+         "@id": "identity"
+      },
+      "method": {
+         "@id": "method"
+      },
+      "params": {
+         "@type": "xsd:integer",
+         "@id": "params"
+      },
+      "path": {
+         "@type": "xsd:integer",
+         "@id": "path"
+      },
+      "stmts": {
+         "@type": "@id",
+         "@id": "stmts"
+      },
+      "blocks": {
+         "@type": "@id",
+         "@id": "blocks"
+      },
+      "index": {
+         "@type": "xsd:integer",
+         "@id": "index"
+      },
+      "categories": {
+         "@id": "categories"
+      },
+      "decl": {
+         "@type": "@id",
+         "@id": "decl"
+      },
+      "deprecated": {
+         "@type": "xsd:boolean",
+         "@id": "deprecated"
+      },
+      "description": {
+         "@id": "schema:description"
+      },
+      "infix": {
+         "@id": "infix"
+      },
+      "name": {
+         "@id": "schema:name"
+      },
+      "nondeterministic": {
+         "@type": "xsd:boolean",
+         "@id": "nondeterministic"
+      },
+      "relation": {
+         "@type": "xsd:boolean",
+         "@id": "relation"
+      },
+      "builtins": {
+         "@type": "@id",
+         "@id": "builtins"
+      },
+      "args": {
+         "@type": "@id",
+         "@id": "args"
+      },
+      "available": {
+         "@id": "available"
+      },
+      "implementations": {
+         "@type": "@id",
+         "@id": "implementations"
+      },
+      "introduced": {
+         "@id": "introduced"
+      },
+      "result": {
+         "@type": "@id",
+         "@id": "result"
+      },
+      "wasm": {
+         "@type": "@id",
+         "@id": "wasm"
+      },
+      "_categories": {
+         "@type": "@id",
+         "@id": "_categories"
+      },
+      "_implementations": {
+         "@type": "@id",
+         "@id": "_implementations"
+      },
+      "active_revision": {
+         "@id": "active_revision"
+      },
+      "code": {
+         "@id": "code"
+      },
+      "errors": {
+         "@type": "@id",
+         "@id": "errors"
+      },
+      "http_code": {
+         "@type": "xsd:integer",
+         "@id": "http_code"
+      },
+      "last_request": {
+         "@type": "xsd:dateTime",
+         "@id": "last_request"
+      },
+      "last_successful_activation": {
+         "@type": "xsd:dateTime",
+         "@id": "last_successful_activation"
+      },
+      "last_successful_download": {
+         "@type": "xsd:dateTime",
+         "@id": "last_successful_download"
+      },
+      "last_successful_request": {
+         "@type": "xsd:dateTime",
+         "@id": "last_successful_request"
+      },
+      "message": {
+         "@id": "message"
+      },
+      "metrics": {
+         "@type": "@id",
+         "@id": "metrics"
+      },
+      "size": {
+         "@type": "xsd:integer",
+         "@id": "size"
+      },
+      "func": {
+         "@id": "func"
+      },
+      "allow_net": {
+         "@id": "allow_net"
+      },
+      "features": {
+         "@type": "@id",
+         "@id": "features"
+      },
+      "future_keywords": {
+         "@context": {
+            "text": "skos:notation",
+            "description": "skos:prefLabel",
+            "meaning": "@id"
+         },
+         "@id": "future_keywords"
+      },
+      "wasm_abi_versions": {
+         "@type": "@id",
+         "@id": "wasm_abi_versions"
+      },
+      "batch_decision_id": {
+         "@id": "batch_decision_id"
+      },
+      "bundles": {
+         "@type": "@id",
+         "@id": "bundles"
+      },
+      "custom": {
+         "@type": "@id",
+         "@id": "custom"
+      },
+      "decision_id": {
+         "@id": "decision_id"
+      },
+      "erased": {
+         "@id": "erased"
+      },
+      "error": {
+         "@type": "@id",
+         "@id": "error"
+      },
+      "input": {
+         "@type": "@id",
+         "@id": "input"
+      },
+      "intermediate_results": {
+         "@type": "@id",
+         "@id": "intermediate_results"
+      },
+      "labels": {
+         "@type": "@id",
+         "@id": "labels"
+      },
+      "mapped_result": {
+         "@type": "@id",
+         "@id": "mapped_result"
+      },
+      "masked": {
+         "@id": "masked"
+      },
+      "nd_builtin_cache": {
+         "@type": "@id",
+         "@id": "nd_builtin_cache"
+      },
+      "query": {
+         "@id": "query"
+      },
+      "req_id": {
+         "@type": "xsd:integer",
+         "@id": "req_id"
+      },
+      "request_context": {
+         "@type": "@id",
+         "@id": "request_context"
+      },
+      "requested_by": {
+         "@id": "requested_by"
+      },
+      "rule_labels": {
+         "@type": "@id",
+         "@id": "rule_labels"
+      },
+      "span_id": {
+         "@id": "span_id"
+      },
+      "trace_id": {
+         "@id": "trace_id"
+      },
+      "key": {
+         "@type": "@id",
+         "@id": "key"
+      },
+      "a": {
+         "@type": "xsd:integer",
+         "@id": "a"
+      },
+      "b": {
+         "@type": "xsd:integer",
+         "@id": "b"
+      },
+      "return": {
+         "@type": "xsd:integer",
+         "@id": "return"
+      },
+      "funcs": {
+         "@type": "@id",
+         "@id": "funcs"
+      },
+      "variadic": {
+         "@type": "@id",
+         "@id": "variadic"
+      },
+      "id": {
+         "@id": "schema:identifier"
+      },
+      "label": {
+         "@id": "label"
+      },
+      "repo": {
+         "@id": "repo"
+      },
+      "implementation": {
+         "@id": "implementation"
+      },
+      "capacity": {
+         "@type": "xsd:integer",
+         "@id": "capacity"
+      },
+      "Index": {
+         "@type": "xsd:integer",
+         "@id": "Index"
+      },
+      "file_rego_versions": {
+         "@type": "@id",
+         "@id": "file_rego_versions"
+      },
+      "metadata": {
+         "@type": "@id",
+         "@id": "metadata"
+      },
+      "rego_version": {
+         "@type": "xsd:integer",
+         "@id": "rego_version"
+      },
+      "roots": {
+         "@id": "roots"
+      },
+      "block": {
+         "@type": "@id",
+         "@id": "block"
+      },
+      "object": {
+         "@type": "xsd:integer",
+         "@id": "object"
+      },
+      "plans": {
+         "@type": "@id",
+         "@id": "plans"
+      },
+      "state": {
+         "@context": {
+            "text": "skos:notation",
+            "description": "skos:prefLabel",
+            "meaning": "@id"
+         },
+         "@id": "state"
+      },
+      "unplanned_rules": {
+         "@type": "@id",
+         "@id": "unplanned_rules"
+      },
+      "http": {
+         "@type": "@id",
+         "@id": "http"
+      },
+      "set": {
+         "@type": "xsd:integer",
+         "@id": "set"
+      },
+      "builtin_funcs": {
+         "@type": "@id",
+         "@id": "builtin_funcs"
+      },
+      "files": {
+         "@type": "@id",
+         "@id": "files"
+      },
+      "strings": {
+         "@type": "@id",
+         "@id": "strings"
+      },
+      "bundle": {
+         "@type": "@id",
+         "@id": "bundle"
+      },
+      "decision_logs": {
+         "@type": "@id",
+         "@id": "decision_logs"
+      },
+      "discovery": {
+         "@type": "@id",
+         "@id": "discovery"
+      },
+      "plugins": {
+         "@type": "@id",
+         "@id": "plugins"
+      },
+      "location": {
+         "@type": "@id",
+         "@id": "location"
+      },
+      "Major": {
+         "@type": "xsd:integer",
+         "@id": "Major"
+      },
+      "Metadata": {
+         "@id": "Metadata"
+      },
+      "Minor": {
+         "@type": "xsd:integer",
+         "@id": "Minor"
+      },
+      "Patch": {
+         "@type": "xsd:integer",
+         "@id": "Patch"
+      },
+      "PreRelease": {
+         "@id": "PreRelease"
+      },
+      "keywords": {
+         "@type": "@id",
+         "@id": "keywords"
+      },
+      "minor_version": {
+         "@type": "xsd:integer",
+         "@id": "minor_version"
+      },
+      "annotations": {
+         "@type": "@id",
+         "@id": "annotations"
+      },
+      "entrypoint": {
+         "@id": "entrypoint"
+      },
+      "module": {
+         "@id": "module"
+      },
+      "local": {
+         "@type": "xsd:integer",
+         "@id": "local"
+      },
+      "revision": {
+         "@id": "revision"
+      },
+      "row": {
+         "@type": "xsd:integer",
+         "@id": "row"
+      },
+      "source": {
+         "@id": "source"
+      },
+      "target": {
+         "@id": "target"
+      },
+      "timestamp": {
+         "@id": "timestamp"
+      },
+      "type": {
+         "@id": "type"
+      },
+      "version": {
+         "@id": "version"
+      },
+      "OpaAnyType": {
+         "@id": "OpaAnyType"
+      },
+      "OpaArrayAppendStmt": {
+         "@id": "OpaArrayAppendStmt"
+      },
+      "OpaArrayAppendStmtBody": {
+         "@id": "OpaArrayAppendStmtBody"
+      },
+      "OpaArrayType": {
+         "@id": "OpaArrayType"
+      },
+      "OpaAssignIntStmt": {
+         "@id": "OpaAssignIntStmt"
+      },
+      "OpaAssignIntStmtBody": {
+         "@id": "OpaAssignIntStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaAssignVarOnceStmt": {
+         "@id": "OpaAssignVarOnceStmt"
+      },
+      "OpaAssignVarOnceStmtBody": {
+         "@id": "OpaAssignVarOnceStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            },
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaAssignVarStmt": {
+         "@id": "OpaAssignVarStmt"
+      },
+      "OpaAssignVarStmtBody": {
+         "@id": "OpaAssignVarStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            },
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaAuthorizationInput": {
+         "@id": "OpaAuthorizationInput",
+         "@context": {
+            "body": {
+               "@id": "body",
+               "@type": "@id"
+            }
+         }
+      },
+      "OpaBlock": {
+         "@id": "OpaBlock"
+      },
+      "OpaBlockStmt": {
+         "@id": "OpaBlockStmt"
+      },
+      "OpaBlockStmtBody": {
+         "@id": "OpaBlockStmtBody"
+      },
+      "OpaBooleanType": {
+         "@id": "OpaBooleanType"
+      },
+      "OpaBoolOperand": {
+         "@id": "OpaBoolOperand"
+      },
+      "OpaBreakStmt": {
+         "@id": "OpaBreakStmt"
+      },
+      "OpaBreakStmtBody": {
+         "@id": "OpaBreakStmtBody"
+      },
+      "OpaBuiltin": {
+         "@id": "OpaBuiltin"
+      },
+      "OpaBuiltinArgument": {
+         "@id": "OpaBuiltinArgument"
+      },
+      "OpaBuiltinCategory": {
+         "@id": "OpaBuiltinCategory"
+      },
+      "OpaBuiltinFunc": {
+         "@id": "OpaBuiltinFunc"
+      },
+      "OpaBuiltinMetadata": {
+         "@id": "OpaBuiltinMetadata"
+      },
+      "OpaBuiltinMetadataCatalog": {
+         "@id": "OpaBuiltinMetadataCatalog"
+      },
+      "OpaBuiltinResult": {
+         "@id": "OpaBuiltinResult"
+      },
+      "OpaBundleStatus": {
+         "@id": "OpaBundleStatus"
+      },
+      "OpaCallDynamicStmt": {
+         "@id": "OpaCallDynamicStmt"
+      },
+      "OpaCallDynamicStmtBody": {
+         "@id": "OpaCallDynamicStmtBody"
+      },
+      "OpaCallStmt": {
+         "@id": "OpaCallStmt"
+      },
+      "OpaCallStmtBody": {
+         "@id": "OpaCallStmtBody"
+      },
+      "OpaCapabilities": {
+         "@id": "OpaCapabilities"
+      },
+      "OpaDecisionBundle": {
+         "@id": "OpaDecisionBundle"
+      },
+      "OpaDecisionLogEvent": {
+         "@id": "OpaDecisionLogEvent",
+         "@context": {
+            "timestamp": {
+               "@id": "timestamp",
+               "@type": "xsd:dateTime"
+            }
+         }
+      },
+      "OpaDecisionLogStatus": {
+         "@id": "OpaDecisionLogStatus"
+      },
+      "OpaDotStmt": {
+         "@id": "OpaDotStmt"
+      },
+      "OpaDotStmtBody": {
+         "@id": "OpaDotStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            },
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaDynamicProperty": {
+         "@id": "OpaDynamicProperty"
+      },
+      "OpaEqualStmt": {
+         "@id": "OpaEqualStmt"
+      },
+      "OpaEqualStmtBody": {
+         "@id": "OpaEqualStmtBody"
+      },
+      "OpaFileRegoVersion": {
+         "@id": "OpaFileRegoVersion",
+         "@context": {
+            "version": {
+               "@id": "version",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaFunc": {
+         "@id": "OpaFunc"
+      },
+      "OpaFuncs": {
+         "@id": "OpaFuncs"
+      },
+      "OpaFunctionType": {
+         "@id": "OpaFunctionType"
+      },
+      "OpaHttpRequestContext": {
+         "@id": "OpaHttpRequestContext"
+      },
+      "OpaImplementation": {
+         "@id": "OpaImplementation"
+      },
+      "OpaImplementationSupport": {
+         "@id": "OpaImplementationSupport"
+      },
+      "OpaIsArrayStmt": {
+         "@id": "OpaIsArrayStmt"
+      },
+      "OpaIsArrayStmtBody": {
+         "@id": "OpaIsArrayStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            }
+         }
+      },
+      "OpaIsDefinedStmt": {
+         "@id": "OpaIsDefinedStmt"
+      },
+      "OpaIsDefinedStmtBody": {
+         "@id": "OpaIsDefinedStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaIsObjectStmt": {
+         "@id": "OpaIsObjectStmt"
+      },
+      "OpaIsObjectStmtBody": {
+         "@id": "OpaIsObjectStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            }
+         }
+      },
+      "OpaIsSetStmt": {
+         "@id": "OpaIsSetStmt"
+      },
+      "OpaIsSetStmtBody": {
+         "@id": "OpaIsSetStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            }
+         }
+      },
+      "OpaIsUndefinedStmt": {
+         "@id": "OpaIsUndefinedStmt"
+      },
+      "OpaIsUndefinedStmtBody": {
+         "@id": "OpaIsUndefinedStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaLabels": {
+         "@id": "OpaLabels"
+      },
+      "OpaLenStmt": {
+         "@id": "OpaLenStmt"
+      },
+      "OpaLenStmtBody": {
+         "@id": "OpaLenStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            },
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaLocalOperand": {
+         "@id": "OpaLocalOperand"
+      },
+      "OpaLocation": {
+         "@id": "OpaLocation"
+      },
+      "OpaMakeArrayStmt": {
+         "@id": "OpaMakeArrayStmt"
+      },
+      "OpaMakeArrayStmtBody": {
+         "@id": "OpaMakeArrayStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaMakeNullStmt": {
+         "@id": "OpaMakeNullStmt"
+      },
+      "OpaMakeNullStmtBody": {
+         "@id": "OpaMakeNullStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaMakeNumberIntStmt": {
+         "@id": "OpaMakeNumberIntStmt"
+      },
+      "OpaMakeNumberIntStmtBody": {
+         "@id": "OpaMakeNumberIntStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaMakeNumberRefStmt": {
+         "@id": "OpaMakeNumberRefStmt"
+      },
+      "OpaMakeNumberRefStmtBody": {
+         "@id": "OpaMakeNumberRefStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaMakeObjectStmt": {
+         "@id": "OpaMakeObjectStmt"
+      },
+      "OpaMakeObjectStmtBody": {
+         "@id": "OpaMakeObjectStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaMakeSetStmt": {
+         "@id": "OpaMakeSetStmt"
+      },
+      "OpaMakeSetStmtBody": {
+         "@id": "OpaMakeSetStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaManifest": {
+         "@id": "OpaManifest"
+      },
+      "OpaNopStmt": {
+         "@id": "OpaNopStmt"
+      },
+      "OpaNopStmtBody": {
+         "@id": "OpaNopStmtBody"
+      },
+      "OpaNotEqualStmt": {
+         "@id": "OpaNotEqualStmt"
+      },
+      "OpaNotEqualStmtBody": {
+         "@id": "OpaNotEqualStmtBody"
+      },
+      "OpaNotStmt": {
+         "@id": "OpaNotStmt"
+      },
+      "OpaNotStmtBody": {
+         "@id": "OpaNotStmtBody"
+      },
+      "OpaNullType": {
+         "@id": "OpaNullType"
+      },
+      "OpaNumberType": {
+         "@id": "OpaNumberType"
+      },
+      "OpaObject": {
+         "@id": "OpaObject"
+      },
+      "OpaObjectInsertOnceStmt": {
+         "@id": "OpaObjectInsertOnceStmt"
+      },
+      "OpaObjectInsertOnceStmtBody": {
+         "@id": "OpaObjectInsertOnceStmtBody"
+      },
+      "OpaObjectInsertStmt": {
+         "@id": "OpaObjectInsertStmt"
+      },
+      "OpaObjectInsertStmtBody": {
+         "@id": "OpaObjectInsertStmtBody"
+      },
+      "OpaObjectMergeStmt": {
+         "@id": "OpaObjectMergeStmt"
+      },
+      "OpaObjectMergeStmtBody": {
+         "@id": "OpaObjectMergeStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaObjectType": {
+         "@id": "OpaObjectType"
+      },
+      "OpaOperand": {
+         "@id": "OpaOperand"
+      },
+      "OpaPlan": {
+         "@id": "OpaPlan"
+      },
+      "OpaPlans": {
+         "@id": "OpaPlans"
+      },
+      "OpaPluginStatus": {
+         "@id": "OpaPluginStatus"
+      },
+      "OpaPolicy": {
+         "@id": "OpaPolicy"
+      },
+      "OpaRequestContext": {
+         "@id": "OpaRequestContext"
+      },
+      "OpaResetLocalStmt": {
+         "@id": "OpaResetLocalStmt"
+      },
+      "OpaResetLocalStmtBody": {
+         "@id": "OpaResetLocalStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaResultSetAddStmt": {
+         "@id": "OpaResultSetAddStmt"
+      },
+      "OpaResultSetAddStmtBody": {
+         "@id": "OpaResultSetAddStmtBody"
+      },
+      "OpaReturnLocalStmt": {
+         "@id": "OpaReturnLocalStmt"
+      },
+      "OpaReturnLocalStmtBody": {
+         "@id": "OpaReturnLocalStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaScanStmt": {
+         "@id": "OpaScanStmt"
+      },
+      "OpaScanStmtBody": {
+         "@id": "OpaScanStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaSetAddStmt": {
+         "@id": "OpaSetAddStmt"
+      },
+      "OpaSetAddStmtBody": {
+         "@id": "OpaSetAddStmtBody"
+      },
+      "OpaSetType": {
+         "@id": "OpaSetType"
+      },
+      "OpaStatic": {
+         "@id": "OpaStatic"
+      },
+      "OpaStaticProperty": {
+         "@id": "OpaStaticProperty"
+      },
+      "OpaStatusReport": {
+         "@id": "OpaStatusReport"
+      },
+      "OpaStmt": {
+         "@id": "OpaStmt"
+      },
+      "OpaStmtBody": {
+         "@id": "OpaStmtBody"
+      },
+      "OpaStringConst": {
+         "@id": "OpaStringConst"
+      },
+      "OpaStringIndexOperand": {
+         "@id": "OpaStringIndexOperand"
+      },
+      "OpaStringListMap": {
+         "@id": "OpaStringListMap"
+      },
+      "OpaStringType": {
+         "@id": "OpaStringType"
+      },
+      "OpaType": {
+         "@id": "OpaType"
+      },
+      "OpaUnplannedRule": {
+         "@id": "OpaUnplannedRule"
+      },
+      "OpaValue": {
+         "@id": "linkml:Any"
+      },
+      "OpaVersionEntry": {
+         "@id": "OpaVersionEntry"
+      },
+      "OpaVersionIndex": {
+         "@id": "OpaVersionIndex"
+      },
+      "OpaWasmAbiVersion": {
+         "@id": "OpaWasmAbiVersion",
+         "@context": {
+            "version": {
+               "@id": "version",
+               "@type": "xsd:integer"
+            }
+         }
+      },
+      "OpaWasmResolver": {
+         "@id": "OpaWasmResolver"
+      },
+      "OpaWithStmt": {
+         "@id": "OpaWithStmt"
+      },
+      "OpaWithStmtBody": {
+         "@id": "OpaWithStmtBody"
+      }
+   }
+}

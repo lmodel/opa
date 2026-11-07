@@ -1,0 +1,88 @@
+---
+# https://pre-commit.com/
+# Run it from the repository's root: uvx pre-commit run -c .linkml/.pre-commit-config.yaml
+#
+# The hooks read only what this project adds beside OPA's tree, which a test checks
+# against its pin. No hook may rewrite a file this repository does not write by hand,
+# so the excludes leave out:
+# - the LinkML generators' and `lokf adapt`'s output, which the next run writes again;
+# - the list of OPA's files, which pin_opa_tree.py writes again;
+# - the neighbours' released copies, which tests check against their checksums;
+# - the release tools' npm lockfile;
+# - the documents OPA wrote, which the capture script writes again;
+# - the KTL sidecar's scripts, which the weekly sync replaces.
+# The converter's modules under src/opa/schema/ stay in, and must pass every hook as the
+# converter writes them.
+files: >-
+  (?x)^(
+    \.linkml/|
+    \.lokf/|
+    website/|
+    llms\.txt$|
+    \.github/(workflows/(knowledge-|lint-and-docs|main\.yaml|semantic-release|upstream-watch)|scripts/|release/|SECURITY|PULL_REQUEST_TEMPLATE/)
+  )
+exclude: >-
+  (?x)^(
+    \.linkml/src/opa/datamodel/|
+    \.linkml/project/|
+    \.linkml/docs/schema/|
+    \.linkml/tests/upstream_tree\.tsv$|
+    \.linkml/tests/neighbours/|
+    \.linkml/tests/data/captured/|
+    \.lokf/(scripts|m365)/|
+    \.lokf/schema/(lokf|opa)\.yaml$|
+    \.github/release/package-lock\.json$
+  )
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-toml
+      - id: check-yaml
+      - id: end-of-file-fixer
+        exclude: ^\.linkml/\.copier-answers\.yml$
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [-c=.linkml/.yamllint.yaml]
+        exclude: ^\.linkml/\.copier-answers\.yml$
+        verbose: true  # Show warnings.
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.2
+    hooks:
+      - id: codespell
+        args: [--toml=.linkml/pyproject.toml]
+        additional_dependencies:
+          - tomli
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.46.3
+    hooks:
+      - id: typos
+        args: [--config=.linkml/pyproject.toml]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.15.14
+    hooks:
+      # Run the linter.
+      - id: ruff
+        args: [--config=.linkml/pyproject.toml, --fix, --exit-non-zero-on-fix]
+      # Run the formatter.
+      - id: ruff-format
+        args: [--config=.linkml/pyproject.toml]
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    # uv version.
+    rev: 0.11.16
+    hooks:
+      # The hook's own pattern names a lockfile at the repository's root, where OPA's
+      # tree has none, so it is given this project's files and folder.
+      - id: uv-lock
+        files: ^\.linkml/(uv\.lock|pyproject\.toml)$
+        args: [--project, .linkml]

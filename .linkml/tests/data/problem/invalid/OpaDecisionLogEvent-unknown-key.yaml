@@ -1,0 +1,11 @@
+---
+# An event with a key EventV1 does not have.
+labels:
+  id: 75a0519a-5dc8-4cf4-82fc-cbb344a6306c
+  version: 1.22.2
+decision_id: 0552fb5c-9e3e-45e9-94f3-7fb57c4ed61b
+path: http/example/authz/allow
+result: true
+decision: true
+timestamp: '2026-11-07T10:16:33.348541023Z'
+req_id: 4

@@ -1,0 +1,103 @@
+[build-system]
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
+
+[project]
+# Named like lmodel/slsa's slsa-linkml, so the PyPI name says what it holds;
+# the import package stays opa. PyPI publishing is off.
+name = "opa-linkml"
+description = "Open Policy Agent (OPA) v1.22.2 (LinkML)"
+authors = [
+  {name = "Noel McLoughlin", email = "noel.mcloughlin@gmail.com"},
+]
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+readme = "README.md"
+requires-python = ">=3.10"
+dynamic = ["version"]
+
+dependencies = [
+  "linkml-runtime >=1.9.4",
+]
+
+[dependency-groups]
+dev = [
+    "jsonschema>=4.26.0",
+    "linkml>=1.12.1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/opa"]
+
+# See https://hatch.pypa.io/latest/config/build/#file-selection for how to
+# explicitly include files other than default into the build distributions.
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+# Ref.: https://github.com/ninoseki/uv-dynamic-versioning/
+[tool.uv-dynamic-versioning]
+vcs = "git"
+style = "pep440"
+fallback-version = "0.0.0"
+
+# Ref.: https://docs.pytest.org/en/stable/reference/reference.html#configuration-options
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+# https://docs.astral.sh/ruff/configuration/
+[tool.ruff]
+exclude = [
+    "src/opa/_version.py",
+]
+# Set oldest supported Python version
+target-version = "py310"
+
+# Ref.: https://github.com/codespell-project/codespell
+[tool.codespell]
+skip = [
+  "LICENSE",
+  "NOTICE",
+  "pyproject.toml",
+  "uv.lock",
+  "project/*",
+  "src/opa/datamodel/opa_pydantic.py",
+  "src/opa/datamodel/opa.py",
+  # OPA's tree is pinned, not written here, as are the neighbours' released
+  # adapt copies.
+  "tests/upstream_tree.tsv",
+  "tests/neighbours/*",
+  "tests/data/captured/*",
+  # Copied in by the KTL sidecar sync or written by npm, not by hand.
+  ".lokf/scripts/*",
+  ".lokf/schema/lokf.yaml",
+  "website/package-lock.json",
+  ".github/release/package-lock.json",
+]
+
+# Reminder: words have to be lowercased for the ignore-words-list
+ignore-words-list = "linke,nd"
+quiet-level = 3
+
+# Ref.: https://github.com/crate-ci/typos (spell checker)
+[tool.typos.default.extend-words]
+linke = "linke"
+# OPA's key nd_builtin_cache, for the non-deterministic built-in functions' cache.
+nd = "nd"
+
+[tool.typos.files]
+extend-exclude = [
+  "LICENSE",
+  "uv.lock",
+  "pyproject.toml",
+  "project/*",
+  "src/opa/datamodel/opa_pydantic.py",
+  "src/opa/datamodel/opa.py",
+  "tests/upstream_tree.tsv",
+  "tests/neighbours/*",
+  "tests/data/captured/*",
+  ".lokf/scripts/*",
+  ".lokf/schema/lokf.yaml",
+  "website/package-lock.json",
+  ".github/release/package-lock.json",
+]

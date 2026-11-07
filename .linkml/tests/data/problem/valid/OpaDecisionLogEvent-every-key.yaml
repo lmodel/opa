@@ -1,0 +1,48 @@
+---
+# A decision log event with every key EventV1 writes, the deprecated revision too.
+labels:
+  id: 75a0519a-5dc8-4cf4-82fc-cbb344a6306c
+  version: 1.22.2
+decision_id: 0552fb5c-9e3e-45e9-94f3-7fb57c4ed61b
+batch_decision_id: 1f6c2a4e-8b0d-4d2e-9f61-3c5a7b9d0e12
+trace_id: 4bf92f3577b34da6a3ce929d0e0e4736
+span_id: 00f067aa0c902b7d
+revision: rev-1
+bundles:
+  authz:
+    revision: rev-1
+path: http/example/authz/allow
+query: data.http.example.authz.allow
+input:
+  - first
+  - second
+result: true
+intermediate_results:
+  http/example/authz/allow: true
+mapped_result:
+  allowed: true
+nd_builtin_cache:
+  time.now_ns:
+    '[]': 1794045968712748544
+erased:
+  - /input/password
+masked:
+  - /input/token
+error:
+  code: eval_conflict_error
+  message: rule data.http.example.authz.pick produced conflicting values
+requested_by: 127.0.0.1:51528
+timestamp: '2026-11-07T10:16:33.348541023Z'
+metrics:
+  timer_rego_query_eval_ns: 76539
+req_id: 4
+rule_labels:
+  - team: identity
+request_context:
+  http:
+    headers:
+      X-Request-Id:
+        - req-1
+custom:
+  request_metadata:
+    trace: abc

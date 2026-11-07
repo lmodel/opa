@@ -1,0 +1,9 @@
+---
+# An event without its decision id, which OPA always writes.
+labels:
+  id: 75a0519a-5dc8-4cf4-82fc-cbb344a6306c
+  version: 1.22.2
+path: http/example/authz/allow
+result: true
+timestamp: '2026-11-07T10:16:33.348541023Z'
+req_id: 4

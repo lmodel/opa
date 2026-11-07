@@ -1,0 +1,28 @@
+---
+type: Explanation
+id: https://w3id.org/lmodel/opa/knowledge/explanations/how-the-schema-is-written
+genre: explanation
+title: How the schema is written
+description: "`.linkml/scripts/opa_to_linkml.py` writes each module from OPA's JSON Schemas, data files and Go types at the merged release, and a test fails when a module differs."
+resource: .linkml/scripts/opa_to_linkml.py
+about:
+  - https://w3id.org/lmodel/opa/knowledge/datasets/opa-linkml-schema
+sources:
+  - id: about.md
+    resource: .linkml/docs/about.md
+    title: Where each module comes from
+  - id: converter
+    resource: .linkml/scripts/opa_to_linkml.py
+    title: the docstring
+generated:
+  by: process:ktl-librarian
+  at: "2026-11-07T10:31:22Z"
+status: draft
+---
+
+# How the schema is written
+
+The plan and the bundle manifest render OPA's JSON Schemas key for key. The authorization input renders the keys of OPA's schema for it, and makes optional the three keys that OPA's server writes only when the request has them. The capabilities document, the built-in function metadata and the version index render the Go types that write them. The decision log event and the status report render OPA's Go structs key for key.[^converter] A statement or an operand of the plan is one class per kind under an abstract class, picked by its `type`.[^about.md] Edit the converter, never the modules, and run `just gen-linkml`.[^about.md]
+
+[^about.md]: .linkml/docs/about.md, Where each module comes from
+[^converter]: .linkml/scripts/opa_to_linkml.py, the docstring

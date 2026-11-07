@@ -1,0 +1,80 @@
+---
+# Written by scripts/opa_to_linkml.py from OPA's files. Edit the script, not this file.
+id: https://w3id.org/lmodel/opa/version_index
+name: version_index
+title: OPA version index
+description: >-
+  v1/ast/version_index.json, which OPA's genversionindex command writes: the OPA version that
+  introduced each built-in function, feature and keyword.
+version: 1.22.2
+source: >-
+  https://github.com/open-policy-agent/opa/blob/482d9e368c2ddfed67ced59259fa6a247bb5f1e5/internal/cmd/genversionindex/main.go
+license: Apache-2.0
+see_also:
+  - https://lmodel.github.io/opa
+  - https://www.openpolicyagent.org/docs
+annotations:
+  upstream_tag: v1.22.2
+  upstream_commit: 482d9e368c2ddfed67ced59259fa6a247bb5f1e5
+  upstream_release_date: '2026-11-05'
+  upstream_license: Apache-2.0
+prefixes:
+  openpolicyagent: https://w3id.org/lmodel/opa/
+  linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
+default_prefix: openpolicyagent
+default_range: string
+imports:
+  - linkml:types
+classes:
+  OpaVersionIndex:
+    tree_root: true
+    description: The version index.
+    attributes:
+      builtins:
+        description: The builtins, keyed by name, each with the version that introduced it.
+        range: OpaVersionEntry
+        multivalued: true
+        inlined: true
+        required: true
+      features:
+        description: The features, keyed by name, each with the version that introduced it.
+        range: OpaVersionEntry
+        multivalued: true
+        inlined: true
+        required: true
+      keywords:
+        description: The keywords, keyed by name, each with the version that introduced it.
+        range: OpaVersionEntry
+        multivalued: true
+        inlined: true
+        required: true
+  OpaVersionEntry:
+    description: >-
+      A built-in function, feature or keyword, and the OPA version that introduced it.
+    attributes:
+      name:
+        description: The name of the function, feature or keyword.
+        key: true
+        slot_uri: schema:name
+      major:
+        description: The major version.
+        range: integer
+        alias: Major
+        required: true
+      minor:
+        description: The minor version.
+        range: integer
+        alias: Minor
+        required: true
+      patch:
+        description: The patch version.
+        range: integer
+        alias: Patch
+        required: true
+      pre_release:
+        description: The pre-release label, such as `rc2`.
+        alias: PreRelease
+      metadata:
+        description: The build metadata, the part of a version after a plus sign.
+        alias: Metadata

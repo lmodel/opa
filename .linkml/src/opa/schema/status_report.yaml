@@ -1,0 +1,174 @@
+---
+# Written by scripts/opa_to_linkml.py from OPA's files. Edit the script, not this file.
+id: https://w3id.org/lmodel/opa/status_report
+name: status_report
+title: OPA status report
+description: >-
+  The status report OPA's status plugin sends to a status service: the state of the instance's
+  bundles, decision log uploads and plugins. It renders the Go struct status.UpdateRequestV1
+  and the structs it holds key for key.
+version: 1.22.2
+source: >-
+  https://github.com/open-policy-agent/opa/blob/482d9e368c2ddfed67ced59259fa6a247bb5f1e5/v1/plugins/status/plugin.go
+license: Apache-2.0
+see_also:
+  - https://lmodel.github.io/opa
+  - https://www.openpolicyagent.org/docs
+annotations:
+  upstream_tag: v1.22.2
+  upstream_commit: 482d9e368c2ddfed67ced59259fa6a247bb5f1e5
+  upstream_release_date: '2026-11-05'
+  upstream_license: Apache-2.0
+prefixes:
+  openpolicyagent: https://w3id.org/lmodel/opa/
+  linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
+default_prefix: openpolicyagent
+default_range: string
+imports:
+  - linkml:types
+  - common
+classes:
+  OpaStatusReport:
+    tree_root: true
+    description: >-
+      A report on an OPA instance: the state of its bundles, its decision log uploads and
+      its plugins, and its metrics.
+    attributes:
+      labels:
+        description: The labels of the OPA instance that sends the report.
+        range: OpaLabels
+        inlined: true
+      bundle:
+        description: The status of the one bundle of the legacy `bundle` configuration.
+        range: OpaBundleStatus
+        inlined: true
+        deprecated: OPA marks the key deprecated and writes `bundles` instead.
+      bundles:
+        description: The status of each bundle OPA downloads, by name.
+        range: OpaBundleStatus
+        multivalued: true
+        inlined: true
+      discovery:
+        description: The status of the discovery bundle.
+        range: OpaBundleStatus
+        inlined: true
+      decision_logs:
+        description: The status of the decision log uploads.
+        range: OpaDecisionLogStatus
+        inlined: true
+      metrics:
+        description: >-
+          The instance's metrics, under the name of their provider, such as `prometheus`.
+        range: OpaObject
+        inlined: true
+      plugins:
+        description: The state of each plugin, by name.
+        range: OpaPluginStatus
+        multivalued: true
+        inlined: true
+  OpaBundleStatus:
+    description: >-
+      The status of a bundle: its active revision, when OPA last asked for, downloaded and
+      activated it, and the errors of the last attempt.
+    comments:
+      - >-
+        OPA writes Go's zero time, 0001-01-01T00:00:00Z, for a time that has not come yet,
+        such as the last activation of a bundle that never activated.
+    attributes:
+      name:
+        description: The bundle's name.
+        key: true
+        required: true
+        slot_uri: schema:name
+      active_revision:
+        description: The revision of the bundle OPA last activated.
+      last_successful_activation:
+        description: When OPA last activated the bundle.
+        range: datetime
+        required: true
+      size:
+        description: The bundle's size in bytes.
+        range: integer
+      last_successful_download:
+        description: When OPA last downloaded the bundle.
+        range: datetime
+        required: true
+      last_successful_request:
+        description: When a request for the bundle last succeeded.
+        range: datetime
+        required: true
+      last_request:
+        description: When OPA last asked for the bundle.
+        range: datetime
+        required: true
+      code:
+        description: The error code, when the last download or activation failed.
+      message:
+        description: What went wrong, in words.
+      errors:
+        description: The parse and compile errors of the last activation.
+        range: OpaObject
+        multivalued: true
+        inlined: true
+        inlined_as_list: true
+      metrics:
+        description: The metrics of the last download and activation.
+        range: OpaObject
+        inlined: true
+      http_code:
+        description: The HTTP status code of a download the server refused.
+        range: integer
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The bundle's type.
+        range: OpaBundleType
+  OpaDecisionLogStatus:
+    description: The status of the decision log uploads.
+    attributes:
+      code:
+        description: The error code, when the last upload failed.
+      message:
+        description: What went wrong, in words.
+      http_code:
+        description: The HTTP status code of an upload the server refused.
+        range: integer
+      metrics:
+        description: The decision logger's metrics.
+        range: OpaObject
+        inlined: true
+  OpaPluginStatus:
+    description: The state of a plugin.
+    attributes:
+      name:
+        description: The plugin's name.
+        key: true
+        slot_uri: schema:name
+      state:
+        description: The plugin's state.
+        range: OpaPluginState
+        required: true
+      message:
+        description: More about the state, in words.
+enums:
+  OpaPluginState:
+    description: The states a plugin reports.
+    permissible_values:
+      NOT_READY:
+        description: >-
+          Not in an error state, but not yet ready for normal operation, as at start-up.
+      OK:
+        description: Working normally.
+      ERROR:
+        description: In an error state, and not to be taken as working.
+      WARN:
+        description: Working, but degraded or in a state a person may need to fix.
+  OpaBundleType:
+    description: The types of bundle.
+    permissible_values:
+      delta:
+        description: A delta bundle, whose JSON Patch operations change the data OPA holds.
+      snapshot:
+        description: A whole bundle, whose files replace what OPA held under its roots.

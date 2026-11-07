@@ -1,0 +1,18 @@
+{
+  "headers": {
+    "Accept-Encoding": [
+      "identity"
+    ],
+    "Connection": [
+      "close"
+    ],
+    "User-Agent": [
+      "Python-urllib/3.14"
+    ]
+  },
+  "method": "GET",
+  "params": {},
+  "path": [
+    "health"
+  ]
+}

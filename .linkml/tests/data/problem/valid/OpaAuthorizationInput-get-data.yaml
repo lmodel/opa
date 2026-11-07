@@ -1,0 +1,15 @@
+---
+# The input of a GET of /v1/data/example?pretty=true with a bearer token, under
+# --authentication=token. OPA gives no body to a GET, and no certificates.
+identity: secret-token
+method: GET
+path:
+  - v1
+  - data
+  - example
+params:
+  pretty:
+    - 'true'
+headers:
+  Authorization:
+    - Bearer secret-token

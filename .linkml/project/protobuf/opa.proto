@@ -1,0 +1,1425 @@
+syntax = "proto3";
+package opa;
+// metamodel_version: 1.12.0
+// version: 1.22.2
+// A union of the types it lists in `of`, or any value when it lists none.
+message OpaAnyType {
+  // The argument's or result's name, on a named type.
+  string name = 1;
+  // What the argument or result holds, on a named type.
+  string description = 2;
+  // The kind of type.
+  string type = 3;
+  // The types the union admits.
+  repeated OpaType of = 4;
+}
+// A statement of kind ArrayAppendStmt, with its fields in `stmt`.
+message OpaArrayAppendStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaArrayAppendStmtBody stmt = 2;
+}
+// ArrayAppendStmt represents a dynamic append operation of a value onto an array.
+message OpaArrayAppendStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local that holds the array.
+  int32 array = 6;
+  // The value.
+  OpaOperand value = 7;
+}
+// An array, with a type per position in `static` and one for the rest in `dynamic`.
+message OpaArrayType {
+  // The argument's or result's name, on a named type.
+  string name = 1;
+  // What the argument or result holds, on a named type.
+  string description = 2;
+  // The kind of type.
+  string type = 3;
+  // The type of each element by position.
+  repeated OpaType static = 4;
+  // The type of the elements after the static ones.
+  OpaType dynamic = 5;
+}
+// A statement of kind AssignIntStmt, with its fields in `stmt`.
+message OpaAssignIntStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaAssignIntStmtBody stmt = 2;
+}
+// AssignIntStmt represents an assignment of an integer value to a local variable.
+message OpaAssignIntStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local that receives the result.
+  int32 target = 6;
+  // The value.
+  int32 value = 7;
+}
+// A statement of kind AssignVarOnceStmt, with its fields in `stmt`.
+message OpaAssignVarOnceStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaAssignVarOnceStmtBody stmt = 2;
+}
+// AssignVarOnceStmt represents an assignment of one local variable to another. If the target is defined, execution aborts with a conflict error.
+message OpaAssignVarOnceStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // What the statement reads.
+  OpaOperand source = 6;
+  // The local that receives the result.
+  int32 target = 7;
+}
+// A statement of kind AssignVarStmt, with its fields in `stmt`.
+message OpaAssignVarStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaAssignVarStmtBody stmt = 2;
+}
+// AssignVarStmt represents an assignment of one local variable to another.
+message OpaAssignVarStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // What the statement reads.
+  OpaOperand source = 6;
+  // The local that receives the result.
+  int32 target = 7;
+}
+// The OPA Authorization Policy Input document.
+message OpaAuthorizationInput {
+  // The request body, parsed from JSON or YAML, for a POST to the default decision, v0/data, v1/data, v1/compile or v1/query.
+  OpaValue body = 1;
+  // The caller's identity: the bearer token under --authentication=token, or the client certificate's subject under --authentication=tls.
+  string identity = 2;
+  // The client's TLS certificates under --authentication=tls, each as Go writes an x509 certificate in JSON.
+  repeated OpaObject client_certificates = 3;
+  // The HTTP method of the request, in upper case.
+  string method = 4;
+  // The request path, one segment per element.
+  repeated string path = 5;
+  // The query parameters, each with its list of values.
+  OpaStringListMap params = 6;
+  // The request headers, each with its list of values.
+  OpaStringListMap headers = 7;
+}
+// Block represents an ordered sequence of statements to execute. Blocks are executed until a return statement is encountered, a statement is undefined, or there are no more statements.
+message OpaBlock {
+  // The statements, run in order.
+  repeated OpaStmt stmts = 1;
+}
+// A statement of kind BlockStmt, with its fields in `stmt`.
+message OpaBlockStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaBlockStmtBody stmt = 2;
+}
+// BlockStmt represents a nested block. Nested blocks and break statements can be used to short-circuit execution.
+message OpaBlockStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The blocks the statement runs.
+  repeated OpaBlock blocks = 6;
+}
+// A boolean.
+message OpaBooleanType {
+  // The argument's or result's name, on a named type.
+  string name = 1;
+  // What the argument or result holds, on a named type.
+  string description = 2;
+  // The kind of type.
+  string type = 3;
+}
+// Bool represents a constant boolean.
+message OpaBoolOperand {
+  // The kind of operand.
+  string type = 1;
+  // The operand's value.
+  bool value = 2;
+}
+// A statement of kind BreakStmt, with its fields in `stmt`.
+message OpaBreakStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaBreakStmtBody stmt = 2;
+}
+// BreakStmt represents a jump out of the current block. The index specifies how many blocks to jump starting from zero (the current block).
+message OpaBreakStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // How many enclosing blocks to leave, counting the current block as zero.
+  int32 index = 6;
+}
+// A built-in function and its type declaration.
+message OpaBuiltin {
+  // The function's name, such as `array.concat`.
+  string name = 1;
+  // What the function does.
+  string description = 2;
+  // The categories the function belongs to.
+  repeated string categories = 3;
+  // The function's type declaration.
+  OpaFunctionType decl = 4;
+  // The infix operator that calls the function, such as `+`.
+  string infix = 5;
+  // Whether the function acts as a relation.
+  bool relation = 6;
+  // Whether the function is deprecated.
+  bool deprecated = 7;
+  // Whether the function may return different results for the same arguments.
+  bool nondeterministic = 8;
+}
+// An argument of a built-in function.
+message OpaBuiltinArgument {
+  // The argument's type, written as OPA prints types, such as `array[string]`.
+  string type = 1;
+  // The argument's name.
+  string name = 2;
+  // What the argument holds.
+  string description = 3;
+}
+// A category of built-in functions.
+message OpaBuiltinCategory {
+  // The category's name.
+  string name = 1;
+  // The names of the category's functions.
+  repeated string builtins = 2;
+}
+// BuiltinFunc represents a built-in function that may be required by the policy.
+message OpaBuiltinFunc {
+  // The function's type declaration. OPA's schema leaves it opaque; OPA writes a function type.
+  OpaFunctionType decl = 1;
+  // The function's name.
+  string name = 2;
+}
+// What the catalogue says about one built-in function.
+message OpaBuiltinMetadata {
+  // What the function does.
+  string description = 1;
+  // The OPA version that added the function.
+  string introduced = 2;
+  // The OPA versions that have the function, and `edge`.
+  repeated string available = 3;
+  // Whether OPA's Wasm target implements the function.
+  bool wasm = 4;
+  // The arguments, in order.
+  repeated OpaBuiltinArgument args = 5;
+  // The result.
+  OpaBuiltinResult result = 6;
+  // The other implementations that support the function, with the version that added it.
+  repeated OpaImplementationSupport implementations = 7;
+  // The infix operator that calls the function.
+  string infix = 8;
+  // Whether the function acts as a relation.
+  bool relation = 9;
+  // Whether the function is deprecated.
+  bool deprecated = 10;
+}
+// The catalogue: two keys that start with an underscore, and one key per built-in function, whose value describes it.
+message OpaBuiltinMetadataCatalog {
+  // The categories, each with the names of its functions.
+  repeated OpaBuiltinCategory categories = 1;
+  // The implementations of Rego besides OPA that the catalogue tracks.
+  repeated OpaImplementation implementations = 2;
+}
+// The result of a built-in function. Some functions declare none.
+message OpaBuiltinResult {
+  // The result's type, written as OPA prints types.
+  string type = 1;
+  // The result's name.
+  string name = 2;
+  // What the result holds.
+  string description = 3;
+}
+// The status of a bundle: its active revision, when OPA last asked for, downloaded and activated it, and the errors of the last attempt.
+message OpaBundleStatus {
+  // The bundle's type.
+  OpaBundleType type = 1;
+  // The bundle's name.
+  string name = 2;
+  // The revision of the bundle OPA last activated.
+  string active_revision = 3;
+  // When OPA last activated the bundle.
+  string last_successful_activation = 4;
+  // The bundle's size in bytes.
+  int32 size = 5;
+  // When OPA last downloaded the bundle.
+  string last_successful_download = 6;
+  // When a request for the bundle last succeeded.
+  string last_successful_request = 7;
+  // When OPA last asked for the bundle.
+  string last_request = 8;
+  // The error code, when the last download or activation failed.
+  string code = 9;
+  // What went wrong, in words.
+  string message = 10;
+  // The parse and compile errors of the last activation.
+  repeated OpaObject errors = 11;
+  // The metrics of the last download and activation.
+  OpaObject metrics = 12;
+  // The HTTP status code of a download the server refused.
+  int32 http_code = 13;
+}
+// A statement of kind CallDynamicStmt, with its fields in `stmt`.
+message OpaCallDynamicStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaCallDynamicStmtBody stmt = 2;
+}
+// CallDynamicStmt represents an indirect (data) function call. The result should be stored in the result local.
+message OpaCallDynamicStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The locals passed as arguments.
+  repeated int32 args = 6;
+  // The path of the function in the data tree, one operand per segment.
+  repeated OpaOperand path = 7;
+  // The local that receives the result.
+  int32 result = 8;
+}
+// A statement of kind CallStmt, with its fields in `stmt`.
+message OpaCallStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaCallStmtBody stmt = 2;
+}
+// CallStmt represents a named function call. The result should be stored in the result local.
+message OpaCallStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The arguments.
+  repeated OpaOperand args = 6;
+  // The name of the function called.
+  string func = 7;
+  // The local that receives the result.
+  int32 result = 8;
+}
+// What an OPA version supports, which a policy can be checked against.
+message OpaCapabilities {
+  // The built-in functions.
+  repeated OpaBuiltin builtins = 1;
+  // The keywords a policy may import from future.keywords.
+  repeated OpaFutureKeyword future_keywords = 2;
+  // The Wasm ABI versions supported.
+  repeated OpaWasmAbiVersion wasm_abi_versions = 3;
+  // The language features supported.
+  repeated OpaFeature features = 4;
+  // The hosts OPA may connect to, as host names or IP addresses. OPA reaches any host when the key is absent, and none when the list is empty.
+  repeated string allow_net = 5;
+}
+// A bundle whose policy made a decision.
+message OpaDecisionBundle {
+  // The bundle's revision when OPA made the decision.
+  string revision = 1;
+  // The bundle's name.
+  string name = 2;
+}
+// A decision OPA made: the query or path, the input and result, the bundles and the instance behind it, and when and for whom it was made.
+message OpaDecisionLogEvent {
+  // The revision of the bundle that made the decision, under the legacy `bundle` configuration.
+  string revision = 1;
+  // When OPA made the decision.
+  string timestamp = 2;
+  // The labels of the OPA instance that made the decision: its `id`, its `version` and those the configuration sets.
+  OpaLabels labels = 3;
+  // The decision's id, which OPA also returns to the client.
+  string decision_id = 4;
+  // The id that groups the decisions of one batch request.
+  string batch_decision_id = 5;
+  // The request's trace id in W3C trace context, with tracing on.
+  string trace_id = 6;
+  // The request's span id in W3C trace context, with tracing on.
+  string span_id = 7;
+  // The bundles whose policy made the decision, by name.
+  repeated OpaDecisionBundle bundles = 8;
+  // The decision's path in the data tree, such as `http/example/authz/allow`.
+  string path = 9;
+  // The ad hoc query the Query API received.
+  string query = 10;
+  // The input of the query.
+  OpaValue input = 11;
+  // The result the client received.
+  OpaValue result = 12;
+  // The intermediate results the evaluation recorded, when OPA runs with the environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set.
+  OpaObject intermediate_results = 13;
+  // The result of a decision made through OPA's Go SDK, as its result mapper wrote it.
+  OpaValue mapped_result = 14;
+  // What each non-deterministic built-in function returned, by function and arguments, with `nd_builtin_cache` on.
+  OpaObject nd_builtin_cache = 15;
+  // JSON pointers to the fields a mask policy removed.
+  repeated string erased = 16;
+  // JSON pointers to the fields a mask policy replaced.
+  repeated string masked = 17;
+  // The error the evaluation raised, as OPA writes it in JSON.
+  OpaValue error = 18;
+  // The address of the client that asked.
+  string requested_by = 19;
+  // The query's metrics, by name.
+  OpaObject metrics = 20;
+  // The number OPA gave the HTTP request, which its request and response logs also carry.
+  int32 req_id = 21;
+  // The merged `labels` annotations of each rule the evaluation used.
+  repeated OpaObject rule_labels = 22;
+  // The parts of the HTTP request the configuration asks OPA to log.
+  OpaRequestContext request_context = 23;
+  // Fields the server or a plugin adds, such as `request_metadata`, which holds the top-level keys of a Data API request body other than `input`.
+  OpaObject custom = 24;
+}
+// The status of the decision log uploads.
+message OpaDecisionLogStatus {
+  // The error code, when the last upload failed.
+  string code = 1;
+  // What went wrong, in words.
+  string message = 2;
+  // The HTTP status code of an upload the server refused.
+  int32 http_code = 3;
+  // The decision logger's metrics.
+  OpaObject metrics = 4;
+}
+// A statement of kind DotStmt, with its fields in `stmt`.
+message OpaDotStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaDotStmtBody stmt = 2;
+}
+// DotStmt represents a lookup operation on a value (e.g., array, object, etc.) The source of a DotStmt may be a scalar value in which case the statement will be undefined.
+message OpaDotStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // What the statement reads.
+  OpaOperand source = 6;
+  // The local that receives the result.
+  int32 target = 7;
+  // The key.
+  OpaOperand key = 8;
+}
+// The key type and value type that an object type gives its other keys.
+message OpaDynamicProperty {
+  // The type of the keys.
+  OpaType key = 1;
+  // The type of the values.
+  OpaType value = 2;
+}
+// A statement of kind EqualStmt, with its fields in `stmt`.
+message OpaEqualStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaEqualStmtBody stmt = 2;
+}
+// EqualStmt represents an value-equality check of two local variables.
+message OpaEqualStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The first value.
+  OpaOperand a = 6;
+  // The second value.
+  OpaOperand b = 7;
+}
+// The Rego version of one file in the bundle.
+message OpaFileRegoVersion {
+  // The file's Rego version.
+  int32 version = 1;
+  // The file's path in the bundle.
+  string path = 2;
+}
+// Func represents a named plan (function) that can be invoked. Functions accept one or more parameters and return a value.
+message OpaFunc {
+  // The blocks, run in order.
+  repeated OpaBlock blocks = 1;
+  // The function's name.
+  string name = 2;
+  // The locals that hold the parameters. The first two are the input and data documents.
+  repeated int32 params = 3;
+  // Where the function is in the data tree, when it has a path.
+  repeated string path = 4;
+  // The local that holds the return value.
+  int32 return = 5;
+}
+// Funcs represents a collection of planned functions to include in the policy.
+message OpaFuncs {
+  // The functions.
+  repeated OpaFunc funcs = 1;
+}
+// A function, with its arguments, its result and a variadic argument type.
+message OpaFunctionType {
+  // The argument's or result's name, on a named type.
+  string name = 1;
+  // What the argument or result holds, on a named type.
+  string description = 2;
+  // The kind of type.
+  string type = 3;
+  // The argument types, in order.
+  repeated OpaType args = 4;
+  // The result type.
+  OpaType result = 5;
+  // The type of any further arguments.
+  OpaType variadic = 6;
+}
+// The logged parts of an HTTP request.
+message OpaHttpRequestContext {
+  // The headers the configuration names, each with its values.
+  OpaStringListMap headers = 1;
+}
+// An implementation of Rego besides OPA.
+message OpaImplementation {
+  // The implementation's version the catalogue reflects.
+  string version = 1;
+  // The implementation's key in each function's `implementations`.
+  string id = 2;
+  // The implementation's display name.
+  string label = 3;
+  // The implementation's GitHub repository, as owner/name.
+  string repo = 4;
+}
+// An implementation that supports a function, and the version that added it.
+message OpaImplementationSupport {
+  // The implementation's version that added the function, or null for an implementation that publishes no version history.
+  string version = 1;
+  // The implementation's id.
+  string implementation = 2;
+}
+// A statement of kind IsArrayStmt, with its fields in `stmt`.
+message OpaIsArrayStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaIsArrayStmtBody stmt = 2;
+}
+// IsArrayStmt represents a dynamic type check on a local variable.
+message OpaIsArrayStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // What the statement reads.
+  OpaOperand source = 6;
+}
+// A statement of kind IsDefinedStmt, with its fields in `stmt`.
+message OpaIsDefinedStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaIsDefinedStmtBody stmt = 2;
+}
+// IsDefinedStmt represents a check of whether a local variable is defined.
+message OpaIsDefinedStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local checked.
+  int32 source = 6;
+}
+// A statement of kind IsObjectStmt, with its fields in `stmt`.
+message OpaIsObjectStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaIsObjectStmtBody stmt = 2;
+}
+// IsObjectStmt represents a dynamic type check on a local variable.
+message OpaIsObjectStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // What the statement reads.
+  OpaOperand source = 6;
+}
+// A statement of kind IsSetStmt, with its fields in `stmt`.
+message OpaIsSetStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaIsSetStmtBody stmt = 2;
+}
+// IsSetStmt represents a dynamic type check on a local variable.
+message OpaIsSetStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // What the statement reads.
+  OpaOperand source = 6;
+}
+// A statement of kind IsUndefinedStmt, with its fields in `stmt`.
+message OpaIsUndefinedStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaIsUndefinedStmtBody stmt = 2;
+}
+// IsUndefinedStmt represents a check of whether local variable is undefined.
+message OpaIsUndefinedStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local checked.
+  int32 source = 6;
+}
+// Labels as text keys and text values, such as an OPA instance's `id` and `version`.
+message OpaLabels {
+}
+// A statement of kind LenStmt, with its fields in `stmt`.
+message OpaLenStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaLenStmtBody stmt = 2;
+}
+// LenStmt represents a length() operation on a local variable. The result is stored in the target local variable.
+message OpaLenStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // What the statement reads.
+  OpaOperand source = 6;
+  // The local that receives the result.
+  int32 target = 7;
+}
+// A local variable, by its number.
+message OpaLocalOperand {
+  // The kind of operand.
+  string type = 1;
+  // The operand's value.
+  int32 value = 2;
+}
+// Location records the filen index, and the row and column inside that file that a statement can be connected to.
+message OpaLocation {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+}
+// A statement of kind MakeArrayStmt, with its fields in `stmt`.
+message OpaMakeArrayStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaMakeArrayStmtBody stmt = 2;
+}
+// MakeArrayStmt constructs a local variable that refers to an array value.
+message OpaMakeArrayStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local that receives the result.
+  int32 target = 6;
+  // The capacity to allocate.
+  int32 capacity = 7;
+}
+// A statement of kind MakeNullStmt, with its fields in `stmt`.
+message OpaMakeNullStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaMakeNullStmtBody stmt = 2;
+}
+// MakeNullStmt constructs a local variable that refers to a null value.
+message OpaMakeNullStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local that receives the result.
+  int32 target = 6;
+}
+// A statement of kind MakeNumberIntStmt, with its fields in `stmt`.
+message OpaMakeNumberIntStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaMakeNumberIntStmtBody stmt = 2;
+}
+// MakeNumberIntStmt constructs a local variable that refers to an integer value.
+message OpaMakeNumberIntStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local that receives the result.
+  int32 target = 6;
+  // The value.
+  int32 value = 7;
+}
+// A statement of kind MakeNumberRefStmt, with its fields in `stmt`.
+message OpaMakeNumberRefStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaMakeNumberRefStmtBody stmt = 2;
+}
+// MakeNumberRefStmt constructs a local variable that refers to a number stored as a string.
+message OpaMakeNumberRefStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local that receives the result.
+  int32 target = 6;
+  // Index, in the plan's static strings, of the number written as a string.
+  int32 index = 7;
+  // Deprecated alias for `index`. Both keys are emitted by current OPA versions for backwards compatibility; will be removed in a future major release. Read `index` instead.
+  int32 Index = 8;
+}
+// A statement of kind MakeObjectStmt, with its fields in `stmt`.
+message OpaMakeObjectStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaMakeObjectStmtBody stmt = 2;
+}
+// MakeObjectStmt constructs a local variable that refers to an object value.
+message OpaMakeObjectStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local that receives the result.
+  int32 target = 6;
+}
+// A statement of kind MakeSetStmt, with its fields in `stmt`.
+message OpaMakeSetStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaMakeSetStmtBody stmt = 2;
+}
+// MakeSetStmt constructs a local variable that refers to a set value.
+message OpaMakeSetStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local that receives the result.
+  int32 target = 6;
+}
+// A bundle manifest. OPA's schema leaves the manifest open to other keys.
+message OpaManifest {
+  // The bundle's revision, a string the bundle's author chooses.
+  string revision = 1;
+  // Rego versions for single files, which override `rego_version`.
+  repeated OpaFileRegoVersion file_rego_versions = 2;
+  // Metadata the bundle's author adds.
+  OpaObject metadata = 3;
+  // The Rego version of the bundle's files: 0 for v0, 1 for v1.
+  int32 rego_version = 4;
+  // The paths in the data tree the bundle owns. A bundle without the key owns the whole tree.
+  repeated string roots = 5;
+  // The Wasm modules the bundle holds, and the entrypoints they resolve.
+  repeated OpaWasmResolver wasm = 6;
+}
+// A statement of kind NopStmt, with its fields in `stmt`.
+message OpaNopStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaNopStmtBody stmt = 2;
+}
+// NopStmt adds a nop instruction. Useful during development and debugging only.
+message OpaNopStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+}
+// A statement of kind NotEqualStmt, with its fields in `stmt`.
+message OpaNotEqualStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaNotEqualStmtBody stmt = 2;
+}
+// NotEqualStmt represents a != check of two local variables.
+message OpaNotEqualStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The first value.
+  OpaOperand a = 6;
+  // The second value.
+  OpaOperand b = 7;
+}
+// A statement of kind NotStmt, with its fields in `stmt`.
+message OpaNotStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaNotStmtBody stmt = 2;
+}
+// NotStmt represents a negated statement.
+message OpaNotStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The block the statement runs.
+  OpaBlock block = 6;
+}
+// The null value.
+message OpaNullType {
+  // The argument's or result's name, on a named type.
+  string name = 1;
+  // What the argument or result holds, on a named type.
+  string description = 2;
+  // The kind of type.
+  string type = 3;
+}
+// A number.
+message OpaNumberType {
+  // The argument's or result's name, on a named type.
+  string name = 1;
+  // What the argument or result holds, on a named type.
+  string description = 2;
+  // The kind of type.
+  string type = 3;
+}
+// A JSON object whose keys OPA leaves open.
+message OpaObject {
+}
+// A statement of kind ObjectInsertOnceStmt, with its fields in `stmt`.
+message OpaObjectInsertOnceStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaObjectInsertOnceStmtBody stmt = 2;
+}
+// ObjectInsertOnceStmt represents a dynamic insert operation of a key/value pair into an object. If the key already exists and the value differs, execution aborts with a conflict error.
+message OpaObjectInsertOnceStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The key.
+  OpaOperand key = 6;
+  // The local that holds the object.
+  int32 object = 7;
+  // The value.
+  OpaOperand value = 8;
+}
+// A statement of kind ObjectInsertStmt, with its fields in `stmt`.
+message OpaObjectInsertStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaObjectInsertStmtBody stmt = 2;
+}
+// ObjectInsertStmt represents a dynamic insert operation of a key/value pair into an object.
+message OpaObjectInsertStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The key.
+  OpaOperand key = 6;
+  // The local that holds the object.
+  int32 object = 7;
+  // The value.
+  OpaOperand value = 8;
+}
+// A statement of kind ObjectMergeStmt, with its fields in `stmt`.
+message OpaObjectMergeStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaObjectMergeStmtBody stmt = 2;
+}
+// ObjectMergeStmt performs a recursive merge of two object values. If either of the locals refer to non-object values this operation will abort with a conflict error.
+message OpaObjectMergeStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local that receives the result.
+  int32 target = 6;
+  // The local that holds the first object.
+  int32 a = 7;
+  // The local that holds the second object.
+  int32 b = 8;
+}
+// An object, with typed known keys in `static` and a key and value type for the rest in `dynamic`.
+message OpaObjectType {
+  // The argument's or result's name, on a named type.
+  string name = 1;
+  // What the argument or result holds, on a named type.
+  string description = 2;
+  // The kind of type.
+  string type = 3;
+  // The known keys and the types of their values.
+  repeated OpaStaticProperty static = 4;
+  // The key type and value type of the other keys.
+  OpaDynamicProperty dynamic = 5;
+}
+// Operand represents a value that a statement operates on. OPA writes it as its kind in `type` and the value in `value`.
+message OpaOperand {
+}
+// Plan represents an ordered series of blocks to execute. Plan execution stops when a return statement is reached.
+message OpaPlan {
+  // The blocks, run in order.
+  repeated OpaBlock blocks = 1;
+  // The plan's name, which is its entrypoint.
+  string name = 2;
+}
+// Plans represents a collection of named query plans to expose in the policy.
+message OpaPlans {
+  // The plans.
+  repeated OpaPlan plans = 1;
+}
+// The state of a plugin.
+message OpaPluginStatus {
+  // The plugin's name.
+  string name = 1;
+  // The plugin's state.
+  OpaPluginState state = 2;
+  // More about the state, in words.
+  string message = 3;
+}
+// Policy represents a planned policy query.
+message OpaPolicy {
+  // The functions the plans call.
+  OpaFuncs funcs = 1;
+  // The query plans the policy exposes.
+  OpaPlans plans = 2;
+  // The constants the plan indexes into.
+  OpaStatic static = 3;
+  // The rules left out because no entrypoint reaches them.
+  repeated OpaUnplannedRule unplanned_rules = 4;
+}
+// The parts of the request that a decision log event logs.
+message OpaRequestContext {
+  // The logged parts of the HTTP request.
+  OpaHttpRequestContext http = 1;
+}
+// A statement of kind ResetLocalStmt, with its fields in `stmt`.
+message OpaResetLocalStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaResetLocalStmtBody stmt = 2;
+}
+// ResetLocalStmt resets a local variable to 0.
+message OpaResetLocalStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local that receives the result.
+  int32 target = 6;
+}
+// A statement of kind ResultSetAddStmt, with its fields in `stmt`.
+message OpaResultSetAddStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaResultSetAddStmtBody stmt = 2;
+}
+// ResultSetAddStmt adds a value into the result set returned by the query plan.
+message OpaResultSetAddStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local added to the result set.
+  int32 value = 6;
+}
+// A statement of kind ReturnLocalStmt, with its fields in `stmt`.
+message OpaReturnLocalStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaReturnLocalStmtBody stmt = 2;
+}
+// ReturnLocalStmt represents a return statement that yields a local value.
+message OpaReturnLocalStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local returned.
+  int32 source = 6;
+}
+// A statement of kind ScanStmt, with its fields in `stmt`.
+message OpaScanStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaScanStmtBody stmt = 2;
+}
+// ScanStmt represents a linear scan over a composite value. The source may be a scalar in which case the block will never execute.
+message OpaScanStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local whose value is scanned.
+  int32 source = 6;
+  // The block run for each key and value.
+  OpaBlock block = 7;
+  // The local that receives each key.
+  int32 key = 8;
+  // The local that receives each value.
+  int32 value = 9;
+}
+// A statement of kind SetAddStmt, with its fields in `stmt`.
+message OpaSetAddStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaSetAddStmtBody stmt = 2;
+}
+// SetAddStmt represents a dynamic add operation of an element into a set.
+message OpaSetAddStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The local that holds the set.
+  int32 set = 6;
+  // The value.
+  OpaOperand value = 7;
+}
+// A set, whose members have the type in `of`.
+message OpaSetType {
+  // The argument's or result's name, on a named type.
+  string name = 1;
+  // What the argument or result holds, on a named type.
+  string description = 2;
+  // The kind of type.
+  string type = 3;
+  // The type of the set's members.
+  OpaType of = 4;
+}
+// Static represents a static data segment that is indexed into by the policy.
+message OpaStatic {
+  // The built-in functions the plan calls.
+  repeated OpaBuiltinFunc builtin_funcs = 1;
+  // The names of the policy files, which a location refers to by position.
+  repeated OpaStringConst files = 2;
+  // The string constants, which a string index refers to by position.
+  repeated OpaStringConst strings = 3;
+}
+// A known key of an object type and the type of its value.
+message OpaStaticProperty {
+  // The key, as a JSON value.
+  OpaValue key = 1;
+  // The type of the key's value.
+  OpaType value = 2;
+}
+// A report on an OPA instance: the state of its bundles, its decision log uploads and its plugins, and its metrics.
+message OpaStatusReport {
+  // The labels of the OPA instance that sends the report.
+  OpaLabels labels = 1;
+  // The status of the one bundle of the legacy `bundle` configuration.
+  OpaBundleStatus bundle = 2;
+  // The status of each bundle OPA downloads, by name.
+  repeated OpaBundleStatus bundles = 3;
+  // The status of the discovery bundle.
+  OpaBundleStatus discovery = 4;
+  // The status of the decision log uploads.
+  OpaDecisionLogStatus decision_logs = 5;
+  // The instance's metrics, under the name of their provider, such as `prometheus`.
+  OpaObject metrics = 6;
+  // The state of each plugin, by name.
+  repeated OpaPluginStatus plugins = 7;
+}
+// Stmt represents an operation (e.g., comparison, loop, dot, etc.) to execute. OPA writes each statement as its kind in `type` and its fields in `stmt`.
+message OpaStmt {
+}
+// The fields of a statement. Every kind carries the location of its source text.
+message OpaStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+}
+// StringConst represents a string value.
+message OpaStringConst {
+  // The string.
+  string value = 1;
+}
+// StringIndex represents the index into the plan's list of constant strings of a constant string.
+message OpaStringIndexOperand {
+  // The kind of operand.
+  string type = 1;
+  // The operand's value.
+  int32 value = 2;
+}
+// An object whose every value is a list of strings, as Go writes HTTP headers and query parameters.
+message OpaStringListMap {
+}
+// A string.
+message OpaStringType {
+  // The argument's or result's name, on a named type.
+  string name = 1;
+  // What the argument or result holds, on a named type.
+  string description = 2;
+  // The kind of type.
+  string type = 3;
+}
+// A Rego type, as OPA's types package writes it in JSON. A named type is an argument or result of a built-in function, with a name and a description.
+message OpaType {
+  // The argument's or result's name, on a named type.
+  string name = 1;
+  // What the argument or result holds, on a named type.
+  string description = 2;
+}
+// UnplannedRule represents a rule that was parsed but not included in the plan because it is not reachable from the entrypoint. This is used for coverage reporting, to distinguish rules that were never planned from rules that were planned but never executed.
+message OpaUnplannedRule {
+  // Where the rule is defined.
+  OpaLocation location = 1;
+  // The rule's path.
+  string path = 2;
+}
+// Any JSON value.
+message OpaValue {
+}
+// A built-in function, feature or keyword, and the OPA version that introduced it.
+message OpaVersionEntry {
+  // The name of the function, feature or keyword.
+  string name = 1;
+  // The major version.
+  int32 Major = 2;
+  // The minor version.
+  int32 Minor = 3;
+  // The patch version.
+  int32 Patch = 4;
+  // The pre-release label, such as `rc2`.
+  string PreRelease = 5;
+  // The build metadata, the part of a version after a plus sign.
+  string Metadata = 6;
+}
+// The version index.
+message OpaVersionIndex {
+  // The builtins, keyed by name, each with the version that introduced it.
+  repeated OpaVersionEntry builtins = 1;
+  // The features, keyed by name, each with the version that introduced it.
+  repeated OpaVersionEntry features = 2;
+  // The keywords, keyed by name, each with the version that introduced it.
+  repeated OpaVersionEntry keywords = 3;
+}
+// A Wasm ABI version, as a major and a minor number.
+message OpaWasmAbiVersion {
+  // The major version.
+  int32 version = 1;
+  // The minor version.
+  int32 minor_version = 2;
+}
+// A Wasm module in a bundle, and the entrypoint it resolves.
+message OpaWasmResolver {
+  // The entrypoint's Rego annotations. OPA's schema leaves their shape open.
+  repeated OpaObject annotations = 1;
+  // The entrypoint the module resolves.
+  string entrypoint = 2;
+  // The module's path in the bundle.
+  string module = 3;
+}
+// A statement of kind WithStmt, with its fields in `stmt`.
+message OpaWithStmt {
+  // The kind of statement.
+  string type = 1;
+  // The statement's fields.
+  OpaWithStmtBody stmt = 2;
+}
+// WithStmt replaces the Local or a portion of the document referred to by the Local with the Value and executes the contained block. If the Path is non-empty, the Value is upserted into the Local.
+message OpaWithStmtBody {
+  // Index, in the plan's static files, of the policy file the statement comes from.
+  int32 file = 1;
+  // Column where the statement's source text starts.
+  int32 col = 2;
+  // Line where the statement's source text starts.
+  int32 row = 3;
+  // Column where the statement's source text ends.
+  int32 end_col = 4;
+  // Line where the statement's source text ends.
+  int32 end_row = 5;
+  // The block the statement runs.
+  OpaBlock block = 6;
+  // The local whose value, or part of it, is replaced.
+  int32 local = 7;
+  // The path within the local's value to replace, as indices of static strings. Empty replaces the whole value.
+  repeated int32 path = 8;
+  // The replacement value.
+  OpaOperand value = 9;
+}
+
+// The types of bundle.
+enum OpaBundleType {
+  OPA_BUNDLE_TYPE_UNSPECIFIED = 0;
+  OPA_BUNDLE_TYPE_DELTA = 1;
+  OPA_BUNDLE_TYPE_SNAPSHOT = 2;
+}
+// The language features the capabilities files OPA includes name.
+enum OpaFeature {
+  OPA_FEATURE_UNSPECIFIED = 0;
+  OPA_FEATURE_KEYWORDS_IN_REFS = 1;
+  OPA_FEATURE_REGO_V1 = 2;
+  OPA_FEATURE_REGO_V1_IMPORT = 3;
+  OPA_FEATURE_REGO_V2 = 4;
+  OPA_FEATURE_REGO_V2_IMPORT = 5;
+  OPA_FEATURE_RULE_HEAD_REF_STRING_PREFIXES = 6;
+  OPA_FEATURE_RULE_HEAD_REFS = 7;
+  OPA_FEATURE_TEMPLATE_STRINGS = 8;
+}
+// The future keywords the capabilities files OPA includes name.
+enum OpaFutureKeyword {
+  OPA_FUTURE_KEYWORD_UNSPECIFIED = 0;
+  OPA_FUTURE_KEYWORD_AND = 1;
+  OPA_FUTURE_KEYWORD_CONTAINS = 2;
+  OPA_FUTURE_KEYWORD_EVERY = 3;
+  OPA_FUTURE_KEYWORD_IF = 4;
+  OPA_FUTURE_KEYWORD_IN = 5;
+  OPA_FUTURE_KEYWORD_NOT = 6;
+  OPA_FUTURE_KEYWORD_OR = 7;
+}
+// The states a plugin reports.
+enum OpaPluginState {
+  OPA_PLUGIN_STATE_UNSPECIFIED = 0;
+  OPA_PLUGIN_STATE_NOT_READY = 1;
+  OPA_PLUGIN_STATE_OK = 2;
+  OPA_PLUGIN_STATE_ERROR = 3;
+  OPA_PLUGIN_STATE_WARN = 4;
+}

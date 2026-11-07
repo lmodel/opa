@@ -1,0 +1,41 @@
+# opa
+
+> Open Policy Agent (OPA) v1.22.2 (LinkML)
+
+## Agent context
+
+If `.lokf/knowledge/index.md` exists in this repository, read it first. It is
+a queryable [LOKF](https://lokf.nolan-nichols.com) knowledge bundle with
+repository-specific context, conventions, and typed relationships that plain
+prose cannot express. A concept marked `status: draft` has not yet been
+confirmed by a person; one with a `human:` entry under `verified` has. Weigh
+them accordingly.
+
+The `ktl-docent` skill is the entry point for questions about this project.
+Install it if it is not present, with the GitHub CLI (`gh skill install
+noelmcloughlin/knowledge-trust-ladder ktl-docent --scope user --agent <yours>`)
+or the Open Skills CLI (`npx skills add noelmcloughlin/knowledge-trust-ladder
+--skill ktl-docent --yes`), which a company proxy or internal npm registry can
+block; <https://w3id.org/ktl/docs/install/> has every route. Then answer
+through it: bundle first, a trust label on every concept used, the source
+opened for exact values, and misses recorded in `.lokf/feedback.md` so the
+librarian fills them.
+
+## Schema
+
+The data model of this repository is a LinkML schema at
+`.linkml/src/opa/schema/opa.yaml`, also reachable as
+`linkml_schema/`. Read it before the code it describes. Every class, field
+and enum is defined once there, and a class that renders a definition of
+OPA's plan or manifest JSON Schema names it in `exact_mappings`. The JSON
+Schema, OWL and the rest under `.linkml/project/`
+and the Pydantic models under `.linkml/src/opa/datamodel/` are
+generated from it, never edited. `.linkml/scripts/opa_to_linkml.py`
+writes the schema from OPA's files: change the converter
+through the `linkml-author` skill (`npx skills add
+noelmcloughlin/linkml-sidecar --skill linkml-author --yes`), and run
+`just --justfile .linkml/justfile lint` and `test` before committing.
+
+The `.lokf/` knowledge bundle validates its concepts against this schema
+too (`lokf validate --schema`): a concept whose `type` names a class
+defined here carries only the fields that class declares.

@@ -1,0 +1,3 @@
+# OPA's root .gitignore leaves out every folder named policies. The bundle's
+# Policy concepts sit in policies/, so this brings the folder back.
+!policies/

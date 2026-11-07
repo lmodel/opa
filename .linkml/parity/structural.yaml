@@ -1,0 +1,181 @@
+---
+# Tier 3 of the parity check: each case of the corpus in tests/test_parity.py where the
+# schema's verdict differs from OPA's JSON Schema's, with its reason. `here` says what
+# the schema does with the case. The test fails when a case the file does not list
+# differs, or when a listed case no longer differs.
+differences:
+  - definition: BlockStmt
+    here: accepts
+    cases:
+      - drop:blocks
+    reason: OPA's schema requires the key but allows null as its value. LinkML
+      cannot state a required key whose value may be null, so the slot is optional
+      here, and a document without the key passes.
+  - definition: BuiltinFunc
+    here: accepts
+    cases:
+      - drop:decl
+    reason: OPA's schema requires the key but allows null as its value. LinkML
+      cannot state a required key whose value may be null, so the slot is optional
+      here, and a document without the key passes.
+  - definition: BuiltinFunc
+    here: rejects
+    cases:
+      - full
+      - minimal
+    reason: OPA's schema leaves a built-in function's declaration opaque. Here
+      it is the function type OPA's Go code writes, so an object that is not a
+      function type fails.
+  - definition: CallDynamicStmt
+    here: accepts
+    cases:
+      - drop:args
+      - drop:path
+    reason: OPA's schema requires the key but allows null as its value. LinkML
+      cannot state a required key whose value may be null, so the slot is optional
+      here, and a document without the key passes.
+  - definition: CallStmt
+    here: accepts
+    cases:
+      - drop:args
+    reason: OPA's schema requires the key but allows null as its value. LinkML
+      cannot state a required key whose value may be null, so the slot is optional
+      here, and a document without the key passes.
+  - definition: Func
+    here: accepts
+    cases:
+      - drop:blocks
+      - drop:params
+    reason: OPA's schema requires the key but allows null as its value. LinkML
+      cannot state a required key whose value may be null, so the slot is optional
+      here, and a document without the key passes.
+  - definition: Func
+    here: accepts
+    cases:
+      - null:path
+    reason: LinkML's JSON Schema lets an optional slot hold null, where OPA's
+      schema gives the key one type only.
+  - definition: Funcs
+    here: accepts
+    cases:
+      - drop:funcs
+    reason: OPA's schema requires the key but allows null as its value. LinkML
+      cannot state a required key whose value may be null, so the slot is optional
+      here, and a document without the key passes.
+  - definition: MakeNumberRefStmt
+    here: accepts
+    cases:
+      - null:Index
+    reason: LinkML's JSON Schema lets an optional slot hold null, where OPA's
+      schema gives the key one type only.
+  - definition: Manifest
+    here: accepts
+    cases:
+      - null:file_rego_versions
+      - null:metadata
+      - null:rego_version
+      - null:roots
+      - null:wasm
+    reason: LinkML's JSON Schema lets an optional slot hold null, where OPA's
+      schema gives the key one type only.
+  - definition: NotStmt
+    here: accepts
+    cases:
+      - drop:block
+    reason: OPA's schema requires the key but allows null as its value. LinkML
+      cannot state a required key whose value may be null, so the slot is optional
+      here, and a document without the key passes.
+  - definition: Plan
+    here: accepts
+    cases:
+      - drop:blocks
+    reason: OPA's schema requires the key but allows null as its value. LinkML
+      cannot state a required key whose value may be null, so the slot is optional
+      here, and a document without the key passes.
+  - definition: Plans
+    here: accepts
+    cases:
+      - drop:plans
+    reason: OPA's schema requires the key but allows null as its value. LinkML
+      cannot state a required key whose value may be null, so the slot is optional
+      here, and a document without the key passes.
+  - definition: Policy
+    here: rejects
+    cases:
+      - full
+    reason: OPA's schema leaves a built-in function's declaration opaque. Here
+      it is the function type OPA's Go code writes, so an object that is not a
+      function type fails.
+  - definition: Policy
+    here: accepts
+    cases:
+      - null:static
+    reason: LinkML's JSON Schema lets an optional slot hold null, where OPA's
+      schema gives the key one type only.
+  - definition: ScanStmt
+    here: accepts
+    cases:
+      - drop:block
+    reason: OPA's schema requires the key but allows null as its value. LinkML
+      cannot state a required key whose value may be null, so the slot is optional
+      here, and a document without the key passes.
+  - definition: Static
+    here: rejects
+    cases:
+      - full
+    reason: OPA's schema leaves a built-in function's declaration opaque. Here
+      it is the function type OPA's Go code writes, so an object that is not a
+      function type fails.
+  - definition: Static
+    here: accepts
+    cases:
+      - null:builtin_funcs
+    reason: LinkML's JSON Schema lets an optional slot hold null, where OPA's
+      schema gives the key one type only.
+  - definition: UnplannedRule
+    here: accepts
+    cases:
+      - drop:location
+    reason: OPA's schema requires the key but allows null as its value. LinkML
+      cannot state a required key whose value may be null, so the slot is optional
+      here, and a document without the key passes.
+  - definition: WasmResolver
+    here: accepts
+    cases:
+      - null:annotations
+      - null:entrypoint
+      - null:module
+    reason: LinkML's JSON Schema lets an optional slot hold null, where OPA's
+      schema gives the key one type only.
+  - definition: WithStmt
+    here: accepts
+    cases:
+      - drop:block
+      - drop:path
+    reason: OPA's schema requires the key but allows null as its value. LinkML
+      cannot state a required key whose value may be null, so the slot is optional
+      here, and a document without the key passes.
+  - definition: v1/schemas/authorizationPolicy.json
+    here: accepts
+    cases:
+      - drop:body
+      - drop:client_certificates
+      - drop:identity
+    reason: OPA type-checks the authorization policy against its schema, which
+      requires the key. OPA's server leaves it out when the request has none, so
+      the slot is optional here.
+  - definition: v1/schemas/authorizationPolicy.json
+    here: accepts
+    cases:
+      - null:client_certificates
+      - null:identity
+    reason: LinkML's JSON Schema lets an optional slot hold null, where OPA's
+      schema gives the key one type only.
+  - definition: v1/schemas/authorizationPolicy.json
+    here: accepts
+    cases:
+      - null:body
+      - wrong:body
+    reason: OPA's schema makes the body an object. OPA's server parses the body
+      as any JSON value, such as the string, array or null that a POST to v0/data
+      or to the default decision can carry, so the slot takes any value here.

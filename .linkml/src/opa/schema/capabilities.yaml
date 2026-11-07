@@ -1,0 +1,126 @@
+---
+# Written by scripts/opa_to_linkml.py from OPA's files. Edit the script, not this file.
+id: https://w3id.org/lmodel/opa/capabilities
+name: capabilities
+title: OPA capabilities
+description: >-
+  The capabilities document: the built-in functions, future keywords, Wasm ABI versions and
+  language features an OPA version supports, and the hosts it may reach. OPA includes one
+  per release in capabilities/, and `opa capabilities` prints it.
+version: 1.22.2
+source: >-
+  https://github.com/open-policy-agent/opa/blob/482d9e368c2ddfed67ced59259fa6a247bb5f1e5/v1/ast/capabilities.go
+license: Apache-2.0
+see_also:
+  - https://lmodel.github.io/opa
+  - https://www.openpolicyagent.org/docs
+annotations:
+  upstream_tag: v1.22.2
+  upstream_commit: 482d9e368c2ddfed67ced59259fa6a247bb5f1e5
+  upstream_release_date: '2026-11-05'
+  upstream_license: Apache-2.0
+prefixes:
+  openpolicyagent: https://w3id.org/lmodel/opa/
+  linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
+default_prefix: openpolicyagent
+default_range: string
+imports:
+  - linkml:types
+  - common
+classes:
+  OpaCapabilities:
+    tree_root: true
+    description: What an OPA version supports, which a policy can be checked against.
+    attributes:
+      builtins:
+        description: The built-in functions.
+        range: OpaBuiltin
+        multivalued: true
+        inlined: true
+        inlined_as_list: true
+      future_keywords:
+        description: The keywords a policy may import from future.keywords.
+        range: OpaFutureKeyword
+        multivalued: true
+      wasm_abi_versions:
+        description: The Wasm ABI versions supported.
+        range: OpaWasmAbiVersion
+        multivalued: true
+        inlined: true
+        inlined_as_list: true
+      features:
+        description: The language features supported.
+        range: OpaFeature
+        multivalued: true
+      allow_net:
+        description: >-
+          The hosts OPA may connect to, as host names or IP addresses. OPA reaches any host
+          when the key is absent, and none when the list is empty.
+        multivalued: true
+  OpaBuiltin:
+    description: A built-in function and its type declaration.
+    attributes:
+      name:
+        description: The function's name, such as `array.concat`.
+        required: true
+        slot_uri: schema:name
+      description:
+        description: What the function does.
+        slot_uri: schema:description
+      categories:
+        description: The categories the function belongs to.
+        multivalued: true
+      decl:
+        description: The function's type declaration.
+        range: OpaFunctionType
+        required: true
+        inlined: true
+      infix:
+        description: The infix operator that calls the function, such as `+`.
+      relation:
+        description: Whether the function acts as a relation.
+        range: boolean
+      deprecated:
+        description: Whether the function is deprecated.
+        range: boolean
+      nondeterministic:
+        description: >-
+          Whether the function may return different results for the same arguments.
+        range: boolean
+  OpaWasmAbiVersion:
+    description: A Wasm ABI version, as a major and a minor number.
+    attributes:
+      minor_version:
+        description: The minor version.
+        range: integer
+        required: true
+    slots:
+      - version
+    slot_usage:
+      version:
+        description: The major version.
+        range: integer
+        required: true
+enums:
+  OpaFutureKeyword:
+    description: The future keywords the capabilities files OPA includes name.
+    permissible_values:
+      and: {}
+      contains: {}
+      every: {}
+      if: {}
+      in: {}
+      not: {}
+      or: {}
+  OpaFeature:
+    description: The language features the capabilities files OPA includes name.
+    permissible_values:
+      keywords_in_refs: {}
+      rego_v1: {}
+      rego_v1_import: {}
+      rego_v2: {}
+      rego_v2_import: {}
+      rule_head_ref_string_prefixes: {}
+      rule_head_refs: {}
+      template_strings: {}

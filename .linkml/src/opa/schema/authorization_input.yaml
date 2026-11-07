@@ -1,0 +1,86 @@
+---
+# Written by scripts/opa_to_linkml.py from OPA's files. Edit the script, not this file.
+id: https://w3id.org/lmodel/opa/authorization_input
+name: authorization_input
+title: OPA authorization policy input
+description: >-
+  The input document OPA's REST API gives the system.authz policy when OPA runs with --authorization=basic.
+  It renders the keys of OPA's JSON Schema for that input, which OPA type-checks the policy
+  against.
+version: 1.22.2
+source: >-
+  https://github.com/open-policy-agent/opa/blob/482d9e368c2ddfed67ced59259fa6a247bb5f1e5/v1/schemas/authorizationPolicy.json
+license: Apache-2.0
+see_also:
+  - https://lmodel.github.io/opa
+  - https://www.openpolicyagent.org/docs
+annotations:
+  upstream_tag: v1.22.2
+  upstream_commit: 482d9e368c2ddfed67ced59259fa6a247bb5f1e5
+  upstream_release_date: '2026-11-05'
+  upstream_license: Apache-2.0
+prefixes:
+  openpolicyagent: https://w3id.org/lmodel/opa/
+  linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
+default_prefix: openpolicyagent
+default_range: string
+imports:
+  - linkml:types
+  - common
+classes:
+  OpaAuthorizationInput:
+    description: The OPA Authorization Policy Input document.
+    extra_slots:
+      allowed: true
+    attributes:
+      identity:
+        range: string
+        description: >-
+          The caller's identity: the bearer token under --authentication=token, or the client
+          certificate's subject under --authentication=tls.
+      client_certificates:
+        range: OpaObject
+        inlined: true
+        multivalued: true
+        inlined_as_list: true
+        description: >-
+          The client's TLS certificates under --authentication=tls, each as Go writes an x509
+          certificate in JSON.
+      method:
+        range: string
+        required: true
+        description: The HTTP method of the request, in upper case.
+      path:
+        range: string
+        multivalued: true
+        required: true
+        description: The request path, one segment per element.
+      params:
+        range: OpaStringListMap
+        inlined: true
+        required: true
+        description: The query parameters, each with its list of values.
+      headers:
+        range: OpaStringListMap
+        inlined: true
+        required: true
+        description: The request headers, each with its list of values.
+    comments:
+      - >-
+        OPA's schema requires every key and makes the body an object. The server leaves out
+        identity, client_certificates and body when the request has none, and a body can be
+        any JSON value. So those three are optional here, and the body takes any value.
+    tree_root: true
+    slots:
+      - body
+    slot_usage:
+      body:
+        description: >-
+          The request body, parsed from JSON or YAML, for a POST to the default decision,
+          v0/data, v1/data, v1/compile or v1/query.
+        range: OpaValue
+        any_of:
+          - range: OpaValue
+          - range: OpaValue
+            multivalued: true

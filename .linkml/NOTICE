@@ -1,0 +1,111 @@
+Open Policy Agent LinkML Schema (opa)
+Copyright 2026 Noel McLoughlin
+
+This repository is a fork of Open Policy Agent (OPA). Everything in it is
+under the Apache License, Version 2.0, except the knowledge bundle and the
+LOKF schema's copy, which are under CC BY 4.0. The copyright in each part is
+its author's, as this notice sets out by path.
+
+The schema project, everything under .linkml/, and what this project adds beside
+OPA's tree (.lokf/, knowledge_bundle, linkml_schema, website/, llms.txt,
+.releaserc.json, .github/SECURITY.md, .github/PULL_REQUEST_TEMPLATE/,
+.github/scripts/, .github/release/, and the workflows knowledge-*.yaml,
+lint-and-docs.yaml, main.yaml, semantic-release.yml and upstream-watch.yaml) is
+this project's, licensed under the Apache License, Version 2.0 (see LICENSE
+beside this file), except for what the sections below list.
+
+The concepts under .lokf/knowledge/ are this project's work, licensed under
+the Creative Commons Attribution 4.0 International Public License (CC BY 4.0,
+https://creativecommons.org/licenses/by/4.0/), as .lokf/knowledge/index.md
+states. .lokf/schema/lokf.yaml is a copy of the Linked Open Knowledge Format
+(LOKF) schema, version 0.9.0 (https://w3id.org/lokf/schema), under CC BY 4.0.
+
+Everything else is OPA's, unchanged, and under OPA's terms: LICENSE at the
+repository's root.
+
+Open Policy Agent
+-----------------
+
+Open Policy Agent is published by the OPA Authors in
+https://github.com/open-policy-agent/opa under the Apache License, Version 2.0.
+This repository holds OPA's tree at the release v1.22.2 (commit
+482d9e368c2ddfed67ced59259fa6a247bb5f1e5), unchanged.
+
+src/opa/schema/ models eight of OPA's JSON formats. scripts/opa_to_linkml.py writes it
+from OPA's files: the JSON Schemas v1/ir/plan.schema.json,
+v1/bundle/manifest.schema.json and v1/schemas/authorizationPolicy.json; the
+data files capabilities.json, capabilities/, builtin_metadata.json and
+v1/ast/version_index.json; v1/ir/ir.go; and the Go structs and constants of
+v1/plugins/logs/plugin.go, v1/plugins/status/plugin.go,
+v1/plugins/bundle/status.go, v1/plugins/logs/status/status.go,
+v1/plugins/plugins.go and v1/bundle/bundle.go. The structure of the schema is
+this project's. The descriptions of the plan classes that match a type in
+v1/ir/ir.go open with that type's doc comment. The description of the
+authorization input's class and that of the plan's legacy Index key come from
+OPA's JSON Schemas. Those doc comments and these two descriptions are OPA's
+words. The other descriptions are this project's.
+src/opa/datamodel/, project/ and docs/schema/ are generated from the schema.
+
+tests/data/captured/ holds documents OPA's release image wrote when
+scripts/capture_opa_documents.py ran it on this project's test policies.
+
+Open Policy Agent, OPA and Rego are names of the OPA project, a graduated
+project of the Cloud Native Computing Foundation. This project is not part of
+OPA, and its use of the names does not imply endorsement.
+
+linkml-project-copier
+---------------------
+
+This project was generated from linkml-project-copier
+(https://github.com/linkml/linkml-project-copier), and its justfile,
+configuration and documentation scaffolding derive from that template:
+
+  The MIT License (MIT)
+  Copyright (c) 2025 David Linke
+
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and associated documentation files (the
+  "Software"), to deal in the Software without restriction, including
+  without limitation the rights to use, copy, modify, merge, publish,
+  distribute, sublicense, and/or sell copies of the Software, and to permit
+  persons to whom the Software is furnished to do so, subject to the
+  following conditions:
+
+  The above copyright notice and this permission notice shall be included
+  in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+  NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+  USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+linkml-sidecar
+--------------
+
+scripts/linkml-preflight.sh and the linkml-link recipe in project.justfile are
+copies of the linkml-sidecar templates
+(https://github.com/noelmcloughlin/linkml-sidecar), licensed under the Apache
+License, Version 2.0.
+
+Knowledge bundle
+----------------
+
+This product maintains its documentation as a Linked Open Knowledge Format
+(LOKF) bundle under .lokf/: https://lokf.nolan-nichols.com/specification/
+
+LOKF is a semantic profile of the Open Knowledge Format (OKF) specification
+by Google Cloud Platform:
+https://github.com/GoogleCloudPlatform/open-knowledge-format/blob/main/SPEC.md
+
+The scripts under .lokf/scripts/ and .lokf/m365/ and the
+knowledge-librarian, knowledge-registrar, knowledge-release and
+knowledge-sync workflows under .github/workflows/ are copies of the
+ktl-sidecar templates in knowledge-trust-ladder
+(https://github.com/noelmcloughlin/knowledge-trust-ladder). The site under
+website/ and the knowledge-website workflow derive from the ktl-website
+templates in the same repository, and website/NOTICE lists the part
+adapted from the LOKF toolkit's site. All of them are licensed under the
+Apache License, Version 2.0.

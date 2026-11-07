@@ -1,0 +1,11 @@
+---
+# A path written as one string, where OPA gives one element per segment.
+identity: secret-token
+method: GET
+path: /v1/data/example
+params:
+  pretty:
+    - 'true'
+headers:
+  Authorization:
+    - Bearer secret-token

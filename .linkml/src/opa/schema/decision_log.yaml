@@ -1,0 +1,173 @@
+---
+# Written by scripts/opa_to_linkml.py from OPA's files. Edit the script, not this file.
+id: https://w3id.org/lmodel/opa/decision_log
+name: decision_log
+title: OPA decision log event
+description: >-
+  The decision log event OPA's decision logger uploads to a decision log service, one per
+  decision, in a JSON array. It renders the Go struct logs.EventV1 key for key.
+version: 1.22.2
+source: >-
+  https://github.com/open-policy-agent/opa/blob/482d9e368c2ddfed67ced59259fa6a247bb5f1e5/v1/plugins/logs/plugin.go
+license: Apache-2.0
+see_also:
+  - https://lmodel.github.io/opa
+  - https://www.openpolicyagent.org/docs
+annotations:
+  upstream_tag: v1.22.2
+  upstream_commit: 482d9e368c2ddfed67ced59259fa6a247bb5f1e5
+  upstream_release_date: '2026-11-05'
+  upstream_license: Apache-2.0
+prefixes:
+  openpolicyagent: https://w3id.org/lmodel/opa/
+  linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
+default_prefix: openpolicyagent
+default_range: string
+imports:
+  - linkml:types
+  - common
+classes:
+  OpaDecisionLogEvent:
+    tree_root: true
+    description: >-
+      A decision OPA made: the query or path, the input and result, the bundles and the instance
+      behind it, and when and for whom it was made.
+    attributes:
+      labels:
+        description: >-
+          The labels of the OPA instance that made the decision: its `id`, its `version` and
+          those the configuration sets.
+        range: OpaLabels
+        inlined: true
+      decision_id:
+        description: The decision's id, which OPA also returns to the client.
+        required: true
+      batch_decision_id:
+        description: The id that groups the decisions of one batch request.
+      trace_id:
+        description: The request's trace id in W3C trace context, with tracing on.
+      span_id:
+        description: The request's span id in W3C trace context, with tracing on.
+      bundles:
+        description: The bundles whose policy made the decision, by name.
+        range: OpaDecisionBundle
+        multivalued: true
+        inlined: true
+      path:
+        description: >-
+          The decision's path in the data tree, such as `http/example/authz/allow`.
+      query:
+        description: The ad hoc query the Query API received.
+      input:
+        description: The input of the query.
+        range: OpaValue
+        any_of:
+          - range: OpaValue
+          - range: OpaValue
+            multivalued: true
+      result:
+        description: The result the client received.
+        range: OpaValue
+        any_of:
+          - range: OpaValue
+          - range: OpaValue
+            multivalued: true
+      intermediate_results:
+        description: >-
+          The intermediate results the evaluation recorded, when OPA runs with the environment
+          variable OPA_DECISIONS_INTERMEDIATE_RESULTS set.
+        range: OpaObject
+        inlined: true
+      mapped_result:
+        description: >-
+          The result of a decision made through OPA's Go SDK, as its result mapper wrote it.
+        range: OpaValue
+        any_of:
+          - range: OpaValue
+          - range: OpaValue
+            multivalued: true
+      nd_builtin_cache:
+        description: >-
+          What each non-deterministic built-in function returned, by function and arguments,
+          with `nd_builtin_cache` on.
+        range: OpaObject
+        inlined: true
+      erased:
+        description: JSON pointers to the fields a mask policy removed.
+        multivalued: true
+      masked:
+        description: JSON pointers to the fields a mask policy replaced.
+        multivalued: true
+      error:
+        description: The error the evaluation raised, as OPA writes it in JSON.
+        range: OpaValue
+        any_of:
+          - range: OpaValue
+          - range: OpaValue
+            multivalued: true
+      requested_by:
+        description: The address of the client that asked.
+      metrics:
+        description: The query's metrics, by name.
+        range: OpaObject
+        inlined: true
+      req_id:
+        description: >-
+          The number OPA gave the HTTP request, which its request and response logs also carry.
+        range: integer
+        minimum_value: 0
+      rule_labels:
+        description: The merged `labels` annotations of each rule the evaluation used.
+        range: OpaObject
+        multivalued: true
+        inlined: true
+        inlined_as_list: true
+      request_context:
+        description: The parts of the HTTP request the configuration asks OPA to log.
+        range: OpaRequestContext
+        inlined: true
+      custom:
+        description: >-
+          Fields the server or a plugin adds, such as `request_metadata`, which holds the
+          top-level keys of a Data API request body other than `input`.
+        range: OpaObject
+        inlined: true
+    slots:
+      - revision
+      - timestamp
+    slot_usage:
+      revision:
+        description: >-
+          The revision of the bundle that made the decision, under the legacy `bundle` configuration.
+        deprecated: OPA marks the key deprecated and writes `bundles` instead.
+      timestamp:
+        description: When OPA made the decision.
+        range: datetime
+        required: true
+  OpaDecisionBundle:
+    description: A bundle whose policy made a decision.
+    attributes:
+      name:
+        description: The bundle's name.
+        key: true
+        slot_uri: schema:name
+    slots:
+      - revision
+    slot_usage:
+      revision:
+        description: The bundle's revision when OPA made the decision.
+  OpaRequestContext:
+    description: The parts of the request that a decision log event logs.
+    attributes:
+      http:
+        description: The logged parts of the HTTP request.
+        range: OpaHttpRequestContext
+        inlined: true
+  OpaHttpRequestContext:
+    description: The logged parts of an HTTP request.
+    attributes:
+      headers:
+        description: The headers the configuration names, each with its values.
+        range: OpaStringListMap
+        inlined: true

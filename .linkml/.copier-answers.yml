@@ -1,0 +1,16 @@
+# Changes here will be overwritten by Copier
+_commit: v0.5.0-1-ga887226
+_src_path: gh:linkml/linkml-project-copier
+add_example: false
+copyright_year: '2026'
+email: noel.mcloughlin@gmail.com
+existing_license_file: LICENSE
+full_name: Noel McLoughlin
+gh_action_docs_preview: false
+gh_action_pypi: false
+github_org: lmodel
+license: Apache-2.0
+project_description: Open Policy Agent (OPA) v1.22.2 (LinkML)
+project_name: opa
+project_slug: opa
+

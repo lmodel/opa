@@ -1,0 +1,407 @@
+---
+# A bool operand whose value is a number.
+static:
+  strings:
+    - value: result
+    - value: x
+    - value: '1.5'
+  builtin_funcs:
+    - name: plus
+      decl:
+        type: function
+        args:
+          - type: number
+          - type: number
+        result:
+          type: number
+  files:
+    - value: example.rego
+plans:
+  plans:
+    - name: example/allow
+      blocks:
+        - stmts:
+            - type: ArrayAppendStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 3
+                end_col: 12
+                end_row: 3
+                value:
+                  type: local
+                  value: 4
+                array: 5
+            - type: AssignIntStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 4
+                end_col: 12
+                end_row: 4
+                value: 1
+                target: 6
+            - type: AssignVarOnceStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 5
+                end_col: 12
+                end_row: 5
+                source:
+                  type: local
+                  value: 2
+                target: 7
+            - type: AssignVarStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 6
+                end_col: 12
+                end_row: 6
+                source:
+                  type: local
+                  value: 7
+                target: 8
+            - type: BlockStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 7
+                end_col: 12
+                end_row: 7
+                blocks:
+                  - &id001
+                    stmts:
+                      - type: BreakStmt
+                        stmt:
+                          file: 0
+                          col: 1
+                          row: 9
+                          end_col: 12
+                          end_row: 9
+                          index: 0
+            - type: BreakStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 8
+                end_col: 12
+                end_row: 8
+                index: 0
+            - type: CallDynamicStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 9
+                end_col: 12
+                end_row: 9
+                args:
+                  - 0
+                  - 1
+                result: 9
+                path:
+                  - type: string_index
+                    value: 1
+                  - type: local
+                    value: 10
+            - type: CallStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 10
+                end_col: 12
+                end_row: 10
+                func: plus
+                args:
+                  - type: local
+                    value: 4
+                  - type: local
+                    value: 6
+                result: 11
+            - type: DotStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 11
+                end_col: 12
+                end_row: 11
+                source:
+                  type: local
+                  value: 0
+                key:
+                  type: string_index
+                  value: 1
+                target: 12
+            - type: EqualStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 12
+                end_col: 12
+                end_row: 12
+                a:
+                  type: local
+                  value: 12
+                b:
+                  type: bool
+                  value: 1
+            - type: IsArrayStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 13
+                end_col: 12
+                end_row: 13
+                source:
+                  type: local
+                  value: 5
+            - type: IsDefinedStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 14
+                end_col: 12
+                end_row: 14
+                source: 12
+            - type: IsObjectStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 15
+                end_col: 12
+                end_row: 15
+                source:
+                  type: local
+                  value: 0
+            - type: IsSetStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 16
+                end_col: 12
+                end_row: 16
+                source:
+                  type: local
+                  value: 13
+            - type: IsUndefinedStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 17
+                end_col: 12
+                end_row: 17
+                source: 14
+            - type: LenStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 18
+                end_col: 12
+                end_row: 18
+                source:
+                  type: local
+                  value: 5
+                target: 15
+            - type: MakeArrayStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 19
+                end_col: 12
+                end_row: 19
+                capacity: 2
+                target: 5
+            - type: MakeNullStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 20
+                end_col: 12
+                end_row: 20
+                target: 16
+            - type: MakeNumberIntStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 21
+                end_col: 12
+                end_row: 21
+                value: 42
+                target: 17
+            - type: MakeNumberRefStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 22
+                end_col: 12
+                end_row: 22
+                index: 2
+                Index: 2
+                target: 18
+            - type: MakeObjectStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 23
+                end_col: 12
+                end_row: 23
+                target: 19
+            - type: MakeSetStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 24
+                end_col: 12
+                end_row: 24
+                target: 13
+            - type: NopStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 25
+                end_col: 12
+                end_row: 25
+            - type: NotEqualStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 26
+                end_col: 12
+                end_row: 26
+                a:
+                  type: local
+                  value: 17
+                b:
+                  type: local
+                  value: 18
+            - type: NotStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 27
+                end_col: 12
+                end_row: 27
+                block: *id001
+            - type: ObjectInsertOnceStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 28
+                end_col: 12
+                end_row: 28
+                key:
+                  type: string_index
+                  value: 1
+                value:
+                  type: local
+                  value: 17
+                object: 19
+            - type: ObjectInsertStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 29
+                end_col: 12
+                end_row: 29
+                key:
+                  type: string_index
+                  value: 0
+                value:
+                  type: local
+                  value: 12
+                object: 19
+            - type: ObjectMergeStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 30
+                end_col: 12
+                end_row: 30
+                a: 19
+                b: 0
+                target: 20
+            - type: ResetLocalStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 31
+                end_col: 12
+                end_row: 31
+                target: 16
+            - type: ResultSetAddStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 32
+                end_col: 12
+                end_row: 32
+                value: 19
+            - type: ScanStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 34
+                end_col: 12
+                end_row: 34
+                source: 5
+                key: 21
+                value: 22
+                block: *id001
+            - type: SetAddStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 35
+                end_col: 12
+                end_row: 35
+                value:
+                  type: local
+                  value: 22
+                set: 13
+            - type: WithStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 36
+                end_col: 12
+                end_row: 36
+                local: 0
+                path:
+                  - 1
+                value:
+                  type: bool
+                  value: false
+                block: *id001
+funcs:
+  funcs:
+    - name: g0.data.example.f
+      params:
+        - 0
+        - 1
+        - 2
+      return: 3
+      path:
+        - g0
+        - example
+        - f
+      blocks:
+        - stmts:
+            - type: ReturnLocalStmt
+              stmt:
+                file: 0
+                col: 1
+                row: 40
+                end_col: 12
+                end_row: 40
+                source: 3
+unplanned_rules:
+  - path: data.example.unused
+    location:
+      file: 0
+      col: 1
+      row: 50
+      end_col: 12
+      end_row: 50
+  - path: data.example.nowhere
+    location: null

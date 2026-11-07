@@ -1,0 +1,13 @@
+# linkml-lint reads this file from the directory `just lint` runs in.
+# The recommended rules apply, with the naming rule fitted to OPA's values, so
+# that a document OPA writes validates unchanged. Permissible values keep OPA's
+# spelling (the plan's statement kinds, such as ArrayAppendStmt, and the
+# capabilities' feature names), so the naming rule leaves them out. A slot whose
+# name differs from OPA's key, such as operand_a for a or major for Major,
+# carries the key as its alias.
+extends: recommended
+rules:
+  standard_naming:
+    level: error
+    exclude_type:
+      - permissible_value

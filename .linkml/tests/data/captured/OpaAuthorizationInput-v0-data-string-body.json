@@ -1,0 +1,28 @@
+{
+  "body": "hello",
+  "headers": {
+    "Accept-Encoding": [
+      "identity"
+    ],
+    "Connection": [
+      "close"
+    ],
+    "Content-Length": [
+      "7"
+    ],
+    "Content-Type": [
+      "application/json"
+    ],
+    "User-Agent": [
+      "Python-urllib/3.14"
+    ]
+  },
+  "method": "POST",
+  "params": {},
+  "path": [
+    "v0",
+    "data",
+    "http",
+    "example"
+  ]
+}

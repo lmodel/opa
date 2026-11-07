@@ -1,0 +1,55 @@
+{
+  "labels": {
+    "id": "0e82b58c-d645-408e-9117-82be944ae3b4",
+    "region": "eu-west-1",
+    "version": "1.22.2"
+  },
+  "decision_id": "ddac6aed-c55f-4672-b445-a04a1588dfd5",
+  "bundles": {
+    "authz": {
+      "revision": "rev-1"
+    }
+  },
+  "path": "http/example/authz/pick",
+  "input": {
+    "conflict": true
+  },
+  "nd_builtin_cache": {},
+  "error": {
+    "code": "eval_conflict_error",
+    "message": "rule data.http.example.authz.pick produced conflicting values:\n  1 at /policy/authz.rego:26\n  2 at /policy/authz.rego:28",
+    "location": {
+      "file": "/policy/authz.rego",
+      "row": 28,
+      "col": 1
+    },
+    "stack_trace": [
+      {
+        "query_id": 2,
+        "location": {
+          "file": "/policy/authz.rego",
+          "row": 28,
+          "col": 14
+        }
+      },
+      {
+        "query_id": 0,
+        "location": {
+          "file": "",
+          "row": 1,
+          "col": 1
+        }
+      }
+    ]
+  },
+  "requested_by": "127.0.0.1:51766",
+  "timestamp": "2026-11-07T10:29:09.695356727Z",
+  "metrics": {
+    "counter_server_query_cache_hit": 0,
+    "timer_rego_input_parse_ns": 46304,
+    "timer_rego_query_compile_ns": 60775,
+    "timer_rego_query_eval_ns": 74306,
+    "timer_server_handler_ns": 281314
+  },
+  "req_id": 6
+}

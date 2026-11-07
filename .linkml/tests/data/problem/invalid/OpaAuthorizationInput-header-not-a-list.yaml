@@ -1,0 +1,11 @@
+---
+# A header with one string, where OPA gives each header a list of values.
+identity: secret-token
+method: GET
+path:
+  - v1
+  - data
+  - example
+params: {}
+headers:
+  Authorization: Bearer secret-token

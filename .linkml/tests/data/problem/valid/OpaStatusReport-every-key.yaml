@@ -1,0 +1,88 @@
+---
+# A status report with every key UpdateRequestV1 writes: bundles that activated, failed
+# to download or failed to compile, a delta bundle, the deprecated bundle, discovery, a
+# failed decision log upload and the plugins' states. The metrics are abridged.
+labels:
+  id: 75a0519a-5dc8-4cf4-82fc-cbb344a6306c
+  version: 1.22.2
+bundle:
+  name: authz
+  active_revision: rev-1
+  last_successful_activation: '2026-11-07T10:16:32.857802Z'
+  type: snapshot
+  size: 591
+  last_successful_download: '2026-11-07T10:16:32.853281362Z'
+  last_successful_request: '2026-11-07T10:16:32.853281362Z'
+  last_request: '2026-11-07T10:16:32.853281362Z'
+bundles:
+  authz:
+    name: authz
+    active_revision: rev-1
+    last_successful_activation: '2026-11-07T10:16:32.857802Z'
+    type: snapshot
+    size: 591
+    last_successful_download: '2026-11-07T10:16:32.853281362Z'
+    last_successful_request: '2026-11-07T10:16:32.853281362Z'
+    last_request: '2026-11-07T10:16:32.853281362Z'
+    metrics:
+      timer_bundle_request_ns: 795236
+  missing:
+    name: missing
+    last_successful_activation: '0001-01-01T00:00:00Z'
+    last_successful_download: '0001-01-01T00:00:00Z'
+    last_successful_request: '0001-01-01T00:00:00Z'
+    last_request: '2026-11-07T10:16:33.745578102Z'
+    code: bundle_error
+    message: server replied with Not Found
+    http_code: 404
+  broken:
+    name: broken
+    last_successful_activation: '0001-01-01T00:00:00Z'
+    last_successful_download: '2026-11-07T10:16:32.853281362Z'
+    last_successful_request: '2026-11-07T10:16:32.853281362Z'
+    last_request: '2026-11-07T10:16:32.853281362Z'
+    type: snapshot
+    code: bundle_error
+    message: error(s) occurred while compiling module(s)
+    errors:
+      - code: rego_parse_error
+        message: unexpected eof token
+        location:
+          file: /policy/broken.rego
+          row: 3
+          col: 1
+  patches:
+    name: patches
+    active_revision: patch-3
+    last_successful_activation: '2026-11-07T10:16:32.857802Z'
+    type: delta
+    size: 120
+    last_successful_download: '2026-11-07T10:16:32.853281362Z'
+    last_successful_request: '2026-11-07T10:16:32.853281362Z'
+    last_request: '2026-11-07T10:16:32.853281362Z'
+discovery:
+  name: discovery
+  active_revision: disco-1
+  last_successful_activation: '2026-11-07T10:16:32.857802Z'
+  last_successful_download: '2026-11-07T10:16:32.853281362Z'
+  last_successful_request: '2026-11-07T10:16:32.853281362Z'
+  last_request: '2026-11-07T10:16:32.853281362Z'
+decision_logs:
+  code: decision_log_error
+  message: log upload failed, server replied with HTTP 500 Internal Server Error
+  http_code: 500
+  metrics:
+    counter_decision_logs_dropped: 0
+metrics:
+  prometheus:
+    counter_decision_logs_chunks_uploaded: 1
+plugins:
+  bundle:
+    state: OK
+  decision_logs:
+    state: WARN
+    message: uploads are failing
+  discovery:
+    state: OK
+  status:
+    state: NOT_READY
