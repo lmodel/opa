@@ -2,7 +2,7 @@
 # Schema: opa
 #
 # id: https://w3id.org/lmodel/opa
-# description: A LinkML model of the JSON formats Open Policy Agent defines: the IR plan, the bundle manifest, the authorization policy input, the capabilities document, the built-in function metadata and the version index. Each module renders one format, and keeps OPA's keys, so a document OPA writes validates here unchanged.
+# description: A LinkML model of the JSON formats Open Policy Agent defines: the IR plan, the bundle manifest, the authorization policy input, the capabilities document, the built-in function metadata and the version index. Each module renders one format, and keeps OPA's keys, so a document OPA writes validates against this schema unchanged. The lokf adapt copy renames six keys LOKF defines with another meaning.
 # license: Apache-2.0
 
 import dataclasses

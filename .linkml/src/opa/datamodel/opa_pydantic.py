@@ -80,7 +80,8 @@ linkml_meta = LinkMLMeta({'annotations': {'upstream_commit': {'tag': 'upstream_c
                     'input, the capabilities document, the built-in function '
                     'metadata and the version index. Each module renders one '
                     "format, and keeps OPA's keys, so a document OPA writes "
-                    'validates here unchanged.',
+                    'validates against this schema unchanged. The lokf adapt copy '
+                    'renames six keys LOKF defines with another meaning.',
      'id': 'https://w3id.org/lmodel/opa',
      'imports': ['linkml:types',
                  'common',

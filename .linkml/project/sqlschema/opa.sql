@@ -1194,9 +1194,9 @@ CREATE TABLE "OpaBuiltinCategory" (
 	UNIQUE ("OpaBuiltinMetadataCatalog_id", name),
 	FOREIGN KEY("OpaBuiltinMetadataCatalog_id") REFERENCES "OpaBuiltinMetadataCatalog" (id)
 );
-CREATE INDEX "ix_OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id");
 CREATE INDEX "OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id_name_idx" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id", name);
 CREATE INDEX "ix_OpaBuiltinCategory_name" ON "OpaBuiltinCategory" (name);
+CREATE INDEX "ix_OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id");
 
 CREATE TABLE "OpaImplementation" (
 	uid INTEGER NOT NULL,
@@ -1237,11 +1237,11 @@ CREATE TABLE "OpaVersionEntry" (
 );
 CREATE INDEX "ix_OpaVersionEntry_Minor" ON "OpaVersionEntry" ("Minor");
 CREATE INDEX "ix_OpaVersionEntry_Major" ON "OpaVersionEntry" ("Major");
-CREATE INDEX "OpaVersionEntry_OpaVersionIndex_id_name_idx" ON "OpaVersionEntry" ("OpaVersionIndex_id", name);
-CREATE INDEX "ix_OpaVersionEntry_name" ON "OpaVersionEntry" (name);
-CREATE INDEX "ix_OpaVersionEntry_Patch" ON "OpaVersionEntry" ("Patch");
 CREATE INDEX "ix_OpaVersionEntry_OpaVersionIndex_id" ON "OpaVersionEntry" ("OpaVersionIndex_id");
 CREATE INDEX "ix_OpaVersionEntry_PreRelease" ON "OpaVersionEntry" ("PreRelease");
+CREATE INDEX "ix_OpaVersionEntry_Patch" ON "OpaVersionEntry" ("Patch");
+CREATE INDEX "OpaVersionEntry_OpaVersionIndex_id_name_idx" ON "OpaVersionEntry" ("OpaVersionIndex_id", name);
+CREATE INDEX "ix_OpaVersionEntry_name" ON "OpaVersionEntry" (name);
 
 CREATE TABLE "OpaFileRegoVersion" (
 	version INTEGER NOT NULL,
@@ -1250,9 +1250,9 @@ CREATE TABLE "OpaFileRegoVersion" (
 	PRIMARY KEY (version, path, "OpaManifest_id"),
 	FOREIGN KEY("OpaManifest_id") REFERENCES "OpaManifest" (id)
 );
+CREATE INDEX "ix_OpaFileRegoVersion_version" ON "OpaFileRegoVersion" (version);
 CREATE INDEX "ix_OpaFileRegoVersion_OpaManifest_id" ON "OpaFileRegoVersion" ("OpaManifest_id");
 CREATE INDEX "ix_OpaFileRegoVersion_path" ON "OpaFileRegoVersion" (path);
-CREATE INDEX "ix_OpaFileRegoVersion_version" ON "OpaFileRegoVersion" (version);
 
 CREATE TABLE "OpaPolicy" (
 	id INTEGER NOT NULL,
