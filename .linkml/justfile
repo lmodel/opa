@@ -106,33 +106,21 @@ clean: _wsl2_compat_check _clean_project
 [group('model development')]
 site: gen-project gen-doc
 
-# Deploy documentation site to Github Pages
-[group('deployment')]
-deploy: site
-  mkd-gh-deploy
-
 # Run all tests
-#
-# _test-examples (linkml-run-examples) is intentionally omitted: the umbrella
-# OPA schema imports four submodules each with its own tree_root and uses the
-# linkml:Any placeholder for heterogeneous source values, both of which trip
-# the example runner's RDF/JSON round-trip code paths. Schema validity is
-# covered by `_test-schema`, and example fixtures are validated against the
-# umbrella schema by `tests/test_data.py` via `linkml-validate`.
 [group('model development')]
-test: _test-schema _test-python
+test: _test-schema _test-python _test-examples
 
 # Run linting
 [group('model development')]
 lint:
-  uv run linkml-lint -c .linkml-lint.yaml {{source_schema_dir}}
+  uv run linkml-lint {{source_schema_dir}}
 
 # Generate md documentation for the schema and add artifacts
 [group('model development')]
 gen-doc: _gen-yaml && _add-artifacts
   uv run gen-doc {{gen_doc_args}} -d {{docdir}} {{source_schema_path}}
 
-# Build docs and run test server
+# Build docs and serve the website locally
 [group('model development')]
 testdoc: gen-doc _serve
 
@@ -143,7 +131,7 @@ gen-python:
 
 # Generate project files including Python data model
 [group('model development')]
-gen-project: gen-linkml
+gen-project:
   uv run gen-project {{config_yaml}} -d {{dest}} {{source_schema_path}}
   mkdir -p {{pymodel}}
   mv {{dest}}/*.py {{pymodel}}/
@@ -246,9 +234,9 @@ _gen-yaml:
 # Overridable recipe to add project-specific artifacts to the distribution schema path
 _add-artifacts:
 
-# Run documentation server
+# Run the website's development server
 _serve:
-  uv run mkdocs serve
+  cd ../website && npm ci --ignore-scripts && npm run dev
 
 # Initialize git repository
 _git-init:
