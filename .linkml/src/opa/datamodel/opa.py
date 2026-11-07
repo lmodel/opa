@@ -1,9 +1,8 @@
 # Auto generated from opa.yaml by pythongen.py version: 0.0.1
-# Generation date: 2026-06-12T23:26:43
 # Schema: opa
 #
 # id: https://w3id.org/lmodel/opa
-# description: Umbrella LinkML schema for Open Policy Agent (OPA) and the Rego policy language. Imports per-source submodules generated from upstream OPA artifacts (capabilities, built-in metadata, version index, sample authorization input, bundle manifest, and IR plan).
+# description: A LinkML model of the JSON formats Open Policy Agent defines: the IR plan, the bundle manifest, the authorization policy input, the capabilities document, the built-in function metadata and the version index. Each module renders one format, and keeps OPA's keys, so a document OPA writes validates here unchanged.
 # license: Apache-2.0
 
 import dataclasses
@@ -59,148 +58,175 @@ from rdflib import (
 from linkml_runtime.linkml_model.types import Boolean, Integer, String
 from linkml_runtime.utils.metamodelcore import Bool
 
-metamodel_version = "1.11.0"
-version = "0.1.0"
+metamodel_version = "1.12.0"
+version = "1.22.2"
 
 # Namespaces
-D3FEND = CurieNamespace('d3fend', 'https://w3id.org/lmodel/d3fend/')
-DCTERMS = CurieNamespace('dcterms', 'http://purl.org/dc/terms/')
-DPV = CurieNamespace('dpv', 'https://w3id.org/lmodel/dpv/')
-ISO27001 = CurieNamespace('iso27001', 'https://w3id.org/lmodel/iso27001/')
 LINKML = CurieNamespace('linkml', 'https://w3id.org/linkml/')
+OPA_MANIFEST = CurieNamespace('opa_manifest', 'https://openpolicyagent.org/schemas/bundle/v1/manifest.schema.json#/$defs/')
+OPA_PLAN = CurieNamespace('opa_plan', 'https://openpolicyagent.org/schemas/ir/v1/plan.schema.json#/$defs/')
 OPENPOLICYAGENT = CurieNamespace('openpolicyagent', 'https://w3id.org/lmodel/opa/')
-OSCAL = CurieNamespace('oscal', 'https://w3id.org/lmodel/oscal/')
-RDFS = CurieNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#')
-SCHEMA = CurieNamespace('schema', 'http://schema.org/')
-SLSA = CurieNamespace('slsa', 'https://w3id.org/lmodel/slsa/')
 DEFAULT_ = OPENPOLICYAGENT
 
 
 # Types
 
 # Class references
-class BuiltinName(extended_str):
+class OpaBuiltinCategoryName(extended_str):
     pass
 
 
-class BuiltinCategoryGroupName(extended_str):
+class OpaImplementationSupportImplementation(extended_str):
     pass
 
 
-class BuiltinMetadataName(extended_str):
+class OpaVersionEntryName(extended_str):
     pass
 
 
-class ElementVersionName(extended_str):
+class OpaFileRegoVersionPath(extended_str):
     pass
 
 
-class FileRegoVersionPath(extended_str):
-    pass
-
-
-Any = Any
-
-@dataclass(repr=False)
-class Capabilities(YAMLRoot):
+class OpaObject(YAMLRoot):
     """
-    Top-level capabilities document published by an OPA build. Lists every built-in function the runtime supports
-    along with Wasm ABI compatibility, future keywords and feature flags.
+    A JSON object whose keys OPA leaves open.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["Capabilities"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:Capabilities"
-    class_name: ClassVar[str] = "Capabilities"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.Capabilities
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaObject"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaObject"
+    class_name: ClassVar[str] = "OpaObject"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaObject
 
-    builtins: Optional[Union[dict[Union[str, BuiltinName], Union[dict, "Builtin"]], list[Union[dict, "Builtin"]]]] = empty_dict()
-    future_keywords: Optional[Union[Union[str, "FutureKeyword"], list[Union[str, "FutureKeyword"]]]] = empty_list()
-    wasm_abi_versions: Optional[Union[Union[dict, "WasmABIVersion"], list[Union[dict, "WasmABIVersion"]]]] = empty_list()
-    features: Optional[Union[Union[str, "FeatureName"], list[Union[str, "FeatureName"]]]] = empty_list()
-    allow_net: Optional[Union[str, list[str]]] = empty_list()
+
+OpaValue = Any
+
+@dataclass(repr=False)
+class OpaType(YAMLRoot):
+    """
+    A Rego type, as OPA's types package writes it in JSON. A named type is an argument or result of a built-in
+    function, with a name and a description.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaType"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaType"
+    class_name: ClassVar[str] = "OpaType"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaType
+
+    name: Optional[str] = None
+    description: Optional[str] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        self._normalize_inlined_as_list(slot_name="builtins", slot_type=Builtin, key_name="name", keyed=True)
+        if self.name is not None and not isinstance(self.name, str):
+            self.name = str(self.name)
 
-        if not isinstance(self.future_keywords, list):
-            self.future_keywords = [self.future_keywords] if self.future_keywords is not None else []
-        self.future_keywords = [v if isinstance(v, FutureKeyword) else FutureKeyword(v) for v in self.future_keywords]
-
-        self._normalize_inlined_as_list(slot_name="wasm_abi_versions", slot_type=WasmABIVersion, key_name="version", keyed=False)
-
-        if not isinstance(self.features, list):
-            self.features = [self.features] if self.features is not None else []
-        self.features = [v if isinstance(v, FeatureName) else FeatureName(v) for v in self.features]
-
-        if not isinstance(self.allow_net, list):
-            self.allow_net = [self.allow_net] if self.allow_net is not None else []
-        self.allow_net = [v if isinstance(v, str) else str(v) for v in self.allow_net]
+        if self.description is not None and not isinstance(self.description, str):
+            self.description = str(self.description)
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class Builtin(YAMLRoot):
+class OpaAnyType(OpaType):
     """
-    A Rego built-in function exposed by the OPA runtime.
-    """
-    _inherited_slots: ClassVar[list[str]] = []
-
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["Builtin"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:Builtin"
-    class_name: ClassVar[str] = "Builtin"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.Builtin
-
-    name: Union[str, BuiltinName] = None
-    decl: Union[dict, "BuiltinDecl"] = None
-    infix: Optional[str] = None
-    deprecated: Optional[Union[bool, Bool]] = None
-    nondeterministic: Optional[Union[bool, Bool]] = None
-    relation: Optional[Union[bool, Bool]] = None
-
-    def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.name):
-            self.MissingRequiredField("name")
-        if not isinstance(self.name, BuiltinName):
-            self.name = BuiltinName(self.name)
-
-        if self._is_empty(self.decl):
-            self.MissingRequiredField("decl")
-        if not isinstance(self.decl, BuiltinDecl):
-            self.decl = BuiltinDecl(**as_dict(self.decl))
-
-        if self.infix is not None and not isinstance(self.infix, str):
-            self.infix = str(self.infix)
-
-        if self.deprecated is not None and not isinstance(self.deprecated, Bool):
-            self.deprecated = Bool(self.deprecated)
-
-        if self.nondeterministic is not None and not isinstance(self.nondeterministic, Bool):
-            self.nondeterministic = Bool(self.nondeterministic)
-
-        if self.relation is not None and not isinstance(self.relation, Bool):
-            self.relation = Bool(self.relation)
-
-        super().__post_init__(**kwargs)
-
-
-@dataclass(repr=False)
-class BuiltinDecl(YAMLRoot):
-    """
-    Type declaration of a built-in: function signature and return type.
+    A union of the types it lists in `of`, or any value when it lists none.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["BuiltinDecl"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:BuiltinDecl"
-    class_name: ClassVar[str] = "BuiltinDecl"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.BuiltinDecl
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaAnyType"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaAnyType"
+    class_name: ClassVar[str] = "OpaAnyType"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaAnyType
 
     type: str = None
-    args: Optional[Union[Union[dict, "TypeDecl"], list[Union[dict, "TypeDecl"]]]] = empty_list()
-    result: Optional[Union[dict, "TypeDecl"]] = None
-    variadic: Optional[Union[dict, "TypeDecl"]] = None
+    of: Optional[Union[Union[dict, OpaType], list[Union[dict, OpaType]]]] = empty_list()
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if not isinstance(self.of, list):
+            self.of = [self.of] if self.of is not None else []
+        self.of = [v if isinstance(v, OpaType) else OpaType(**as_dict(v)) for v in self.of]
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaArrayType(OpaType):
+    """
+    An array, with a type per position in `static` and one for the rest in `dynamic`.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaArrayType"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaArrayType"
+    class_name: ClassVar[str] = "OpaArrayType"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaArrayType
+
+    type: str = None
+    static: Optional[Union[Union[dict, OpaType], list[Union[dict, OpaType]]]] = empty_list()
+    dynamic: Optional[Union[dict, OpaType]] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if not isinstance(self.static, list):
+            self.static = [self.static] if self.static is not None else []
+        self.static = [v if isinstance(v, OpaType) else OpaType(**as_dict(v)) for v in self.static]
+
+        if self.dynamic is not None and not isinstance(self.dynamic, OpaType):
+            self.dynamic = OpaType(**as_dict(self.dynamic))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaBooleanType(OpaType):
+    """
+    A boolean.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBooleanType"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBooleanType"
+    class_name: ClassVar[str] = "OpaBooleanType"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBooleanType
+
+    type: str = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaFunctionType(OpaType):
+    """
+    A function, with its arguments, its result and a variadic argument type.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaFunctionType"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaFunctionType"
+    class_name: ClassVar[str] = "OpaFunctionType"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaFunctionType
+
+    type: str = None
+    args: Optional[Union[Union[dict, OpaType], list[Union[dict, OpaType]]]] = empty_list()
+    result: Optional[Union[dict, OpaType]] = None
+    variadic: Optional[Union[dict, OpaType]] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.type):
@@ -210,81 +236,301 @@ class BuiltinDecl(YAMLRoot):
 
         if not isinstance(self.args, list):
             self.args = [self.args] if self.args is not None else []
-        self.args = [v if isinstance(v, TypeDecl) else TypeDecl(**as_dict(v)) for v in self.args]
+        self.args = [v if isinstance(v, OpaType) else OpaType(**as_dict(v)) for v in self.args]
 
-        if self.result is not None and not isinstance(self.result, TypeDecl):
-            self.result = TypeDecl(**as_dict(self.result))
+        if self.result is not None and not isinstance(self.result, OpaType):
+            self.result = OpaType(**as_dict(self.result))
 
-        if self.variadic is not None and not isinstance(self.variadic, TypeDecl):
-            self.variadic = TypeDecl(**as_dict(self.variadic))
+        if self.variadic is not None and not isinstance(self.variadic, OpaType):
+            self.variadic = OpaType(**as_dict(self.variadic))
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class TypeDecl(YAMLRoot):
+class OpaNullType(OpaType):
     """
-    Recursive type expression used throughout Capabilities declarations.
-
-    All slots are optional because TypeDecl doubles as the structural envelope
-    for the various heterogeneous shapes the source JSON uses:
-    * ``string|number|boolean|null|function`` -- atomic; only ``type`` is set.
-    * ``any`` -- ``of`` is a list of alternative TypeDecls.
-    * ``set`` -- ``of`` holds the (single) element TypeDecl.
-    * ``array`` -- ``dynamic`` is the homogeneous element TypeDecl, or
-    ``static`` is an ordered list describing a fixed-length tuple.
-    * ``object`` -- ``static`` lists named property pairs (TypeDecls with
-    ``key`` and ``value`` populated); ``dynamic`` is a TypeDecl whose
-    ``key``/``value`` describe additional property typing.
-    * Inside an ``object``'s ``dynamic`` value, the TypeDecl has only
-    ``key`` and ``value`` populated -- ``type`` is absent.
+    The null value.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["TypeDecl"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:TypeDecl"
-    class_name: ClassVar[str] = "TypeDecl"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.TypeDecl
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaNullType"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaNullType"
+    class_name: ClassVar[str] = "OpaNullType"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaNullType
 
-    type: Optional[Union[str, "BuiltinTypeKind"]] = None
-    of: Optional[Union[Union[dict, "TypeDecl"], list[Union[dict, "TypeDecl"]]]] = empty_list()
-    dynamic: Optional[Union[dict, "TypeDecl"]] = None
-    static: Optional[Union[Union[dict, "TypeDecl"], list[Union[dict, "TypeDecl"]]]] = empty_list()
-    key: Optional[Union[dict, Any]] = None
-    value: Optional[Union[dict, "TypeDecl"]] = None
+    type: str = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self.type is not None and not isinstance(self.type, BuiltinTypeKind):
-            self.type = BuiltinTypeKind(self.type)
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
 
-        if not isinstance(self.of, list):
-            self.of = [self.of] if self.of is not None else []
-        self.of = [v if isinstance(v, TypeDecl) else TypeDecl(**as_dict(v)) for v in self.of]
+        super().__post_init__(**kwargs)
 
-        if self.dynamic is not None and not isinstance(self.dynamic, TypeDecl):
-            self.dynamic = TypeDecl(**as_dict(self.dynamic))
+
+@dataclass(repr=False)
+class OpaNumberType(OpaType):
+    """
+    A number.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaNumberType"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaNumberType"
+    class_name: ClassVar[str] = "OpaNumberType"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaNumberType
+
+    type: str = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaObjectType(OpaType):
+    """
+    An object, with typed known keys in `static` and a key and value type for the rest in `dynamic`.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaObjectType"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaObjectType"
+    class_name: ClassVar[str] = "OpaObjectType"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaObjectType
+
+    type: str = None
+    static: Optional[Union[Union[dict, "OpaStaticProperty"], list[Union[dict, "OpaStaticProperty"]]]] = empty_list()
+    dynamic: Optional[Union[dict, "OpaDynamicProperty"]] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
 
         if not isinstance(self.static, list):
             self.static = [self.static] if self.static is not None else []
-        self.static = [v if isinstance(v, TypeDecl) else TypeDecl(**as_dict(v)) for v in self.static]
+        self.static = [v if isinstance(v, OpaStaticProperty) else OpaStaticProperty(**as_dict(v)) for v in self.static]
 
-        if self.value is not None and not isinstance(self.value, TypeDecl):
-            self.value = TypeDecl(**as_dict(self.value))
+        if self.dynamic is not None and not isinstance(self.dynamic, OpaDynamicProperty):
+            self.dynamic = OpaDynamicProperty(**as_dict(self.dynamic))
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class WasmABIVersion(YAMLRoot):
+class OpaSetType(OpaType):
     """
-    A supported Wasm ABI version pair.
+    A set, whose members have the type in `of`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["WasmABIVersion"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:WasmABIVersion"
-    class_name: ClassVar[str] = "WasmABIVersion"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.WasmABIVersion
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaSetType"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaSetType"
+    class_name: ClassVar[str] = "OpaSetType"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaSetType
+
+    type: str = None
+    of: Optional[Union[dict, OpaType]] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self.of is not None and not isinstance(self.of, OpaType):
+            self.of = OpaType(**as_dict(self.of))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaStringType(OpaType):
+    """
+    A string.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaStringType"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaStringType"
+    class_name: ClassVar[str] = "OpaStringType"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaStringType
+
+    type: str = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaStaticProperty(YAMLRoot):
+    """
+    A known key of an object type and the type of its value.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaStaticProperty"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaStaticProperty"
+    class_name: ClassVar[str] = "OpaStaticProperty"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaStaticProperty
+
+    key: Union[dict, OpaValue] = None
+    value: Union[dict, OpaType] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.value):
+            self.MissingRequiredField("value")
+        if not isinstance(self.value, OpaType):
+            self.value = OpaType(**as_dict(self.value))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaDynamicProperty(YAMLRoot):
+    """
+    The key type and value type that an object type gives its other keys.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaDynamicProperty"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaDynamicProperty"
+    class_name: ClassVar[str] = "OpaDynamicProperty"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaDynamicProperty
+
+    key: Union[dict, OpaType] = None
+    value: Union[dict, OpaType] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.key):
+            self.MissingRequiredField("key")
+        if not isinstance(self.key, OpaType):
+            self.key = OpaType(**as_dict(self.key))
+
+        if self._is_empty(self.value):
+            self.MissingRequiredField("value")
+        if not isinstance(self.value, OpaType):
+            self.value = OpaType(**as_dict(self.value))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaCapabilities(YAMLRoot):
+    """
+    What an OPA version supports, which a policy can be checked against.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaCapabilities"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaCapabilities"
+    class_name: ClassVar[str] = "OpaCapabilities"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaCapabilities
+
+    builtins: Optional[Union[Union[dict, "OpaBuiltin"], list[Union[dict, "OpaBuiltin"]]]] = empty_list()
+    future_keywords: Optional[Union[Union[str, "OpaFutureKeyword"], list[Union[str, "OpaFutureKeyword"]]]] = empty_list()
+    wasm_abi_versions: Optional[Union[Union[dict, "OpaWasmAbiVersion"], list[Union[dict, "OpaWasmAbiVersion"]]]] = empty_list()
+    features: Optional[Union[Union[str, "OpaFeature"], list[Union[str, "OpaFeature"]]]] = empty_list()
+    allow_net: Optional[Union[str, list[str]]] = empty_list()
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        self._normalize_inlined_as_list(slot_name="builtins", slot_type=OpaBuiltin, key_name="name", keyed=False)
+
+        if not isinstance(self.future_keywords, list):
+            self.future_keywords = [self.future_keywords] if self.future_keywords is not None else []
+        self.future_keywords = [v if isinstance(v, OpaFutureKeyword) else OpaFutureKeyword(v) for v in self.future_keywords]
+
+        self._normalize_inlined_as_list(slot_name="wasm_abi_versions", slot_type=OpaWasmAbiVersion, key_name="version", keyed=False)
+
+        if not isinstance(self.features, list):
+            self.features = [self.features] if self.features is not None else []
+        self.features = [v if isinstance(v, OpaFeature) else OpaFeature(v) for v in self.features]
+
+        if not isinstance(self.allow_net, list):
+            self.allow_net = [self.allow_net] if self.allow_net is not None else []
+        self.allow_net = [v if isinstance(v, str) else str(v) for v in self.allow_net]
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaBuiltin(YAMLRoot):
+    """
+    A built-in function and its type declaration.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBuiltin"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBuiltin"
+    class_name: ClassVar[str] = "OpaBuiltin"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBuiltin
+
+    name: str = None
+    decl: Union[dict, OpaFunctionType] = None
+    description: Optional[str] = None
+    categories: Optional[Union[str, list[str]]] = empty_list()
+    infix: Optional[str] = None
+    relation: Optional[Union[bool, Bool]] = None
+    deprecated: Optional[Union[bool, Bool]] = None
+    nondeterministic: Optional[Union[bool, Bool]] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.name):
+            self.MissingRequiredField("name")
+        if not isinstance(self.name, str):
+            self.name = str(self.name)
+
+        if self._is_empty(self.decl):
+            self.MissingRequiredField("decl")
+        if not isinstance(self.decl, OpaFunctionType):
+            self.decl = OpaFunctionType(**as_dict(self.decl))
+
+        if self.description is not None and not isinstance(self.description, str):
+            self.description = str(self.description)
+
+        if not isinstance(self.categories, list):
+            self.categories = [self.categories] if self.categories is not None else []
+        self.categories = [v if isinstance(v, str) else str(v) for v in self.categories]
+
+        if self.infix is not None and not isinstance(self.infix, str):
+            self.infix = str(self.infix)
+
+        if self.relation is not None and not isinstance(self.relation, Bool):
+            self.relation = Bool(self.relation)
+
+        if self.deprecated is not None and not isinstance(self.deprecated, Bool):
+            self.deprecated = Bool(self.deprecated)
+
+        if self.nondeterministic is not None and not isinstance(self.nondeterministic, Bool):
+            self.nondeterministic = Bool(self.nondeterministic)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaWasmAbiVersion(YAMLRoot):
+    """
+    A Wasm ABI version, as a major and a minor number.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaWasmAbiVersion"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaWasmAbiVersion"
+    class_name: ClassVar[str] = "OpaWasmAbiVersion"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaWasmAbiVersion
 
     version: int = None
     minor_version: int = None
@@ -304,51 +550,48 @@ class WasmABIVersion(YAMLRoot):
 
 
 @dataclass(repr=False)
-class BuiltinMetadataCatalog(YAMLRoot):
+class OpaBuiltinMetadataCatalog(YAMLRoot):
     """
-    Wrapper class for the contents of ``builtin_metadata.json``. The source document is a flat map keyed by built-in
-    name plus a ``_categories`` map; the generator script reshapes it so ``categories`` and ``builtins`` are explicit,
-    inlined-as-dict slots on this wrapper.
+    The catalogue: two keys that start with an underscore, and one key per built-in function, whose value describes it.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["BuiltinMetadataCatalog"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:BuiltinMetadataCatalog"
-    class_name: ClassVar[str] = "BuiltinMetadataCatalog"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.BuiltinMetadataCatalog
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBuiltinMetadataCatalog"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBuiltinMetadataCatalog"
+    class_name: ClassVar[str] = "OpaBuiltinMetadataCatalog"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBuiltinMetadataCatalog
 
-    categories: Optional[Union[dict[Union[str, BuiltinCategoryGroupName], Union[dict, "BuiltinCategoryGroup"]], list[Union[dict, "BuiltinCategoryGroup"]]]] = empty_dict()
-    builtins: Optional[Union[dict[Union[str, BuiltinMetadataName], Union[dict, "BuiltinMetadata"]], list[Union[dict, "BuiltinMetadata"]]]] = empty_dict()
+    _categories: Optional[Union[dict[Union[str, OpaBuiltinCategoryName], Union[dict, "OpaBuiltinCategory"]], list[Union[dict, "OpaBuiltinCategory"]]]] = empty_dict()
+    _implementations: Optional[Union[Union[dict, "OpaImplementation"], list[Union[dict, "OpaImplementation"]]]] = empty_list()
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        self._normalize_inlined_as_dict(slot_name="categories", slot_type=BuiltinCategoryGroup, key_name="name", keyed=True)
+        self._normalize_inlined_as_dict(slot_name="_categories", slot_type=OpaBuiltinCategory, key_name="name", keyed=True)
 
-        self._normalize_inlined_as_dict(slot_name="builtins", slot_type=BuiltinMetadata, key_name="name", keyed=True)
+        self._normalize_inlined_as_list(slot_name="_implementations", slot_type=OpaImplementation, key_name="id", keyed=False)
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class BuiltinCategoryGroup(YAMLRoot):
+class OpaBuiltinCategory(YAMLRoot):
     """
-    Membership of built-ins in a documentation category.
+    A category of built-in functions.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["BuiltinCategoryGroup"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:BuiltinCategoryGroup"
-    class_name: ClassVar[str] = "BuiltinCategoryGroup"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.BuiltinCategoryGroup
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBuiltinCategory"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBuiltinCategory"
+    class_name: ClassVar[str] = "OpaBuiltinCategory"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBuiltinCategory
 
-    name: Union[str, BuiltinCategoryGroupName] = None
+    name: Union[str, OpaBuiltinCategoryName] = None
     builtins: Union[str, list[str]] = None
-    category: Optional[Union[str, "BuiltinCategory"]] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.name):
             self.MissingRequiredField("name")
-        if not isinstance(self.name, BuiltinCategoryGroupName):
-            self.name = BuiltinCategoryGroupName(self.name)
+        if not isinstance(self.name, OpaBuiltinCategoryName):
+            self.name = OpaBuiltinCategoryName(self.name)
 
         if self._is_empty(self.builtins):
             self.MissingRequiredField("builtins")
@@ -356,84 +599,160 @@ class BuiltinCategoryGroup(YAMLRoot):
             self.builtins = [self.builtins] if self.builtins is not None else []
         self.builtins = [v if isinstance(v, str) else str(v) for v in self.builtins]
 
-        if self.category is not None and not isinstance(self.category, BuiltinCategory):
-            self.category = BuiltinCategory(self.category)
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaImplementation(YAMLRoot):
+    """
+    An implementation of Rego besides OPA.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaImplementation"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaImplementation"
+    class_name: ClassVar[str] = "OpaImplementation"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaImplementation
+
+    id: str = None
+    label: str = None
+    repo: str = None
+    version: str = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.id):
+            self.MissingRequiredField("id")
+        if not isinstance(self.id, str):
+            self.id = str(self.id)
+
+        if self._is_empty(self.label):
+            self.MissingRequiredField("label")
+        if not isinstance(self.label, str):
+            self.label = str(self.label)
+
+        if self._is_empty(self.repo):
+            self.MissingRequiredField("repo")
+        if not isinstance(self.repo, str):
+            self.repo = str(self.repo)
+
+        if self._is_empty(self.version):
+            self.MissingRequiredField("version")
+        if not isinstance(self.version, str):
+            self.version = str(self.version)
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class BuiltinMetadata(YAMLRoot):
+class OpaBuiltinMetadata(YAMLRoot):
     """
-    Human-readable metadata for a single Rego built-in function.
+    What the catalogue says about one built-in function.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["BuiltinMetadata"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:BuiltinMetadata"
-    class_name: ClassVar[str] = "BuiltinMetadata"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.BuiltinMetadata
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBuiltinMetadata"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBuiltinMetadata"
+    class_name: ClassVar[str] = "OpaBuiltinMetadata"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBuiltinMetadata
 
-    name: Union[str, BuiltinMetadataName] = None
+    introduced: str = None
+    available: Union[str, list[str]] = None
+    wasm: Union[bool, Bool] = None
+    args: Union[Union[dict, "OpaBuiltinArgument"], list[Union[dict, "OpaBuiltinArgument"]]] = None
+    result: Union[dict, "OpaBuiltinResult"] = None
+    implementations: Union[dict[Union[str, OpaImplementationSupportImplementation], Union[dict, "OpaImplementationSupport"]], list[Union[dict, "OpaImplementationSupport"]]] = empty_dict()
     description: Optional[str] = None
-    introduced: Optional[str] = None
-    available: Optional[Union[str, list[str]]] = empty_list()
-    wasm: Optional[Union[bool, Bool]] = None
     infix: Optional[str] = None
-    deprecated: Optional[Union[bool, Bool]] = None
     relation: Optional[Union[bool, Bool]] = None
-    args: Optional[Union[Union[dict, "BuiltinArg"], list[Union[dict, "BuiltinArg"]]]] = empty_list()
-    result: Optional[Union[dict, "BuiltinResult"]] = None
+    deprecated: Optional[Union[bool, Bool]] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.name):
-            self.MissingRequiredField("name")
-        if not isinstance(self.name, BuiltinMetadataName):
-            self.name = BuiltinMetadataName(self.name)
-
-        if self.description is not None and not isinstance(self.description, str):
-            self.description = str(self.description)
-
-        if self.introduced is not None and not isinstance(self.introduced, str):
+        if self._is_empty(self.introduced):
+            self.MissingRequiredField("introduced")
+        if not isinstance(self.introduced, str):
             self.introduced = str(self.introduced)
 
+        if self._is_empty(self.available):
+            self.MissingRequiredField("available")
         if not isinstance(self.available, list):
             self.available = [self.available] if self.available is not None else []
         self.available = [v if isinstance(v, str) else str(v) for v in self.available]
 
-        if self.wasm is not None and not isinstance(self.wasm, Bool):
+        if self._is_empty(self.wasm):
+            self.MissingRequiredField("wasm")
+        if not isinstance(self.wasm, Bool):
             self.wasm = Bool(self.wasm)
+
+        if self._is_empty(self.args):
+            self.MissingRequiredField("args")
+        self._normalize_inlined_as_list(slot_name="args", slot_type=OpaBuiltinArgument, key_name="type", keyed=False)
+
+        if self._is_empty(self.result):
+            self.MissingRequiredField("result")
+        if not isinstance(self.result, OpaBuiltinResult):
+            self.result = OpaBuiltinResult(**as_dict(self.result))
+
+        if self._is_empty(self.implementations):
+            self.MissingRequiredField("implementations")
+        self._normalize_inlined_as_dict(slot_name="implementations", slot_type=OpaImplementationSupport, key_name="implementation", keyed=True)
+
+        if self.description is not None and not isinstance(self.description, str):
+            self.description = str(self.description)
 
         if self.infix is not None and not isinstance(self.infix, str):
             self.infix = str(self.infix)
 
-        if self.deprecated is not None and not isinstance(self.deprecated, Bool):
-            self.deprecated = Bool(self.deprecated)
-
         if self.relation is not None and not isinstance(self.relation, Bool):
             self.relation = Bool(self.relation)
 
-        if not isinstance(self.args, list):
-            self.args = [self.args] if self.args is not None else []
-        self.args = [v if isinstance(v, BuiltinArg) else BuiltinArg(**as_dict(v)) for v in self.args]
-
-        if self.result is not None and not isinstance(self.result, BuiltinResult):
-            self.result = BuiltinResult(**as_dict(self.result))
+        if self.deprecated is not None and not isinstance(self.deprecated, Bool):
+            self.deprecated = Bool(self.deprecated)
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class BuiltinArg(YAMLRoot):
+class OpaBuiltinArgument(YAMLRoot):
     """
-    Documentation for one positional argument of a built-in.
+    An argument of a built-in function.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["BuiltinArg"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:BuiltinArg"
-    class_name: ClassVar[str] = "BuiltinArg"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.BuiltinArg
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBuiltinArgument"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBuiltinArgument"
+    class_name: ClassVar[str] = "OpaBuiltinArgument"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBuiltinArgument
+
+    type: str = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self.name is not None and not isinstance(self.name, str):
+            self.name = str(self.name)
+
+        if self.description is not None and not isinstance(self.description, str):
+            self.description = str(self.description)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaBuiltinResult(YAMLRoot):
+    """
+    The result of a built-in function. Some functions declare none.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBuiltinResult"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBuiltinResult"
+    class_name: ClassVar[str] = "OpaBuiltinResult"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBuiltinResult
 
     name: Optional[str] = None
     description: Optional[str] = None
@@ -453,128 +772,142 @@ class BuiltinArg(YAMLRoot):
 
 
 @dataclass(repr=False)
-class BuiltinResult(YAMLRoot):
+class OpaImplementationSupport(YAMLRoot):
     """
-    Documentation for the value returned by a built-in.
+    An implementation that supports a function, and the version that added it.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["BuiltinResult"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:BuiltinResult"
-    class_name: ClassVar[str] = "BuiltinResult"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.BuiltinResult
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaImplementationSupport"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaImplementationSupport"
+    class_name: ClassVar[str] = "OpaImplementationSupport"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaImplementationSupport
 
-    name: Optional[str] = None
-    description: Optional[str] = None
-    type: Optional[str] = None
+    implementation: Union[str, OpaImplementationSupportImplementation] = None
+    version: str = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self.name is not None and not isinstance(self.name, str):
-            self.name = str(self.name)
+        if self._is_empty(self.implementation):
+            self.MissingRequiredField("implementation")
+        if not isinstance(self.implementation, OpaImplementationSupportImplementation):
+            self.implementation = OpaImplementationSupportImplementation(self.implementation)
 
-        if self.description is not None and not isinstance(self.description, str):
-            self.description = str(self.description)
-
-        if self.type is not None and not isinstance(self.type, str):
-            self.type = str(self.type)
+        if self._is_empty(self.version):
+            self.MissingRequiredField("version")
+        if not isinstance(self.version, str):
+            self.version = str(self.version)
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class VersionIndex(YAMLRoot):
+class OpaVersionIndex(YAMLRoot):
     """
-    Mapping from language-element names to the OPA semantic version that first introduced them. Grouped into
-    built-ins, future-keywords, and features.
+    The version index.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["VersionIndex"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:VersionIndex"
-    class_name: ClassVar[str] = "VersionIndex"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.VersionIndex
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaVersionIndex"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaVersionIndex"
+    class_name: ClassVar[str] = "OpaVersionIndex"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaVersionIndex
 
-    builtins: Optional[Union[dict[Union[str, ElementVersionName], Union[dict, "ElementVersion"]], list[Union[dict, "ElementVersion"]]]] = empty_dict()
-    features: Optional[Union[dict[Union[str, ElementVersionName], Union[dict, "ElementVersion"]], list[Union[dict, "ElementVersion"]]]] = empty_dict()
-    keywords: Optional[Union[dict[Union[str, ElementVersionName], Union[dict, "ElementVersion"]], list[Union[dict, "ElementVersion"]]]] = empty_dict()
+    builtins: Union[dict[Union[str, OpaVersionEntryName], Union[dict, "OpaVersionEntry"]], list[Union[dict, "OpaVersionEntry"]]] = empty_dict()
+    features: Union[dict[Union[str, OpaVersionEntryName], Union[dict, "OpaVersionEntry"]], list[Union[dict, "OpaVersionEntry"]]] = empty_dict()
+    keywords: Union[dict[Union[str, OpaVersionEntryName], Union[dict, "OpaVersionEntry"]], list[Union[dict, "OpaVersionEntry"]]] = empty_dict()
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        self._normalize_inlined_as_dict(slot_name="builtins", slot_type=ElementVersion, key_name="name", keyed=True)
+        if self._is_empty(self.builtins):
+            self.MissingRequiredField("builtins")
+        self._normalize_inlined_as_dict(slot_name="builtins", slot_type=OpaVersionEntry, key_name="name", keyed=True)
 
-        self._normalize_inlined_as_dict(slot_name="features", slot_type=ElementVersion, key_name="name", keyed=True)
+        if self._is_empty(self.features):
+            self.MissingRequiredField("features")
+        self._normalize_inlined_as_dict(slot_name="features", slot_type=OpaVersionEntry, key_name="name", keyed=True)
 
-        self._normalize_inlined_as_dict(slot_name="keywords", slot_type=ElementVersion, key_name="name", keyed=True)
+        if self._is_empty(self.keywords):
+            self.MissingRequiredField("keywords")
+        self._normalize_inlined_as_dict(slot_name="keywords", slot_type=OpaVersionEntry, key_name="name", keyed=True)
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class ElementVersion(YAMLRoot):
+class OpaVersionEntry(YAMLRoot):
     """
-    Semantic version triple identifying when an element was introduced.
+    A built-in function, feature or keyword, and the OPA version that introduced it.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["ElementVersion"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:ElementVersion"
-    class_name: ClassVar[str] = "ElementVersion"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.ElementVersion
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaVersionEntry"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaVersionEntry"
+    class_name: ClassVar[str] = "OpaVersionEntry"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaVersionEntry
 
-    name: Union[str, ElementVersionName] = None
-    major: int = None
-    minor: int = None
-    patch: int = None
+    name: Union[str, OpaVersionEntryName] = None
+    Major: int = None
+    Minor: int = None
+    Patch: int = None
+    PreRelease: Optional[str] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.name):
             self.MissingRequiredField("name")
-        if not isinstance(self.name, ElementVersionName):
-            self.name = ElementVersionName(self.name)
+        if not isinstance(self.name, OpaVersionEntryName):
+            self.name = OpaVersionEntryName(self.name)
 
-        if self._is_empty(self.major):
-            self.MissingRequiredField("major")
-        if not isinstance(self.major, int):
-            self.major = int(self.major)
+        if self._is_empty(self.Major):
+            self.MissingRequiredField("Major")
+        if not isinstance(self.Major, int):
+            self.Major = int(self.Major)
 
-        if self._is_empty(self.minor):
-            self.MissingRequiredField("minor")
-        if not isinstance(self.minor, int):
-            self.minor = int(self.minor)
+        if self._is_empty(self.Minor):
+            self.MissingRequiredField("Minor")
+        if not isinstance(self.Minor, int):
+            self.Minor = int(self.Minor)
 
-        if self._is_empty(self.patch):
-            self.MissingRequiredField("patch")
-        if not isinstance(self.patch, int):
-            self.patch = int(self.patch)
+        if self._is_empty(self.Patch):
+            self.MissingRequiredField("Patch")
+        if not isinstance(self.Patch, int):
+            self.Patch = int(self.Patch)
+
+        if self.PreRelease is not None and not isinstance(self.PreRelease, str):
+            self.PreRelease = str(self.PreRelease)
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class AuthorizationInput(YAMLRoot):
+class OpaAuthorizationInput(YAMLRoot):
     """
-    Input document the example HTTP API Authorization policy receives. Mirrors the OPA-provided JSON Schema at
-    ``v1/schemas/authorizationPolicy.json``.
+    The OPA Authorization Policy Input document.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["AuthorizationInput"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:AuthorizationInput"
-    class_name: ClassVar[str] = "AuthorizationInput"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.AuthorizationInput
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaAuthorizationInput"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaAuthorizationInput"
+    class_name: ClassVar[str] = "OpaAuthorizationInput"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaAuthorizationInput
 
     identity: str = None
-    client_certificates: Union[Union[dict, Any], list[Union[dict, Any]]] = None
+    client_certificates: Union[Union[dict, OpaObject], list[Union[dict, OpaObject]]] = None
     method: str = None
     path: Union[str, list[str]] = None
-    params: Union[dict, Any] = None
-    headers: Union[dict, Any] = None
-    body: Union[dict, Any] = None
+    params: Union[dict, OpaObject] = None
+    headers: Union[dict, OpaObject] = None
+    body: Union[dict, OpaObject] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.identity):
             self.MissingRequiredField("identity")
         if not isinstance(self.identity, str):
             self.identity = str(self.identity)
+
+        if self._is_empty(self.client_certificates):
+            self.MissingRequiredField("client_certificates")
+        if not isinstance(self.client_certificates, list):
+            self.client_certificates = [self.client_certificates] if self.client_certificates is not None else []
+        self.client_certificates = [v if isinstance(v, OpaObject) else OpaObject(**as_dict(v)) for v in self.client_certificates]
 
         if self._is_empty(self.method):
             self.MissingRequiredField("method")
@@ -587,27 +920,42 @@ class AuthorizationInput(YAMLRoot):
             self.path = [self.path] if self.path is not None else []
         self.path = [v if isinstance(v, str) else str(v) for v in self.path]
 
+        if self._is_empty(self.params):
+            self.MissingRequiredField("params")
+        if not isinstance(self.params, OpaObject):
+            self.params = OpaObject()
+
+        if self._is_empty(self.headers):
+            self.MissingRequiredField("headers")
+        if not isinstance(self.headers, OpaObject):
+            self.headers = OpaObject()
+
+        if self._is_empty(self.body):
+            self.MissingRequiredField("body")
+        if not isinstance(self.body, OpaObject):
+            self.body = OpaObject()
+
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class Manifest(YAMLRoot):
+class OpaManifest(YAMLRoot):
     """
-    ``Manifest`` definition from upstream JSON Schema.
+    A bundle manifest. OPA's schema leaves the manifest open to other keys.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["Manifest"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:Manifest"
-    class_name: ClassVar[str] = "Manifest"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.Manifest
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaManifest"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaManifest"
+    class_name: ClassVar[str] = "OpaManifest"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaManifest
 
     revision: str = None
-    file_rego_versions: Optional[Union[dict[Union[str, FileRegoVersionPath], Union[dict, "FileRegoVersion"]], list[Union[dict, "FileRegoVersion"]]]] = empty_dict()
-    metadata: Optional[Union[dict, Any]] = None
+    file_rego_versions: Optional[Union[dict[Union[str, OpaFileRegoVersionPath], Union[dict, "OpaFileRegoVersion"]], list[Union[dict, "OpaFileRegoVersion"]]]] = empty_dict()
+    metadata: Optional[Union[dict, OpaObject]] = None
     rego_version: Optional[int] = None
     roots: Optional[Union[str, list[str]]] = empty_list()
-    wasm: Optional[Union[Union[dict, "WasmResolver"], list[Union[dict, "WasmResolver"]]]] = empty_list()
+    wasm: Optional[Union[Union[dict, "OpaWasmResolver"], list[Union[dict, "OpaWasmResolver"]]]] = empty_list()
 
     def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.revision):
@@ -615,7 +963,10 @@ class Manifest(YAMLRoot):
         if not isinstance(self.revision, str):
             self.revision = str(self.revision)
 
-        self._normalize_inlined_as_list(slot_name="file_rego_versions", slot_type=FileRegoVersion, key_name="path", keyed=True)
+        self._normalize_inlined_as_dict(slot_name="file_rego_versions", slot_type=OpaFileRegoVersion, key_name="path", keyed=True)
+
+        if self.metadata is not None and not isinstance(self.metadata, OpaObject):
+            self.metadata = OpaObject()
 
         if self.rego_version is not None and not isinstance(self.rego_version, int):
             self.rego_version = int(self.rego_version)
@@ -626,28 +977,32 @@ class Manifest(YAMLRoot):
 
         if not isinstance(self.wasm, list):
             self.wasm = [self.wasm] if self.wasm is not None else []
-        self.wasm = [v if isinstance(v, WasmResolver) else WasmResolver(**as_dict(v)) for v in self.wasm]
+        self.wasm = [v if isinstance(v, OpaWasmResolver) else OpaWasmResolver(**as_dict(v)) for v in self.wasm]
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class WasmResolver(YAMLRoot):
+class OpaWasmResolver(YAMLRoot):
     """
-    ``WasmResolver`` definition from upstream JSON Schema.
+    A Wasm module in a bundle, and the entrypoint it resolves.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["WasmResolver"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:WasmResolver"
-    class_name: ClassVar[str] = "WasmResolver"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.WasmResolver
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaWasmResolver"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaWasmResolver"
+    class_name: ClassVar[str] = "OpaWasmResolver"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaWasmResolver
 
-    annotations: Optional[Union[Union[dict, Any], list[Union[dict, Any]]]] = empty_list()
+    annotations: Optional[Union[Union[dict, OpaObject], list[Union[dict, OpaObject]]]] = empty_list()
     entrypoint: Optional[str] = None
     module: Optional[str] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
+        if not isinstance(self.annotations, list):
+            self.annotations = [self.annotations] if self.annotations is not None else []
+        self.annotations = [v if isinstance(v, OpaObject) else OpaObject(**as_dict(v)) for v in self.annotations]
+
         if self.entrypoint is not None and not isinstance(self.entrypoint, str):
             self.entrypoint = str(self.entrypoint)
 
@@ -658,26 +1013,25 @@ class WasmResolver(YAMLRoot):
 
 
 @dataclass(repr=False)
-class FileRegoVersion(YAMLRoot):
+class OpaFileRegoVersion(YAMLRoot):
     """
-    Typed override record for ``Manifest.file_rego_versions``. Provides stronger validation than a free-form map while
-    keeping the same semantics.
+    The Rego version of one file in the bundle.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["FileRegoVersion"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:FileRegoVersion"
-    class_name: ClassVar[str] = "FileRegoVersion"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.FileRegoVersion
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaFileRegoVersion"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaFileRegoVersion"
+    class_name: ClassVar[str] = "OpaFileRegoVersion"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaFileRegoVersion
 
-    path: Union[str, FileRegoVersionPath] = None
+    path: Union[str, OpaFileRegoVersionPath] = None
     version: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.path):
             self.MissingRequiredField("path")
-        if not isinstance(self.path, FileRegoVersionPath):
-            self.path = FileRegoVersionPath(self.path)
+        if not isinstance(self.path, OpaFileRegoVersionPath):
+            self.path = OpaFileRegoVersionPath(self.path)
 
         if self._is_empty(self.version):
             self.MissingRequiredField("version")
@@ -688,39 +1042,437 @@ class FileRegoVersion(YAMLRoot):
 
 
 @dataclass(repr=False)
-class ArrayAppendStmt(YAMLRoot):
+class OpaPolicy(YAMLRoot):
     """
-    ``ArrayAppendStmt`` definition from upstream JSON Schema.
+    Policy represents a planned policy query.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["ArrayAppendStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:ArrayAppendStmt"
-    class_name: ClassVar[str] = "ArrayAppendStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.ArrayAppendStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaPolicy"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaPolicy"
+    class_name: ClassVar[str] = "OpaPolicy"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaPolicy
 
-    col: int = None
-    file: int = None
-    row: int = None
-    array: int = None
-    value: Union[dict, "Operand"] = None
+    funcs: Optional[Union[dict, "OpaFuncs"]] = None
+    plans: Optional[Union[dict, "OpaPlans"]] = None
+    static: Optional[Union[dict, "OpaStatic"]] = None
+    unplanned_rules: Optional[Union[Union[dict, "OpaUnplannedRule"], list[Union[dict, "OpaUnplannedRule"]]]] = empty_list()
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
+        if self.funcs is not None and not isinstance(self.funcs, OpaFuncs):
+            self.funcs = OpaFuncs(**as_dict(self.funcs))
 
+        if self.plans is not None and not isinstance(self.plans, OpaPlans):
+            self.plans = OpaPlans(**as_dict(self.plans))
+
+        if self.static is not None and not isinstance(self.static, OpaStatic):
+            self.static = OpaStatic(**as_dict(self.static))
+
+        self._normalize_inlined_as_list(slot_name="unplanned_rules", slot_type=OpaUnplannedRule, key_name="path", keyed=False)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaStatic(YAMLRoot):
+    """
+    Static represents a static data segment that is indexed into by the policy.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaStatic"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaStatic"
+    class_name: ClassVar[str] = "OpaStatic"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaStatic
+
+    builtin_funcs: Optional[Union[Union[dict, "OpaBuiltinFunc"], list[Union[dict, "OpaBuiltinFunc"]]]] = empty_list()
+    files: Optional[Union[Union[dict, "OpaStringConst"], list[Union[dict, "OpaStringConst"]]]] = empty_list()
+    strings: Optional[Union[Union[dict, "OpaStringConst"], list[Union[dict, "OpaStringConst"]]]] = empty_list()
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        self._normalize_inlined_as_list(slot_name="builtin_funcs", slot_type=OpaBuiltinFunc, key_name="name", keyed=False)
+
+        self._normalize_inlined_as_list(slot_name="files", slot_type=OpaStringConst, key_name="value", keyed=False)
+
+        self._normalize_inlined_as_list(slot_name="strings", slot_type=OpaStringConst, key_name="value", keyed=False)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaStringConst(YAMLRoot):
+    """
+    StringConst represents a string value.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaStringConst"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaStringConst"
+    class_name: ClassVar[str] = "OpaStringConst"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaStringConst
+
+    value: str = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.value):
+            self.MissingRequiredField("value")
+        if not isinstance(self.value, str):
+            self.value = str(self.value)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaBuiltinFunc(YAMLRoot):
+    """
+    BuiltinFunc represents a built-in function that may be required by the policy.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBuiltinFunc"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBuiltinFunc"
+    class_name: ClassVar[str] = "OpaBuiltinFunc"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBuiltinFunc
+
+    name: str = None
+    decl: Optional[Union[dict, OpaFunctionType]] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.name):
+            self.MissingRequiredField("name")
+        if not isinstance(self.name, str):
+            self.name = str(self.name)
+
+        if self.decl is not None and not isinstance(self.decl, OpaFunctionType):
+            self.decl = OpaFunctionType(**as_dict(self.decl))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaPlans(YAMLRoot):
+    """
+    Plans represents a collection of named query plans to expose in the policy.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaPlans"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaPlans"
+    class_name: ClassVar[str] = "OpaPlans"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaPlans
+
+    plans: Optional[Union[Union[dict, "OpaPlan"], list[Union[dict, "OpaPlan"]]]] = empty_list()
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        self._normalize_inlined_as_list(slot_name="plans", slot_type=OpaPlan, key_name="name", keyed=False)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaPlan(YAMLRoot):
+    """
+    Plan represents an ordered series of blocks to execute. Plan execution stops when a return statement is reached.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaPlan"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaPlan"
+    class_name: ClassVar[str] = "OpaPlan"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaPlan
+
+    name: str = None
+    blocks: Optional[Union[Union[dict, "OpaBlock"], list[Union[dict, "OpaBlock"]]]] = empty_list()
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.name):
+            self.MissingRequiredField("name")
+        if not isinstance(self.name, str):
+            self.name = str(self.name)
+
+        if not isinstance(self.blocks, list):
+            self.blocks = [self.blocks] if self.blocks is not None else []
+        self.blocks = [v if isinstance(v, OpaBlock) else OpaBlock(**as_dict(v)) for v in self.blocks]
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaFuncs(YAMLRoot):
+    """
+    Funcs represents a collection of planned functions to include in the policy.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaFuncs"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaFuncs"
+    class_name: ClassVar[str] = "OpaFuncs"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaFuncs
+
+    funcs: Optional[Union[Union[dict, "OpaFunc"], list[Union[dict, "OpaFunc"]]]] = empty_list()
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        self._normalize_inlined_as_list(slot_name="funcs", slot_type=OpaFunc, key_name="name", keyed=False)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaFunc(YAMLRoot):
+    """
+    Func represents a named plan (function) that can be invoked. Functions accept one or more parameters and return a
+    value.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaFunc"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaFunc"
+    class_name: ClassVar[str] = "OpaFunc"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaFunc
+
+    name: str = None
+    return_: int = None
+    blocks: Optional[Union[Union[dict, "OpaBlock"], list[Union[dict, "OpaBlock"]]]] = empty_list()
+    params: Optional[Union[int, list[int]]] = empty_list()
+    path: Optional[Union[str, list[str]]] = empty_list()
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.name):
+            self.MissingRequiredField("name")
+        if not isinstance(self.name, str):
+            self.name = str(self.name)
+
+        if self._is_empty(self.return_):
+            self.MissingRequiredField("return_")
+        if not isinstance(self.return_, int):
+            self.return_ = int(self.return_)
+
+        if not isinstance(self.blocks, list):
+            self.blocks = [self.blocks] if self.blocks is not None else []
+        self.blocks = [v if isinstance(v, OpaBlock) else OpaBlock(**as_dict(v)) for v in self.blocks]
+
+        if not isinstance(self.params, list):
+            self.params = [self.params] if self.params is not None else []
+        self.params = [v if isinstance(v, int) else int(v) for v in self.params]
+
+        if not isinstance(self.path, list):
+            self.path = [self.path] if self.path is not None else []
+        self.path = [v if isinstance(v, str) else str(v) for v in self.path]
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaBlock(YAMLRoot):
+    """
+    Block represents an ordered sequence of statements to execute. Blocks are executed until a return statement is
+    encountered, a statement is undefined, or there are no more statements.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBlock"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBlock"
+    class_name: ClassVar[str] = "OpaBlock"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBlock
+
+    stmts: Union[Union[dict, "OpaStmt"], list[Union[dict, "OpaStmt"]]] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.stmts):
+            self.MissingRequiredField("stmts")
+        if not isinstance(self.stmts, list):
+            self.stmts = [self.stmts] if self.stmts is not None else []
+        self.stmts = [v if isinstance(v, OpaStmt) else OpaStmt(**as_dict(v)) for v in self.stmts]
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaUnplannedRule(YAMLRoot):
+    """
+    UnplannedRule represents a rule that was parsed but not included in the plan because it is not reachable from the
+    entrypoint. This is used for coverage reporting, to distinguish rules that were never planned from rules that were
+    planned but never executed.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaUnplannedRule"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaUnplannedRule"
+    class_name: ClassVar[str] = "OpaUnplannedRule"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaUnplannedRule
+
+    path: str = None
+    location: Optional[Union[dict, "OpaLocation"]] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.path):
+            self.MissingRequiredField("path")
+        if not isinstance(self.path, str):
+            self.path = str(self.path)
+
+        if self.location is not None and not isinstance(self.location, OpaLocation):
+            self.location = OpaLocation(**as_dict(self.location))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaLocation(YAMLRoot):
+    """
+    Location records the filen index, and the row and column inside that file that a statement can be connected to.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaLocation"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaLocation"
+    class_name: ClassVar[str] = "OpaLocation"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaLocation
+
+    file: int = None
+    col: int = None
+    row: int = None
+    end_col: int = None
+    end_row: int = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.file):
             self.MissingRequiredField("file")
         if not isinstance(self.file, int):
             self.file = int(self.file)
+
+        if self._is_empty(self.col):
+            self.MissingRequiredField("col")
+        if not isinstance(self.col, int):
+            self.col = int(self.col)
 
         if self._is_empty(self.row):
             self.MissingRequiredField("row")
         if not isinstance(self.row, int):
             self.row = int(self.row)
 
+        if self._is_empty(self.end_col):
+            self.MissingRequiredField("end_col")
+        if not isinstance(self.end_col, int):
+            self.end_col = int(self.end_col)
+
+        if self._is_empty(self.end_row):
+            self.MissingRequiredField("end_row")
+        if not isinstance(self.end_row, int):
+            self.end_row = int(self.end_row)
+
+        super().__post_init__(**kwargs)
+
+
+class OpaStmt(YAMLRoot):
+    """
+    Stmt represents an operation (e.g., comparison, loop, dot, etc.) to execute. OPA writes each statement as its kind
+    in `type` and its fields in `stmt`.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaStmt"
+    class_name: ClassVar[str] = "OpaStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaStmt
+
+
+@dataclass(repr=False)
+class OpaStmtBody(YAMLRoot):
+    """
+    The fields of a statement. Every kind carries the location of its source text.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaStmtBody"
+    class_name: ClassVar[str] = "OpaStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaStmtBody
+
+    file: int = None
+    col: int = None
+    row: int = None
+    end_col: int = None
+    end_row: int = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.file):
+            self.MissingRequiredField("file")
+        if not isinstance(self.file, int):
+            self.file = int(self.file)
+
+        if self._is_empty(self.col):
+            self.MissingRequiredField("col")
+        if not isinstance(self.col, int):
+            self.col = int(self.col)
+
+        if self._is_empty(self.row):
+            self.MissingRequiredField("row")
+        if not isinstance(self.row, int):
+            self.row = int(self.row)
+
+        if self._is_empty(self.end_col):
+            self.MissingRequiredField("end_col")
+        if not isinstance(self.end_col, int):
+            self.end_col = int(self.end_col)
+
+        if self._is_empty(self.end_row):
+            self.MissingRequiredField("end_row")
+        if not isinstance(self.end_row, int):
+            self.end_row = int(self.end_row)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaArrayAppendStmt(OpaStmt):
+    """
+    A statement of kind ArrayAppendStmt, with its fields in `stmt`.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaArrayAppendStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaArrayAppendStmt"
+    class_name: ClassVar[str] = "OpaArrayAppendStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaArrayAppendStmt
+
+    type: str = None
+    stmt: Union[dict, "OpaArrayAppendStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaArrayAppendStmtBody):
+            self.stmt = OpaArrayAppendStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaArrayAppendStmtBody(OpaStmtBody):
+    """
+    ArrayAppendStmt represents a dynamic append operation of a value onto an array.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaArrayAppendStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaArrayAppendStmtBody"
+    class_name: ClassVar[str] = "OpaArrayAppendStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaArrayAppendStmtBody
+
+    file: int = None
+    col: int = None
+    row: int = None
+    end_col: int = None
+    end_row: int = None
+    array: int = None
+    value: Union[dict, "OpaOperand"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.array):
             self.MissingRequiredField("array")
         if not isinstance(self.array, int):
@@ -728,46 +1480,62 @@ class ArrayAppendStmt(YAMLRoot):
 
         if self._is_empty(self.value):
             self.MissingRequiredField("value")
-        if not isinstance(self.value, Operand):
-            self.value = Operand(**as_dict(self.value))
+        if not isinstance(self.value, OpaOperand):
+            self.value = OpaOperand()
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class AssignIntStmt(YAMLRoot):
+class OpaAssignIntStmt(OpaStmt):
     """
-    ``AssignIntStmt`` definition from upstream JSON Schema.
+    A statement of kind AssignIntStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["AssignIntStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:AssignIntStmt"
-    class_name: ClassVar[str] = "AssignIntStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.AssignIntStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaAssignIntStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaAssignIntStmt"
+    class_name: ClassVar[str] = "OpaAssignIntStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaAssignIntStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaAssignIntStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaAssignIntStmtBody):
+            self.stmt = OpaAssignIntStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaAssignIntStmtBody(OpaStmtBody):
+    """
+    AssignIntStmt represents an assignment of an integer value to a local variable.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaAssignIntStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaAssignIntStmtBody"
+    class_name: ClassVar[str] = "OpaAssignIntStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaAssignIntStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
     target: int = None
     value: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.target):
             self.MissingRequiredField("target")
         if not isinstance(self.target, int):
@@ -782,43 +1550,60 @@ class AssignIntStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class AssignVarOnceStmt(YAMLRoot):
+class OpaAssignVarOnceStmt(OpaStmt):
     """
-    ``AssignVarOnceStmt`` definition from upstream JSON Schema.
+    A statement of kind AssignVarOnceStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["AssignVarOnceStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:AssignVarOnceStmt"
-    class_name: ClassVar[str] = "AssignVarOnceStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.AssignVarOnceStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaAssignVarOnceStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaAssignVarOnceStmt"
+    class_name: ClassVar[str] = "OpaAssignVarOnceStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaAssignVarOnceStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaAssignVarOnceStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaAssignVarOnceStmtBody):
+            self.stmt = OpaAssignVarOnceStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaAssignVarOnceStmtBody(OpaStmtBody):
+    """
+    AssignVarOnceStmt represents an assignment of one local variable to another. If the target is defined, execution
+    aborts with a conflict error.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaAssignVarOnceStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaAssignVarOnceStmtBody"
+    class_name: ClassVar[str] = "OpaAssignVarOnceStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaAssignVarOnceStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
-    source: Union[dict, "Operand"] = None
+    end_col: int = None
+    end_row: int = None
+    source: Union[dict, "OpaOperand"] = None
     target: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.source):
             self.MissingRequiredField("source")
-        if not isinstance(self.source, Operand):
-            self.source = Operand(**as_dict(self.source))
+        if not isinstance(self.source, OpaOperand):
+            self.source = OpaOperand()
 
         if self._is_empty(self.target):
             self.MissingRequiredField("target")
@@ -829,43 +1614,59 @@ class AssignVarOnceStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class AssignVarStmt(YAMLRoot):
+class OpaAssignVarStmt(OpaStmt):
     """
-    ``AssignVarStmt`` definition from upstream JSON Schema.
+    A statement of kind AssignVarStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["AssignVarStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:AssignVarStmt"
-    class_name: ClassVar[str] = "AssignVarStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.AssignVarStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaAssignVarStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaAssignVarStmt"
+    class_name: ClassVar[str] = "OpaAssignVarStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaAssignVarStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaAssignVarStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaAssignVarStmtBody):
+            self.stmt = OpaAssignVarStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaAssignVarStmtBody(OpaStmtBody):
+    """
+    AssignVarStmt represents an assignment of one local variable to another.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaAssignVarStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaAssignVarStmtBody"
+    class_name: ClassVar[str] = "OpaAssignVarStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaAssignVarStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
-    source: Union[dict, "Operand"] = None
+    end_col: int = None
+    end_row: int = None
+    source: Union[dict, "OpaOperand"] = None
     target: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.source):
             self.MissingRequiredField("source")
-        if not isinstance(self.source, Operand):
-            self.source = Operand(**as_dict(self.source))
+        if not isinstance(self.source, OpaOperand):
+            self.source = OpaOperand()
 
         if self._is_empty(self.target):
             self.MissingRequiredField("target")
@@ -876,102 +1677,111 @@ class AssignVarStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class Block(YAMLRoot):
+class OpaBlockStmt(OpaStmt):
     """
-    ``Block`` definition from upstream JSON Schema.
+    A statement of kind BlockStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["Block"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:Block"
-    class_name: ClassVar[str] = "Block"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.Block
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBlockStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBlockStmt"
+    class_name: ClassVar[str] = "OpaBlockStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBlockStmt
 
-    stmts: Union[Union[dict, "Stmt"], list[Union[dict, "Stmt"]]] = None
+    type: str = None
+    stmt: Union[dict, "OpaBlockStmtBody"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.stmts):
-            self.MissingRequiredField("stmts")
-        self._normalize_inlined_as_list(slot_name="stmts", slot_type=Stmt, key_name="type", keyed=False)
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaBlockStmtBody):
+            self.stmt = OpaBlockStmtBody(**as_dict(self.stmt))
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class BlockStmt(YAMLRoot):
+class OpaBlockStmtBody(OpaStmtBody):
     """
-    ``BlockStmt`` definition from upstream JSON Schema.
+    BlockStmt represents a nested block. Nested blocks and break statements can be used to short-circuit execution.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["BlockStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:BlockStmt"
-    class_name: ClassVar[str] = "BlockStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.BlockStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBlockStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBlockStmtBody"
+    class_name: ClassVar[str] = "OpaBlockStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBlockStmtBody
 
-    col: int = None
     file: int = None
+    col: int = None
     row: int = None
-    blocks: Union[Union[dict, Block], list[Union[dict, Block]]] = None
+    end_col: int = None
+    end_row: int = None
+    blocks: Optional[Union[Union[dict, OpaBlock], list[Union[dict, OpaBlock]]]] = empty_list()
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
-        if self._is_empty(self.blocks):
-            self.MissingRequiredField("blocks")
         if not isinstance(self.blocks, list):
             self.blocks = [self.blocks] if self.blocks is not None else []
-        self.blocks = [v if isinstance(v, Block) else Block(**as_dict(v)) for v in self.blocks]
+        self.blocks = [v if isinstance(v, OpaBlock) else OpaBlock(**as_dict(v)) for v in self.blocks]
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class BreakStmt(YAMLRoot):
+class OpaBreakStmt(OpaStmt):
     """
-    ``BreakStmt`` definition from upstream JSON Schema.
+    A statement of kind BreakStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["BreakStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:BreakStmt"
-    class_name: ClassVar[str] = "BreakStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.BreakStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBreakStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBreakStmt"
+    class_name: ClassVar[str] = "OpaBreakStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBreakStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaBreakStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaBreakStmtBody):
+            self.stmt = OpaBreakStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaBreakStmtBody(OpaStmtBody):
+    """
+    BreakStmt represents a jump out of the current block. The index specifies how many blocks to jump starting from
+    zero (the current block).
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBreakStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBreakStmtBody"
+    class_name: ClassVar[str] = "OpaBreakStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBreakStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
     index: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.index):
             self.MissingRequiredField("index")
         if not isinstance(self.index, int):
@@ -981,121 +1791,123 @@ class BreakStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class BuiltinFunc(YAMLRoot):
+class OpaCallDynamicStmt(OpaStmt):
     """
-    ``BuiltinFunc`` definition from upstream JSON Schema.
+    A statement of kind CallDynamicStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["BuiltinFunc"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:BuiltinFunc"
-    class_name: ClassVar[str] = "BuiltinFunc"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.BuiltinFunc
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaCallDynamicStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaCallDynamicStmt"
+    class_name: ClassVar[str] = "OpaCallDynamicStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaCallDynamicStmt
 
-    decl: Union[dict, Any] = None
-    name: str = None
+    type: str = None
+    stmt: Union[dict, "OpaCallDynamicStmtBody"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.name):
-            self.MissingRequiredField("name")
-        if not isinstance(self.name, str):
-            self.name = str(self.name)
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaCallDynamicStmtBody):
+            self.stmt = OpaCallDynamicStmtBody(**as_dict(self.stmt))
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class CallDynamicStmt(YAMLRoot):
+class OpaCallDynamicStmtBody(OpaStmtBody):
     """
-    ``CallDynamicStmt`` definition from upstream JSON Schema.
+    CallDynamicStmt represents an indirect (data) function call. The result should be stored in the result local.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["CallDynamicStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:CallDynamicStmt"
-    class_name: ClassVar[str] = "CallDynamicStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.CallDynamicStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaCallDynamicStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaCallDynamicStmtBody"
+    class_name: ClassVar[str] = "OpaCallDynamicStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaCallDynamicStmtBody
 
-    col: int = None
     file: int = None
+    col: int = None
     row: int = None
-    args: Union[int, list[int]] = None
-    path: Union[Union[dict, "Operand"], list[Union[dict, "Operand"]]] = None
+    end_col: int = None
+    end_row: int = None
     result: int = None
+    args: Optional[Union[int, list[int]]] = empty_list()
+    path: Optional[Union[Union[dict, "OpaOperand"], list[Union[dict, "OpaOperand"]]]] = empty_list()
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
-        if self._is_empty(self.args):
-            self.MissingRequiredField("args")
-        if not isinstance(self.args, list):
-            self.args = [self.args] if self.args is not None else []
-        self.args = [v if isinstance(v, int) else int(v) for v in self.args]
-
-        if self._is_empty(self.path):
-            self.MissingRequiredField("path")
-        self._normalize_inlined_as_list(slot_name="path", slot_type=Operand, key_name="type", keyed=False)
-
         if self._is_empty(self.result):
             self.MissingRequiredField("result")
         if not isinstance(self.result, int):
             self.result = int(self.result)
 
+        if not isinstance(self.args, list):
+            self.args = [self.args] if self.args is not None else []
+        self.args = [v if isinstance(v, int) else int(v) for v in self.args]
+
+        if not isinstance(self.path, list):
+            self.path = [self.path] if self.path is not None else []
+        self.path = [v if isinstance(v, OpaOperand) else OpaOperand(**as_dict(v)) for v in self.path]
+
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class CallStmt(YAMLRoot):
+class OpaCallStmt(OpaStmt):
     """
-    ``CallStmt`` definition from upstream JSON Schema.
+    A statement of kind CallStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["CallStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:CallStmt"
-    class_name: ClassVar[str] = "CallStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.CallStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaCallStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaCallStmt"
+    class_name: ClassVar[str] = "OpaCallStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaCallStmt
 
-    col: int = None
-    file: int = None
-    row: int = None
-    args: Union[Union[dict, "Operand"], list[Union[dict, "Operand"]]] = None
-    func: str = None
-    result: int = None
+    type: str = None
+    stmt: Union[dict, "OpaCallStmtBody"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
 
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaCallStmtBody):
+            self.stmt = OpaCallStmtBody(**as_dict(self.stmt))
 
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
+        super().__post_init__(**kwargs)
 
-        if self._is_empty(self.args):
-            self.MissingRequiredField("args")
-        self._normalize_inlined_as_list(slot_name="args", slot_type=Operand, key_name="type", keyed=False)
 
+@dataclass(repr=False)
+class OpaCallStmtBody(OpaStmtBody):
+    """
+    CallStmt represents a named function call. The result should be stored in the result local.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaCallStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaCallStmtBody"
+    class_name: ClassVar[str] = "OpaCallStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaCallStmtBody
+
+    file: int = None
+    col: int = None
+    row: int = None
+    end_col: int = None
+    end_row: int = None
+    func: str = None
+    result: int = None
+    args: Optional[Union[Union[dict, "OpaOperand"], list[Union[dict, "OpaOperand"]]]] = empty_list()
+
+    def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.func):
             self.MissingRequiredField("func")
         if not isinstance(self.func, str):
@@ -1106,53 +1918,74 @@ class CallStmt(YAMLRoot):
         if not isinstance(self.result, int):
             self.result = int(self.result)
 
+        if not isinstance(self.args, list):
+            self.args = [self.args] if self.args is not None else []
+        self.args = [v if isinstance(v, OpaOperand) else OpaOperand(**as_dict(v)) for v in self.args]
+
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class DotStmt(YAMLRoot):
+class OpaDotStmt(OpaStmt):
     """
-    ``DotStmt`` definition from upstream JSON Schema.
+    A statement of kind DotStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["DotStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:DotStmt"
-    class_name: ClassVar[str] = "DotStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.DotStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaDotStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaDotStmt"
+    class_name: ClassVar[str] = "OpaDotStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaDotStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaDotStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaDotStmtBody):
+            self.stmt = OpaDotStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaDotStmtBody(OpaStmtBody):
+    """
+    DotStmt represents a lookup operation on a value (e.g., array, object, etc.) The source of a DotStmt may be a
+    scalar value in which case the statement will be undefined.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaDotStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaDotStmtBody"
+    class_name: ClassVar[str] = "OpaDotStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaDotStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
-    key: Union[dict, "Operand"] = None
-    source: Union[dict, "Operand"] = None
+    end_col: int = None
+    end_row: int = None
+    key: Union[dict, "OpaOperand"] = None
+    source: Union[dict, "OpaOperand"] = None
     target: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.key):
             self.MissingRequiredField("key")
-        if not isinstance(self.key, Operand):
-            self.key = Operand(**as_dict(self.key))
+        if not isinstance(self.key, OpaOperand):
+            self.key = OpaOperand()
 
         if self._is_empty(self.source):
             self.MissingRequiredField("source")
-        if not isinstance(self.source, Operand):
-            self.source = Operand(**as_dict(self.source))
+        if not isinstance(self.source, OpaOperand):
+            self.source = OpaOperand()
 
         if self._is_empty(self.target):
             self.MissingRequiredField("target")
@@ -1163,196 +1996,174 @@ class DotStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class EqualStmt(YAMLRoot):
+class OpaEqualStmt(OpaStmt):
     """
-    ``EqualStmt`` definition from upstream JSON Schema.
+    A statement of kind EqualStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["EqualStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:EqualStmt"
-    class_name: ClassVar[str] = "EqualStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.EqualStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaEqualStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaEqualStmt"
+    class_name: ClassVar[str] = "OpaEqualStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaEqualStmt
 
-    col: int = None
-    file: int = None
-    row: int = None
-    a: Union[dict, "Operand"] = None
-    b: Union[dict, "Operand"] = None
+    type: str = None
+    stmt: Union[dict, "OpaEqualStmtBody"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
 
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaEqualStmtBody):
+            self.stmt = OpaEqualStmtBody(**as_dict(self.stmt))
 
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
+        super().__post_init__(**kwargs)
 
+
+@dataclass(repr=False)
+class OpaEqualStmtBody(OpaStmtBody):
+    """
+    EqualStmt represents an value-equality check of two local variables.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaEqualStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaEqualStmtBody"
+    class_name: ClassVar[str] = "OpaEqualStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaEqualStmtBody
+
+    file: int = None
+    col: int = None
+    row: int = None
+    end_col: int = None
+    end_row: int = None
+    a: Union[dict, "OpaOperand"] = None
+    b: Union[dict, "OpaOperand"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.a):
             self.MissingRequiredField("a")
-        if not isinstance(self.a, Operand):
-            self.a = Operand(**as_dict(self.a))
+        if not isinstance(self.a, OpaOperand):
+            self.a = OpaOperand()
 
         if self._is_empty(self.b):
             self.MissingRequiredField("b")
-        if not isinstance(self.b, Operand):
-            self.b = Operand(**as_dict(self.b))
+        if not isinstance(self.b, OpaOperand):
+            self.b = OpaOperand()
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class Func(YAMLRoot):
+class OpaIsArrayStmt(OpaStmt):
     """
-    ``Func`` definition from upstream JSON Schema.
+    A statement of kind IsArrayStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["Func"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:Func"
-    class_name: ClassVar[str] = "Func"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.Func
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaIsArrayStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaIsArrayStmt"
+    class_name: ClassVar[str] = "OpaIsArrayStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaIsArrayStmt
 
-    blocks: Union[Union[dict, Block], list[Union[dict, Block]]] = None
-    name: str = None
-    params: Union[int, list[int]] = None
-    return_value: int = None
-    path: Optional[Union[str, list[str]]] = empty_list()
+    type: str = None
+    stmt: Union[dict, "OpaIsArrayStmtBody"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.blocks):
-            self.MissingRequiredField("blocks")
-        if not isinstance(self.blocks, list):
-            self.blocks = [self.blocks] if self.blocks is not None else []
-        self.blocks = [v if isinstance(v, Block) else Block(**as_dict(v)) for v in self.blocks]
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
 
-        if self._is_empty(self.name):
-            self.MissingRequiredField("name")
-        if not isinstance(self.name, str):
-            self.name = str(self.name)
-
-        if self._is_empty(self.params):
-            self.MissingRequiredField("params")
-        if not isinstance(self.params, list):
-            self.params = [self.params] if self.params is not None else []
-        self.params = [v if isinstance(v, int) else int(v) for v in self.params]
-
-        if self._is_empty(self.return_value):
-            self.MissingRequiredField("return_value")
-        if not isinstance(self.return_value, int):
-            self.return_value = int(self.return_value)
-
-        if not isinstance(self.path, list):
-            self.path = [self.path] if self.path is not None else []
-        self.path = [v if isinstance(v, str) else str(v) for v in self.path]
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaIsArrayStmtBody):
+            self.stmt = OpaIsArrayStmtBody(**as_dict(self.stmt))
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class Funcs(YAMLRoot):
+class OpaIsArrayStmtBody(OpaStmtBody):
     """
-    ``Funcs`` definition from upstream JSON Schema.
-    """
-    _inherited_slots: ClassVar[list[str]] = []
-
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["Funcs"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:Funcs"
-    class_name: ClassVar[str] = "Funcs"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.Funcs
-
-    funcs: Union[Union[dict, Func], list[Union[dict, Func]]] = None
-
-    def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.funcs):
-            self.MissingRequiredField("funcs")
-        self._normalize_inlined_as_list(slot_name="funcs", slot_type=Func, key_name="name", keyed=False)
-
-        super().__post_init__(**kwargs)
-
-
-@dataclass(repr=False)
-class IsArrayStmt(YAMLRoot):
-    """
-    ``IsArrayStmt`` definition from upstream JSON Schema.
+    IsArrayStmt represents a dynamic type check on a local variable.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["IsArrayStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:IsArrayStmt"
-    class_name: ClassVar[str] = "IsArrayStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.IsArrayStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaIsArrayStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaIsArrayStmtBody"
+    class_name: ClassVar[str] = "OpaIsArrayStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaIsArrayStmtBody
 
-    col: int = None
     file: int = None
+    col: int = None
     row: int = None
-    source: Union[dict, "Operand"] = None
+    end_col: int = None
+    end_row: int = None
+    source: Union[dict, "OpaOperand"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.source):
             self.MissingRequiredField("source")
-        if not isinstance(self.source, Operand):
-            self.source = Operand(**as_dict(self.source))
+        if not isinstance(self.source, OpaOperand):
+            self.source = OpaOperand()
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class IsDefinedStmt(YAMLRoot):
+class OpaIsDefinedStmt(OpaStmt):
     """
-    ``IsDefinedStmt`` definition from upstream JSON Schema.
+    A statement of kind IsDefinedStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["IsDefinedStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:IsDefinedStmt"
-    class_name: ClassVar[str] = "IsDefinedStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.IsDefinedStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaIsDefinedStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaIsDefinedStmt"
+    class_name: ClassVar[str] = "OpaIsDefinedStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaIsDefinedStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaIsDefinedStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaIsDefinedStmtBody):
+            self.stmt = OpaIsDefinedStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaIsDefinedStmtBody(OpaStmtBody):
+    """
+    IsDefinedStmt represents a check of whether a local variable is defined.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaIsDefinedStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaIsDefinedStmtBody"
+    class_name: ClassVar[str] = "OpaIsDefinedStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaIsDefinedStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
     source: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.source):
             self.MissingRequiredField("source")
         if not isinstance(self.source, int):
@@ -1362,120 +2173,168 @@ class IsDefinedStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class IsObjectStmt(YAMLRoot):
+class OpaIsObjectStmt(OpaStmt):
     """
-    ``IsObjectStmt`` definition from upstream JSON Schema.
+    A statement of kind IsObjectStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["IsObjectStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:IsObjectStmt"
-    class_name: ClassVar[str] = "IsObjectStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.IsObjectStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaIsObjectStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaIsObjectStmt"
+    class_name: ClassVar[str] = "OpaIsObjectStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaIsObjectStmt
 
-    col: int = None
-    file: int = None
-    row: int = None
-    source: Union[dict, "Operand"] = None
+    type: str = None
+    stmt: Union[dict, "OpaIsObjectStmtBody"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
 
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
-        if self._is_empty(self.source):
-            self.MissingRequiredField("source")
-        if not isinstance(self.source, Operand):
-            self.source = Operand(**as_dict(self.source))
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaIsObjectStmtBody):
+            self.stmt = OpaIsObjectStmtBody(**as_dict(self.stmt))
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class IsSetStmt(YAMLRoot):
+class OpaIsObjectStmtBody(OpaStmtBody):
     """
-    ``IsSetStmt`` definition from upstream JSON Schema.
+    IsObjectStmt represents a dynamic type check on a local variable.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["IsSetStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:IsSetStmt"
-    class_name: ClassVar[str] = "IsSetStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.IsSetStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaIsObjectStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaIsObjectStmtBody"
+    class_name: ClassVar[str] = "OpaIsObjectStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaIsObjectStmtBody
 
-    col: int = None
     file: int = None
+    col: int = None
     row: int = None
-    source: Union[dict, "Operand"] = None
+    end_col: int = None
+    end_row: int = None
+    source: Union[dict, "OpaOperand"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.source):
             self.MissingRequiredField("source")
-        if not isinstance(self.source, Operand):
-            self.source = Operand(**as_dict(self.source))
+        if not isinstance(self.source, OpaOperand):
+            self.source = OpaOperand()
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class IsUndefinedStmt(YAMLRoot):
+class OpaIsSetStmt(OpaStmt):
     """
-    ``IsUndefinedStmt`` definition from upstream JSON Schema.
+    A statement of kind IsSetStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["IsUndefinedStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:IsUndefinedStmt"
-    class_name: ClassVar[str] = "IsUndefinedStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.IsUndefinedStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaIsSetStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaIsSetStmt"
+    class_name: ClassVar[str] = "OpaIsSetStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaIsSetStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaIsSetStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaIsSetStmtBody):
+            self.stmt = OpaIsSetStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaIsSetStmtBody(OpaStmtBody):
+    """
+    IsSetStmt represents a dynamic type check on a local variable.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaIsSetStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaIsSetStmtBody"
+    class_name: ClassVar[str] = "OpaIsSetStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaIsSetStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
+    source: Union[dict, "OpaOperand"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.source):
+            self.MissingRequiredField("source")
+        if not isinstance(self.source, OpaOperand):
+            self.source = OpaOperand()
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaIsUndefinedStmt(OpaStmt):
+    """
+    A statement of kind IsUndefinedStmt, with its fields in `stmt`.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaIsUndefinedStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaIsUndefinedStmt"
+    class_name: ClassVar[str] = "OpaIsUndefinedStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaIsUndefinedStmt
+
+    type: str = None
+    stmt: Union[dict, "OpaIsUndefinedStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaIsUndefinedStmtBody):
+            self.stmt = OpaIsUndefinedStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaIsUndefinedStmtBody(OpaStmtBody):
+    """
+    IsUndefinedStmt represents a check of whether local variable is undefined.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaIsUndefinedStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaIsUndefinedStmtBody"
+    class_name: ClassVar[str] = "OpaIsUndefinedStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaIsUndefinedStmtBody
+
+    file: int = None
+    col: int = None
+    row: int = None
+    end_col: int = None
+    end_row: int = None
     source: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.source):
             self.MissingRequiredField("source")
         if not isinstance(self.source, int):
@@ -1485,43 +2344,59 @@ class IsUndefinedStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class LenStmt(YAMLRoot):
+class OpaLenStmt(OpaStmt):
     """
-    ``LenStmt`` definition from upstream JSON Schema.
+    A statement of kind LenStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["LenStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:LenStmt"
-    class_name: ClassVar[str] = "LenStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.LenStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaLenStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaLenStmt"
+    class_name: ClassVar[str] = "OpaLenStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaLenStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaLenStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaLenStmtBody):
+            self.stmt = OpaLenStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaLenStmtBody(OpaStmtBody):
+    """
+    LenStmt represents a length() operation on a local variable. The result is stored in the target local variable.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaLenStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaLenStmtBody"
+    class_name: ClassVar[str] = "OpaLenStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaLenStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
-    source: Union[dict, "Operand"] = None
+    end_col: int = None
+    end_row: int = None
+    source: Union[dict, "OpaOperand"] = None
     target: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.source):
             self.MissingRequiredField("source")
-        if not isinstance(self.source, Operand):
-            self.source = Operand(**as_dict(self.source))
+        if not isinstance(self.source, OpaOperand):
+            self.source = OpaOperand()
 
         if self._is_empty(self.target):
             self.MissingRequiredField("target")
@@ -1532,39 +2407,55 @@ class LenStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class MakeArrayStmt(YAMLRoot):
+class OpaMakeArrayStmt(OpaStmt):
     """
-    ``MakeArrayStmt`` definition from upstream JSON Schema.
+    A statement of kind MakeArrayStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["MakeArrayStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:MakeArrayStmt"
-    class_name: ClassVar[str] = "MakeArrayStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.MakeArrayStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaMakeArrayStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaMakeArrayStmt"
+    class_name: ClassVar[str] = "OpaMakeArrayStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaMakeArrayStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaMakeArrayStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaMakeArrayStmtBody):
+            self.stmt = OpaMakeArrayStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaMakeArrayStmtBody(OpaStmtBody):
+    """
+    MakeArrayStmt constructs a local variable that refers to an array value.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaMakeArrayStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaMakeArrayStmtBody"
+    class_name: ClassVar[str] = "OpaMakeArrayStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaMakeArrayStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
     capacity: int = None
     target: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.capacity):
             self.MissingRequiredField("capacity")
         if not isinstance(self.capacity, int):
@@ -1579,38 +2470,54 @@ class MakeArrayStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class MakeNullStmt(YAMLRoot):
+class OpaMakeNullStmt(OpaStmt):
     """
-    ``MakeNullStmt`` definition from upstream JSON Schema.
+    A statement of kind MakeNullStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["MakeNullStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:MakeNullStmt"
-    class_name: ClassVar[str] = "MakeNullStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.MakeNullStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaMakeNullStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaMakeNullStmt"
+    class_name: ClassVar[str] = "OpaMakeNullStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaMakeNullStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaMakeNullStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaMakeNullStmtBody):
+            self.stmt = OpaMakeNullStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaMakeNullStmtBody(OpaStmtBody):
+    """
+    MakeNullStmt constructs a local variable that refers to a null value.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaMakeNullStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaMakeNullStmtBody"
+    class_name: ClassVar[str] = "OpaMakeNullStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaMakeNullStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
     target: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.target):
             self.MissingRequiredField("target")
         if not isinstance(self.target, int):
@@ -1620,39 +2527,55 @@ class MakeNullStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class MakeNumberIntStmt(YAMLRoot):
+class OpaMakeNumberIntStmt(OpaStmt):
     """
-    ``MakeNumberIntStmt`` definition from upstream JSON Schema.
+    A statement of kind MakeNumberIntStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["MakeNumberIntStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:MakeNumberIntStmt"
-    class_name: ClassVar[str] = "MakeNumberIntStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.MakeNumberIntStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaMakeNumberIntStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaMakeNumberIntStmt"
+    class_name: ClassVar[str] = "OpaMakeNumberIntStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaMakeNumberIntStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaMakeNumberIntStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaMakeNumberIntStmtBody):
+            self.stmt = OpaMakeNumberIntStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaMakeNumberIntStmtBody(OpaStmtBody):
+    """
+    MakeNumberIntStmt constructs a local variable that refers to an integer value.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaMakeNumberIntStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaMakeNumberIntStmtBody"
+    class_name: ClassVar[str] = "OpaMakeNumberIntStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaMakeNumberIntStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
     target: int = None
     value: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.target):
             self.MissingRequiredField("target")
         if not isinstance(self.target, int):
@@ -1667,40 +2590,56 @@ class MakeNumberIntStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class MakeNumberRefStmt(YAMLRoot):
+class OpaMakeNumberRefStmt(OpaStmt):
     """
-    ``MakeNumberRefStmt`` definition from upstream JSON Schema.
+    A statement of kind MakeNumberRefStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["MakeNumberRefStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:MakeNumberRefStmt"
-    class_name: ClassVar[str] = "MakeNumberRefStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.MakeNumberRefStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaMakeNumberRefStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaMakeNumberRefStmt"
+    class_name: ClassVar[str] = "OpaMakeNumberRefStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaMakeNumberRefStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaMakeNumberRefStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaMakeNumberRefStmtBody):
+            self.stmt = OpaMakeNumberRefStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaMakeNumberRefStmtBody(OpaStmtBody):
+    """
+    MakeNumberRefStmt constructs a local variable that refers to a number stored as a string.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaMakeNumberRefStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaMakeNumberRefStmtBody"
+    class_name: ClassVar[str] = "OpaMakeNumberRefStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaMakeNumberRefStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
     index: int = None
     target: int = None
     Index: Optional[int] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.index):
             self.MissingRequiredField("index")
         if not isinstance(self.index, int):
@@ -1718,38 +2657,54 @@ class MakeNumberRefStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class MakeObjectStmt(YAMLRoot):
+class OpaMakeObjectStmt(OpaStmt):
     """
-    ``MakeObjectStmt`` definition from upstream JSON Schema.
+    A statement of kind MakeObjectStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["MakeObjectStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:MakeObjectStmt"
-    class_name: ClassVar[str] = "MakeObjectStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.MakeObjectStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaMakeObjectStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaMakeObjectStmt"
+    class_name: ClassVar[str] = "OpaMakeObjectStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaMakeObjectStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaMakeObjectStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaMakeObjectStmtBody):
+            self.stmt = OpaMakeObjectStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaMakeObjectStmtBody(OpaStmtBody):
+    """
+    MakeObjectStmt constructs a local variable that refers to an object value.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaMakeObjectStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaMakeObjectStmtBody"
+    class_name: ClassVar[str] = "OpaMakeObjectStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaMakeObjectStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
     target: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.target):
             self.MissingRequiredField("target")
         if not isinstance(self.target, int):
@@ -1759,38 +2714,54 @@ class MakeObjectStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class MakeSetStmt(YAMLRoot):
+class OpaMakeSetStmt(OpaStmt):
     """
-    ``MakeSetStmt`` definition from upstream JSON Schema.
+    A statement of kind MakeSetStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["MakeSetStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:MakeSetStmt"
-    class_name: ClassVar[str] = "MakeSetStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.MakeSetStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaMakeSetStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaMakeSetStmt"
+    class_name: ClassVar[str] = "OpaMakeSetStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaMakeSetStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaMakeSetStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaMakeSetStmtBody):
+            self.stmt = OpaMakeSetStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaMakeSetStmtBody(OpaStmtBody):
+    """
+    MakeSetStmt constructs a local variable that refers to a set value.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaMakeSetStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaMakeSetStmtBody"
+    class_name: ClassVar[str] = "OpaMakeSetStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaMakeSetStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
     target: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.target):
             self.MissingRequiredField("target")
         if not isinstance(self.target, int):
@@ -1800,167 +2771,226 @@ class MakeSetStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class NopStmt(YAMLRoot):
+class OpaNopStmt(OpaStmt):
     """
-    ``NopStmt`` definition from upstream JSON Schema.
+    A statement of kind NopStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["NopStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:NopStmt"
-    class_name: ClassVar[str] = "NopStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.NopStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaNopStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaNopStmt"
+    class_name: ClassVar[str] = "OpaNopStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaNopStmt
 
-    col: int = None
-    file: int = None
-    row: int = None
+    type: str = None
+    stmt: Union[dict, "OpaNopStmtBody"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
 
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaNopStmtBody):
+            self.stmt = OpaNopStmtBody(**as_dict(self.stmt))
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class NotEqualStmt(YAMLRoot):
+class OpaNopStmtBody(OpaStmtBody):
     """
-    ``NotEqualStmt`` definition from upstream JSON Schema.
+    NopStmt adds a nop instruction. Useful during development and debugging only.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["NotEqualStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:NotEqualStmt"
-    class_name: ClassVar[str] = "NotEqualStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.NotEqualStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaNopStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaNopStmtBody"
+    class_name: ClassVar[str] = "OpaNopStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaNopStmtBody
 
-    col: int = None
     file: int = None
+    col: int = None
     row: int = None
-    a: Union[dict, "Operand"] = None
-    b: Union[dict, "Operand"] = None
+    end_col: int = None
+    end_row: int = None
+
+@dataclass(repr=False)
+class OpaNotEqualStmt(OpaStmt):
+    """
+    A statement of kind NotEqualStmt, with its fields in `stmt`.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaNotEqualStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaNotEqualStmt"
+    class_name: ClassVar[str] = "OpaNotEqualStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaNotEqualStmt
+
+    type: str = None
+    stmt: Union[dict, "OpaNotEqualStmtBody"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
 
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaNotEqualStmtBody):
+            self.stmt = OpaNotEqualStmtBody(**as_dict(self.stmt))
 
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
+        super().__post_init__(**kwargs)
 
+
+@dataclass(repr=False)
+class OpaNotEqualStmtBody(OpaStmtBody):
+    """
+    NotEqualStmt represents a != check of two local variables.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaNotEqualStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaNotEqualStmtBody"
+    class_name: ClassVar[str] = "OpaNotEqualStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaNotEqualStmtBody
+
+    file: int = None
+    col: int = None
+    row: int = None
+    end_col: int = None
+    end_row: int = None
+    a: Union[dict, "OpaOperand"] = None
+    b: Union[dict, "OpaOperand"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.a):
             self.MissingRequiredField("a")
-        if not isinstance(self.a, Operand):
-            self.a = Operand(**as_dict(self.a))
+        if not isinstance(self.a, OpaOperand):
+            self.a = OpaOperand()
 
         if self._is_empty(self.b):
             self.MissingRequiredField("b")
-        if not isinstance(self.b, Operand):
-            self.b = Operand(**as_dict(self.b))
+        if not isinstance(self.b, OpaOperand):
+            self.b = OpaOperand()
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class NotStmt(YAMLRoot):
+class OpaNotStmt(OpaStmt):
     """
-    ``NotStmt`` definition from upstream JSON Schema.
+    A statement of kind NotStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["NotStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:NotStmt"
-    class_name: ClassVar[str] = "NotStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.NotStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaNotStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaNotStmt"
+    class_name: ClassVar[str] = "OpaNotStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaNotStmt
 
-    col: int = None
-    file: int = None
-    row: int = None
-    block: str = None
+    type: str = None
+    stmt: Union[dict, "OpaNotStmtBody"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
 
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
-        if self._is_empty(self.block):
-            self.MissingRequiredField("block")
-        if not isinstance(self.block, str):
-            self.block = str(self.block)
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaNotStmtBody):
+            self.stmt = OpaNotStmtBody(**as_dict(self.stmt))
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class ObjectInsertOnceStmt(YAMLRoot):
+class OpaNotStmtBody(OpaStmtBody):
     """
-    ``ObjectInsertOnceStmt`` definition from upstream JSON Schema.
+    NotStmt represents a negated statement.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["ObjectInsertOnceStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:ObjectInsertOnceStmt"
-    class_name: ClassVar[str] = "ObjectInsertOnceStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.ObjectInsertOnceStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaNotStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaNotStmtBody"
+    class_name: ClassVar[str] = "OpaNotStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaNotStmtBody
 
-    col: int = None
     file: int = None
+    col: int = None
     row: int = None
-    key: Union[dict, "Operand"] = None
+    end_col: int = None
+    end_row: int = None
+    block: Optional[Union[dict, OpaBlock]] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self.block is not None and not isinstance(self.block, OpaBlock):
+            self.block = OpaBlock(**as_dict(self.block))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaObjectInsertOnceStmt(OpaStmt):
+    """
+    A statement of kind ObjectInsertOnceStmt, with its fields in `stmt`.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaObjectInsertOnceStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaObjectInsertOnceStmt"
+    class_name: ClassVar[str] = "OpaObjectInsertOnceStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaObjectInsertOnceStmt
+
+    type: str = None
+    stmt: Union[dict, "OpaObjectInsertOnceStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaObjectInsertOnceStmtBody):
+            self.stmt = OpaObjectInsertOnceStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaObjectInsertOnceStmtBody(OpaStmtBody):
+    """
+    ObjectInsertOnceStmt represents a dynamic insert operation of a key/value pair into an object. If the key already
+    exists and the value differs, execution aborts with a conflict error.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaObjectInsertOnceStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaObjectInsertOnceStmtBody"
+    class_name: ClassVar[str] = "OpaObjectInsertOnceStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaObjectInsertOnceStmtBody
+
+    file: int = None
+    col: int = None
+    row: int = None
+    end_col: int = None
+    end_row: int = None
+    key: Union[dict, "OpaOperand"] = None
     object: int = None
-    value: Union[dict, "Operand"] = None
+    value: Union[dict, "OpaOperand"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.key):
             self.MissingRequiredField("key")
-        if not isinstance(self.key, Operand):
-            self.key = Operand(**as_dict(self.key))
+        if not isinstance(self.key, OpaOperand):
+            self.key = OpaOperand()
 
         if self._is_empty(self.object):
             self.MissingRequiredField("object")
@@ -1969,51 +2999,67 @@ class ObjectInsertOnceStmt(YAMLRoot):
 
         if self._is_empty(self.value):
             self.MissingRequiredField("value")
-        if not isinstance(self.value, Operand):
-            self.value = Operand(**as_dict(self.value))
+        if not isinstance(self.value, OpaOperand):
+            self.value = OpaOperand()
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class ObjectInsertStmt(YAMLRoot):
+class OpaObjectInsertStmt(OpaStmt):
     """
-    ``ObjectInsertStmt`` definition from upstream JSON Schema.
+    A statement of kind ObjectInsertStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["ObjectInsertStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:ObjectInsertStmt"
-    class_name: ClassVar[str] = "ObjectInsertStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.ObjectInsertStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaObjectInsertStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaObjectInsertStmt"
+    class_name: ClassVar[str] = "OpaObjectInsertStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaObjectInsertStmt
 
-    col: int = None
-    file: int = None
-    row: int = None
-    key: Union[dict, "Operand"] = None
-    object: int = None
-    value: Union[dict, "Operand"] = None
+    type: str = None
+    stmt: Union[dict, "OpaObjectInsertStmtBody"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
 
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaObjectInsertStmtBody):
+            self.stmt = OpaObjectInsertStmtBody(**as_dict(self.stmt))
 
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
+        super().__post_init__(**kwargs)
 
+
+@dataclass(repr=False)
+class OpaObjectInsertStmtBody(OpaStmtBody):
+    """
+    ObjectInsertStmt represents a dynamic insert operation of a key/value pair into an object.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaObjectInsertStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaObjectInsertStmtBody"
+    class_name: ClassVar[str] = "OpaObjectInsertStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaObjectInsertStmtBody
+
+    file: int = None
+    col: int = None
+    row: int = None
+    end_col: int = None
+    end_row: int = None
+    key: Union[dict, "OpaOperand"] = None
+    object: int = None
+    value: Union[dict, "OpaOperand"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.key):
             self.MissingRequiredField("key")
-        if not isinstance(self.key, Operand):
-            self.key = Operand(**as_dict(self.key))
+        if not isinstance(self.key, OpaOperand):
+            self.key = OpaOperand()
 
         if self._is_empty(self.object):
             self.MissingRequiredField("object")
@@ -2022,46 +3068,68 @@ class ObjectInsertStmt(YAMLRoot):
 
         if self._is_empty(self.value):
             self.MissingRequiredField("value")
-        if not isinstance(self.value, Operand):
-            self.value = Operand(**as_dict(self.value))
+        if not isinstance(self.value, OpaOperand):
+            self.value = OpaOperand()
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class ObjectMergeStmt(YAMLRoot):
+class OpaObjectMergeStmt(OpaStmt):
     """
-    ``ObjectMergeStmt`` definition from upstream JSON Schema.
+    A statement of kind ObjectMergeStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["ObjectMergeStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:ObjectMergeStmt"
-    class_name: ClassVar[str] = "ObjectMergeStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.ObjectMergeStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaObjectMergeStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaObjectMergeStmt"
+    class_name: ClassVar[str] = "OpaObjectMergeStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaObjectMergeStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaObjectMergeStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaObjectMergeStmtBody):
+            self.stmt = OpaObjectMergeStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaObjectMergeStmtBody(OpaStmtBody):
+    """
+    ObjectMergeStmt performs a recursive merge of two object values. If either of the locals refer to non-object
+    values this operation will abort with a conflict error.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaObjectMergeStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaObjectMergeStmtBody"
+    class_name: ClassVar[str] = "OpaObjectMergeStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaObjectMergeStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
+    target: int = None
     a: int = None
     b: int = None
-    target: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
+        if self._is_empty(self.target):
+            self.MissingRequiredField("target")
+        if not isinstance(self.target, int):
+            self.target = int(self.target)
 
         if self._is_empty(self.a):
             self.MissingRequiredField("a")
@@ -2073,128 +3141,58 @@ class ObjectMergeStmt(YAMLRoot):
         if not isinstance(self.b, int):
             self.b = int(self.b)
 
-        if self._is_empty(self.target):
-            self.MissingRequiredField("target")
-        if not isinstance(self.target, int):
-            self.target = int(self.target)
-
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class Plan(YAMLRoot):
+class OpaResetLocalStmt(OpaStmt):
     """
-    ``Plan`` definition from upstream JSON Schema.
+    A statement of kind ResetLocalStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["Plan"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:Plan"
-    class_name: ClassVar[str] = "Plan"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.Plan
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaResetLocalStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaResetLocalStmt"
+    class_name: ClassVar[str] = "OpaResetLocalStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaResetLocalStmt
 
-    blocks: Union[Union[dict, Block], list[Union[dict, Block]]] = None
-    name: str = None
+    type: str = None
+    stmt: Union[dict, "OpaResetLocalStmtBody"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.blocks):
-            self.MissingRequiredField("blocks")
-        if not isinstance(self.blocks, list):
-            self.blocks = [self.blocks] if self.blocks is not None else []
-        self.blocks = [v if isinstance(v, Block) else Block(**as_dict(v)) for v in self.blocks]
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
 
-        if self._is_empty(self.name):
-            self.MissingRequiredField("name")
-        if not isinstance(self.name, str):
-            self.name = str(self.name)
-
-        super().__post_init__(**kwargs)
-
-
-@dataclass(repr=False)
-class Plans(YAMLRoot):
-    """
-    ``Plans`` definition from upstream JSON Schema.
-    """
-    _inherited_slots: ClassVar[list[str]] = []
-
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["Plans"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:Plans"
-    class_name: ClassVar[str] = "Plans"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.Plans
-
-    plans: Union[Union[dict, Plan], list[Union[dict, Plan]]] = None
-
-    def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.plans):
-            self.MissingRequiredField("plans")
-        self._normalize_inlined_as_list(slot_name="plans", slot_type=Plan, key_name="name", keyed=False)
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaResetLocalStmtBody):
+            self.stmt = OpaResetLocalStmtBody(**as_dict(self.stmt))
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class Policy(YAMLRoot):
+class OpaResetLocalStmtBody(OpaStmtBody):
     """
-    ``Policy`` definition from upstream JSON Schema.
-    """
-    _inherited_slots: ClassVar[list[str]] = []
-
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["Policy"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:Policy"
-    class_name: ClassVar[str] = "Policy"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.Policy
-
-    funcs: Optional[Union[dict, Funcs]] = None
-    plans: Optional[Union[dict, Plans]] = None
-    static: Optional[Union[dict, "Static"]] = None
-
-    def __post_init__(self, *_: str, **kwargs: Any):
-        if self.funcs is not None and not isinstance(self.funcs, Funcs):
-            self.funcs = Funcs(**as_dict(self.funcs))
-
-        if self.plans is not None and not isinstance(self.plans, Plans):
-            self.plans = Plans(**as_dict(self.plans))
-
-        if self.static is not None and not isinstance(self.static, Static):
-            self.static = Static(**as_dict(self.static))
-
-        super().__post_init__(**kwargs)
-
-
-@dataclass(repr=False)
-class ResetLocalStmt(YAMLRoot):
-    """
-    ``ResetLocalStmt`` definition from upstream JSON Schema.
+    ResetLocalStmt resets a local variable to 0.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["ResetLocalStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:ResetLocalStmt"
-    class_name: ClassVar[str] = "ResetLocalStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.ResetLocalStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaResetLocalStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaResetLocalStmtBody"
+    class_name: ClassVar[str] = "OpaResetLocalStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaResetLocalStmtBody
 
-    col: int = None
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
     target: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.target):
             self.MissingRequiredField("target")
         if not isinstance(self.target, int):
@@ -2204,38 +3202,54 @@ class ResetLocalStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class ResultSetAddStmt(YAMLRoot):
+class OpaResultSetAddStmt(OpaStmt):
     """
-    ``ResultSetAddStmt`` definition from upstream JSON Schema.
+    A statement of kind ResultSetAddStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["ResultSetAddStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:ResultSetAddStmt"
-    class_name: ClassVar[str] = "ResultSetAddStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.ResultSetAddStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaResultSetAddStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaResultSetAddStmt"
+    class_name: ClassVar[str] = "OpaResultSetAddStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaResultSetAddStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaResultSetAddStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaResultSetAddStmtBody):
+            self.stmt = OpaResultSetAddStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaResultSetAddStmtBody(OpaStmtBody):
+    """
+    ResultSetAddStmt adds a value into the result set returned by the query plan.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaResultSetAddStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaResultSetAddStmtBody"
+    class_name: ClassVar[str] = "OpaResultSetAddStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaResultSetAddStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
     value: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.value):
             self.MissingRequiredField("value")
         if not isinstance(self.value, int):
@@ -2245,38 +3259,54 @@ class ResultSetAddStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class ReturnLocalStmt(YAMLRoot):
+class OpaReturnLocalStmt(OpaStmt):
     """
-    ``ReturnLocalStmt`` definition from upstream JSON Schema.
+    A statement of kind ReturnLocalStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["ReturnLocalStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:ReturnLocalStmt"
-    class_name: ClassVar[str] = "ReturnLocalStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.ReturnLocalStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaReturnLocalStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaReturnLocalStmt"
+    class_name: ClassVar[str] = "OpaReturnLocalStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaReturnLocalStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaReturnLocalStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaReturnLocalStmtBody):
+            self.stmt = OpaReturnLocalStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaReturnLocalStmtBody(OpaStmtBody):
+    """
+    ReturnLocalStmt represents a return statement that yields a local value.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaReturnLocalStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaReturnLocalStmtBody"
+    class_name: ClassVar[str] = "OpaReturnLocalStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaReturnLocalStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
+    end_col: int = None
+    end_row: int = None
     source: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
         if self._is_empty(self.source):
             self.MissingRequiredField("source")
         if not isinstance(self.source, int):
@@ -2286,46 +3316,58 @@ class ReturnLocalStmt(YAMLRoot):
 
 
 @dataclass(repr=False)
-class ScanStmt(YAMLRoot):
+class OpaScanStmt(OpaStmt):
     """
-    ``ScanStmt`` definition from upstream JSON Schema.
+    A statement of kind ScanStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["ScanStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:ScanStmt"
-    class_name: ClassVar[str] = "ScanStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.ScanStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaScanStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaScanStmt"
+    class_name: ClassVar[str] = "OpaScanStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaScanStmt
 
-    col: int = None
+    type: str = None
+    stmt: Union[dict, "OpaScanStmtBody"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaScanStmtBody):
+            self.stmt = OpaScanStmtBody(**as_dict(self.stmt))
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaScanStmtBody(OpaStmtBody):
+    """
+    ScanStmt represents a linear scan over a composite value. The source may be a scalar in which case the block will
+    never execute.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaScanStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaScanStmtBody"
+    class_name: ClassVar[str] = "OpaScanStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaScanStmtBody
+
     file: int = None
+    col: int = None
     row: int = None
-    block: str = None
+    end_col: int = None
+    end_row: int = None
     key: int = None
     source: int = None
     value: int = None
+    block: Optional[Union[dict, OpaBlock]] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
-        if self._is_empty(self.block):
-            self.MissingRequiredField("block")
-        if not isinstance(self.block, str):
-            self.block = str(self.block)
-
         if self._is_empty(self.key):
             self.MissingRequiredField("key")
         if not isinstance(self.key, int):
@@ -2341,43 +3383,62 @@ class ScanStmt(YAMLRoot):
         if not isinstance(self.value, int):
             self.value = int(self.value)
 
+        if self.block is not None and not isinstance(self.block, OpaBlock):
+            self.block = OpaBlock(**as_dict(self.block))
+
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class SetAddStmt(YAMLRoot):
+class OpaSetAddStmt(OpaStmt):
     """
-    ``SetAddStmt`` definition from upstream JSON Schema.
+    A statement of kind SetAddStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["SetAddStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:SetAddStmt"
-    class_name: ClassVar[str] = "SetAddStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.SetAddStmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaSetAddStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaSetAddStmt"
+    class_name: ClassVar[str] = "OpaSetAddStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaSetAddStmt
 
-    col: int = None
-    file: int = None
-    row: int = None
-    set: int = None
-    value: Union[dict, "Operand"] = None
+    type: str = None
+    stmt: Union[dict, "OpaSetAddStmtBody"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
 
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaSetAddStmtBody):
+            self.stmt = OpaSetAddStmtBody(**as_dict(self.stmt))
 
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
+        super().__post_init__(**kwargs)
 
+
+@dataclass(repr=False)
+class OpaSetAddStmtBody(OpaStmtBody):
+    """
+    SetAddStmt represents a dynamic add operation of an element into a set.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaSetAddStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaSetAddStmtBody"
+    class_name: ClassVar[str] = "OpaSetAddStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaSetAddStmtBody
+
+    file: int = None
+    col: int = None
+    row: int = None
+    end_col: int = None
+    end_row: int = None
+    set: int = None
+    value: Union[dict, "OpaOperand"] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.set):
             self.MissingRequiredField("set")
         if not isinstance(self.set, int):
@@ -2385,1225 +3446,1024 @@ class SetAddStmt(YAMLRoot):
 
         if self._is_empty(self.value):
             self.MissingRequiredField("value")
-        if not isinstance(self.value, Operand):
-            self.value = Operand(**as_dict(self.value))
+        if not isinstance(self.value, OpaOperand):
+            self.value = OpaOperand()
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class Static(YAMLRoot):
+class OpaWithStmt(OpaStmt):
     """
-    ``Static`` definition from upstream JSON Schema.
-    """
-    _inherited_slots: ClassVar[list[str]] = []
-
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["Static"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:Static"
-    class_name: ClassVar[str] = "Static"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.Static
-
-    builtin_funcs: Optional[Union[Union[dict, BuiltinFunc], list[Union[dict, BuiltinFunc]]]] = empty_list()
-    files: Optional[Union[Union[dict, "StringConst"], list[Union[dict, "StringConst"]]]] = empty_list()
-    strings: Optional[Union[Union[dict, "StringConst"], list[Union[dict, "StringConst"]]]] = empty_list()
-
-    def __post_init__(self, *_: str, **kwargs: Any):
-        self._normalize_inlined_as_list(slot_name="builtin_funcs", slot_type=BuiltinFunc, key_name="name", keyed=False)
-
-        self._normalize_inlined_as_list(slot_name="files", slot_type=StringConst, key_name="value", keyed=False)
-
-        self._normalize_inlined_as_list(slot_name="strings", slot_type=StringConst, key_name="value", keyed=False)
-
-        super().__post_init__(**kwargs)
-
-
-@dataclass(repr=False)
-class Stmt(YAMLRoot):
-    """
-    Tagged-wrapper class for the ``Stmt`` discriminated union from
-    the upstream JSON Schema.
-
-    The ``type`` slot carries the discriminator tag and the
-    ``stmt`` slot carries the typed payload. Because the
-    payload class varies by tag, ``stmt`` is typed as
-    ``Any`` with an ``any_of`` union over the known payload classes;
-    consumers select the concrete class using the table below.
-
-    * ``ArrayAppendStmt`` -- payload class ``ArrayAppendStmt``
-    * ``AssignIntStmt`` -- payload class ``AssignIntStmt``
-    * ``AssignVarOnceStmt`` -- payload class ``AssignVarOnceStmt``
-    * ``AssignVarStmt`` -- payload class ``AssignVarStmt``
-    * ``BlockStmt`` -- payload class ``BlockStmt``
-    * ``BreakStmt`` -- payload class ``BreakStmt``
-    * ``CallDynamicStmt`` -- payload class ``CallDynamicStmt``
-    * ``CallStmt`` -- payload class ``CallStmt``
-    * ``DotStmt`` -- payload class ``DotStmt``
-    * ``EqualStmt`` -- payload class ``EqualStmt``
-    * ``IsArrayStmt`` -- payload class ``IsArrayStmt``
-    * ``IsDefinedStmt`` -- payload class ``IsDefinedStmt``
-    * ``IsObjectStmt`` -- payload class ``IsObjectStmt``
-    * ``IsSetStmt`` -- payload class ``IsSetStmt``
-    * ``IsUndefinedStmt`` -- payload class ``IsUndefinedStmt``
-    * ``LenStmt`` -- payload class ``LenStmt``
-    * ``MakeArrayStmt`` -- payload class ``MakeArrayStmt``
-    * ``MakeNullStmt`` -- payload class ``MakeNullStmt``
-    * ``MakeNumberIntStmt`` -- payload class ``MakeNumberIntStmt``
-    * ``MakeNumberRefStmt`` -- payload class ``MakeNumberRefStmt``
-    * ``MakeObjectStmt`` -- payload class ``MakeObjectStmt``
-    * ``MakeSetStmt`` -- payload class ``MakeSetStmt``
-    * ``NopStmt`` -- payload class ``NopStmt``
-    * ``NotEqualStmt`` -- payload class ``NotEqualStmt``
-    * ``NotStmt`` -- payload class ``NotStmt``
-    * ``ObjectInsertOnceStmt`` -- payload class ``ObjectInsertOnceStmt``
-    * ``ObjectInsertStmt`` -- payload class ``ObjectInsertStmt``
-    * ``ObjectMergeStmt`` -- payload class ``ObjectMergeStmt``
-    * ``ResetLocalStmt`` -- payload class ``ResetLocalStmt``
-    * ``ResultSetAddStmt`` -- payload class ``ResultSetAddStmt``
-    * ``ReturnLocalStmt`` -- payload class ``ReturnLocalStmt``
-    * ``ScanStmt`` -- payload class ``ScanStmt``
-    * ``SetAddStmt`` -- payload class ``SetAddStmt``
-    * ``WithStmt`` -- payload class ``WithStmt``
+    A statement of kind WithStmt, with its fields in `stmt`.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["Stmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:Stmt"
-    class_name: ClassVar[str] = "Stmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.Stmt
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaWithStmt"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaWithStmt"
+    class_name: ClassVar[str] = "OpaWithStmt"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaWithStmt
 
-    type: Union[str, "StmtTag"] = None
-    stmt: Union[dict, Any] = None
+    type: str = None
+    stmt: Union[dict, "OpaWithStmtBody"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
         if self._is_empty(self.type):
             self.MissingRequiredField("type")
-        if not isinstance(self.type, StmtTag):
-            self.type = StmtTag(self.type)
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.stmt):
+            self.MissingRequiredField("stmt")
+        if not isinstance(self.stmt, OpaWithStmtBody):
+            self.stmt = OpaWithStmtBody(**as_dict(self.stmt))
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class StringConst(YAMLRoot):
+class OpaWithStmtBody(OpaStmtBody):
     """
-    ``StringConst`` definition from upstream JSON Schema.
-    """
-    _inherited_slots: ClassVar[list[str]] = []
-
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["StringConst"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:StringConst"
-    class_name: ClassVar[str] = "StringConst"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.StringConst
-
-    value: str = None
-
-    def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.value):
-            self.MissingRequiredField("value")
-        if not isinstance(self.value, str):
-            self.value = str(self.value)
-
-        super().__post_init__(**kwargs)
-
-
-@dataclass(repr=False)
-class Val(YAMLRoot):
-    """
-    Tagged-wrapper class for the ``Val`` discriminated union from
-    the upstream JSON Schema.
-
-    The ``type`` slot carries the discriminator tag and the
-    ``value`` slot carries the typed payload. Because the
-    payload class varies by tag, ``value`` is typed as
-    ``Any`` with an ``any_of`` union over the known payload classes;
-    consumers select the concrete class using the table below.
-
-    * ``bool`` -- payload class ``boolean``
-    * ``local`` -- payload class ``integer``
-    * ``string_index`` -- payload class ``integer``
+    WithStmt replaces the Local or a portion of the document referred to by the Local with the Value and executes the
+    contained block. If the Path is non-empty, the Value is upserted into the Local.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["Val"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:Val"
-    class_name: ClassVar[str] = "Val"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.Val
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaWithStmtBody"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaWithStmtBody"
+    class_name: ClassVar[str] = "OpaWithStmtBody"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaWithStmtBody
 
-    type: Union[str, "ValTag"] = None
-    value: Union[dict, Any] = None
-
-    def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.type):
-            self.MissingRequiredField("type")
-        if not isinstance(self.type, ValTag):
-            self.type = ValTag(self.type)
-
-        super().__post_init__(**kwargs)
-
-
-@dataclass(repr=False)
-class WithStmt(YAMLRoot):
-    """
-    ``WithStmt`` definition from upstream JSON Schema.
-    """
-    _inherited_slots: ClassVar[list[str]] = []
-
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["WithStmt"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:WithStmt"
-    class_name: ClassVar[str] = "WithStmt"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.WithStmt
-
-    col: int = None
     file: int = None
+    col: int = None
     row: int = None
-    block: str = None
+    end_col: int = None
+    end_row: int = None
     local: int = None
-    path: Union[int, list[int]] = None
-    value: Union[dict, "Operand"] = None
+    value: Union[dict, "OpaOperand"] = None
+    block: Optional[Union[dict, OpaBlock]] = None
+    path: Optional[Union[int, list[int]]] = empty_list()
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.col):
-            self.MissingRequiredField("col")
-        if not isinstance(self.col, int):
-            self.col = int(self.col)
-
-        if self._is_empty(self.file):
-            self.MissingRequiredField("file")
-        if not isinstance(self.file, int):
-            self.file = int(self.file)
-
-        if self._is_empty(self.row):
-            self.MissingRequiredField("row")
-        if not isinstance(self.row, int):
-            self.row = int(self.row)
-
-        if self._is_empty(self.block):
-            self.MissingRequiredField("block")
-        if not isinstance(self.block, str):
-            self.block = str(self.block)
-
         if self._is_empty(self.local):
             self.MissingRequiredField("local")
         if not isinstance(self.local, int):
             self.local = int(self.local)
 
-        if self._is_empty(self.path):
-            self.MissingRequiredField("path")
+        if self._is_empty(self.value):
+            self.MissingRequiredField("value")
+        if not isinstance(self.value, OpaOperand):
+            self.value = OpaOperand()
+
+        if self.block is not None and not isinstance(self.block, OpaBlock):
+            self.block = OpaBlock(**as_dict(self.block))
+
         if not isinstance(self.path, list):
             self.path = [self.path] if self.path is not None else []
         self.path = [v if isinstance(v, int) else int(v) for v in self.path]
 
+        super().__post_init__(**kwargs)
+
+
+class OpaOperand(YAMLRoot):
+    """
+    Operand represents a value that a statement operates on. OPA writes it as its kind in `type` and the value in
+    `value`.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaOperand"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaOperand"
+    class_name: ClassVar[str] = "OpaOperand"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaOperand
+
+
+@dataclass(repr=False)
+class OpaBoolOperand(OpaOperand):
+    """
+    Bool represents a constant boolean.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaBoolOperand"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaBoolOperand"
+    class_name: ClassVar[str] = "OpaBoolOperand"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBoolOperand
+
+    type: str = None
+    value: Union[bool, Bool] = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
         if self._is_empty(self.value):
             self.MissingRequiredField("value")
-        if not isinstance(self.value, Operand):
-            self.value = Operand(**as_dict(self.value))
+        if not isinstance(self.value, Bool):
+            self.value = Bool(self.value)
 
         super().__post_init__(**kwargs)
 
 
 @dataclass(repr=False)
-class Operand(Val):
+class OpaLocalOperand(OpaOperand):
     """
-    Alias for ``Val`` (single-``$ref`` def in upstream JSON Schema).
+    A local variable, by its number.
     """
     _inherited_slots: ClassVar[list[str]] = []
 
-    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["Operand"]
-    class_class_curie: ClassVar[str] = "openpolicyagent:Operand"
-    class_name: ClassVar[str] = "Operand"
-    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.Operand
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaLocalOperand"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaLocalOperand"
+    class_name: ClassVar[str] = "OpaLocalOperand"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaLocalOperand
 
-    type: Union[str, "ValTag"] = None
-    value: Union[dict, Any] = None
+    type: str = None
+    value: int = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.value):
+            self.MissingRequiredField("value")
+        if not isinstance(self.value, int):
+            self.value = int(self.value)
+
+        super().__post_init__(**kwargs)
+
+
+@dataclass(repr=False)
+class OpaStringIndexOperand(OpaOperand):
+    """
+    StringIndex represents the index into the plan's list of constant strings of a constant string.
+    """
+    _inherited_slots: ClassVar[list[str]] = []
+
+    class_class_uri: ClassVar[URIRef] = OPENPOLICYAGENT["OpaStringIndexOperand"]
+    class_class_curie: ClassVar[str] = "openpolicyagent:OpaStringIndexOperand"
+    class_name: ClassVar[str] = "OpaStringIndexOperand"
+    class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaStringIndexOperand
+
+    type: str = None
+    value: int = None
+
+    def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.type):
+            self.MissingRequiredField("type")
+        if not isinstance(self.type, str):
+            self.type = str(self.type)
+
+        if self._is_empty(self.value):
+            self.MissingRequiredField("value")
+        if not isinstance(self.value, int):
+            self.value = int(self.value)
+
+        super().__post_init__(**kwargs)
+
 
 # Enumerations
-class BuiltinTypeKind(EnumDefinitionImpl):
+class OpaFutureKeyword(EnumDefinitionImpl):
     """
-    Kinds of value that a TypeDecl can describe.
+    The future keywords the shipped capabilities files name.
     """
-    string = PermissibleValue(text="string")
-    number = PermissibleValue(text="number")
-    boolean = PermissibleValue(text="boolean")
-    null = PermissibleValue(text="null")
-    any = PermissibleValue(text="any")
-    array = PermissibleValue(text="array")
-    set = PermissibleValue(text="set")
-    object = PermissibleValue(text="object")
-    function = PermissibleValue(text="function")
+    contains = PermissibleValue(text="contains")
+    every = PermissibleValue(text="every")
 
     _defn = EnumDefinition(
-        name="BuiltinTypeKind",
-        description="Kinds of value that a TypeDecl can describe.",
-    )
-
-class FeatureName(EnumDefinitionImpl):
-    """
-    Optional features advertised by the OPA build. The permissible values below are seeded from the upstream
-    capabilities.json snapshot at generation time; future releases may introduce new flags.
-    """
-    keywords_in_refs = PermissibleValue(
-        text="keywords_in_refs",
-        meaning=OPENPOLICYAGENT["feature/keywords_in_refs"])
-    rego_v1 = PermissibleValue(
-        text="rego_v1",
-        meaning=OPENPOLICYAGENT["feature/rego_v1"])
-    template_strings = PermissibleValue(
-        text="template_strings",
-        meaning=OPENPOLICYAGENT["feature/template_strings"])
-
-    _defn = EnumDefinition(
-        name="FeatureName",
-        description="""Optional features advertised by the OPA build. The permissible values below are seeded from the upstream capabilities.json snapshot at generation time; future releases may introduce new flags.""",
-    )
-
-class FutureKeyword(EnumDefinitionImpl):
-    """
-    Identifiers reserved for upcoming Rego releases.
-    """
-    _defn = EnumDefinition(
-        name="FutureKeyword",
-        description="Identifiers reserved for upcoming Rego releases.",
+        name="OpaFutureKeyword",
+        description="The future keywords the shipped capabilities files name.",
     )
 
     @classmethod
     def _addvals(cls):
+        setattr(cls, "and",
+            PermissibleValue(text="and"))
+        setattr(cls, "if",
+            PermissibleValue(text="if"))
+        setattr(cls, "in",
+            PermissibleValue(text="in"))
         setattr(cls, "not",
-            PermissibleValue(
-                text="not",
-                meaning=OPENPOLICYAGENT["future_keyword/not"]))
+            PermissibleValue(text="not"))
+        setattr(cls, "or",
+            PermissibleValue(text="or"))
 
-class BuiltinCategory(EnumDefinitionImpl):
+class OpaFeature(EnumDefinitionImpl):
     """
-    Documentation category a built-in belongs to. Permissible values are seeded from
-    ``builtin_metadata.json._categories`` at generation time. Enum symbols follow LinkML's snake_case convention; each
-    permissible value carries the upstream label (e.g. ``providers.aws``) in both its description and its ``meaning``
-    mapping.
+    The language features the shipped capabilities files name.
     """
-    aggregates = PermissibleValue(
-        text="aggregates",
-        meaning=OPENPOLICYAGENT["category/aggregates"])
-    array = PermissibleValue(
-        text="array",
-        meaning=OPENPOLICYAGENT["category/array"])
-    bits = PermissibleValue(
-        text="bits",
-        meaning=OPENPOLICYAGENT["category/bits"])
-    comparison = PermissibleValue(
-        text="comparison",
-        meaning=OPENPOLICYAGENT["category/comparison"])
-    conversions = PermissibleValue(
-        text="conversions",
-        meaning=OPENPOLICYAGENT["category/conversions"])
-    crypto = PermissibleValue(
-        text="crypto",
-        meaning=OPENPOLICYAGENT["category/crypto"])
-    encoding = PermissibleValue(
-        text="encoding",
-        meaning=OPENPOLICYAGENT["category/encoding"])
-    glob = PermissibleValue(
-        text="glob",
-        meaning=OPENPOLICYAGENT["category/glob"])
-    graph = PermissibleValue(
-        text="graph",
-        meaning=OPENPOLICYAGENT["category/graph"])
-    graphql = PermissibleValue(
-        text="graphql",
-        meaning=OPENPOLICYAGENT["category/graphql"])
-    http = PermissibleValue(
-        text="http",
-        meaning=OPENPOLICYAGENT["category/http"])
-    internal = PermissibleValue(
-        text="internal",
-        meaning=OPENPOLICYAGENT["category/internal"])
-    net = PermissibleValue(
-        text="net",
-        meaning=OPENPOLICYAGENT["category/net"])
-    numbers = PermissibleValue(
-        text="numbers",
-        meaning=OPENPOLICYAGENT["category/numbers"])
-    object = PermissibleValue(
-        text="object",
-        meaning=OPENPOLICYAGENT["category/object"])
-    opa = PermissibleValue(
-        text="opa",
-        meaning=OPENPOLICYAGENT["category/opa"])
-    providers_aws = PermissibleValue(
-        text="providers_aws",
-        description="providers.aws",
-        meaning=OPENPOLICYAGENT["category/providers.aws"])
-    regex = PermissibleValue(
-        text="regex",
-        meaning=OPENPOLICYAGENT["category/regex"])
-    rego = PermissibleValue(
-        text="rego",
-        meaning=OPENPOLICYAGENT["category/rego"])
-    semver = PermissibleValue(
-        text="semver",
-        meaning=OPENPOLICYAGENT["category/semver"])
-    sets = PermissibleValue(
-        text="sets",
-        meaning=OPENPOLICYAGENT["category/sets"])
-    strings = PermissibleValue(
-        text="strings",
-        meaning=OPENPOLICYAGENT["category/strings"])
-    time = PermissibleValue(
-        text="time",
-        meaning=OPENPOLICYAGENT["category/time"])
-    tokens = PermissibleValue(
-        text="tokens",
-        meaning=OPENPOLICYAGENT["category/tokens"])
-    tokensign = PermissibleValue(
-        text="tokensign",
-        meaning=OPENPOLICYAGENT["category/tokensign"])
-    tracing = PermissibleValue(
-        text="tracing",
-        meaning=OPENPOLICYAGENT["category/tracing"])
-    types = PermissibleValue(
-        text="types",
-        meaning=OPENPOLICYAGENT["category/types"])
-    units = PermissibleValue(
-        text="units",
-        meaning=OPENPOLICYAGENT["category/units"])
-    uri = PermissibleValue(
-        text="uri",
-        meaning=OPENPOLICYAGENT["category/uri"])
-    uuid = PermissibleValue(
-        text="uuid",
-        meaning=OPENPOLICYAGENT["category/uuid"])
+    keywords_in_refs = PermissibleValue(text="keywords_in_refs")
+    rego_v1 = PermissibleValue(text="rego_v1")
+    rego_v1_import = PermissibleValue(text="rego_v1_import")
+    rego_v2 = PermissibleValue(text="rego_v2")
+    rego_v2_import = PermissibleValue(text="rego_v2_import")
+    rule_head_ref_string_prefixes = PermissibleValue(text="rule_head_ref_string_prefixes")
+    rule_head_refs = PermissibleValue(text="rule_head_refs")
+    template_strings = PermissibleValue(text="template_strings")
 
     _defn = EnumDefinition(
-        name="BuiltinCategory",
-        description="""Documentation category a built-in belongs to. Permissible values are seeded from ``builtin_metadata.json._categories`` at generation time. Enum symbols follow LinkML's snake_case convention; each permissible value carries the upstream label (e.g. ``providers.aws``) in both its description and its ``meaning`` mapping.""",
-    )
-
-class StmtTag(EnumDefinitionImpl):
-    """
-    Permissible discriminator tags for the ``Stmt`` union.
-    """
-    ArrayAppendStmt = PermissibleValue(text="ArrayAppendStmt")
-    AssignIntStmt = PermissibleValue(text="AssignIntStmt")
-    AssignVarOnceStmt = PermissibleValue(text="AssignVarOnceStmt")
-    AssignVarStmt = PermissibleValue(text="AssignVarStmt")
-    BlockStmt = PermissibleValue(text="BlockStmt")
-    BreakStmt = PermissibleValue(text="BreakStmt")
-    CallDynamicStmt = PermissibleValue(text="CallDynamicStmt")
-    CallStmt = PermissibleValue(text="CallStmt")
-    DotStmt = PermissibleValue(text="DotStmt")
-    EqualStmt = PermissibleValue(text="EqualStmt")
-    IsArrayStmt = PermissibleValue(text="IsArrayStmt")
-    IsDefinedStmt = PermissibleValue(text="IsDefinedStmt")
-    IsObjectStmt = PermissibleValue(text="IsObjectStmt")
-    IsSetStmt = PermissibleValue(text="IsSetStmt")
-    IsUndefinedStmt = PermissibleValue(text="IsUndefinedStmt")
-    LenStmt = PermissibleValue(text="LenStmt")
-    MakeArrayStmt = PermissibleValue(text="MakeArrayStmt")
-    MakeNullStmt = PermissibleValue(text="MakeNullStmt")
-    MakeNumberIntStmt = PermissibleValue(text="MakeNumberIntStmt")
-    MakeNumberRefStmt = PermissibleValue(text="MakeNumberRefStmt")
-    MakeObjectStmt = PermissibleValue(text="MakeObjectStmt")
-    MakeSetStmt = PermissibleValue(text="MakeSetStmt")
-    NopStmt = PermissibleValue(text="NopStmt")
-    NotEqualStmt = PermissibleValue(text="NotEqualStmt")
-    NotStmt = PermissibleValue(text="NotStmt")
-    ObjectInsertOnceStmt = PermissibleValue(text="ObjectInsertOnceStmt")
-    ObjectInsertStmt = PermissibleValue(text="ObjectInsertStmt")
-    ObjectMergeStmt = PermissibleValue(text="ObjectMergeStmt")
-    ResetLocalStmt = PermissibleValue(text="ResetLocalStmt")
-    ResultSetAddStmt = PermissibleValue(text="ResultSetAddStmt")
-    ReturnLocalStmt = PermissibleValue(text="ReturnLocalStmt")
-    ScanStmt = PermissibleValue(text="ScanStmt")
-    SetAddStmt = PermissibleValue(text="SetAddStmt")
-    WithStmt = PermissibleValue(text="WithStmt")
-
-    _defn = EnumDefinition(
-        name="StmtTag",
-        description="Permissible discriminator tags for the ``Stmt`` union.",
-    )
-
-class ValTag(EnumDefinitionImpl):
-    """
-    Permissible discriminator tags for the ``Val`` union.
-    """
-    bool = PermissibleValue(text="bool")
-    local = PermissibleValue(text="local")
-    string_index = PermissibleValue(text="string_index")
-
-    _defn = EnumDefinition(
-        name="ValTag",
-        description="Permissible discriminator tags for the ``Val`` union.",
+        name="OpaFeature",
+        description="The language features the shipped capabilities files name.",
     )
 
 # Slots
 class slots:
     pass
 
-slots.capabilities__builtins = Slot(uri=OPENPOLICYAGENT.builtins, name="capabilities__builtins", curie=OPENPOLICYAGENT.curie('builtins'),
-                   model_uri=OPENPOLICYAGENT.capabilities__builtins, domain=None, range=Optional[Union[dict[Union[str, BuiltinName], Union[dict, Builtin]], list[Union[dict, Builtin]]]])
+slots.file = Slot(uri=OPENPOLICYAGENT.file, name="file", curie=OPENPOLICYAGENT.curie('file'),
+                   model_uri=OPENPOLICYAGENT.file, domain=None, range=Optional[int])
 
-slots.capabilities__future_keywords = Slot(uri=OPENPOLICYAGENT.future_keywords, name="capabilities__future_keywords", curie=OPENPOLICYAGENT.curie('future_keywords'),
-                   model_uri=OPENPOLICYAGENT.capabilities__future_keywords, domain=None, range=Optional[Union[Union[str, "FutureKeyword"], list[Union[str, "FutureKeyword"]]]])
+slots.col = Slot(uri=OPENPOLICYAGENT.col, name="col", curie=OPENPOLICYAGENT.curie('col'),
+                   model_uri=OPENPOLICYAGENT.col, domain=None, range=Optional[int])
 
-slots.capabilities__wasm_abi_versions = Slot(uri=OPENPOLICYAGENT.wasm_abi_versions, name="capabilities__wasm_abi_versions", curie=OPENPOLICYAGENT.curie('wasm_abi_versions'),
-                   model_uri=OPENPOLICYAGENT.capabilities__wasm_abi_versions, domain=None, range=Optional[Union[Union[dict, WasmABIVersion], list[Union[dict, WasmABIVersion]]]])
+slots.row = Slot(uri=OPENPOLICYAGENT.row, name="row", curie=OPENPOLICYAGENT.curie('row'),
+                   model_uri=OPENPOLICYAGENT.row, domain=None, range=Optional[int])
 
-slots.capabilities__features = Slot(uri=OPENPOLICYAGENT.features, name="capabilities__features", curie=OPENPOLICYAGENT.curie('features'),
-                   model_uri=OPENPOLICYAGENT.capabilities__features, domain=None, range=Optional[Union[Union[str, "FeatureName"], list[Union[str, "FeatureName"]]]])
+slots.end_col = Slot(uri=OPENPOLICYAGENT.end_col, name="end_col", curie=OPENPOLICYAGENT.curie('end_col'),
+                   model_uri=OPENPOLICYAGENT.end_col, domain=None, range=Optional[int])
 
-slots.capabilities__allow_net = Slot(uri=OPENPOLICYAGENT.allow_net, name="capabilities__allow_net", curie=OPENPOLICYAGENT.curie('allow_net'),
-                   model_uri=OPENPOLICYAGENT.capabilities__allow_net, domain=None, range=Optional[Union[str, list[str]]])
+slots.end_row = Slot(uri=OPENPOLICYAGENT.end_row, name="end_row", curie=OPENPOLICYAGENT.curie('end_row'),
+                   model_uri=OPENPOLICYAGENT.end_row, domain=None, range=Optional[int])
 
-slots.builtin__name = Slot(uri=OPENPOLICYAGENT.name, name="builtin__name", curie=OPENPOLICYAGENT.curie('name'),
-                   model_uri=OPENPOLICYAGENT.builtin__name, domain=None, range=URIRef)
+slots.opaType__name = Slot(uri=OPENPOLICYAGENT.name, name="opaType__name", curie=OPENPOLICYAGENT.curie('name'),
+                   model_uri=OPENPOLICYAGENT.opaType__name, domain=None, range=Optional[str])
 
-slots.builtin__decl = Slot(uri=OPENPOLICYAGENT.decl, name="builtin__decl", curie=OPENPOLICYAGENT.curie('decl'),
-                   model_uri=OPENPOLICYAGENT.builtin__decl, domain=None, range=Union[dict, BuiltinDecl])
+slots.opaType__description = Slot(uri=OPENPOLICYAGENT.description, name="opaType__description", curie=OPENPOLICYAGENT.curie('description'),
+                   model_uri=OPENPOLICYAGENT.opaType__description, domain=None, range=Optional[str])
 
-slots.builtin__infix = Slot(uri=OPENPOLICYAGENT.infix, name="builtin__infix", curie=OPENPOLICYAGENT.curie('infix'),
-                   model_uri=OPENPOLICYAGENT.builtin__infix, domain=None, range=Optional[str])
+slots.opaAnyType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaAnyType__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaAnyType__type, domain=None, range=str)
 
-slots.builtin__deprecated = Slot(uri=OPENPOLICYAGENT.deprecated, name="builtin__deprecated", curie=OPENPOLICYAGENT.curie('deprecated'),
-                   model_uri=OPENPOLICYAGENT.builtin__deprecated, domain=None, range=Optional[Union[bool, Bool]])
+slots.opaAnyType__of = Slot(uri=OPENPOLICYAGENT.of, name="opaAnyType__of", curie=OPENPOLICYAGENT.curie('of'),
+                   model_uri=OPENPOLICYAGENT.opaAnyType__of, domain=None, range=Optional[Union[Union[dict, OpaType], list[Union[dict, OpaType]]]])
 
-slots.builtin__nondeterministic = Slot(uri=OPENPOLICYAGENT.nondeterministic, name="builtin__nondeterministic", curie=OPENPOLICYAGENT.curie('nondeterministic'),
-                   model_uri=OPENPOLICYAGENT.builtin__nondeterministic, domain=None, range=Optional[Union[bool, Bool]])
+slots.opaArrayType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaArrayType__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaArrayType__type, domain=None, range=str)
 
-slots.builtin__relation = Slot(uri=OPENPOLICYAGENT.relation, name="builtin__relation", curie=OPENPOLICYAGENT.curie('relation'),
-                   model_uri=OPENPOLICYAGENT.builtin__relation, domain=None, range=Optional[Union[bool, Bool]])
+slots.opaArrayType__static = Slot(uri=OPENPOLICYAGENT.static, name="opaArrayType__static", curie=OPENPOLICYAGENT.curie('static'),
+                   model_uri=OPENPOLICYAGENT.opaArrayType__static, domain=None, range=Optional[Union[Union[dict, OpaType], list[Union[dict, OpaType]]]])
 
-slots.builtinDecl__type = Slot(uri=OPENPOLICYAGENT.type, name="builtinDecl__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.builtinDecl__type, domain=None, range=str)
+slots.opaArrayType__dynamic = Slot(uri=OPENPOLICYAGENT.dynamic, name="opaArrayType__dynamic", curie=OPENPOLICYAGENT.curie('dynamic'),
+                   model_uri=OPENPOLICYAGENT.opaArrayType__dynamic, domain=None, range=Optional[Union[dict, OpaType]])
 
-slots.builtinDecl__args = Slot(uri=OPENPOLICYAGENT.args, name="builtinDecl__args", curie=OPENPOLICYAGENT.curie('args'),
-                   model_uri=OPENPOLICYAGENT.builtinDecl__args, domain=None, range=Optional[Union[Union[dict, TypeDecl], list[Union[dict, TypeDecl]]]])
+slots.opaBooleanType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBooleanType__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaBooleanType__type, domain=None, range=str)
 
-slots.builtinDecl__result = Slot(uri=OPENPOLICYAGENT.result, name="builtinDecl__result", curie=OPENPOLICYAGENT.curie('result'),
-                   model_uri=OPENPOLICYAGENT.builtinDecl__result, domain=None, range=Optional[Union[dict, TypeDecl]])
+slots.opaFunctionType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaFunctionType__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaFunctionType__type, domain=None, range=str)
 
-slots.builtinDecl__variadic = Slot(uri=OPENPOLICYAGENT.variadic, name="builtinDecl__variadic", curie=OPENPOLICYAGENT.curie('variadic'),
-                   model_uri=OPENPOLICYAGENT.builtinDecl__variadic, domain=None, range=Optional[Union[dict, TypeDecl]])
+slots.opaFunctionType__args = Slot(uri=OPENPOLICYAGENT.args, name="opaFunctionType__args", curie=OPENPOLICYAGENT.curie('args'),
+                   model_uri=OPENPOLICYAGENT.opaFunctionType__args, domain=None, range=Optional[Union[Union[dict, OpaType], list[Union[dict, OpaType]]]])
 
-slots.typeDecl__type = Slot(uri=OPENPOLICYAGENT.type, name="typeDecl__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.typeDecl__type, domain=None, range=Optional[Union[str, "BuiltinTypeKind"]])
+slots.opaFunctionType__result = Slot(uri=OPENPOLICYAGENT.result, name="opaFunctionType__result", curie=OPENPOLICYAGENT.curie('result'),
+                   model_uri=OPENPOLICYAGENT.opaFunctionType__result, domain=None, range=Optional[Union[dict, OpaType]])
 
-slots.typeDecl__of = Slot(uri=OPENPOLICYAGENT.of, name="typeDecl__of", curie=OPENPOLICYAGENT.curie('of'),
-                   model_uri=OPENPOLICYAGENT.typeDecl__of, domain=None, range=Optional[Union[Union[dict, TypeDecl], list[Union[dict, TypeDecl]]]])
+slots.opaFunctionType__variadic = Slot(uri=OPENPOLICYAGENT.variadic, name="opaFunctionType__variadic", curie=OPENPOLICYAGENT.curie('variadic'),
+                   model_uri=OPENPOLICYAGENT.opaFunctionType__variadic, domain=None, range=Optional[Union[dict, OpaType]])
 
-slots.typeDecl__dynamic = Slot(uri=OPENPOLICYAGENT.dynamic, name="typeDecl__dynamic", curie=OPENPOLICYAGENT.curie('dynamic'),
-                   model_uri=OPENPOLICYAGENT.typeDecl__dynamic, domain=None, range=Optional[Union[dict, TypeDecl]])
+slots.opaNullType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaNullType__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaNullType__type, domain=None, range=str)
 
-slots.typeDecl__static = Slot(uri=OPENPOLICYAGENT.static, name="typeDecl__static", curie=OPENPOLICYAGENT.curie('static'),
-                   model_uri=OPENPOLICYAGENT.typeDecl__static, domain=None, range=Optional[Union[Union[dict, TypeDecl], list[Union[dict, TypeDecl]]]])
+slots.opaNumberType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaNumberType__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaNumberType__type, domain=None, range=str)
 
-slots.typeDecl__key = Slot(uri=OPENPOLICYAGENT.key, name="typeDecl__key", curie=OPENPOLICYAGENT.curie('key'),
-                   model_uri=OPENPOLICYAGENT.typeDecl__key, domain=None, range=Optional[Union[dict, Any]])
+slots.opaObjectType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaObjectType__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaObjectType__type, domain=None, range=str)
 
-slots.typeDecl__value = Slot(uri=OPENPOLICYAGENT.value, name="typeDecl__value", curie=OPENPOLICYAGENT.curie('value'),
-                   model_uri=OPENPOLICYAGENT.typeDecl__value, domain=None, range=Optional[Union[dict, TypeDecl]])
+slots.opaObjectType__static = Slot(uri=OPENPOLICYAGENT.static, name="opaObjectType__static", curie=OPENPOLICYAGENT.curie('static'),
+                   model_uri=OPENPOLICYAGENT.opaObjectType__static, domain=None, range=Optional[Union[Union[dict, OpaStaticProperty], list[Union[dict, OpaStaticProperty]]]])
 
-slots.wasmABIVersion__version = Slot(uri=OPENPOLICYAGENT.version, name="wasmABIVersion__version", curie=OPENPOLICYAGENT.curie('version'),
-                   model_uri=OPENPOLICYAGENT.wasmABIVersion__version, domain=None, range=int)
+slots.opaObjectType__dynamic = Slot(uri=OPENPOLICYAGENT.dynamic, name="opaObjectType__dynamic", curie=OPENPOLICYAGENT.curie('dynamic'),
+                   model_uri=OPENPOLICYAGENT.opaObjectType__dynamic, domain=None, range=Optional[Union[dict, OpaDynamicProperty]])
 
-slots.wasmABIVersion__minor_version = Slot(uri=OPENPOLICYAGENT.minor_version, name="wasmABIVersion__minor_version", curie=OPENPOLICYAGENT.curie('minor_version'),
-                   model_uri=OPENPOLICYAGENT.wasmABIVersion__minor_version, domain=None, range=int)
+slots.opaSetType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaSetType__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaSetType__type, domain=None, range=str)
 
-slots.builtinMetadataCatalog__categories = Slot(uri=OPENPOLICYAGENT.categories, name="builtinMetadataCatalog__categories", curie=OPENPOLICYAGENT.curie('categories'),
-                   model_uri=OPENPOLICYAGENT.builtinMetadataCatalog__categories, domain=None, range=Optional[Union[dict[Union[str, BuiltinCategoryGroupName], Union[dict, BuiltinCategoryGroup]], list[Union[dict, BuiltinCategoryGroup]]]])
+slots.opaSetType__of = Slot(uri=OPENPOLICYAGENT.of, name="opaSetType__of", curie=OPENPOLICYAGENT.curie('of'),
+                   model_uri=OPENPOLICYAGENT.opaSetType__of, domain=None, range=Optional[Union[dict, OpaType]])
 
-slots.builtinMetadataCatalog__builtins = Slot(uri=OPENPOLICYAGENT.builtins, name="builtinMetadataCatalog__builtins", curie=OPENPOLICYAGENT.curie('builtins'),
-                   model_uri=OPENPOLICYAGENT.builtinMetadataCatalog__builtins, domain=None, range=Optional[Union[dict[Union[str, BuiltinMetadataName], Union[dict, BuiltinMetadata]], list[Union[dict, BuiltinMetadata]]]])
+slots.opaStringType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaStringType__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaStringType__type, domain=None, range=str)
 
-slots.builtinCategoryGroup__name = Slot(uri=OPENPOLICYAGENT.name, name="builtinCategoryGroup__name", curie=OPENPOLICYAGENT.curie('name'),
-                   model_uri=OPENPOLICYAGENT.builtinCategoryGroup__name, domain=None, range=URIRef)
+slots.opaStaticProperty__key = Slot(uri=OPENPOLICYAGENT.key, name="opaStaticProperty__key", curie=OPENPOLICYAGENT.curie('key'),
+                   model_uri=OPENPOLICYAGENT.opaStaticProperty__key, domain=None, range=Union[dict, OpaValue])
 
-slots.builtinCategoryGroup__category = Slot(uri=OPENPOLICYAGENT.category, name="builtinCategoryGroup__category", curie=OPENPOLICYAGENT.curie('category'),
-                   model_uri=OPENPOLICYAGENT.builtinCategoryGroup__category, domain=None, range=Optional[Union[str, "BuiltinCategory"]])
+slots.opaStaticProperty__value = Slot(uri=OPENPOLICYAGENT.value, name="opaStaticProperty__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaStaticProperty__value, domain=None, range=Union[dict, OpaType])
 
-slots.builtinCategoryGroup__builtins = Slot(uri=OPENPOLICYAGENT.builtins, name="builtinCategoryGroup__builtins", curie=OPENPOLICYAGENT.curie('builtins'),
-                   model_uri=OPENPOLICYAGENT.builtinCategoryGroup__builtins, domain=None, range=Union[str, list[str]])
+slots.opaDynamicProperty__key = Slot(uri=OPENPOLICYAGENT.key, name="opaDynamicProperty__key", curie=OPENPOLICYAGENT.curie('key'),
+                   model_uri=OPENPOLICYAGENT.opaDynamicProperty__key, domain=None, range=Union[dict, OpaType])
 
-slots.builtinMetadata__name = Slot(uri=OPENPOLICYAGENT.name, name="builtinMetadata__name", curie=OPENPOLICYAGENT.curie('name'),
-                   model_uri=OPENPOLICYAGENT.builtinMetadata__name, domain=None, range=URIRef)
+slots.opaDynamicProperty__value = Slot(uri=OPENPOLICYAGENT.value, name="opaDynamicProperty__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaDynamicProperty__value, domain=None, range=Union[dict, OpaType])
 
-slots.builtinMetadata__description = Slot(uri=SCHEMA.description, name="builtinMetadata__description", curie=SCHEMA.curie('description'),
-                   model_uri=OPENPOLICYAGENT.builtinMetadata__description, domain=None, range=Optional[str])
+slots.opaCapabilities__builtins = Slot(uri=OPENPOLICYAGENT.builtins, name="opaCapabilities__builtins", curie=OPENPOLICYAGENT.curie('builtins'),
+                   model_uri=OPENPOLICYAGENT.opaCapabilities__builtins, domain=None, range=Optional[Union[Union[dict, OpaBuiltin], list[Union[dict, OpaBuiltin]]]])
 
-slots.builtinMetadata__introduced = Slot(uri=OPENPOLICYAGENT.introduced, name="builtinMetadata__introduced", curie=OPENPOLICYAGENT.curie('introduced'),
-                   model_uri=OPENPOLICYAGENT.builtinMetadata__introduced, domain=None, range=Optional[str])
+slots.opaCapabilities__future_keywords = Slot(uri=OPENPOLICYAGENT.future_keywords, name="opaCapabilities__future_keywords", curie=OPENPOLICYAGENT.curie('future_keywords'),
+                   model_uri=OPENPOLICYAGENT.opaCapabilities__future_keywords, domain=None, range=Optional[Union[Union[str, "OpaFutureKeyword"], list[Union[str, "OpaFutureKeyword"]]]])
 
-slots.builtinMetadata__available = Slot(uri=OPENPOLICYAGENT.available, name="builtinMetadata__available", curie=OPENPOLICYAGENT.curie('available'),
-                   model_uri=OPENPOLICYAGENT.builtinMetadata__available, domain=None, range=Optional[Union[str, list[str]]])
+slots.opaCapabilities__wasm_abi_versions = Slot(uri=OPENPOLICYAGENT.wasm_abi_versions, name="opaCapabilities__wasm_abi_versions", curie=OPENPOLICYAGENT.curie('wasm_abi_versions'),
+                   model_uri=OPENPOLICYAGENT.opaCapabilities__wasm_abi_versions, domain=None, range=Optional[Union[Union[dict, OpaWasmAbiVersion], list[Union[dict, OpaWasmAbiVersion]]]])
 
-slots.builtinMetadata__wasm = Slot(uri=OPENPOLICYAGENT.wasm, name="builtinMetadata__wasm", curie=OPENPOLICYAGENT.curie('wasm'),
-                   model_uri=OPENPOLICYAGENT.builtinMetadata__wasm, domain=None, range=Optional[Union[bool, Bool]])
+slots.opaCapabilities__features = Slot(uri=OPENPOLICYAGENT.features, name="opaCapabilities__features", curie=OPENPOLICYAGENT.curie('features'),
+                   model_uri=OPENPOLICYAGENT.opaCapabilities__features, domain=None, range=Optional[Union[Union[str, "OpaFeature"], list[Union[str, "OpaFeature"]]]])
 
-slots.builtinMetadata__infix = Slot(uri=OPENPOLICYAGENT.infix, name="builtinMetadata__infix", curie=OPENPOLICYAGENT.curie('infix'),
-                   model_uri=OPENPOLICYAGENT.builtinMetadata__infix, domain=None, range=Optional[str])
+slots.opaCapabilities__allow_net = Slot(uri=OPENPOLICYAGENT.allow_net, name="opaCapabilities__allow_net", curie=OPENPOLICYAGENT.curie('allow_net'),
+                   model_uri=OPENPOLICYAGENT.opaCapabilities__allow_net, domain=None, range=Optional[Union[str, list[str]]])
 
-slots.builtinMetadata__deprecated = Slot(uri=OPENPOLICYAGENT.deprecated, name="builtinMetadata__deprecated", curie=OPENPOLICYAGENT.curie('deprecated'),
-                   model_uri=OPENPOLICYAGENT.builtinMetadata__deprecated, domain=None, range=Optional[Union[bool, Bool]])
+slots.opaBuiltin__name = Slot(uri=OPENPOLICYAGENT.name, name="opaBuiltin__name", curie=OPENPOLICYAGENT.curie('name'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltin__name, domain=None, range=str)
 
-slots.builtinMetadata__relation = Slot(uri=OPENPOLICYAGENT.relation, name="builtinMetadata__relation", curie=OPENPOLICYAGENT.curie('relation'),
-                   model_uri=OPENPOLICYAGENT.builtinMetadata__relation, domain=None, range=Optional[Union[bool, Bool]])
+slots.opaBuiltin__description = Slot(uri=OPENPOLICYAGENT.description, name="opaBuiltin__description", curie=OPENPOLICYAGENT.curie('description'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltin__description, domain=None, range=Optional[str])
 
-slots.builtinMetadata__args = Slot(uri=OPENPOLICYAGENT.args, name="builtinMetadata__args", curie=OPENPOLICYAGENT.curie('args'),
-                   model_uri=OPENPOLICYAGENT.builtinMetadata__args, domain=None, range=Optional[Union[Union[dict, BuiltinArg], list[Union[dict, BuiltinArg]]]])
+slots.opaBuiltin__categories = Slot(uri=OPENPOLICYAGENT.categories, name="opaBuiltin__categories", curie=OPENPOLICYAGENT.curie('categories'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltin__categories, domain=None, range=Optional[Union[str, list[str]]])
 
-slots.builtinMetadata__result = Slot(uri=OPENPOLICYAGENT.result, name="builtinMetadata__result", curie=OPENPOLICYAGENT.curie('result'),
-                   model_uri=OPENPOLICYAGENT.builtinMetadata__result, domain=None, range=Optional[Union[dict, BuiltinResult]])
+slots.opaBuiltin__decl = Slot(uri=OPENPOLICYAGENT.decl, name="opaBuiltin__decl", curie=OPENPOLICYAGENT.curie('decl'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltin__decl, domain=None, range=Union[dict, OpaFunctionType])
 
-slots.builtinArg__name = Slot(uri=RDFS.label, name="builtinArg__name", curie=RDFS.curie('label'),
-                   model_uri=OPENPOLICYAGENT.builtinArg__name, domain=None, range=Optional[str])
+slots.opaBuiltin__infix = Slot(uri=OPENPOLICYAGENT.infix, name="opaBuiltin__infix", curie=OPENPOLICYAGENT.curie('infix'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltin__infix, domain=None, range=Optional[str])
 
-slots.builtinArg__description = Slot(uri=SCHEMA.description, name="builtinArg__description", curie=SCHEMA.curie('description'),
-                   model_uri=OPENPOLICYAGENT.builtinArg__description, domain=None, range=Optional[str])
+slots.opaBuiltin__relation = Slot(uri=OPENPOLICYAGENT.relation, name="opaBuiltin__relation", curie=OPENPOLICYAGENT.curie('relation'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltin__relation, domain=None, range=Optional[Union[bool, Bool]])
 
-slots.builtinArg__type = Slot(uri=OPENPOLICYAGENT.type, name="builtinArg__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.builtinArg__type, domain=None, range=Optional[str])
+slots.opaBuiltin__deprecated = Slot(uri=OPENPOLICYAGENT.deprecated, name="opaBuiltin__deprecated", curie=OPENPOLICYAGENT.curie('deprecated'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltin__deprecated, domain=None, range=Optional[Union[bool, Bool]])
 
-slots.builtinResult__name = Slot(uri=RDFS.label, name="builtinResult__name", curie=RDFS.curie('label'),
-                   model_uri=OPENPOLICYAGENT.builtinResult__name, domain=None, range=Optional[str])
+slots.opaBuiltin__nondeterministic = Slot(uri=OPENPOLICYAGENT.nondeterministic, name="opaBuiltin__nondeterministic", curie=OPENPOLICYAGENT.curie('nondeterministic'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltin__nondeterministic, domain=None, range=Optional[Union[bool, Bool]])
 
-slots.builtinResult__description = Slot(uri=SCHEMA.description, name="builtinResult__description", curie=SCHEMA.curie('description'),
-                   model_uri=OPENPOLICYAGENT.builtinResult__description, domain=None, range=Optional[str])
+slots.opaWasmAbiVersion__version = Slot(uri=OPENPOLICYAGENT.version, name="opaWasmAbiVersion__version", curie=OPENPOLICYAGENT.curie('version'),
+                   model_uri=OPENPOLICYAGENT.opaWasmAbiVersion__version, domain=None, range=int)
 
-slots.builtinResult__type = Slot(uri=OPENPOLICYAGENT.type, name="builtinResult__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.builtinResult__type, domain=None, range=Optional[str])
+slots.opaWasmAbiVersion__minor_version = Slot(uri=OPENPOLICYAGENT.minor_version, name="opaWasmAbiVersion__minor_version", curie=OPENPOLICYAGENT.curie('minor_version'),
+                   model_uri=OPENPOLICYAGENT.opaWasmAbiVersion__minor_version, domain=None, range=int)
 
-slots.versionIndex__builtins = Slot(uri=OPENPOLICYAGENT.builtins, name="versionIndex__builtins", curie=OPENPOLICYAGENT.curie('builtins'),
-                   model_uri=OPENPOLICYAGENT.versionIndex__builtins, domain=None, range=Optional[Union[dict[Union[str, ElementVersionName], Union[dict, ElementVersion]], list[Union[dict, ElementVersion]]]])
+slots.opaBuiltinMetadataCatalog__categories = Slot(uri=OPENPOLICYAGENT._categories, name="opaBuiltinMetadataCatalog__categories", curie=OPENPOLICYAGENT.curie('_categories'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadataCatalog__categories, domain=None, range=Optional[Union[dict[Union[str, OpaBuiltinCategoryName], Union[dict, OpaBuiltinCategory]], list[Union[dict, OpaBuiltinCategory]]]])
 
-slots.versionIndex__features = Slot(uri=OPENPOLICYAGENT.features, name="versionIndex__features", curie=OPENPOLICYAGENT.curie('features'),
-                   model_uri=OPENPOLICYAGENT.versionIndex__features, domain=None, range=Optional[Union[dict[Union[str, ElementVersionName], Union[dict, ElementVersion]], list[Union[dict, ElementVersion]]]])
+slots.opaBuiltinMetadataCatalog__implementations = Slot(uri=OPENPOLICYAGENT._implementations, name="opaBuiltinMetadataCatalog__implementations", curie=OPENPOLICYAGENT.curie('_implementations'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadataCatalog__implementations, domain=None, range=Optional[Union[Union[dict, OpaImplementation], list[Union[dict, OpaImplementation]]]])
 
-slots.versionIndex__keywords = Slot(uri=OPENPOLICYAGENT.keywords, name="versionIndex__keywords", curie=OPENPOLICYAGENT.curie('keywords'),
-                   model_uri=OPENPOLICYAGENT.versionIndex__keywords, domain=None, range=Optional[Union[dict[Union[str, ElementVersionName], Union[dict, ElementVersion]], list[Union[dict, ElementVersion]]]])
+slots.opaBuiltinCategory__name = Slot(uri=OPENPOLICYAGENT.name, name="opaBuiltinCategory__name", curie=OPENPOLICYAGENT.curie('name'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinCategory__name, domain=None, range=URIRef)
 
-slots.elementVersion__name = Slot(uri=OPENPOLICYAGENT.name, name="elementVersion__name", curie=OPENPOLICYAGENT.curie('name'),
-                   model_uri=OPENPOLICYAGENT.elementVersion__name, domain=None, range=URIRef)
+slots.opaBuiltinCategory__builtins = Slot(uri=OPENPOLICYAGENT.builtins, name="opaBuiltinCategory__builtins", curie=OPENPOLICYAGENT.curie('builtins'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinCategory__builtins, domain=None, range=Union[str, list[str]])
 
-slots.elementVersion__major = Slot(uri=OPENPOLICYAGENT.major, name="elementVersion__major", curie=OPENPOLICYAGENT.curie('major'),
-                   model_uri=OPENPOLICYAGENT.elementVersion__major, domain=None, range=int)
+slots.opaImplementation__id = Slot(uri=OPENPOLICYAGENT.id, name="opaImplementation__id", curie=OPENPOLICYAGENT.curie('id'),
+                   model_uri=OPENPOLICYAGENT.opaImplementation__id, domain=None, range=str)
 
-slots.elementVersion__minor = Slot(uri=OPENPOLICYAGENT.minor, name="elementVersion__minor", curie=OPENPOLICYAGENT.curie('minor'),
-                   model_uri=OPENPOLICYAGENT.elementVersion__minor, domain=None, range=int)
+slots.opaImplementation__label = Slot(uri=OPENPOLICYAGENT.label, name="opaImplementation__label", curie=OPENPOLICYAGENT.curie('label'),
+                   model_uri=OPENPOLICYAGENT.opaImplementation__label, domain=None, range=str)
 
-slots.elementVersion__patch = Slot(uri=OPENPOLICYAGENT.patch, name="elementVersion__patch", curie=OPENPOLICYAGENT.curie('patch'),
-                   model_uri=OPENPOLICYAGENT.elementVersion__patch, domain=None, range=int)
+slots.opaImplementation__repo = Slot(uri=OPENPOLICYAGENT.repo, name="opaImplementation__repo", curie=OPENPOLICYAGENT.curie('repo'),
+                   model_uri=OPENPOLICYAGENT.opaImplementation__repo, domain=None, range=str)
 
-slots.authorizationInput__identity = Slot(uri=OPENPOLICYAGENT.identity, name="authorizationInput__identity", curie=OPENPOLICYAGENT.curie('identity'),
-                   model_uri=OPENPOLICYAGENT.authorizationInput__identity, domain=None, range=str)
+slots.opaImplementation__version = Slot(uri=OPENPOLICYAGENT.version, name="opaImplementation__version", curie=OPENPOLICYAGENT.curie('version'),
+                   model_uri=OPENPOLICYAGENT.opaImplementation__version, domain=None, range=str)
 
-slots.authorizationInput__client_certificates = Slot(uri=OPENPOLICYAGENT.client_certificates, name="authorizationInput__client_certificates", curie=OPENPOLICYAGENT.curie('client_certificates'),
-                   model_uri=OPENPOLICYAGENT.authorizationInput__client_certificates, domain=None, range=Union[Union[dict, Any], list[Union[dict, Any]]])
+slots.opaBuiltinMetadata__description = Slot(uri=OPENPOLICYAGENT.description, name="opaBuiltinMetadata__description", curie=OPENPOLICYAGENT.curie('description'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadata__description, domain=None, range=Optional[str])
 
-slots.authorizationInput__method = Slot(uri=OPENPOLICYAGENT.method, name="authorizationInput__method", curie=OPENPOLICYAGENT.curie('method'),
-                   model_uri=OPENPOLICYAGENT.authorizationInput__method, domain=None, range=str)
+slots.opaBuiltinMetadata__introduced = Slot(uri=OPENPOLICYAGENT.introduced, name="opaBuiltinMetadata__introduced", curie=OPENPOLICYAGENT.curie('introduced'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadata__introduced, domain=None, range=str)
 
-slots.authorizationInput__path = Slot(uri=OPENPOLICYAGENT.path, name="authorizationInput__path", curie=OPENPOLICYAGENT.curie('path'),
-                   model_uri=OPENPOLICYAGENT.authorizationInput__path, domain=None, range=Union[str, list[str]])
+slots.opaBuiltinMetadata__available = Slot(uri=OPENPOLICYAGENT.available, name="opaBuiltinMetadata__available", curie=OPENPOLICYAGENT.curie('available'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadata__available, domain=None, range=Union[str, list[str]])
 
-slots.authorizationInput__params = Slot(uri=OPENPOLICYAGENT.params, name="authorizationInput__params", curie=OPENPOLICYAGENT.curie('params'),
-                   model_uri=OPENPOLICYAGENT.authorizationInput__params, domain=None, range=Union[dict, Any])
+slots.opaBuiltinMetadata__wasm = Slot(uri=OPENPOLICYAGENT.wasm, name="opaBuiltinMetadata__wasm", curie=OPENPOLICYAGENT.curie('wasm'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadata__wasm, domain=None, range=Union[bool, Bool])
 
-slots.authorizationInput__headers = Slot(uri=OPENPOLICYAGENT.headers, name="authorizationInput__headers", curie=OPENPOLICYAGENT.curie('headers'),
-                   model_uri=OPENPOLICYAGENT.authorizationInput__headers, domain=None, range=Union[dict, Any])
+slots.opaBuiltinMetadata__args = Slot(uri=OPENPOLICYAGENT.args, name="opaBuiltinMetadata__args", curie=OPENPOLICYAGENT.curie('args'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadata__args, domain=None, range=Union[Union[dict, OpaBuiltinArgument], list[Union[dict, OpaBuiltinArgument]]])
 
-slots.authorizationInput__body = Slot(uri=OPENPOLICYAGENT.body, name="authorizationInput__body", curie=OPENPOLICYAGENT.curie('body'),
-                   model_uri=OPENPOLICYAGENT.authorizationInput__body, domain=None, range=Union[dict, Any])
+slots.opaBuiltinMetadata__result = Slot(uri=OPENPOLICYAGENT.result, name="opaBuiltinMetadata__result", curie=OPENPOLICYAGENT.curie('result'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadata__result, domain=None, range=Union[dict, OpaBuiltinResult])
 
-slots.manifest__file_rego_versions = Slot(uri=OPENPOLICYAGENT.file_rego_versions, name="manifest__file_rego_versions", curie=OPENPOLICYAGENT.curie('file_rego_versions'),
-                   model_uri=OPENPOLICYAGENT.manifest__file_rego_versions, domain=None, range=Optional[Union[dict[Union[str, FileRegoVersionPath], Union[dict, FileRegoVersion]], list[Union[dict, FileRegoVersion]]]])
+slots.opaBuiltinMetadata__implementations = Slot(uri=OPENPOLICYAGENT.implementations, name="opaBuiltinMetadata__implementations", curie=OPENPOLICYAGENT.curie('implementations'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadata__implementations, domain=None, range=Union[dict[Union[str, OpaImplementationSupportImplementation], Union[dict, OpaImplementationSupport]], list[Union[dict, OpaImplementationSupport]]])
 
-slots.manifest__metadata = Slot(uri=OPENPOLICYAGENT.metadata, name="manifest__metadata", curie=OPENPOLICYAGENT.curie('metadata'),
-                   model_uri=OPENPOLICYAGENT.manifest__metadata, domain=None, range=Optional[Union[dict, Any]])
+slots.opaBuiltinMetadata__infix = Slot(uri=OPENPOLICYAGENT.infix, name="opaBuiltinMetadata__infix", curie=OPENPOLICYAGENT.curie('infix'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadata__infix, domain=None, range=Optional[str])
 
-slots.manifest__rego_version = Slot(uri=OPENPOLICYAGENT.rego_version, name="manifest__rego_version", curie=OPENPOLICYAGENT.curie('rego_version'),
-                   model_uri=OPENPOLICYAGENT.manifest__rego_version, domain=None, range=Optional[int])
+slots.opaBuiltinMetadata__relation = Slot(uri=OPENPOLICYAGENT.relation, name="opaBuiltinMetadata__relation", curie=OPENPOLICYAGENT.curie('relation'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadata__relation, domain=None, range=Optional[Union[bool, Bool]])
 
-slots.manifest__revision = Slot(uri=OPENPOLICYAGENT.revision, name="manifest__revision", curie=OPENPOLICYAGENT.curie('revision'),
-                   model_uri=OPENPOLICYAGENT.manifest__revision, domain=None, range=str)
+slots.opaBuiltinMetadata__deprecated = Slot(uri=OPENPOLICYAGENT.deprecated, name="opaBuiltinMetadata__deprecated", curie=OPENPOLICYAGENT.curie('deprecated'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinMetadata__deprecated, domain=None, range=Optional[Union[bool, Bool]])
 
-slots.manifest__roots = Slot(uri=OPENPOLICYAGENT.roots, name="manifest__roots", curie=OPENPOLICYAGENT.curie('roots'),
-                   model_uri=OPENPOLICYAGENT.manifest__roots, domain=None, range=Optional[Union[str, list[str]]])
+slots.opaBuiltinArgument__name = Slot(uri=OPENPOLICYAGENT.name, name="opaBuiltinArgument__name", curie=OPENPOLICYAGENT.curie('name'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinArgument__name, domain=None, range=Optional[str])
 
-slots.manifest__wasm = Slot(uri=OPENPOLICYAGENT.wasm, name="manifest__wasm", curie=OPENPOLICYAGENT.curie('wasm'),
-                   model_uri=OPENPOLICYAGENT.manifest__wasm, domain=None, range=Optional[Union[Union[dict, WasmResolver], list[Union[dict, WasmResolver]]]])
+slots.opaBuiltinArgument__description = Slot(uri=OPENPOLICYAGENT.description, name="opaBuiltinArgument__description", curie=OPENPOLICYAGENT.curie('description'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinArgument__description, domain=None, range=Optional[str])
 
-slots.wasmResolver__annotations = Slot(uri=OPENPOLICYAGENT.annotations, name="wasmResolver__annotations", curie=OPENPOLICYAGENT.curie('annotations'),
-                   model_uri=OPENPOLICYAGENT.wasmResolver__annotations, domain=None, range=Optional[Union[Union[dict, Any], list[Union[dict, Any]]]])
+slots.opaBuiltinArgument__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBuiltinArgument__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinArgument__type, domain=None, range=str)
 
-slots.wasmResolver__entrypoint = Slot(uri=OPENPOLICYAGENT.entrypoint, name="wasmResolver__entrypoint", curie=OPENPOLICYAGENT.curie('entrypoint'),
-                   model_uri=OPENPOLICYAGENT.wasmResolver__entrypoint, domain=None, range=Optional[str])
+slots.opaBuiltinResult__name = Slot(uri=OPENPOLICYAGENT.name, name="opaBuiltinResult__name", curie=OPENPOLICYAGENT.curie('name'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinResult__name, domain=None, range=Optional[str])
 
-slots.wasmResolver__module = Slot(uri=OPENPOLICYAGENT.module, name="wasmResolver__module", curie=OPENPOLICYAGENT.curie('module'),
-                   model_uri=OPENPOLICYAGENT.wasmResolver__module, domain=None, range=Optional[str])
+slots.opaBuiltinResult__description = Slot(uri=OPENPOLICYAGENT.description, name="opaBuiltinResult__description", curie=OPENPOLICYAGENT.curie('description'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinResult__description, domain=None, range=Optional[str])
 
-slots.fileRegoVersion__path = Slot(uri=OPENPOLICYAGENT.path, name="fileRegoVersion__path", curie=OPENPOLICYAGENT.curie('path'),
-                   model_uri=OPENPOLICYAGENT.fileRegoVersion__path, domain=None, range=URIRef)
+slots.opaBuiltinResult__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBuiltinResult__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinResult__type, domain=None, range=Optional[str])
 
-slots.fileRegoVersion__version = Slot(uri=OPENPOLICYAGENT.version, name="fileRegoVersion__version", curie=OPENPOLICYAGENT.curie('version'),
-                   model_uri=OPENPOLICYAGENT.fileRegoVersion__version, domain=None, range=int)
+slots.opaImplementationSupport__implementation = Slot(uri=OPENPOLICYAGENT.implementation, name="opaImplementationSupport__implementation", curie=OPENPOLICYAGENT.curie('implementation'),
+                   model_uri=OPENPOLICYAGENT.opaImplementationSupport__implementation, domain=None, range=URIRef)
 
-slots.arrayAppendStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="arrayAppendStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.arrayAppendStmt__col, domain=None, range=int)
+slots.opaImplementationSupport__version = Slot(uri=OPENPOLICYAGENT.version, name="opaImplementationSupport__version", curie=OPENPOLICYAGENT.curie('version'),
+                   model_uri=OPENPOLICYAGENT.opaImplementationSupport__version, domain=None, range=str)
 
-slots.arrayAppendStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="arrayAppendStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.arrayAppendStmt__file, domain=None, range=int)
+slots.opaVersionIndex__builtins = Slot(uri=OPENPOLICYAGENT.builtins, name="opaVersionIndex__builtins", curie=OPENPOLICYAGENT.curie('builtins'),
+                   model_uri=OPENPOLICYAGENT.opaVersionIndex__builtins, domain=None, range=Union[dict[Union[str, OpaVersionEntryName], Union[dict, OpaVersionEntry]], list[Union[dict, OpaVersionEntry]]])
 
-slots.arrayAppendStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="arrayAppendStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.arrayAppendStmt__row, domain=None, range=int)
+slots.opaVersionIndex__features = Slot(uri=OPENPOLICYAGENT.features, name="opaVersionIndex__features", curie=OPENPOLICYAGENT.curie('features'),
+                   model_uri=OPENPOLICYAGENT.opaVersionIndex__features, domain=None, range=Union[dict[Union[str, OpaVersionEntryName], Union[dict, OpaVersionEntry]], list[Union[dict, OpaVersionEntry]]])
 
-slots.arrayAppendStmt__array = Slot(uri=OPENPOLICYAGENT.array, name="arrayAppendStmt__array", curie=OPENPOLICYAGENT.curie('array'),
-                   model_uri=OPENPOLICYAGENT.arrayAppendStmt__array, domain=None, range=int)
+slots.opaVersionIndex__keywords = Slot(uri=OPENPOLICYAGENT.keywords, name="opaVersionIndex__keywords", curie=OPENPOLICYAGENT.curie('keywords'),
+                   model_uri=OPENPOLICYAGENT.opaVersionIndex__keywords, domain=None, range=Union[dict[Union[str, OpaVersionEntryName], Union[dict, OpaVersionEntry]], list[Union[dict, OpaVersionEntry]]])
 
-slots.arrayAppendStmt__value = Slot(uri=OPENPOLICYAGENT.value, name="arrayAppendStmt__value", curie=OPENPOLICYAGENT.curie('value'),
-                   model_uri=OPENPOLICYAGENT.arrayAppendStmt__value, domain=None, range=Union[dict, Operand])
+slots.opaVersionEntry__name = Slot(uri=OPENPOLICYAGENT.name, name="opaVersionEntry__name", curie=OPENPOLICYAGENT.curie('name'),
+                   model_uri=OPENPOLICYAGENT.opaVersionEntry__name, domain=None, range=URIRef)
 
-slots.assignIntStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="assignIntStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.assignIntStmt__col, domain=None, range=int)
+slots.opaVersionEntry__major = Slot(uri=OPENPOLICYAGENT.Major, name="opaVersionEntry__major", curie=OPENPOLICYAGENT.curie('Major'),
+                   model_uri=OPENPOLICYAGENT.opaVersionEntry__major, domain=None, range=int)
 
-slots.assignIntStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="assignIntStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.assignIntStmt__file, domain=None, range=int)
+slots.opaVersionEntry__minor = Slot(uri=OPENPOLICYAGENT.Minor, name="opaVersionEntry__minor", curie=OPENPOLICYAGENT.curie('Minor'),
+                   model_uri=OPENPOLICYAGENT.opaVersionEntry__minor, domain=None, range=int)
 
-slots.assignIntStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="assignIntStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.assignIntStmt__row, domain=None, range=int)
+slots.opaVersionEntry__patch = Slot(uri=OPENPOLICYAGENT.Patch, name="opaVersionEntry__patch", curie=OPENPOLICYAGENT.curie('Patch'),
+                   model_uri=OPENPOLICYAGENT.opaVersionEntry__patch, domain=None, range=int)
 
-slots.assignIntStmt__target = Slot(uri=OPENPOLICYAGENT.target, name="assignIntStmt__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.assignIntStmt__target, domain=None, range=int)
+slots.opaVersionEntry__pre_release = Slot(uri=OPENPOLICYAGENT.PreRelease, name="opaVersionEntry__pre_release", curie=OPENPOLICYAGENT.curie('PreRelease'),
+                   model_uri=OPENPOLICYAGENT.opaVersionEntry__pre_release, domain=None, range=Optional[str])
 
-slots.assignIntStmt__value = Slot(uri=OPENPOLICYAGENT.value, name="assignIntStmt__value", curie=OPENPOLICYAGENT.curie('value'),
-                   model_uri=OPENPOLICYAGENT.assignIntStmt__value, domain=None, range=int)
+slots.opaAuthorizationInput__identity = Slot(uri=OPENPOLICYAGENT.identity, name="opaAuthorizationInput__identity", curie=OPENPOLICYAGENT.curie('identity'),
+                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__identity, domain=None, range=str)
 
-slots.assignVarOnceStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="assignVarOnceStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.assignVarOnceStmt__col, domain=None, range=int)
+slots.opaAuthorizationInput__client_certificates = Slot(uri=OPENPOLICYAGENT.client_certificates, name="opaAuthorizationInput__client_certificates", curie=OPENPOLICYAGENT.curie('client_certificates'),
+                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__client_certificates, domain=None, range=Union[Union[dict, OpaObject], list[Union[dict, OpaObject]]])
 
-slots.assignVarOnceStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="assignVarOnceStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.assignVarOnceStmt__file, domain=None, range=int)
+slots.opaAuthorizationInput__method = Slot(uri=OPENPOLICYAGENT.method, name="opaAuthorizationInput__method", curie=OPENPOLICYAGENT.curie('method'),
+                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__method, domain=None, range=str)
 
-slots.assignVarOnceStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="assignVarOnceStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.assignVarOnceStmt__row, domain=None, range=int)
+slots.opaAuthorizationInput__path = Slot(uri=OPENPOLICYAGENT.path, name="opaAuthorizationInput__path", curie=OPENPOLICYAGENT.curie('path'),
+                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__path, domain=None, range=Union[str, list[str]])
 
-slots.assignVarOnceStmt__source = Slot(uri=OPENPOLICYAGENT.source, name="assignVarOnceStmt__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.assignVarOnceStmt__source, domain=None, range=Union[dict, Operand])
+slots.opaAuthorizationInput__params = Slot(uri=OPENPOLICYAGENT.params, name="opaAuthorizationInput__params", curie=OPENPOLICYAGENT.curie('params'),
+                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__params, domain=None, range=Union[dict, OpaObject])
 
-slots.assignVarOnceStmt__target = Slot(uri=OPENPOLICYAGENT.target, name="assignVarOnceStmt__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.assignVarOnceStmt__target, domain=None, range=int)
+slots.opaAuthorizationInput__headers = Slot(uri=OPENPOLICYAGENT.headers, name="opaAuthorizationInput__headers", curie=OPENPOLICYAGENT.curie('headers'),
+                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__headers, domain=None, range=Union[dict, OpaObject])
 
-slots.assignVarStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="assignVarStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.assignVarStmt__col, domain=None, range=int)
+slots.opaAuthorizationInput__body = Slot(uri=OPENPOLICYAGENT.body, name="opaAuthorizationInput__body", curie=OPENPOLICYAGENT.curie('body'),
+                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__body, domain=None, range=Union[dict, OpaObject])
 
-slots.assignVarStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="assignVarStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.assignVarStmt__file, domain=None, range=int)
+slots.opaManifest__file_rego_versions = Slot(uri=OPENPOLICYAGENT.file_rego_versions, name="opaManifest__file_rego_versions", curie=OPENPOLICYAGENT.curie('file_rego_versions'),
+                   model_uri=OPENPOLICYAGENT.opaManifest__file_rego_versions, domain=None, range=Optional[Union[dict[Union[str, OpaFileRegoVersionPath], Union[dict, OpaFileRegoVersion]], list[Union[dict, OpaFileRegoVersion]]]])
 
-slots.assignVarStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="assignVarStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.assignVarStmt__row, domain=None, range=int)
+slots.opaManifest__metadata = Slot(uri=OPENPOLICYAGENT.metadata, name="opaManifest__metadata", curie=OPENPOLICYAGENT.curie('metadata'),
+                   model_uri=OPENPOLICYAGENT.opaManifest__metadata, domain=None, range=Optional[Union[dict, OpaObject]])
 
-slots.assignVarStmt__source = Slot(uri=OPENPOLICYAGENT.source, name="assignVarStmt__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.assignVarStmt__source, domain=None, range=Union[dict, Operand])
+slots.opaManifest__rego_version = Slot(uri=OPENPOLICYAGENT.rego_version, name="opaManifest__rego_version", curie=OPENPOLICYAGENT.curie('rego_version'),
+                   model_uri=OPENPOLICYAGENT.opaManifest__rego_version, domain=None, range=Optional[int])
 
-slots.assignVarStmt__target = Slot(uri=OPENPOLICYAGENT.target, name="assignVarStmt__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.assignVarStmt__target, domain=None, range=int)
+slots.opaManifest__revision = Slot(uri=OPENPOLICYAGENT.revision, name="opaManifest__revision", curie=OPENPOLICYAGENT.curie('revision'),
+                   model_uri=OPENPOLICYAGENT.opaManifest__revision, domain=None, range=str)
 
-slots.block__stmts = Slot(uri=OPENPOLICYAGENT.stmts, name="block__stmts", curie=OPENPOLICYAGENT.curie('stmts'),
-                   model_uri=OPENPOLICYAGENT.block__stmts, domain=None, range=Union[Union[dict, Stmt], list[Union[dict, Stmt]]])
+slots.opaManifest__roots = Slot(uri=OPENPOLICYAGENT.roots, name="opaManifest__roots", curie=OPENPOLICYAGENT.curie('roots'),
+                   model_uri=OPENPOLICYAGENT.opaManifest__roots, domain=None, range=Optional[Union[str, list[str]]])
 
-slots.blockStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="blockStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.blockStmt__col, domain=None, range=int)
+slots.opaManifest__wasm = Slot(uri=OPENPOLICYAGENT.wasm, name="opaManifest__wasm", curie=OPENPOLICYAGENT.curie('wasm'),
+                   model_uri=OPENPOLICYAGENT.opaManifest__wasm, domain=None, range=Optional[Union[Union[dict, OpaWasmResolver], list[Union[dict, OpaWasmResolver]]]])
 
-slots.blockStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="blockStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.blockStmt__file, domain=None, range=int)
+slots.opaWasmResolver__annotations = Slot(uri=OPENPOLICYAGENT.annotations, name="opaWasmResolver__annotations", curie=OPENPOLICYAGENT.curie('annotations'),
+                   model_uri=OPENPOLICYAGENT.opaWasmResolver__annotations, domain=None, range=Optional[Union[Union[dict, OpaObject], list[Union[dict, OpaObject]]]])
 
-slots.blockStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="blockStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.blockStmt__row, domain=None, range=int)
+slots.opaWasmResolver__entrypoint = Slot(uri=OPENPOLICYAGENT.entrypoint, name="opaWasmResolver__entrypoint", curie=OPENPOLICYAGENT.curie('entrypoint'),
+                   model_uri=OPENPOLICYAGENT.opaWasmResolver__entrypoint, domain=None, range=Optional[str])
 
-slots.blockStmt__blocks = Slot(uri=OPENPOLICYAGENT.blocks, name="blockStmt__blocks", curie=OPENPOLICYAGENT.curie('blocks'),
-                   model_uri=OPENPOLICYAGENT.blockStmt__blocks, domain=None, range=Union[Union[dict, Block], list[Union[dict, Block]]])
+slots.opaWasmResolver__module = Slot(uri=OPENPOLICYAGENT.module, name="opaWasmResolver__module", curie=OPENPOLICYAGENT.curie('module'),
+                   model_uri=OPENPOLICYAGENT.opaWasmResolver__module, domain=None, range=Optional[str])
 
-slots.breakStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="breakStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.breakStmt__col, domain=None, range=int)
+slots.opaFileRegoVersion__path = Slot(uri=OPENPOLICYAGENT.path, name="opaFileRegoVersion__path", curie=OPENPOLICYAGENT.curie('path'),
+                   model_uri=OPENPOLICYAGENT.opaFileRegoVersion__path, domain=None, range=URIRef)
 
-slots.breakStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="breakStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.breakStmt__file, domain=None, range=int)
+slots.opaFileRegoVersion__version = Slot(uri=OPENPOLICYAGENT.version, name="opaFileRegoVersion__version", curie=OPENPOLICYAGENT.curie('version'),
+                   model_uri=OPENPOLICYAGENT.opaFileRegoVersion__version, domain=None, range=int)
 
-slots.breakStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="breakStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.breakStmt__row, domain=None, range=int)
+slots.opaPolicy__funcs = Slot(uri=OPENPOLICYAGENT.funcs, name="opaPolicy__funcs", curie=OPENPOLICYAGENT.curie('funcs'),
+                   model_uri=OPENPOLICYAGENT.opaPolicy__funcs, domain=None, range=Optional[Union[dict, OpaFuncs]])
 
-slots.breakStmt__index = Slot(uri=OPENPOLICYAGENT.index, name="breakStmt__index", curie=OPENPOLICYAGENT.curie('index'),
-                   model_uri=OPENPOLICYAGENT.breakStmt__index, domain=None, range=int)
+slots.opaPolicy__plans = Slot(uri=OPENPOLICYAGENT.plans, name="opaPolicy__plans", curie=OPENPOLICYAGENT.curie('plans'),
+                   model_uri=OPENPOLICYAGENT.opaPolicy__plans, domain=None, range=Optional[Union[dict, OpaPlans]])
 
-slots.builtinFunc__decl = Slot(uri=OPENPOLICYAGENT.decl, name="builtinFunc__decl", curie=OPENPOLICYAGENT.curie('decl'),
-                   model_uri=OPENPOLICYAGENT.builtinFunc__decl, domain=None, range=Union[dict, Any])
+slots.opaPolicy__static = Slot(uri=OPENPOLICYAGENT.static, name="opaPolicy__static", curie=OPENPOLICYAGENT.curie('static'),
+                   model_uri=OPENPOLICYAGENT.opaPolicy__static, domain=None, range=Optional[Union[dict, OpaStatic]])
 
-slots.builtinFunc__name = Slot(uri=RDFS.label, name="builtinFunc__name", curie=RDFS.curie('label'),
-                   model_uri=OPENPOLICYAGENT.builtinFunc__name, domain=None, range=str)
+slots.opaPolicy__unplanned_rules = Slot(uri=OPENPOLICYAGENT.unplanned_rules, name="opaPolicy__unplanned_rules", curie=OPENPOLICYAGENT.curie('unplanned_rules'),
+                   model_uri=OPENPOLICYAGENT.opaPolicy__unplanned_rules, domain=None, range=Optional[Union[Union[dict, OpaUnplannedRule], list[Union[dict, OpaUnplannedRule]]]])
 
-slots.callDynamicStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="callDynamicStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.callDynamicStmt__col, domain=None, range=int)
+slots.opaStatic__builtin_funcs = Slot(uri=OPENPOLICYAGENT.builtin_funcs, name="opaStatic__builtin_funcs", curie=OPENPOLICYAGENT.curie('builtin_funcs'),
+                   model_uri=OPENPOLICYAGENT.opaStatic__builtin_funcs, domain=None, range=Optional[Union[Union[dict, OpaBuiltinFunc], list[Union[dict, OpaBuiltinFunc]]]])
 
-slots.callDynamicStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="callDynamicStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.callDynamicStmt__file, domain=None, range=int)
+slots.opaStatic__files = Slot(uri=OPENPOLICYAGENT.files, name="opaStatic__files", curie=OPENPOLICYAGENT.curie('files'),
+                   model_uri=OPENPOLICYAGENT.opaStatic__files, domain=None, range=Optional[Union[Union[dict, OpaStringConst], list[Union[dict, OpaStringConst]]]])
 
-slots.callDynamicStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="callDynamicStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.callDynamicStmt__row, domain=None, range=int)
+slots.opaStatic__strings = Slot(uri=OPENPOLICYAGENT.strings, name="opaStatic__strings", curie=OPENPOLICYAGENT.curie('strings'),
+                   model_uri=OPENPOLICYAGENT.opaStatic__strings, domain=None, range=Optional[Union[Union[dict, OpaStringConst], list[Union[dict, OpaStringConst]]]])
 
-slots.callDynamicStmt__args = Slot(uri=OPENPOLICYAGENT.args, name="callDynamicStmt__args", curie=OPENPOLICYAGENT.curie('args'),
-                   model_uri=OPENPOLICYAGENT.callDynamicStmt__args, domain=None, range=Union[int, list[int]])
+slots.opaStringConst__value = Slot(uri=OPENPOLICYAGENT.value, name="opaStringConst__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaStringConst__value, domain=None, range=str)
 
-slots.callDynamicStmt__path = Slot(uri=OPENPOLICYAGENT.path, name="callDynamicStmt__path", curie=OPENPOLICYAGENT.curie('path'),
-                   model_uri=OPENPOLICYAGENT.callDynamicStmt__path, domain=None, range=Union[Union[dict, Operand], list[Union[dict, Operand]]])
+slots.opaBuiltinFunc__decl = Slot(uri=OPENPOLICYAGENT.decl, name="opaBuiltinFunc__decl", curie=OPENPOLICYAGENT.curie('decl'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinFunc__decl, domain=None, range=Optional[Union[dict, OpaFunctionType]])
 
-slots.callDynamicStmt__result = Slot(uri=OPENPOLICYAGENT.result, name="callDynamicStmt__result", curie=OPENPOLICYAGENT.curie('result'),
-                   model_uri=OPENPOLICYAGENT.callDynamicStmt__result, domain=None, range=int)
+slots.opaBuiltinFunc__name = Slot(uri=OPENPOLICYAGENT.name, name="opaBuiltinFunc__name", curie=OPENPOLICYAGENT.curie('name'),
+                   model_uri=OPENPOLICYAGENT.opaBuiltinFunc__name, domain=None, range=str)
 
-slots.callStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="callStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.callStmt__col, domain=None, range=int)
+slots.opaPlans__plans = Slot(uri=OPENPOLICYAGENT.plans, name="opaPlans__plans", curie=OPENPOLICYAGENT.curie('plans'),
+                   model_uri=OPENPOLICYAGENT.opaPlans__plans, domain=None, range=Optional[Union[Union[dict, OpaPlan], list[Union[dict, OpaPlan]]]])
 
-slots.callStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="callStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.callStmt__file, domain=None, range=int)
+slots.opaPlan__blocks = Slot(uri=OPENPOLICYAGENT.blocks, name="opaPlan__blocks", curie=OPENPOLICYAGENT.curie('blocks'),
+                   model_uri=OPENPOLICYAGENT.opaPlan__blocks, domain=None, range=Optional[Union[Union[dict, OpaBlock], list[Union[dict, OpaBlock]]]])
 
-slots.callStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="callStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.callStmt__row, domain=None, range=int)
+slots.opaPlan__name = Slot(uri=OPENPOLICYAGENT.name, name="opaPlan__name", curie=OPENPOLICYAGENT.curie('name'),
+                   model_uri=OPENPOLICYAGENT.opaPlan__name, domain=None, range=str)
 
-slots.callStmt__args = Slot(uri=OPENPOLICYAGENT.args, name="callStmt__args", curie=OPENPOLICYAGENT.curie('args'),
-                   model_uri=OPENPOLICYAGENT.callStmt__args, domain=None, range=Union[Union[dict, Operand], list[Union[dict, Operand]]])
+slots.opaFuncs__funcs = Slot(uri=OPENPOLICYAGENT.funcs, name="opaFuncs__funcs", curie=OPENPOLICYAGENT.curie('funcs'),
+                   model_uri=OPENPOLICYAGENT.opaFuncs__funcs, domain=None, range=Optional[Union[Union[dict, OpaFunc], list[Union[dict, OpaFunc]]]])
 
-slots.callStmt__func = Slot(uri=OPENPOLICYAGENT.func, name="callStmt__func", curie=OPENPOLICYAGENT.curie('func'),
-                   model_uri=OPENPOLICYAGENT.callStmt__func, domain=None, range=str)
+slots.opaFunc__blocks = Slot(uri=OPENPOLICYAGENT.blocks, name="opaFunc__blocks", curie=OPENPOLICYAGENT.curie('blocks'),
+                   model_uri=OPENPOLICYAGENT.opaFunc__blocks, domain=None, range=Optional[Union[Union[dict, OpaBlock], list[Union[dict, OpaBlock]]]])
 
-slots.callStmt__result = Slot(uri=OPENPOLICYAGENT.result, name="callStmt__result", curie=OPENPOLICYAGENT.curie('result'),
-                   model_uri=OPENPOLICYAGENT.callStmt__result, domain=None, range=int)
+slots.opaFunc__name = Slot(uri=OPENPOLICYAGENT.name, name="opaFunc__name", curie=OPENPOLICYAGENT.curie('name'),
+                   model_uri=OPENPOLICYAGENT.opaFunc__name, domain=None, range=str)
 
-slots.dotStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="dotStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.dotStmt__col, domain=None, range=int)
+slots.opaFunc__params = Slot(uri=OPENPOLICYAGENT.params, name="opaFunc__params", curie=OPENPOLICYAGENT.curie('params'),
+                   model_uri=OPENPOLICYAGENT.opaFunc__params, domain=None, range=Optional[Union[int, list[int]]])
 
-slots.dotStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="dotStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.dotStmt__file, domain=None, range=int)
+slots.opaFunc__path = Slot(uri=OPENPOLICYAGENT.path, name="opaFunc__path", curie=OPENPOLICYAGENT.curie('path'),
+                   model_uri=OPENPOLICYAGENT.opaFunc__path, domain=None, range=Optional[Union[str, list[str]]])
 
-slots.dotStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="dotStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.dotStmt__row, domain=None, range=int)
+slots.opaFunc__return_local = Slot(uri=OPENPOLICYAGENT['return'], name="opaFunc__return_local", curie=OPENPOLICYAGENT.curie('return'),
+                   model_uri=OPENPOLICYAGENT.opaFunc__return_local, domain=None, range=int)
 
-slots.dotStmt__key = Slot(uri=OPENPOLICYAGENT.key, name="dotStmt__key", curie=OPENPOLICYAGENT.curie('key'),
-                   model_uri=OPENPOLICYAGENT.dotStmt__key, domain=None, range=Union[dict, Operand])
+slots.opaBlock__stmts = Slot(uri=OPENPOLICYAGENT.stmts, name="opaBlock__stmts", curie=OPENPOLICYAGENT.curie('stmts'),
+                   model_uri=OPENPOLICYAGENT.opaBlock__stmts, domain=None, range=Union[Union[dict, OpaStmt], list[Union[dict, OpaStmt]]])
 
-slots.dotStmt__source = Slot(uri=OPENPOLICYAGENT.source, name="dotStmt__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.dotStmt__source, domain=None, range=Union[dict, Operand])
+slots.opaUnplannedRule__location = Slot(uri=OPENPOLICYAGENT.location, name="opaUnplannedRule__location", curie=OPENPOLICYAGENT.curie('location'),
+                   model_uri=OPENPOLICYAGENT.opaUnplannedRule__location, domain=None, range=Optional[Union[dict, OpaLocation]])
 
-slots.dotStmt__target = Slot(uri=OPENPOLICYAGENT.target, name="dotStmt__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.dotStmt__target, domain=None, range=int)
+slots.opaUnplannedRule__path = Slot(uri=OPENPOLICYAGENT.path, name="opaUnplannedRule__path", curie=OPENPOLICYAGENT.curie('path'),
+                   model_uri=OPENPOLICYAGENT.opaUnplannedRule__path, domain=None, range=str)
 
-slots.equalStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="equalStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.equalStmt__col, domain=None, range=int)
+slots.opaArrayAppendStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaArrayAppendStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaArrayAppendStmt__type, domain=None, range=str)
 
-slots.equalStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="equalStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.equalStmt__file, domain=None, range=int)
+slots.opaArrayAppendStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaArrayAppendStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaArrayAppendStmt__stmt, domain=None, range=Union[dict, OpaArrayAppendStmtBody])
 
-slots.equalStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="equalStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.equalStmt__row, domain=None, range=int)
+slots.opaArrayAppendStmtBody__array = Slot(uri=OPENPOLICYAGENT.array, name="opaArrayAppendStmtBody__array", curie=OPENPOLICYAGENT.curie('array'),
+                   model_uri=OPENPOLICYAGENT.opaArrayAppendStmtBody__array, domain=None, range=int)
 
-slots.equalStmt__a = Slot(uri=OPENPOLICYAGENT.a, name="equalStmt__a", curie=OPENPOLICYAGENT.curie('a'),
-                   model_uri=OPENPOLICYAGENT.equalStmt__a, domain=None, range=Union[dict, Operand])
+slots.opaArrayAppendStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaArrayAppendStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaArrayAppendStmtBody__value, domain=None, range=Union[dict, OpaOperand])
 
-slots.equalStmt__b = Slot(uri=OPENPOLICYAGENT.b, name="equalStmt__b", curie=OPENPOLICYAGENT.curie('b'),
-                   model_uri=OPENPOLICYAGENT.equalStmt__b, domain=None, range=Union[dict, Operand])
+slots.opaAssignIntStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaAssignIntStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaAssignIntStmt__type, domain=None, range=str)
 
-slots.func__blocks = Slot(uri=OPENPOLICYAGENT.blocks, name="func__blocks", curie=OPENPOLICYAGENT.curie('blocks'),
-                   model_uri=OPENPOLICYAGENT.func__blocks, domain=None, range=Union[Union[dict, Block], list[Union[dict, Block]]])
+slots.opaAssignIntStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaAssignIntStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaAssignIntStmt__stmt, domain=None, range=Union[dict, OpaAssignIntStmtBody])
 
-slots.func__name = Slot(uri=RDFS.label, name="func__name", curie=RDFS.curie('label'),
-                   model_uri=OPENPOLICYAGENT.func__name, domain=None, range=str)
+slots.opaAssignIntStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaAssignIntStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.opaAssignIntStmtBody__target, domain=None, range=int)
 
-slots.func__params = Slot(uri=OPENPOLICYAGENT.params, name="func__params", curie=OPENPOLICYAGENT.curie('params'),
-                   model_uri=OPENPOLICYAGENT.func__params, domain=None, range=Union[int, list[int]])
+slots.opaAssignIntStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaAssignIntStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaAssignIntStmtBody__value, domain=None, range=int)
 
-slots.func__path = Slot(uri=OPENPOLICYAGENT.path, name="func__path", curie=OPENPOLICYAGENT.curie('path'),
-                   model_uri=OPENPOLICYAGENT.func__path, domain=None, range=Optional[Union[str, list[str]]])
+slots.opaAssignVarOnceStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaAssignVarOnceStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaAssignVarOnceStmt__type, domain=None, range=str)
 
-slots.func__return_value = Slot(uri=OPENPOLICYAGENT.return_value, name="func__return_value", curie=OPENPOLICYAGENT.curie('return_value'),
-                   model_uri=OPENPOLICYAGENT.func__return_value, domain=None, range=int)
+slots.opaAssignVarOnceStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaAssignVarOnceStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaAssignVarOnceStmt__stmt, domain=None, range=Union[dict, OpaAssignVarOnceStmtBody])
 
-slots.funcs__funcs = Slot(uri=OPENPOLICYAGENT.funcs, name="funcs__funcs", curie=OPENPOLICYAGENT.curie('funcs'),
-                   model_uri=OPENPOLICYAGENT.funcs__funcs, domain=None, range=Union[Union[dict, Func], list[Union[dict, Func]]])
+slots.opaAssignVarOnceStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaAssignVarOnceStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.opaAssignVarOnceStmtBody__source, domain=None, range=Union[dict, OpaOperand])
 
-slots.isArrayStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="isArrayStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.isArrayStmt__col, domain=None, range=int)
+slots.opaAssignVarOnceStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaAssignVarOnceStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.opaAssignVarOnceStmtBody__target, domain=None, range=int)
 
-slots.isArrayStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="isArrayStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.isArrayStmt__file, domain=None, range=int)
+slots.opaAssignVarStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaAssignVarStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaAssignVarStmt__type, domain=None, range=str)
 
-slots.isArrayStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="isArrayStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.isArrayStmt__row, domain=None, range=int)
+slots.opaAssignVarStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaAssignVarStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaAssignVarStmt__stmt, domain=None, range=Union[dict, OpaAssignVarStmtBody])
 
-slots.isArrayStmt__source = Slot(uri=OPENPOLICYAGENT.source, name="isArrayStmt__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.isArrayStmt__source, domain=None, range=Union[dict, Operand])
+slots.opaAssignVarStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaAssignVarStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.opaAssignVarStmtBody__source, domain=None, range=Union[dict, OpaOperand])
 
-slots.isDefinedStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="isDefinedStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.isDefinedStmt__col, domain=None, range=int)
+slots.opaAssignVarStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaAssignVarStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.opaAssignVarStmtBody__target, domain=None, range=int)
 
-slots.isDefinedStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="isDefinedStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.isDefinedStmt__file, domain=None, range=int)
+slots.opaBlockStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBlockStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaBlockStmt__type, domain=None, range=str)
 
-slots.isDefinedStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="isDefinedStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.isDefinedStmt__row, domain=None, range=int)
+slots.opaBlockStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaBlockStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaBlockStmt__stmt, domain=None, range=Union[dict, OpaBlockStmtBody])
 
-slots.isDefinedStmt__source = Slot(uri=OPENPOLICYAGENT.source, name="isDefinedStmt__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.isDefinedStmt__source, domain=None, range=int)
+slots.opaBlockStmtBody__blocks = Slot(uri=OPENPOLICYAGENT.blocks, name="opaBlockStmtBody__blocks", curie=OPENPOLICYAGENT.curie('blocks'),
+                   model_uri=OPENPOLICYAGENT.opaBlockStmtBody__blocks, domain=None, range=Optional[Union[Union[dict, OpaBlock], list[Union[dict, OpaBlock]]]])
 
-slots.isObjectStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="isObjectStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.isObjectStmt__col, domain=None, range=int)
+slots.opaBreakStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBreakStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaBreakStmt__type, domain=None, range=str)
 
-slots.isObjectStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="isObjectStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.isObjectStmt__file, domain=None, range=int)
+slots.opaBreakStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaBreakStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaBreakStmt__stmt, domain=None, range=Union[dict, OpaBreakStmtBody])
 
-slots.isObjectStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="isObjectStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.isObjectStmt__row, domain=None, range=int)
+slots.opaBreakStmtBody__index = Slot(uri=OPENPOLICYAGENT.index, name="opaBreakStmtBody__index", curie=OPENPOLICYAGENT.curie('index'),
+                   model_uri=OPENPOLICYAGENT.opaBreakStmtBody__index, domain=None, range=int)
 
-slots.isObjectStmt__source = Slot(uri=OPENPOLICYAGENT.source, name="isObjectStmt__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.isObjectStmt__source, domain=None, range=Union[dict, Operand])
+slots.opaCallDynamicStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaCallDynamicStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaCallDynamicStmt__type, domain=None, range=str)
 
-slots.isSetStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="isSetStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.isSetStmt__col, domain=None, range=int)
+slots.opaCallDynamicStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaCallDynamicStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaCallDynamicStmt__stmt, domain=None, range=Union[dict, OpaCallDynamicStmtBody])
 
-slots.isSetStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="isSetStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.isSetStmt__file, domain=None, range=int)
+slots.opaCallDynamicStmtBody__args = Slot(uri=OPENPOLICYAGENT.args, name="opaCallDynamicStmtBody__args", curie=OPENPOLICYAGENT.curie('args'),
+                   model_uri=OPENPOLICYAGENT.opaCallDynamicStmtBody__args, domain=None, range=Optional[Union[int, list[int]]])
 
-slots.isSetStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="isSetStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.isSetStmt__row, domain=None, range=int)
+slots.opaCallDynamicStmtBody__path = Slot(uri=OPENPOLICYAGENT.path, name="opaCallDynamicStmtBody__path", curie=OPENPOLICYAGENT.curie('path'),
+                   model_uri=OPENPOLICYAGENT.opaCallDynamicStmtBody__path, domain=None, range=Optional[Union[Union[dict, OpaOperand], list[Union[dict, OpaOperand]]]])
 
-slots.isSetStmt__source = Slot(uri=OPENPOLICYAGENT.source, name="isSetStmt__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.isSetStmt__source, domain=None, range=Union[dict, Operand])
+slots.opaCallDynamicStmtBody__result = Slot(uri=OPENPOLICYAGENT.result, name="opaCallDynamicStmtBody__result", curie=OPENPOLICYAGENT.curie('result'),
+                   model_uri=OPENPOLICYAGENT.opaCallDynamicStmtBody__result, domain=None, range=int)
 
-slots.isUndefinedStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="isUndefinedStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.isUndefinedStmt__col, domain=None, range=int)
+slots.opaCallStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaCallStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaCallStmt__type, domain=None, range=str)
 
-slots.isUndefinedStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="isUndefinedStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.isUndefinedStmt__file, domain=None, range=int)
+slots.opaCallStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaCallStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaCallStmt__stmt, domain=None, range=Union[dict, OpaCallStmtBody])
 
-slots.isUndefinedStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="isUndefinedStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.isUndefinedStmt__row, domain=None, range=int)
+slots.opaCallStmtBody__args = Slot(uri=OPENPOLICYAGENT.args, name="opaCallStmtBody__args", curie=OPENPOLICYAGENT.curie('args'),
+                   model_uri=OPENPOLICYAGENT.opaCallStmtBody__args, domain=None, range=Optional[Union[Union[dict, OpaOperand], list[Union[dict, OpaOperand]]]])
 
-slots.isUndefinedStmt__source = Slot(uri=OPENPOLICYAGENT.source, name="isUndefinedStmt__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.isUndefinedStmt__source, domain=None, range=int)
+slots.opaCallStmtBody__func = Slot(uri=OPENPOLICYAGENT.func, name="opaCallStmtBody__func", curie=OPENPOLICYAGENT.curie('func'),
+                   model_uri=OPENPOLICYAGENT.opaCallStmtBody__func, domain=None, range=str)
 
-slots.lenStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="lenStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.lenStmt__col, domain=None, range=int)
+slots.opaCallStmtBody__result = Slot(uri=OPENPOLICYAGENT.result, name="opaCallStmtBody__result", curie=OPENPOLICYAGENT.curie('result'),
+                   model_uri=OPENPOLICYAGENT.opaCallStmtBody__result, domain=None, range=int)
 
-slots.lenStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="lenStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.lenStmt__file, domain=None, range=int)
+slots.opaDotStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaDotStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaDotStmt__type, domain=None, range=str)
 
-slots.lenStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="lenStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.lenStmt__row, domain=None, range=int)
+slots.opaDotStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaDotStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaDotStmt__stmt, domain=None, range=Union[dict, OpaDotStmtBody])
 
-slots.lenStmt__source = Slot(uri=OPENPOLICYAGENT.source, name="lenStmt__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.lenStmt__source, domain=None, range=Union[dict, Operand])
+slots.opaDotStmtBody__key = Slot(uri=OPENPOLICYAGENT.key, name="opaDotStmtBody__key", curie=OPENPOLICYAGENT.curie('key'),
+                   model_uri=OPENPOLICYAGENT.opaDotStmtBody__key, domain=None, range=Union[dict, OpaOperand])
 
-slots.lenStmt__target = Slot(uri=OPENPOLICYAGENT.target, name="lenStmt__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.lenStmt__target, domain=None, range=int)
+slots.opaDotStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaDotStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.opaDotStmtBody__source, domain=None, range=Union[dict, OpaOperand])
 
-slots.makeArrayStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="makeArrayStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.makeArrayStmt__col, domain=None, range=int)
+slots.opaDotStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaDotStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.opaDotStmtBody__target, domain=None, range=int)
 
-slots.makeArrayStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="makeArrayStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.makeArrayStmt__file, domain=None, range=int)
+slots.opaEqualStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaEqualStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaEqualStmt__type, domain=None, range=str)
 
-slots.makeArrayStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="makeArrayStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.makeArrayStmt__row, domain=None, range=int)
+slots.opaEqualStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaEqualStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaEqualStmt__stmt, domain=None, range=Union[dict, OpaEqualStmtBody])
 
-slots.makeArrayStmt__capacity = Slot(uri=OPENPOLICYAGENT.capacity, name="makeArrayStmt__capacity", curie=OPENPOLICYAGENT.curie('capacity'),
-                   model_uri=OPENPOLICYAGENT.makeArrayStmt__capacity, domain=None, range=int)
+slots.opaEqualStmtBody__operand_a = Slot(uri=OPENPOLICYAGENT.a, name="opaEqualStmtBody__operand_a", curie=OPENPOLICYAGENT.curie('a'),
+                   model_uri=OPENPOLICYAGENT.opaEqualStmtBody__operand_a, domain=None, range=Union[dict, OpaOperand])
 
-slots.makeArrayStmt__target = Slot(uri=OPENPOLICYAGENT.target, name="makeArrayStmt__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.makeArrayStmt__target, domain=None, range=int)
+slots.opaEqualStmtBody__operand_b = Slot(uri=OPENPOLICYAGENT.b, name="opaEqualStmtBody__operand_b", curie=OPENPOLICYAGENT.curie('b'),
+                   model_uri=OPENPOLICYAGENT.opaEqualStmtBody__operand_b, domain=None, range=Union[dict, OpaOperand])
 
-slots.makeNullStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="makeNullStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.makeNullStmt__col, domain=None, range=int)
+slots.opaIsArrayStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaIsArrayStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaIsArrayStmt__type, domain=None, range=str)
 
-slots.makeNullStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="makeNullStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.makeNullStmt__file, domain=None, range=int)
+slots.opaIsArrayStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaIsArrayStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaIsArrayStmt__stmt, domain=None, range=Union[dict, OpaIsArrayStmtBody])
 
-slots.makeNullStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="makeNullStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.makeNullStmt__row, domain=None, range=int)
+slots.opaIsArrayStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaIsArrayStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.opaIsArrayStmtBody__source, domain=None, range=Union[dict, OpaOperand])
 
-slots.makeNullStmt__target = Slot(uri=OPENPOLICYAGENT.target, name="makeNullStmt__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.makeNullStmt__target, domain=None, range=int)
+slots.opaIsDefinedStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaIsDefinedStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaIsDefinedStmt__type, domain=None, range=str)
 
-slots.makeNumberIntStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="makeNumberIntStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.makeNumberIntStmt__col, domain=None, range=int)
+slots.opaIsDefinedStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaIsDefinedStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaIsDefinedStmt__stmt, domain=None, range=Union[dict, OpaIsDefinedStmtBody])
 
-slots.makeNumberIntStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="makeNumberIntStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.makeNumberIntStmt__file, domain=None, range=int)
+slots.opaIsDefinedStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaIsDefinedStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.opaIsDefinedStmtBody__source, domain=None, range=int)
 
-slots.makeNumberIntStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="makeNumberIntStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.makeNumberIntStmt__row, domain=None, range=int)
+slots.opaIsObjectStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaIsObjectStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaIsObjectStmt__type, domain=None, range=str)
 
-slots.makeNumberIntStmt__target = Slot(uri=OPENPOLICYAGENT.target, name="makeNumberIntStmt__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.makeNumberIntStmt__target, domain=None, range=int)
+slots.opaIsObjectStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaIsObjectStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaIsObjectStmt__stmt, domain=None, range=Union[dict, OpaIsObjectStmtBody])
 
-slots.makeNumberIntStmt__value = Slot(uri=OPENPOLICYAGENT.value, name="makeNumberIntStmt__value", curie=OPENPOLICYAGENT.curie('value'),
-                   model_uri=OPENPOLICYAGENT.makeNumberIntStmt__value, domain=None, range=int)
+slots.opaIsObjectStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaIsObjectStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.opaIsObjectStmtBody__source, domain=None, range=Union[dict, OpaOperand])
 
-slots.makeNumberRefStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="makeNumberRefStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.makeNumberRefStmt__col, domain=None, range=int)
+slots.opaIsSetStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaIsSetStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaIsSetStmt__type, domain=None, range=str)
 
-slots.makeNumberRefStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="makeNumberRefStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.makeNumberRefStmt__file, domain=None, range=int)
+slots.opaIsSetStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaIsSetStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaIsSetStmt__stmt, domain=None, range=Union[dict, OpaIsSetStmtBody])
 
-slots.makeNumberRefStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="makeNumberRefStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.makeNumberRefStmt__row, domain=None, range=int)
+slots.opaIsSetStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaIsSetStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.opaIsSetStmtBody__source, domain=None, range=Union[dict, OpaOperand])
 
-slots.makeNumberRefStmt__index = Slot(uri=OPENPOLICYAGENT.index, name="makeNumberRefStmt__index", curie=OPENPOLICYAGENT.curie('index'),
-                   model_uri=OPENPOLICYAGENT.makeNumberRefStmt__index, domain=None, range=int)
+slots.opaIsUndefinedStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaIsUndefinedStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaIsUndefinedStmt__type, domain=None, range=str)
 
-slots.makeNumberRefStmt__Index = Slot(uri=OPENPOLICYAGENT.Index, name="makeNumberRefStmt__Index", curie=OPENPOLICYAGENT.curie('Index'),
-                   model_uri=OPENPOLICYAGENT.makeNumberRefStmt__Index, domain=None, range=Optional[int])
+slots.opaIsUndefinedStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaIsUndefinedStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaIsUndefinedStmt__stmt, domain=None, range=Union[dict, OpaIsUndefinedStmtBody])
 
-slots.makeNumberRefStmt__target = Slot(uri=OPENPOLICYAGENT.target, name="makeNumberRefStmt__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.makeNumberRefStmt__target, domain=None, range=int)
+slots.opaIsUndefinedStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaIsUndefinedStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.opaIsUndefinedStmtBody__source, domain=None, range=int)
 
-slots.makeObjectStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="makeObjectStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.makeObjectStmt__col, domain=None, range=int)
+slots.opaLenStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaLenStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaLenStmt__type, domain=None, range=str)
 
-slots.makeObjectStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="makeObjectStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.makeObjectStmt__file, domain=None, range=int)
+slots.opaLenStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaLenStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaLenStmt__stmt, domain=None, range=Union[dict, OpaLenStmtBody])
 
-slots.makeObjectStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="makeObjectStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.makeObjectStmt__row, domain=None, range=int)
+slots.opaLenStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaLenStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.opaLenStmtBody__source, domain=None, range=Union[dict, OpaOperand])
 
-slots.makeObjectStmt__target = Slot(uri=OPENPOLICYAGENT.target, name="makeObjectStmt__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.makeObjectStmt__target, domain=None, range=int)
+slots.opaLenStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaLenStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.opaLenStmtBody__target, domain=None, range=int)
 
-slots.makeSetStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="makeSetStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.makeSetStmt__col, domain=None, range=int)
+slots.opaMakeArrayStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaMakeArrayStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaMakeArrayStmt__type, domain=None, range=str)
 
-slots.makeSetStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="makeSetStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.makeSetStmt__file, domain=None, range=int)
+slots.opaMakeArrayStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeArrayStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaMakeArrayStmt__stmt, domain=None, range=Union[dict, OpaMakeArrayStmtBody])
 
-slots.makeSetStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="makeSetStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.makeSetStmt__row, domain=None, range=int)
+slots.opaMakeArrayStmtBody__capacity = Slot(uri=OPENPOLICYAGENT.capacity, name="opaMakeArrayStmtBody__capacity", curie=OPENPOLICYAGENT.curie('capacity'),
+                   model_uri=OPENPOLICYAGENT.opaMakeArrayStmtBody__capacity, domain=None, range=int)
 
-slots.makeSetStmt__target = Slot(uri=OPENPOLICYAGENT.target, name="makeSetStmt__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.makeSetStmt__target, domain=None, range=int)
+slots.opaMakeArrayStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaMakeArrayStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.opaMakeArrayStmtBody__target, domain=None, range=int)
 
-slots.nopStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="nopStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.nopStmt__col, domain=None, range=int)
+slots.opaMakeNullStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaMakeNullStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaMakeNullStmt__type, domain=None, range=str)
 
-slots.nopStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="nopStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.nopStmt__file, domain=None, range=int)
+slots.opaMakeNullStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeNullStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaMakeNullStmt__stmt, domain=None, range=Union[dict, OpaMakeNullStmtBody])
 
-slots.nopStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="nopStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.nopStmt__row, domain=None, range=int)
+slots.opaMakeNullStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaMakeNullStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.opaMakeNullStmtBody__target, domain=None, range=int)
 
-slots.notEqualStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="notEqualStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.notEqualStmt__col, domain=None, range=int)
+slots.opaMakeNumberIntStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaMakeNumberIntStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaMakeNumberIntStmt__type, domain=None, range=str)
 
-slots.notEqualStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="notEqualStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.notEqualStmt__file, domain=None, range=int)
+slots.opaMakeNumberIntStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeNumberIntStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaMakeNumberIntStmt__stmt, domain=None, range=Union[dict, OpaMakeNumberIntStmtBody])
 
-slots.notEqualStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="notEqualStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.notEqualStmt__row, domain=None, range=int)
+slots.opaMakeNumberIntStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaMakeNumberIntStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.opaMakeNumberIntStmtBody__target, domain=None, range=int)
 
-slots.notEqualStmt__a = Slot(uri=OPENPOLICYAGENT.a, name="notEqualStmt__a", curie=OPENPOLICYAGENT.curie('a'),
-                   model_uri=OPENPOLICYAGENT.notEqualStmt__a, domain=None, range=Union[dict, Operand])
+slots.opaMakeNumberIntStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaMakeNumberIntStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaMakeNumberIntStmtBody__value, domain=None, range=int)
 
-slots.notEqualStmt__b = Slot(uri=OPENPOLICYAGENT.b, name="notEqualStmt__b", curie=OPENPOLICYAGENT.curie('b'),
-                   model_uri=OPENPOLICYAGENT.notEqualStmt__b, domain=None, range=Union[dict, Operand])
+slots.opaMakeNumberRefStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaMakeNumberRefStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaMakeNumberRefStmt__type, domain=None, range=str)
 
-slots.notStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="notStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.notStmt__col, domain=None, range=int)
+slots.opaMakeNumberRefStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeNumberRefStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaMakeNumberRefStmt__stmt, domain=None, range=Union[dict, OpaMakeNumberRefStmtBody])
 
-slots.notStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="notStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.notStmt__file, domain=None, range=int)
+slots.opaMakeNumberRefStmtBody__index = Slot(uri=OPENPOLICYAGENT.index, name="opaMakeNumberRefStmtBody__index", curie=OPENPOLICYAGENT.curie('index'),
+                   model_uri=OPENPOLICYAGENT.opaMakeNumberRefStmtBody__index, domain=None, range=int)
 
-slots.notStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="notStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.notStmt__row, domain=None, range=int)
+slots.opaMakeNumberRefStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaMakeNumberRefStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.opaMakeNumberRefStmtBody__target, domain=None, range=int)
 
-slots.notStmt__block = Slot(uri=OPENPOLICYAGENT.block, name="notStmt__block", curie=OPENPOLICYAGENT.curie('block'),
-                   model_uri=OPENPOLICYAGENT.notStmt__block, domain=None, range=str)
+slots.opaMakeNumberRefStmtBody__index_legacy = Slot(uri=OPENPOLICYAGENT.Index, name="opaMakeNumberRefStmtBody__index_legacy", curie=OPENPOLICYAGENT.curie('Index'),
+                   model_uri=OPENPOLICYAGENT.opaMakeNumberRefStmtBody__index_legacy, domain=None, range=Optional[int])
 
-slots.objectInsertOnceStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="objectInsertOnceStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.objectInsertOnceStmt__col, domain=None, range=int)
+slots.opaMakeObjectStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaMakeObjectStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaMakeObjectStmt__type, domain=None, range=str)
 
-slots.objectInsertOnceStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="objectInsertOnceStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.objectInsertOnceStmt__file, domain=None, range=int)
+slots.opaMakeObjectStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeObjectStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaMakeObjectStmt__stmt, domain=None, range=Union[dict, OpaMakeObjectStmtBody])
 
-slots.objectInsertOnceStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="objectInsertOnceStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.objectInsertOnceStmt__row, domain=None, range=int)
+slots.opaMakeObjectStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaMakeObjectStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.opaMakeObjectStmtBody__target, domain=None, range=int)
 
-slots.objectInsertOnceStmt__key = Slot(uri=OPENPOLICYAGENT.key, name="objectInsertOnceStmt__key", curie=OPENPOLICYAGENT.curie('key'),
-                   model_uri=OPENPOLICYAGENT.objectInsertOnceStmt__key, domain=None, range=Union[dict, Operand])
+slots.opaMakeSetStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaMakeSetStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaMakeSetStmt__type, domain=None, range=str)
 
-slots.objectInsertOnceStmt__object = Slot(uri=OPENPOLICYAGENT.object, name="objectInsertOnceStmt__object", curie=OPENPOLICYAGENT.curie('object'),
-                   model_uri=OPENPOLICYAGENT.objectInsertOnceStmt__object, domain=None, range=int)
+slots.opaMakeSetStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeSetStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaMakeSetStmt__stmt, domain=None, range=Union[dict, OpaMakeSetStmtBody])
 
-slots.objectInsertOnceStmt__value = Slot(uri=OPENPOLICYAGENT.value, name="objectInsertOnceStmt__value", curie=OPENPOLICYAGENT.curie('value'),
-                   model_uri=OPENPOLICYAGENT.objectInsertOnceStmt__value, domain=None, range=Union[dict, Operand])
+slots.opaMakeSetStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaMakeSetStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.opaMakeSetStmtBody__target, domain=None, range=int)
 
-slots.objectInsertStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="objectInsertStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.objectInsertStmt__col, domain=None, range=int)
+slots.opaNopStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaNopStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaNopStmt__type, domain=None, range=str)
 
-slots.objectInsertStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="objectInsertStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.objectInsertStmt__file, domain=None, range=int)
+slots.opaNopStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaNopStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaNopStmt__stmt, domain=None, range=Union[dict, OpaNopStmtBody])
 
-slots.objectInsertStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="objectInsertStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.objectInsertStmt__row, domain=None, range=int)
+slots.opaNotEqualStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaNotEqualStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaNotEqualStmt__type, domain=None, range=str)
 
-slots.objectInsertStmt__key = Slot(uri=OPENPOLICYAGENT.key, name="objectInsertStmt__key", curie=OPENPOLICYAGENT.curie('key'),
-                   model_uri=OPENPOLICYAGENT.objectInsertStmt__key, domain=None, range=Union[dict, Operand])
+slots.opaNotEqualStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaNotEqualStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaNotEqualStmt__stmt, domain=None, range=Union[dict, OpaNotEqualStmtBody])
 
-slots.objectInsertStmt__object = Slot(uri=OPENPOLICYAGENT.object, name="objectInsertStmt__object", curie=OPENPOLICYAGENT.curie('object'),
-                   model_uri=OPENPOLICYAGENT.objectInsertStmt__object, domain=None, range=int)
+slots.opaNotEqualStmtBody__operand_a = Slot(uri=OPENPOLICYAGENT.a, name="opaNotEqualStmtBody__operand_a", curie=OPENPOLICYAGENT.curie('a'),
+                   model_uri=OPENPOLICYAGENT.opaNotEqualStmtBody__operand_a, domain=None, range=Union[dict, OpaOperand])
 
-slots.objectInsertStmt__value = Slot(uri=OPENPOLICYAGENT.value, name="objectInsertStmt__value", curie=OPENPOLICYAGENT.curie('value'),
-                   model_uri=OPENPOLICYAGENT.objectInsertStmt__value, domain=None, range=Union[dict, Operand])
+slots.opaNotEqualStmtBody__operand_b = Slot(uri=OPENPOLICYAGENT.b, name="opaNotEqualStmtBody__operand_b", curie=OPENPOLICYAGENT.curie('b'),
+                   model_uri=OPENPOLICYAGENT.opaNotEqualStmtBody__operand_b, domain=None, range=Union[dict, OpaOperand])
 
-slots.objectMergeStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="objectMergeStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.objectMergeStmt__col, domain=None, range=int)
+slots.opaNotStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaNotStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaNotStmt__type, domain=None, range=str)
 
-slots.objectMergeStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="objectMergeStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.objectMergeStmt__file, domain=None, range=int)
+slots.opaNotStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaNotStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaNotStmt__stmt, domain=None, range=Union[dict, OpaNotStmtBody])
 
-slots.objectMergeStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="objectMergeStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.objectMergeStmt__row, domain=None, range=int)
+slots.opaNotStmtBody__block = Slot(uri=OPENPOLICYAGENT.block, name="opaNotStmtBody__block", curie=OPENPOLICYAGENT.curie('block'),
+                   model_uri=OPENPOLICYAGENT.opaNotStmtBody__block, domain=None, range=Optional[Union[dict, OpaBlock]])
 
-slots.objectMergeStmt__a = Slot(uri=OPENPOLICYAGENT.a, name="objectMergeStmt__a", curie=OPENPOLICYAGENT.curie('a'),
-                   model_uri=OPENPOLICYAGENT.objectMergeStmt__a, domain=None, range=int)
+slots.opaObjectInsertOnceStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaObjectInsertOnceStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaObjectInsertOnceStmt__type, domain=None, range=str)
 
-slots.objectMergeStmt__b = Slot(uri=OPENPOLICYAGENT.b, name="objectMergeStmt__b", curie=OPENPOLICYAGENT.curie('b'),
-                   model_uri=OPENPOLICYAGENT.objectMergeStmt__b, domain=None, range=int)
+slots.opaObjectInsertOnceStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaObjectInsertOnceStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaObjectInsertOnceStmt__stmt, domain=None, range=Union[dict, OpaObjectInsertOnceStmtBody])
 
-slots.objectMergeStmt__target = Slot(uri=OPENPOLICYAGENT.target, name="objectMergeStmt__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.objectMergeStmt__target, domain=None, range=int)
+slots.opaObjectInsertOnceStmtBody__key = Slot(uri=OPENPOLICYAGENT.key, name="opaObjectInsertOnceStmtBody__key", curie=OPENPOLICYAGENT.curie('key'),
+                   model_uri=OPENPOLICYAGENT.opaObjectInsertOnceStmtBody__key, domain=None, range=Union[dict, OpaOperand])
 
-slots.plan__blocks = Slot(uri=OPENPOLICYAGENT.blocks, name="plan__blocks", curie=OPENPOLICYAGENT.curie('blocks'),
-                   model_uri=OPENPOLICYAGENT.plan__blocks, domain=None, range=Union[Union[dict, Block], list[Union[dict, Block]]])
+slots.opaObjectInsertOnceStmtBody__object = Slot(uri=OPENPOLICYAGENT.object, name="opaObjectInsertOnceStmtBody__object", curie=OPENPOLICYAGENT.curie('object'),
+                   model_uri=OPENPOLICYAGENT.opaObjectInsertOnceStmtBody__object, domain=None, range=int)
 
-slots.plan__name = Slot(uri=RDFS.label, name="plan__name", curie=RDFS.curie('label'),
-                   model_uri=OPENPOLICYAGENT.plan__name, domain=None, range=str)
+slots.opaObjectInsertOnceStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaObjectInsertOnceStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaObjectInsertOnceStmtBody__value, domain=None, range=Union[dict, OpaOperand])
 
-slots.plans__plans = Slot(uri=OPENPOLICYAGENT.plans, name="plans__plans", curie=OPENPOLICYAGENT.curie('plans'),
-                   model_uri=OPENPOLICYAGENT.plans__plans, domain=None, range=Union[Union[dict, Plan], list[Union[dict, Plan]]])
+slots.opaObjectInsertStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaObjectInsertStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaObjectInsertStmt__type, domain=None, range=str)
 
-slots.policy__funcs = Slot(uri=OPENPOLICYAGENT.funcs, name="policy__funcs", curie=OPENPOLICYAGENT.curie('funcs'),
-                   model_uri=OPENPOLICYAGENT.policy__funcs, domain=None, range=Optional[Union[dict, Funcs]])
+slots.opaObjectInsertStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaObjectInsertStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaObjectInsertStmt__stmt, domain=None, range=Union[dict, OpaObjectInsertStmtBody])
 
-slots.policy__plans = Slot(uri=OPENPOLICYAGENT.plans, name="policy__plans", curie=OPENPOLICYAGENT.curie('plans'),
-                   model_uri=OPENPOLICYAGENT.policy__plans, domain=None, range=Optional[Union[dict, Plans]])
+slots.opaObjectInsertStmtBody__key = Slot(uri=OPENPOLICYAGENT.key, name="opaObjectInsertStmtBody__key", curie=OPENPOLICYAGENT.curie('key'),
+                   model_uri=OPENPOLICYAGENT.opaObjectInsertStmtBody__key, domain=None, range=Union[dict, OpaOperand])
 
-slots.policy__static = Slot(uri=OPENPOLICYAGENT.static, name="policy__static", curie=OPENPOLICYAGENT.curie('static'),
-                   model_uri=OPENPOLICYAGENT.policy__static, domain=None, range=Optional[Union[dict, Static]])
+slots.opaObjectInsertStmtBody__object = Slot(uri=OPENPOLICYAGENT.object, name="opaObjectInsertStmtBody__object", curie=OPENPOLICYAGENT.curie('object'),
+                   model_uri=OPENPOLICYAGENT.opaObjectInsertStmtBody__object, domain=None, range=int)
 
-slots.resetLocalStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="resetLocalStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.resetLocalStmt__col, domain=None, range=int)
+slots.opaObjectInsertStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaObjectInsertStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaObjectInsertStmtBody__value, domain=None, range=Union[dict, OpaOperand])
 
-slots.resetLocalStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="resetLocalStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.resetLocalStmt__file, domain=None, range=int)
+slots.opaObjectMergeStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaObjectMergeStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaObjectMergeStmt__type, domain=None, range=str)
 
-slots.resetLocalStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="resetLocalStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.resetLocalStmt__row, domain=None, range=int)
+slots.opaObjectMergeStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaObjectMergeStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaObjectMergeStmt__stmt, domain=None, range=Union[dict, OpaObjectMergeStmtBody])
 
-slots.resetLocalStmt__target = Slot(uri=OPENPOLICYAGENT.target, name="resetLocalStmt__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.resetLocalStmt__target, domain=None, range=int)
+slots.opaObjectMergeStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaObjectMergeStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.opaObjectMergeStmtBody__target, domain=None, range=int)
 
-slots.resultSetAddStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="resultSetAddStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.resultSetAddStmt__col, domain=None, range=int)
+slots.opaObjectMergeStmtBody__operand_a = Slot(uri=OPENPOLICYAGENT.a, name="opaObjectMergeStmtBody__operand_a", curie=OPENPOLICYAGENT.curie('a'),
+                   model_uri=OPENPOLICYAGENT.opaObjectMergeStmtBody__operand_a, domain=None, range=int)
 
-slots.resultSetAddStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="resultSetAddStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.resultSetAddStmt__file, domain=None, range=int)
+slots.opaObjectMergeStmtBody__operand_b = Slot(uri=OPENPOLICYAGENT.b, name="opaObjectMergeStmtBody__operand_b", curie=OPENPOLICYAGENT.curie('b'),
+                   model_uri=OPENPOLICYAGENT.opaObjectMergeStmtBody__operand_b, domain=None, range=int)
 
-slots.resultSetAddStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="resultSetAddStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.resultSetAddStmt__row, domain=None, range=int)
+slots.opaResetLocalStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaResetLocalStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaResetLocalStmt__type, domain=None, range=str)
 
-slots.resultSetAddStmt__value = Slot(uri=OPENPOLICYAGENT.value, name="resultSetAddStmt__value", curie=OPENPOLICYAGENT.curie('value'),
-                   model_uri=OPENPOLICYAGENT.resultSetAddStmt__value, domain=None, range=int)
+slots.opaResetLocalStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaResetLocalStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaResetLocalStmt__stmt, domain=None, range=Union[dict, OpaResetLocalStmtBody])
 
-slots.returnLocalStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="returnLocalStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.returnLocalStmt__col, domain=None, range=int)
+slots.opaResetLocalStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaResetLocalStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.opaResetLocalStmtBody__target, domain=None, range=int)
 
-slots.returnLocalStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="returnLocalStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.returnLocalStmt__file, domain=None, range=int)
+slots.opaResultSetAddStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaResultSetAddStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaResultSetAddStmt__type, domain=None, range=str)
 
-slots.returnLocalStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="returnLocalStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.returnLocalStmt__row, domain=None, range=int)
+slots.opaResultSetAddStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaResultSetAddStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaResultSetAddStmt__stmt, domain=None, range=Union[dict, OpaResultSetAddStmtBody])
 
-slots.returnLocalStmt__source = Slot(uri=OPENPOLICYAGENT.source, name="returnLocalStmt__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.returnLocalStmt__source, domain=None, range=int)
+slots.opaResultSetAddStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaResultSetAddStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaResultSetAddStmtBody__value, domain=None, range=int)
 
-slots.scanStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="scanStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.scanStmt__col, domain=None, range=int)
+slots.opaReturnLocalStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaReturnLocalStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaReturnLocalStmt__type, domain=None, range=str)
 
-slots.scanStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="scanStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.scanStmt__file, domain=None, range=int)
+slots.opaReturnLocalStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaReturnLocalStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaReturnLocalStmt__stmt, domain=None, range=Union[dict, OpaReturnLocalStmtBody])
 
-slots.scanStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="scanStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.scanStmt__row, domain=None, range=int)
+slots.opaReturnLocalStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaReturnLocalStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.opaReturnLocalStmtBody__source, domain=None, range=int)
 
-slots.scanStmt__block = Slot(uri=OPENPOLICYAGENT.block, name="scanStmt__block", curie=OPENPOLICYAGENT.curie('block'),
-                   model_uri=OPENPOLICYAGENT.scanStmt__block, domain=None, range=str)
+slots.opaScanStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaScanStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaScanStmt__type, domain=None, range=str)
 
-slots.scanStmt__key = Slot(uri=OPENPOLICYAGENT.key, name="scanStmt__key", curie=OPENPOLICYAGENT.curie('key'),
-                   model_uri=OPENPOLICYAGENT.scanStmt__key, domain=None, range=int)
+slots.opaScanStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaScanStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaScanStmt__stmt, domain=None, range=Union[dict, OpaScanStmtBody])
 
-slots.scanStmt__source = Slot(uri=OPENPOLICYAGENT.source, name="scanStmt__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.scanStmt__source, domain=None, range=int)
+slots.opaScanStmtBody__block = Slot(uri=OPENPOLICYAGENT.block, name="opaScanStmtBody__block", curie=OPENPOLICYAGENT.curie('block'),
+                   model_uri=OPENPOLICYAGENT.opaScanStmtBody__block, domain=None, range=Optional[Union[dict, OpaBlock]])
 
-slots.scanStmt__value = Slot(uri=OPENPOLICYAGENT.value, name="scanStmt__value", curie=OPENPOLICYAGENT.curie('value'),
-                   model_uri=OPENPOLICYAGENT.scanStmt__value, domain=None, range=int)
+slots.opaScanStmtBody__key = Slot(uri=OPENPOLICYAGENT.key, name="opaScanStmtBody__key", curie=OPENPOLICYAGENT.curie('key'),
+                   model_uri=OPENPOLICYAGENT.opaScanStmtBody__key, domain=None, range=int)
 
-slots.setAddStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="setAddStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.setAddStmt__col, domain=None, range=int)
+slots.opaScanStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaScanStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.opaScanStmtBody__source, domain=None, range=int)
 
-slots.setAddStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="setAddStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.setAddStmt__file, domain=None, range=int)
+slots.opaScanStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaScanStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaScanStmtBody__value, domain=None, range=int)
 
-slots.setAddStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="setAddStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.setAddStmt__row, domain=None, range=int)
+slots.opaSetAddStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaSetAddStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaSetAddStmt__type, domain=None, range=str)
 
-slots.setAddStmt__set = Slot(uri=OPENPOLICYAGENT.set, name="setAddStmt__set", curie=OPENPOLICYAGENT.curie('set'),
-                   model_uri=OPENPOLICYAGENT.setAddStmt__set, domain=None, range=int)
+slots.opaSetAddStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaSetAddStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaSetAddStmt__stmt, domain=None, range=Union[dict, OpaSetAddStmtBody])
 
-slots.setAddStmt__value = Slot(uri=OPENPOLICYAGENT.value, name="setAddStmt__value", curie=OPENPOLICYAGENT.curie('value'),
-                   model_uri=OPENPOLICYAGENT.setAddStmt__value, domain=None, range=Union[dict, Operand])
+slots.opaSetAddStmtBody__set = Slot(uri=OPENPOLICYAGENT.set, name="opaSetAddStmtBody__set", curie=OPENPOLICYAGENT.curie('set'),
+                   model_uri=OPENPOLICYAGENT.opaSetAddStmtBody__set, domain=None, range=int)
 
-slots.static__builtin_funcs = Slot(uri=OPENPOLICYAGENT.builtin_funcs, name="static__builtin_funcs", curie=OPENPOLICYAGENT.curie('builtin_funcs'),
-                   model_uri=OPENPOLICYAGENT.static__builtin_funcs, domain=None, range=Optional[Union[Union[dict, BuiltinFunc], list[Union[dict, BuiltinFunc]]]])
+slots.opaSetAddStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaSetAddStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaSetAddStmtBody__value, domain=None, range=Union[dict, OpaOperand])
 
-slots.static__files = Slot(uri=OPENPOLICYAGENT.files, name="static__files", curie=OPENPOLICYAGENT.curie('files'),
-                   model_uri=OPENPOLICYAGENT.static__files, domain=None, range=Optional[Union[Union[dict, StringConst], list[Union[dict, StringConst]]]])
+slots.opaWithStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaWithStmt__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaWithStmt__type, domain=None, range=str)
 
-slots.static__strings = Slot(uri=OPENPOLICYAGENT.strings, name="static__strings", curie=OPENPOLICYAGENT.curie('strings'),
-                   model_uri=OPENPOLICYAGENT.static__strings, domain=None, range=Optional[Union[Union[dict, StringConst], list[Union[dict, StringConst]]]])
+slots.opaWithStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaWithStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
+                   model_uri=OPENPOLICYAGENT.opaWithStmt__stmt, domain=None, range=Union[dict, OpaWithStmtBody])
 
-slots.stmt__type = Slot(uri=OPENPOLICYAGENT.type, name="stmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.stmt__type, domain=None, range=Union[str, "StmtTag"])
+slots.opaWithStmtBody__block = Slot(uri=OPENPOLICYAGENT.block, name="opaWithStmtBody__block", curie=OPENPOLICYAGENT.curie('block'),
+                   model_uri=OPENPOLICYAGENT.opaWithStmtBody__block, domain=None, range=Optional[Union[dict, OpaBlock]])
 
-slots.stmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="stmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
-                   model_uri=OPENPOLICYAGENT.stmt__stmt, domain=None, range=Union[dict, Any])
+slots.opaWithStmtBody__local = Slot(uri=OPENPOLICYAGENT.local, name="opaWithStmtBody__local", curie=OPENPOLICYAGENT.curie('local'),
+                   model_uri=OPENPOLICYAGENT.opaWithStmtBody__local, domain=None, range=int)
 
-slots.stringConst__value = Slot(uri=OPENPOLICYAGENT.value, name="stringConst__value", curie=OPENPOLICYAGENT.curie('value'),
-                   model_uri=OPENPOLICYAGENT.stringConst__value, domain=None, range=str)
+slots.opaWithStmtBody__path = Slot(uri=OPENPOLICYAGENT.path, name="opaWithStmtBody__path", curie=OPENPOLICYAGENT.curie('path'),
+                   model_uri=OPENPOLICYAGENT.opaWithStmtBody__path, domain=None, range=Optional[Union[int, list[int]]])
 
-slots.val__type = Slot(uri=OPENPOLICYAGENT.type, name="val__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.val__type, domain=None, range=Union[str, "ValTag"])
+slots.opaWithStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaWithStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaWithStmtBody__value, domain=None, range=Union[dict, OpaOperand])
 
-slots.val__value = Slot(uri=OPENPOLICYAGENT.value, name="val__value", curie=OPENPOLICYAGENT.curie('value'),
-                   model_uri=OPENPOLICYAGENT.val__value, domain=None, range=Union[dict, Any])
+slots.opaBoolOperand__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBoolOperand__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaBoolOperand__type, domain=None, range=str)
 
-slots.withStmt__col = Slot(uri=OPENPOLICYAGENT.col, name="withStmt__col", curie=OPENPOLICYAGENT.curie('col'),
-                   model_uri=OPENPOLICYAGENT.withStmt__col, domain=None, range=int)
+slots.opaBoolOperand__value = Slot(uri=OPENPOLICYAGENT.value, name="opaBoolOperand__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaBoolOperand__value, domain=None, range=Union[bool, Bool])
 
-slots.withStmt__file = Slot(uri=OPENPOLICYAGENT.file, name="withStmt__file", curie=OPENPOLICYAGENT.curie('file'),
-                   model_uri=OPENPOLICYAGENT.withStmt__file, domain=None, range=int)
+slots.opaLocalOperand__type = Slot(uri=OPENPOLICYAGENT.type, name="opaLocalOperand__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaLocalOperand__type, domain=None, range=str)
 
-slots.withStmt__row = Slot(uri=OPENPOLICYAGENT.row, name="withStmt__row", curie=OPENPOLICYAGENT.curie('row'),
-                   model_uri=OPENPOLICYAGENT.withStmt__row, domain=None, range=int)
+slots.opaLocalOperand__value = Slot(uri=OPENPOLICYAGENT.value, name="opaLocalOperand__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaLocalOperand__value, domain=None, range=int)
 
-slots.withStmt__block = Slot(uri=OPENPOLICYAGENT.block, name="withStmt__block", curie=OPENPOLICYAGENT.curie('block'),
-                   model_uri=OPENPOLICYAGENT.withStmt__block, domain=None, range=str)
+slots.opaStringIndexOperand__type = Slot(uri=OPENPOLICYAGENT.type, name="opaStringIndexOperand__type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.opaStringIndexOperand__type, domain=None, range=str)
 
-slots.withStmt__local = Slot(uri=OPENPOLICYAGENT.local, name="withStmt__local", curie=OPENPOLICYAGENT.curie('local'),
-                   model_uri=OPENPOLICYAGENT.withStmt__local, domain=None, range=int)
+slots.opaStringIndexOperand__value = Slot(uri=OPENPOLICYAGENT.value, name="opaStringIndexOperand__value", curie=OPENPOLICYAGENT.curie('value'),
+                   model_uri=OPENPOLICYAGENT.opaStringIndexOperand__value, domain=None, range=int)
 
-slots.withStmt__path = Slot(uri=OPENPOLICYAGENT.path, name="withStmt__path", curie=OPENPOLICYAGENT.curie('path'),
-                   model_uri=OPENPOLICYAGENT.withStmt__path, domain=None, range=Union[int, list[int]])
+slots.OpaLocation_file = Slot(uri=OPENPOLICYAGENT.file, name="OpaLocation_file", curie=OPENPOLICYAGENT.curie('file'),
+                   model_uri=OPENPOLICYAGENT.OpaLocation_file, domain=OpaLocation, range=int)
 
-slots.withStmt__value = Slot(uri=OPENPOLICYAGENT.value, name="withStmt__value", curie=OPENPOLICYAGENT.curie('value'),
-                   model_uri=OPENPOLICYAGENT.withStmt__value, domain=None, range=Union[dict, Operand])
+slots.OpaLocation_col = Slot(uri=OPENPOLICYAGENT.col, name="OpaLocation_col", curie=OPENPOLICYAGENT.curie('col'),
+                   model_uri=OPENPOLICYAGENT.OpaLocation_col, domain=OpaLocation, range=int)
+
+slots.OpaLocation_row = Slot(uri=OPENPOLICYAGENT.row, name="OpaLocation_row", curie=OPENPOLICYAGENT.curie('row'),
+                   model_uri=OPENPOLICYAGENT.OpaLocation_row, domain=OpaLocation, range=int)
+
+slots.OpaLocation_end_col = Slot(uri=OPENPOLICYAGENT.end_col, name="OpaLocation_end_col", curie=OPENPOLICYAGENT.curie('end_col'),
+                   model_uri=OPENPOLICYAGENT.OpaLocation_end_col, domain=OpaLocation, range=int)
+
+slots.OpaLocation_end_row = Slot(uri=OPENPOLICYAGENT.end_row, name="OpaLocation_end_row", curie=OPENPOLICYAGENT.curie('end_row'),
+                   model_uri=OPENPOLICYAGENT.OpaLocation_end_row, domain=OpaLocation, range=int)
+
+slots.OpaStmtBody_file = Slot(uri=OPENPOLICYAGENT.file, name="OpaStmtBody_file", curie=OPENPOLICYAGENT.curie('file'),
+                   model_uri=OPENPOLICYAGENT.OpaStmtBody_file, domain=OpaStmtBody, range=int)
+
+slots.OpaStmtBody_col = Slot(uri=OPENPOLICYAGENT.col, name="OpaStmtBody_col", curie=OPENPOLICYAGENT.curie('col'),
+                   model_uri=OPENPOLICYAGENT.OpaStmtBody_col, domain=OpaStmtBody, range=int)
+
+slots.OpaStmtBody_row = Slot(uri=OPENPOLICYAGENT.row, name="OpaStmtBody_row", curie=OPENPOLICYAGENT.curie('row'),
+                   model_uri=OPENPOLICYAGENT.OpaStmtBody_row, domain=OpaStmtBody, range=int)
+
+slots.OpaStmtBody_end_col = Slot(uri=OPENPOLICYAGENT.end_col, name="OpaStmtBody_end_col", curie=OPENPOLICYAGENT.curie('end_col'),
+                   model_uri=OPENPOLICYAGENT.OpaStmtBody_end_col, domain=OpaStmtBody, range=int)
+
+slots.OpaStmtBody_end_row = Slot(uri=OPENPOLICYAGENT.end_row, name="OpaStmtBody_end_row", curie=OPENPOLICYAGENT.curie('end_row'),
+                   model_uri=OPENPOLICYAGENT.OpaStmtBody_end_row, domain=OpaStmtBody, range=int)

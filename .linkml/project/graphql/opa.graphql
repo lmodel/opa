@@ -1,614 +1,930 @@
-# metamodel_version: 1.11.0
-# version: 0.1.0
-enum BuiltinCategory
-  {
-    aggregates
-    array
-    bits
-    comparison
-    conversions
-    crypto
-    encoding
-    glob
-    graph
-    graphql
-    http
-    internal
-    net
-    numbers
-    object
-    opa
-    providers_aws
-    regex
-    rego
-    semver
-    sets
-    strings
-    time
-    tokens
-    tokensign
-    tracing
-    types
-    units
-    uri
-    uuid
-  }
-
-enum BuiltinTypeKind
-  {
-    string
-    number
-    boolean
-    null
-    any
-    array
-    set
-    object
-    function
-  }
-
-enum FeatureName
+# metamodel_version: 1.12.0
+# version: 1.22.2
+enum OpaFeature
   {
     keywords_in_refs
     rego_v1
+    rego_v1_import
+    rego_v2
+    rego_v2_import
+    rule_head_ref_string_prefixes
+    rule_head_refs
     template_strings
   }
 
-enum FutureKeyword
+enum OpaFutureKeyword
   {
+    and
+    contains
+    every
+    if
+    in
     not
+    or
   }
 
-enum StmtTag
+type OpaAnyType
   {
-    ArrayAppendStmt
-    AssignIntStmt
-    AssignVarOnceStmt
-    AssignVarStmt
-    BlockStmt
-    BreakStmt
-    CallDynamicStmt
-    CallStmt
-    DotStmt
-    EqualStmt
-    IsArrayStmt
-    IsDefinedStmt
-    IsObjectStmt
-    IsSetStmt
-    IsUndefinedStmt
-    LenStmt
-    MakeArrayStmt
-    MakeNullStmt
-    MakeNumberIntStmt
-    MakeNumberRefStmt
-    MakeObjectStmt
-    MakeSetStmt
-    NopStmt
-    NotEqualStmt
-    NotStmt
-    ObjectInsertOnceStmt
-    ObjectInsertStmt
-    ObjectMergeStmt
-    ResetLocalStmt
-    ResultSetAddStmt
-    ReturnLocalStmt
-    ScanStmt
-    SetAddStmt
-    WithStmt
+    name: String
+    description: String
+    type: String!
+    of: [OpaType]
   }
 
-enum ValTag
+type OpaArrayAppendStmt
   {
-    bool
-    local
-    string_index
+    type: String!
+    stmt: OpaArrayAppendStmtBody!
   }
 
-scalar Any
-
-type ArrayAppendStmt
+type OpaArrayAppendStmtBody
   {
-    col: Int!
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
     array: Int!
-    value: Operand!
+    value: OpaOperand!
   }
 
-type AssignIntStmt
+type OpaArrayType
   {
-    col: Int!
+    name: String
+    description: String
+    type: String!
+    static: [OpaType]
+    dynamic: OpaType
+  }
+
+type OpaAssignIntStmt
+  {
+    type: String!
+    stmt: OpaAssignIntStmtBody!
+  }
+
+type OpaAssignIntStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
     target: Int!
     value: Int!
   }
 
-type AssignVarOnceStmt
+type OpaAssignVarOnceStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaAssignVarOnceStmtBody!
+  }
+
+type OpaAssignVarOnceStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
-    source: Operand!
+    endCol: Int!
+    endRow: Int!
+    source: OpaOperand!
     target: Int!
   }
 
-type AssignVarStmt
+type OpaAssignVarStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaAssignVarStmtBody!
+  }
+
+type OpaAssignVarStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
-    source: Operand!
+    endCol: Int!
+    endRow: Int!
+    source: OpaOperand!
     target: Int!
   }
 
-type AuthorizationInput
+type OpaAuthorizationInput
   {
     identity: String!
-    clientCertificates: [Any]!
+    clientCertificates: [OpaObject]!
     method: String!
     path: [String]!
-    params: Any!
-    headers: Any!
-    body: Any!
+    params: OpaObject!
+    headers: OpaObject!
+    body: OpaObject!
   }
 
-type Block
+type OpaBlock
   {
-    stmts: [Stmt]!
+    stmts: [OpaStmt]!
   }
 
-type BlockStmt
+type OpaBlockStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaBlockStmtBody!
+  }
+
+type OpaBlockStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
-    blocks: [Block]!
+    endCol: Int!
+    endRow: Int!
+    blocks: [OpaBlock]
   }
 
-type BreakStmt
+type OpaBooleanType
   {
-    col: Int!
+    name: String
+    description: String
+    type: String!
+  }
+
+type OpaBoolOperand
+  {
+    type: String!
+    value: Boolean!
+  }
+
+type OpaBreakStmt
+  {
+    type: String!
+    stmt: OpaBreakStmtBody!
+  }
+
+type OpaBreakStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
     index: Int!
   }
 
-type Builtin
+type OpaBuiltin
   {
     name: String!
-    decl: BuiltinDecl!
+    description: String
+    categories: [String]
+    decl: OpaFunctionType!
     infix: String
+    relation: Boolean
     deprecated: Boolean
     nondeterministic: Boolean
-    relation: Boolean
   }
 
-type BuiltinArg
+type OpaBuiltinArgument
   {
     name: String
     description: String
-    type: String
+    type: String!
   }
 
-type BuiltinCategoryGroup
+type OpaBuiltinCategory
   {
     name: String!
-    category: BuiltinCategory
     builtins: [String]!
   }
 
-type BuiltinDecl
+type OpaBuiltinFunc
   {
-    type: String!
-    args: [TypeDecl]
-    result: TypeDecl
-    variadic: TypeDecl
-  }
-
-type BuiltinFunc
-  {
-    decl: Any!
+    decl: OpaFunctionType
     name: String!
   }
 
-type BuiltinMetadata
+type OpaBuiltinMetadata
   {
-    name: String!
     description: String
-    introduced: String
-    available: [String]
-    wasm: Boolean
+    introduced: String!
+    available: [String]!
+    wasm: Boolean!
+    args: [OpaBuiltinArgument]!
+    result: OpaBuiltinResult!
+    implementations: [OpaImplementationSupport]!
     infix: String
-    deprecated: Boolean
     relation: Boolean
-    args: [BuiltinArg]
-    result: BuiltinResult
+    deprecated: Boolean
   }
 
-type BuiltinMetadataCatalog
+type OpaBuiltinMetadataCatalog
   {
-    categories: [BuiltinCategoryGroup]
-    builtins: [BuiltinMetadata]
+    categories: [OpaBuiltinCategory]
+    implementations: [OpaImplementation]
   }
 
-type BuiltinResult
+type OpaBuiltinResult
   {
     name: String
     description: String
     type: String
   }
 
-type CallDynamicStmt
+type OpaCallDynamicStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaCallDynamicStmtBody!
+  }
+
+type OpaCallDynamicStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
-    args: [Int]!
-    path: [Operand]!
+    endCol: Int!
+    endRow: Int!
+    args: [Int]
+    path: [OpaOperand]
     result: Int!
   }
 
-type CallStmt
+type OpaCallStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaCallStmtBody!
+  }
+
+type OpaCallStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
-    args: [Operand]!
+    endCol: Int!
+    endRow: Int!
+    args: [OpaOperand]
     func: String!
     result: Int!
   }
 
-type Capabilities
+type OpaCapabilities
   {
-    builtins: [Builtin]
-    futureKeywords: [FutureKeyword]
-    wasmAbiVersions: [WasmABIVersion]
-    features: [FeatureName]
+    builtins: [OpaBuiltin]
+    futureKeywords: [OpaFutureKeyword]
+    wasmAbiVersions: [OpaWasmAbiVersion]
+    features: [OpaFeature]
     allowNet: [String]
   }
 
-type DotStmt
+type OpaDotStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaDotStmtBody!
+  }
+
+type OpaDotStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
-    key: Operand!
-    source: Operand!
+    endCol: Int!
+    endRow: Int!
+    key: OpaOperand!
+    source: OpaOperand!
     target: Int!
   }
 
-type ElementVersion
+type OpaDynamicProperty
   {
-    name: String!
-    major: Int!
-    minor: Int!
-    patch: Int!
+    key: OpaType!
+    value: OpaType!
   }
 
-type EqualStmt
+type OpaEqualStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaEqualStmtBody!
+  }
+
+type OpaEqualStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
-    a: Operand!
-    b: Operand!
+    endCol: Int!
+    endRow: Int!
+    a: OpaOperand!
+    b: OpaOperand!
   }
 
-type FileRegoVersion
+type OpaFileRegoVersion
   {
     path: String!
     version: Int!
   }
 
-type Func
+type OpaFunc
   {
-    blocks: [Block]!
+    blocks: [OpaBlock]
     name: String!
-    params: [Int]!
+    params: [Int]
     path: [String]
-    returnValue: Int!
+    return: Int!
   }
 
-type Funcs
+type OpaFuncs
   {
-    funcs: [Func]!
+    funcs: [OpaFunc]
   }
 
-type IsArrayStmt
+type OpaFunctionType
   {
-    col: Int!
+    name: String
+    description: String
+    type: String!
+    args: [OpaType]
+    result: OpaType
+    variadic: OpaType
+  }
+
+type OpaImplementation
+  {
+    id: String!
+    label: String!
+    repo: String!
+    version: String!
+  }
+
+type OpaImplementationSupport
+  {
+    implementation: String!
+    version: String!
+  }
+
+type OpaIsArrayStmt
+  {
+    type: String!
+    stmt: OpaIsArrayStmtBody!
+  }
+
+type OpaIsArrayStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
-    source: Operand!
+    endCol: Int!
+    endRow: Int!
+    source: OpaOperand!
   }
 
-type IsDefinedStmt
+type OpaIsDefinedStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaIsDefinedStmtBody!
+  }
+
+type OpaIsDefinedStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
     source: Int!
   }
 
-type IsObjectStmt
+type OpaIsObjectStmt
   {
-    col: Int!
-    file: Int!
-    row: Int!
-    source: Operand!
+    type: String!
+    stmt: OpaIsObjectStmtBody!
   }
 
-type IsSetStmt
+type OpaIsObjectStmtBody
   {
-    col: Int!
     file: Int!
+    col: Int!
     row: Int!
-    source: Operand!
+    endCol: Int!
+    endRow: Int!
+    source: OpaOperand!
   }
 
-type IsUndefinedStmt
+type OpaIsSetStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaIsSetStmtBody!
+  }
+
+type OpaIsSetStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
+    source: OpaOperand!
+  }
+
+type OpaIsUndefinedStmt
+  {
+    type: String!
+    stmt: OpaIsUndefinedStmtBody!
+  }
+
+type OpaIsUndefinedStmtBody
+  {
+    file: Int!
+    col: Int!
+    row: Int!
+    endCol: Int!
+    endRow: Int!
     source: Int!
   }
 
-type LenStmt
+type OpaLenStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaLenStmtBody!
+  }
+
+type OpaLenStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
-    source: Operand!
+    endCol: Int!
+    endRow: Int!
+    source: OpaOperand!
     target: Int!
   }
 
-type MakeArrayStmt
+type OpaLocalOperand
   {
-    col: Int!
+    type: String!
+    value: Int!
+  }
+
+type OpaLocation
+  {
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
+  }
+
+type OpaMakeArrayStmt
+  {
+    type: String!
+    stmt: OpaMakeArrayStmtBody!
+  }
+
+type OpaMakeArrayStmtBody
+  {
+    file: Int!
+    col: Int!
+    row: Int!
+    endCol: Int!
+    endRow: Int!
     capacity: Int!
     target: Int!
   }
 
-type MakeNullStmt
+type OpaMakeNullStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaMakeNullStmtBody!
+  }
+
+type OpaMakeNullStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
     target: Int!
   }
 
-type MakeNumberIntStmt
+type OpaMakeNumberIntStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaMakeNumberIntStmtBody!
+  }
+
+type OpaMakeNumberIntStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
     target: Int!
     value: Int!
   }
 
-type MakeNumberRefStmt
+type OpaMakeNumberRefStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaMakeNumberRefStmtBody!
+  }
+
+type OpaMakeNumberRefStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
     index: Int!
+    target: Int!
     index: Int
-    target: Int!
   }
 
-type MakeObjectStmt
+type OpaMakeObjectStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaMakeObjectStmtBody!
+  }
+
+type OpaMakeObjectStmtBody
+  {
     file: Int!
-    row: Int!
-    target: Int!
-  }
-
-type MakeSetStmt
-  {
     col: Int!
-    file: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
     target: Int!
   }
 
-type Manifest
+type OpaMakeSetStmt
   {
-    fileRegoVersions: [FileRegoVersion]
-    metadata: Any
+    type: String!
+    stmt: OpaMakeSetStmtBody!
+  }
+
+type OpaMakeSetStmtBody
+  {
+    file: Int!
+    col: Int!
+    row: Int!
+    endCol: Int!
+    endRow: Int!
+    target: Int!
+  }
+
+type OpaManifest
+  {
+    fileRegoVersions: [OpaFileRegoVersion]
+    metadata: OpaObject
     regoVersion: Int
     revision: String!
     roots: [String]
-    wasm: [WasmResolver]
+    wasm: [OpaWasmResolver]
   }
 
-type NopStmt
+type OpaNopStmt
   {
-    col: Int!
-    file: Int!
-    row: Int!
+    type: String!
+    stmt: OpaNopStmtBody!
   }
 
-type NotEqualStmt
+type OpaNopStmtBody
   {
-    col: Int!
     file: Int!
+    col: Int!
     row: Int!
-    a: Operand!
-    b: Operand!
+    endCol: Int!
+    endRow: Int!
   }
 
-type NotStmt
+type OpaNotEqualStmt
   {
-    col: Int!
-    file: Int!
-    row: Int!
-    block: String!
+    type: String!
+    stmt: OpaNotEqualStmtBody!
   }
 
-type ObjectInsertOnceStmt
+type OpaNotEqualStmtBody
   {
-    col: Int!
     file: Int!
+    col: Int!
     row: Int!
-    key: Operand!
+    endCol: Int!
+    endRow: Int!
+    a: OpaOperand!
+    b: OpaOperand!
+  }
+
+type OpaNotStmt
+  {
+    type: String!
+    stmt: OpaNotStmtBody!
+  }
+
+type OpaNotStmtBody
+  {
+    file: Int!
+    col: Int!
+    row: Int!
+    endCol: Int!
+    endRow: Int!
+    block: OpaBlock
+  }
+
+type OpaNullType
+  {
+    name: String
+    description: String
+    type: String!
+  }
+
+type OpaNumberType
+  {
+    name: String
+    description: String
+    type: String!
+  }
+
+type OpaObject
+  {
+  }
+
+type OpaObjectInsertOnceStmt
+  {
+    type: String!
+    stmt: OpaObjectInsertOnceStmtBody!
+  }
+
+type OpaObjectInsertOnceStmtBody
+  {
+    file: Int!
+    col: Int!
+    row: Int!
+    endCol: Int!
+    endRow: Int!
+    key: OpaOperand!
     object: Int!
-    value: Operand!
+    value: OpaOperand!
   }
 
-type ObjectInsertStmt
+type OpaObjectInsertStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaObjectInsertStmtBody!
+  }
+
+type OpaObjectInsertStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
-    key: Operand!
+    endCol: Int!
+    endRow: Int!
+    key: OpaOperand!
     object: Int!
-    value: Operand!
+    value: OpaOperand!
   }
 
-type ObjectMergeStmt
+type OpaObjectMergeStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaObjectMergeStmtBody!
+  }
+
+type OpaObjectMergeStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
+    target: Int!
     a: Int!
     b: Int!
-    target: Int!
   }
 
-type Operand
+type OpaObjectType
   {
-    type: ValTag!
-    value: Any!
+    name: String
+    description: String
+    type: String!
+    static: [OpaStaticProperty]
+    dynamic: OpaDynamicProperty
   }
 
-type Plan
+interface OpaOperand
   {
-    blocks: [Block]!
+  }
+
+type OpaPlan
+  {
+    blocks: [OpaBlock]
     name: String!
   }
 
-type Plans
+type OpaPlans
   {
-    plans: [Plan]!
+    plans: [OpaPlan]
   }
 
-type Policy
+type OpaPolicy
   {
-    funcs: Funcs
-    plans: Plans
-    static: Static
+    funcs: OpaFuncs
+    plans: OpaPlans
+    static: OpaStatic
+    unplannedRules: [OpaUnplannedRule]
   }
 
-type ResetLocalStmt
+type OpaResetLocalStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaResetLocalStmtBody!
+  }
+
+type OpaResetLocalStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
     target: Int!
   }
 
-type ResultSetAddStmt
+type OpaResultSetAddStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaResultSetAddStmtBody!
+  }
+
+type OpaResultSetAddStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
     value: Int!
   }
 
-type ReturnLocalStmt
+type OpaReturnLocalStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaReturnLocalStmtBody!
+  }
+
+type OpaReturnLocalStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
     source: Int!
   }
 
-type ScanStmt
+type OpaScanStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaScanStmtBody!
+  }
+
+type OpaScanStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
-    block: String!
+    endCol: Int!
+    endRow: Int!
+    block: OpaBlock
     key: Int!
     source: Int!
     value: Int!
   }
 
-type SetAddStmt
+type OpaSetAddStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaSetAddStmtBody!
+  }
+
+type OpaSetAddStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
+    endCol: Int!
+    endRow: Int!
     set: Int!
-    value: Operand!
+    value: OpaOperand!
   }
 
-type Static
+type OpaSetType
   {
-    builtinFuncs: [BuiltinFunc]
-    files: [StringConst]
-    strings: [StringConst]
+    name: String
+    description: String
+    type: String!
+    of: OpaType
   }
 
-type Stmt
+type OpaStatic
   {
-    type: StmtTag!
-    stmt: Any!
+    builtinFuncs: [OpaBuiltinFunc]
+    files: [OpaStringConst]
+    strings: [OpaStringConst]
   }
 
-type StringConst
+type OpaStaticProperty
+  {
+    key: OpaValue!
+    value: OpaType!
+  }
+
+interface OpaStmt
+  {
+  }
+
+interface OpaStmtBody
+  {
+    file: Int!
+    col: Int!
+    row: Int!
+    endCol: Int!
+    endRow: Int!
+  }
+
+type OpaStringConst
   {
     value: String!
   }
 
-type TypeDecl
+type OpaStringIndexOperand
   {
-    type: BuiltinTypeKind
-    of: [TypeDecl]
-    dynamic: TypeDecl
-    static: [TypeDecl]
-    key: Any
-    value: TypeDecl
+    type: String!
+    value: Int!
   }
 
-type Val
+type OpaStringType
   {
-    type: ValTag!
-    value: Any!
+    name: String
+    description: String
+    type: String!
   }
 
-type VersionIndex
+interface OpaType
   {
-    builtins: [ElementVersion]
-    features: [ElementVersion]
-    keywords: [ElementVersion]
+    name: String
+    description: String
   }
 
-type WasmABIVersion
+type OpaUnplannedRule
+  {
+    location: OpaLocation
+    path: String!
+  }
+
+scalar OpaValue
+
+type OpaVersionEntry
+  {
+    name: String!
+    major: Int!
+    minor: Int!
+    patch: Int!
+    preRelease: String
+  }
+
+type OpaVersionIndex
+  {
+    builtins: [OpaVersionEntry]!
+    features: [OpaVersionEntry]!
+    keywords: [OpaVersionEntry]!
+  }
+
+type OpaWasmAbiVersion
   {
     version: Int!
     minorVersion: Int!
   }
 
-type WasmResolver
+type OpaWasmResolver
   {
-    annotations: [Any]
+    annotations: [OpaObject]
     entrypoint: String
     module: String
   }
 
-type WithStmt
+type OpaWithStmt
   {
-    col: Int!
+    type: String!
+    stmt: OpaWithStmtBody!
+  }
+
+type OpaWithStmtBody
+  {
     file: Int!
+    col: Int!
     row: Int!
-    block: String!
+    endCol: Int!
+    endRow: Int!
+    block: OpaBlock
     local: Int!
-    path: [Int]!
-    value: Operand!
+    path: [Int]
+    value: OpaOperand!
   }

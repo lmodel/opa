@@ -6,10 +6,6 @@
 # By default all generators are run. Specify here the ones to skip.
 excludes:
   - markdown
-  # shacl gen errors on snake_case module names with the umbrella schema:
-  #   KeyError: 'version_index'
-  # (linkml shaclgen calls schemaview.get_uri/in_schema and looks up by name)
-  - shacl
 
 # Alternatively only specify the generators to run
 # (comment out the above "excludes" section)
@@ -41,6 +37,9 @@ generator_args:
     mergeimports: true
   jsonschema:
     mergeimports: true
+    # A range over an abstract class, such as a plan's statement or operand,
+    # admits each of its subclasses, as OPA's oneOf does.
+    include_range_class_descendants: true
   jsonldcontext:
     mergeimports: true
   # gen-pydantic is not yet supported by gen-project.

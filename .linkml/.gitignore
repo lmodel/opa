@@ -147,3 +147,7 @@ dmypy.json
 .agents/
 .claude/
 skills-lock.json
+
+# OPA's root .gitignore leaves out opa_*, its build output. This project's files
+# take the name: the converter, the parity helper and the Pydantic model.
+!opa_*

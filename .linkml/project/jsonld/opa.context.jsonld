@@ -1,37 +1,54 @@
 {
    "@context": {
       "xsd": "http://www.w3.org/2001/XMLSchema#",
-      "d3fend": "https://w3id.org/lmodel/d3fend/",
-      "dcterms": "http://purl.org/dc/terms/",
-      "dpv": "https://w3id.org/lmodel/dpv/",
-      "iso27001": "https://w3id.org/lmodel/iso27001/",
       "linkml": "https://w3id.org/linkml/",
+      "opa_manifest": "https://openpolicyagent.org/schemas/bundle/v1/manifest.schema.json#/$defs/",
+      "opa_plan": "https://openpolicyagent.org/schemas/ir/v1/plan.schema.json#/$defs/",
       "openpolicyagent": "https://w3id.org/lmodel/opa/",
-      "oscal": "https://w3id.org/lmodel/oscal/",
-      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-      "schema": "http://schema.org/",
       "skos": "http://www.w3.org/2004/02/skos/core#",
-      "slsa": "https://w3id.org/lmodel/slsa/",
       "@vocab": "https://w3id.org/lmodel/opa/",
-      "array": {
-         "@type": "xsd:integer",
-         "@id": "array"
-      },
       "col": {
          "@type": "xsd:integer",
          "@id": "col"
+      },
+      "end_col": {
+         "@type": "xsd:integer",
+         "@id": "end_col"
+      },
+      "end_row": {
+         "@type": "xsd:integer",
+         "@id": "end_row"
       },
       "file": {
          "@type": "xsd:integer",
          "@id": "file"
       },
-      "row": {
+      "of": {
+         "@type": "@id",
+         "@id": "of"
+      },
+      "type": {
+         "@id": "type"
+      },
+      "stmt": {
+         "@type": "@id",
+         "@id": "stmt"
+      },
+      "array": {
          "@type": "xsd:integer",
-         "@id": "row"
+         "@id": "array"
       },
       "value": {
          "@type": "@id",
          "@id": "value"
+      },
+      "dynamic": {
+         "@type": "@id",
+         "@id": "dynamic"
+      },
+      "static": {
+         "@type": "@id",
+         "@id": "static"
       },
       "target": {
          "@type": "xsd:integer",
@@ -79,6 +96,9 @@
          "@type": "xsd:integer",
          "@id": "index"
       },
+      "categories": {
+         "@id": "categories"
+      },
       "decl": {
          "@type": "@id",
          "@id": "decl"
@@ -87,12 +107,13 @@
          "@type": "xsd:boolean",
          "@id": "deprecated"
       },
+      "description": {
+         "@id": "description"
+      },
       "infix": {
          "@id": "infix"
       },
-      "name": {
-         "@id": "rdfs:label"
-      },
+      "name": "@id",
       "nondeterministic": {
          "@type": "xsd:boolean",
          "@id": "nondeterministic"
@@ -101,54 +122,39 @@
          "@type": "xsd:boolean",
          "@id": "relation"
       },
-      "description": {
-         "@id": "schema:description"
-      },
-      "type": {
-         "@context": {
-            "text": "skos:notation",
-            "description": "skos:prefLabel",
-            "meaning": "@id"
-         },
-         "@id": "type"
-      },
       "builtins": {
          "@type": "@id",
          "@id": "builtins"
-      },
-      "category": {
-         "@context": {
-            "text": "skos:notation",
-            "description": "skos:prefLabel",
-            "meaning": "@id"
-         },
-         "@id": "category"
       },
       "args": {
          "@type": "@id",
          "@id": "args"
       },
-      "result": {
-         "@type": "xsd:integer",
-         "@id": "result"
-      },
-      "variadic": {
-         "@type": "@id",
-         "@id": "variadic"
-      },
       "available": {
          "@id": "available"
       },
+      "implementations": {
+         "@type": "@id",
+         "@id": "implementations"
+      },
       "introduced": {
          "@id": "introduced"
+      },
+      "result": {
+         "@type": "@id",
+         "@id": "result"
       },
       "wasm": {
          "@type": "@id",
          "@id": "wasm"
       },
-      "categories": {
+      "_categories": {
          "@type": "@id",
-         "@id": "categories"
+         "@id": "_categories"
+      },
+      "_implementations": {
+         "@type": "@id",
+         "@id": "_implementations"
       },
       "func": {
          "@id": "func"
@@ -176,18 +182,6 @@
          "@type": "@id",
          "@id": "key"
       },
-      "major": {
-         "@type": "xsd:integer",
-         "@id": "major"
-      },
-      "minor": {
-         "@type": "xsd:integer",
-         "@id": "minor"
-      },
-      "patch": {
-         "@type": "xsd:integer",
-         "@id": "patch"
-      },
       "a": {
          "@type": "xsd:integer",
          "@id": "a"
@@ -200,14 +194,28 @@
          "@type": "xsd:integer",
          "@id": "version"
       },
-      "return_value": {
+      "return": {
          "@type": "xsd:integer",
-         "@id": "return_value"
+         "@id": "return"
       },
       "funcs": {
          "@type": "@id",
          "@id": "funcs"
       },
+      "variadic": {
+         "@type": "@id",
+         "@id": "variadic"
+      },
+      "id": {
+         "@id": "id"
+      },
+      "label": {
+         "@id": "label"
+      },
+      "repo": {
+         "@id": "repo"
+      },
+      "implementation": "@id",
       "capacity": {
          "@type": "xsd:integer",
          "@id": "capacity"
@@ -235,6 +243,7 @@
          "@id": "roots"
       },
       "block": {
+         "@type": "@id",
          "@id": "block"
       },
       "object": {
@@ -245,9 +254,9 @@
          "@type": "@id",
          "@id": "plans"
       },
-      "static": {
+      "unplanned_rules": {
          "@type": "@id",
-         "@id": "static"
+         "@id": "unplanned_rules"
       },
       "set": {
          "@type": "xsd:integer",
@@ -265,17 +274,24 @@
          "@type": "@id",
          "@id": "strings"
       },
-      "stmt": {
+      "location": {
          "@type": "@id",
-         "@id": "stmt"
+         "@id": "location"
       },
-      "dynamic": {
-         "@type": "@id",
-         "@id": "dynamic"
+      "Major": {
+         "@type": "xsd:integer",
+         "@id": "Major"
       },
-      "of": {
-         "@type": "@id",
-         "@id": "of"
+      "Minor": {
+         "@type": "xsd:integer",
+         "@id": "Minor"
+      },
+      "Patch": {
+         "@type": "xsd:integer",
+         "@id": "Patch"
+      },
+      "PreRelease": {
+         "@id": "PreRelease"
       },
       "keywords": {
          "@type": "@id",
@@ -299,194 +315,354 @@
          "@type": "xsd:integer",
          "@id": "local"
       },
-      "Any": {
+      "row": {
+         "@type": "xsd:integer",
+         "@id": "row"
+      },
+      "OpaAnyType": {
+         "@id": "OpaAnyType"
+      },
+      "OpaArrayAppendStmt": {
+         "@id": "OpaArrayAppendStmt"
+      },
+      "OpaArrayAppendStmtBody": {
+         "@id": "OpaArrayAppendStmtBody"
+      },
+      "OpaArrayType": {
+         "@id": "OpaArrayType"
+      },
+      "OpaAssignIntStmt": {
+         "@id": "OpaAssignIntStmt"
+      },
+      "OpaAssignIntStmtBody": {
+         "@id": "OpaAssignIntStmtBody"
+      },
+      "OpaAssignVarOnceStmt": {
+         "@id": "OpaAssignVarOnceStmt"
+      },
+      "OpaAssignVarOnceStmtBody": {
+         "@id": "OpaAssignVarOnceStmtBody"
+      },
+      "OpaAssignVarStmt": {
+         "@id": "OpaAssignVarStmt"
+      },
+      "OpaAssignVarStmtBody": {
+         "@id": "OpaAssignVarStmtBody"
+      },
+      "OpaAuthorizationInput": {
+         "@id": "OpaAuthorizationInput"
+      },
+      "OpaBlock": {
+         "@id": "OpaBlock"
+      },
+      "OpaBlockStmt": {
+         "@id": "OpaBlockStmt"
+      },
+      "OpaBlockStmtBody": {
+         "@id": "OpaBlockStmtBody"
+      },
+      "OpaBooleanType": {
+         "@id": "OpaBooleanType"
+      },
+      "OpaBoolOperand": {
+         "@id": "OpaBoolOperand"
+      },
+      "OpaBreakStmt": {
+         "@id": "OpaBreakStmt"
+      },
+      "OpaBreakStmtBody": {
+         "@id": "OpaBreakStmtBody"
+      },
+      "OpaBuiltin": {
+         "@id": "OpaBuiltin"
+      },
+      "OpaBuiltinArgument": {
+         "@id": "OpaBuiltinArgument"
+      },
+      "OpaBuiltinCategory": {
+         "@id": "OpaBuiltinCategory"
+      },
+      "OpaBuiltinFunc": {
+         "@id": "OpaBuiltinFunc"
+      },
+      "OpaBuiltinMetadata": {
+         "@id": "OpaBuiltinMetadata"
+      },
+      "OpaBuiltinMetadataCatalog": {
+         "@id": "OpaBuiltinMetadataCatalog"
+      },
+      "OpaBuiltinResult": {
+         "@id": "OpaBuiltinResult"
+      },
+      "OpaCallDynamicStmt": {
+         "@id": "OpaCallDynamicStmt"
+      },
+      "OpaCallDynamicStmtBody": {
+         "@id": "OpaCallDynamicStmtBody"
+      },
+      "OpaCallStmt": {
+         "@id": "OpaCallStmt"
+      },
+      "OpaCallStmtBody": {
+         "@id": "OpaCallStmtBody"
+      },
+      "OpaCapabilities": {
+         "@id": "OpaCapabilities"
+      },
+      "OpaDotStmt": {
+         "@id": "OpaDotStmt"
+      },
+      "OpaDotStmtBody": {
+         "@id": "OpaDotStmtBody"
+      },
+      "OpaDynamicProperty": {
+         "@id": "OpaDynamicProperty"
+      },
+      "OpaEqualStmt": {
+         "@id": "OpaEqualStmt"
+      },
+      "OpaEqualStmtBody": {
+         "@id": "OpaEqualStmtBody"
+      },
+      "OpaFileRegoVersion": {
+         "@id": "OpaFileRegoVersion"
+      },
+      "OpaFunc": {
+         "@id": "OpaFunc"
+      },
+      "OpaFuncs": {
+         "@id": "OpaFuncs"
+      },
+      "OpaFunctionType": {
+         "@id": "OpaFunctionType"
+      },
+      "OpaImplementation": {
+         "@id": "OpaImplementation"
+      },
+      "OpaImplementationSupport": {
+         "@id": "OpaImplementationSupport"
+      },
+      "OpaIsArrayStmt": {
+         "@id": "OpaIsArrayStmt"
+      },
+      "OpaIsArrayStmtBody": {
+         "@id": "OpaIsArrayStmtBody"
+      },
+      "OpaIsDefinedStmt": {
+         "@id": "OpaIsDefinedStmt"
+      },
+      "OpaIsDefinedStmtBody": {
+         "@id": "OpaIsDefinedStmtBody"
+      },
+      "OpaIsObjectStmt": {
+         "@id": "OpaIsObjectStmt"
+      },
+      "OpaIsObjectStmtBody": {
+         "@id": "OpaIsObjectStmtBody"
+      },
+      "OpaIsSetStmt": {
+         "@id": "OpaIsSetStmt"
+      },
+      "OpaIsSetStmtBody": {
+         "@id": "OpaIsSetStmtBody"
+      },
+      "OpaIsUndefinedStmt": {
+         "@id": "OpaIsUndefinedStmt"
+      },
+      "OpaIsUndefinedStmtBody": {
+         "@id": "OpaIsUndefinedStmtBody"
+      },
+      "OpaLenStmt": {
+         "@id": "OpaLenStmt"
+      },
+      "OpaLenStmtBody": {
+         "@id": "OpaLenStmtBody"
+      },
+      "OpaLocalOperand": {
+         "@id": "OpaLocalOperand"
+      },
+      "OpaLocation": {
+         "@id": "OpaLocation"
+      },
+      "OpaMakeArrayStmt": {
+         "@id": "OpaMakeArrayStmt"
+      },
+      "OpaMakeArrayStmtBody": {
+         "@id": "OpaMakeArrayStmtBody"
+      },
+      "OpaMakeNullStmt": {
+         "@id": "OpaMakeNullStmt"
+      },
+      "OpaMakeNullStmtBody": {
+         "@id": "OpaMakeNullStmtBody"
+      },
+      "OpaMakeNumberIntStmt": {
+         "@id": "OpaMakeNumberIntStmt"
+      },
+      "OpaMakeNumberIntStmtBody": {
+         "@id": "OpaMakeNumberIntStmtBody"
+      },
+      "OpaMakeNumberRefStmt": {
+         "@id": "OpaMakeNumberRefStmt"
+      },
+      "OpaMakeNumberRefStmtBody": {
+         "@id": "OpaMakeNumberRefStmtBody"
+      },
+      "OpaMakeObjectStmt": {
+         "@id": "OpaMakeObjectStmt"
+      },
+      "OpaMakeObjectStmtBody": {
+         "@id": "OpaMakeObjectStmtBody"
+      },
+      "OpaMakeSetStmt": {
+         "@id": "OpaMakeSetStmt"
+      },
+      "OpaMakeSetStmtBody": {
+         "@id": "OpaMakeSetStmtBody"
+      },
+      "OpaManifest": {
+         "@id": "OpaManifest"
+      },
+      "OpaNopStmt": {
+         "@id": "OpaNopStmt"
+      },
+      "OpaNopStmtBody": {
+         "@id": "OpaNopStmtBody"
+      },
+      "OpaNotEqualStmt": {
+         "@id": "OpaNotEqualStmt"
+      },
+      "OpaNotEqualStmtBody": {
+         "@id": "OpaNotEqualStmtBody"
+      },
+      "OpaNotStmt": {
+         "@id": "OpaNotStmt"
+      },
+      "OpaNotStmtBody": {
+         "@id": "OpaNotStmtBody"
+      },
+      "OpaNullType": {
+         "@id": "OpaNullType"
+      },
+      "OpaNumberType": {
+         "@id": "OpaNumberType"
+      },
+      "OpaObject": {
+         "@id": "OpaObject"
+      },
+      "OpaObjectInsertOnceStmt": {
+         "@id": "OpaObjectInsertOnceStmt"
+      },
+      "OpaObjectInsertOnceStmtBody": {
+         "@id": "OpaObjectInsertOnceStmtBody"
+      },
+      "OpaObjectInsertStmt": {
+         "@id": "OpaObjectInsertStmt"
+      },
+      "OpaObjectInsertStmtBody": {
+         "@id": "OpaObjectInsertStmtBody"
+      },
+      "OpaObjectMergeStmt": {
+         "@id": "OpaObjectMergeStmt"
+      },
+      "OpaObjectMergeStmtBody": {
+         "@id": "OpaObjectMergeStmtBody"
+      },
+      "OpaObjectType": {
+         "@id": "OpaObjectType"
+      },
+      "OpaOperand": {
+         "@id": "OpaOperand"
+      },
+      "OpaPlan": {
+         "@id": "OpaPlan"
+      },
+      "OpaPlans": {
+         "@id": "OpaPlans"
+      },
+      "OpaPolicy": {
+         "@id": "OpaPolicy"
+      },
+      "OpaResetLocalStmt": {
+         "@id": "OpaResetLocalStmt"
+      },
+      "OpaResetLocalStmtBody": {
+         "@id": "OpaResetLocalStmtBody"
+      },
+      "OpaResultSetAddStmt": {
+         "@id": "OpaResultSetAddStmt"
+      },
+      "OpaResultSetAddStmtBody": {
+         "@id": "OpaResultSetAddStmtBody"
+      },
+      "OpaReturnLocalStmt": {
+         "@id": "OpaReturnLocalStmt"
+      },
+      "OpaReturnLocalStmtBody": {
+         "@id": "OpaReturnLocalStmtBody"
+      },
+      "OpaScanStmt": {
+         "@id": "OpaScanStmt"
+      },
+      "OpaScanStmtBody": {
+         "@id": "OpaScanStmtBody"
+      },
+      "OpaSetAddStmt": {
+         "@id": "OpaSetAddStmt"
+      },
+      "OpaSetAddStmtBody": {
+         "@id": "OpaSetAddStmtBody"
+      },
+      "OpaSetType": {
+         "@id": "OpaSetType"
+      },
+      "OpaStatic": {
+         "@id": "OpaStatic"
+      },
+      "OpaStaticProperty": {
+         "@id": "OpaStaticProperty"
+      },
+      "OpaStmt": {
+         "@id": "OpaStmt"
+      },
+      "OpaStmtBody": {
+         "@id": "OpaStmtBody"
+      },
+      "OpaStringConst": {
+         "@id": "OpaStringConst"
+      },
+      "OpaStringIndexOperand": {
+         "@id": "OpaStringIndexOperand"
+      },
+      "OpaStringType": {
+         "@id": "OpaStringType"
+      },
+      "OpaType": {
+         "@id": "OpaType"
+      },
+      "OpaUnplannedRule": {
+         "@id": "OpaUnplannedRule"
+      },
+      "OpaValue": {
          "@id": "linkml:Any"
       },
-      "ArrayAppendStmt": {
-         "@id": "ArrayAppendStmt"
+      "OpaVersionEntry": {
+         "@id": "OpaVersionEntry"
       },
-      "AssignIntStmt": {
-         "@id": "AssignIntStmt"
+      "OpaVersionIndex": {
+         "@id": "OpaVersionIndex"
       },
-      "AssignVarOnceStmt": {
-         "@id": "AssignVarOnceStmt"
+      "OpaWasmAbiVersion": {
+         "@id": "OpaWasmAbiVersion"
       },
-      "AssignVarStmt": {
-         "@id": "AssignVarStmt"
+      "OpaWasmResolver": {
+         "@id": "OpaWasmResolver"
       },
-      "AuthorizationInput": {
-         "@id": "AuthorizationInput"
+      "OpaWithStmt": {
+         "@id": "OpaWithStmt"
       },
-      "Block": {
-         "@id": "Block"
-      },
-      "BlockStmt": {
-         "@id": "BlockStmt"
-      },
-      "BreakStmt": {
-         "@id": "BreakStmt"
-      },
-      "Builtin": {
-         "@id": "Builtin"
-      },
-      "BuiltinArg": {
-         "@id": "BuiltinArg"
-      },
-      "BuiltinCategoryGroup": {
-         "@id": "BuiltinCategoryGroup"
-      },
-      "BuiltinDecl": {
-         "@id": "BuiltinDecl"
-      },
-      "BuiltinFunc": {
-         "@id": "BuiltinFunc"
-      },
-      "BuiltinMetadata": {
-         "@id": "BuiltinMetadata"
-      },
-      "BuiltinMetadataCatalog": {
-         "@id": "BuiltinMetadataCatalog"
-      },
-      "BuiltinResult": {
-         "@id": "BuiltinResult"
-      },
-      "CallDynamicStmt": {
-         "@id": "CallDynamicStmt"
-      },
-      "CallStmt": {
-         "@id": "CallStmt"
-      },
-      "Capabilities": {
-         "@id": "Capabilities"
-      },
-      "DotStmt": {
-         "@id": "DotStmt"
-      },
-      "ElementVersion": {
-         "@id": "ElementVersion"
-      },
-      "EqualStmt": {
-         "@id": "EqualStmt"
-      },
-      "FileRegoVersion": {
-         "@id": "FileRegoVersion"
-      },
-      "Func": {
-         "@id": "Func"
-      },
-      "Funcs": {
-         "@id": "Funcs"
-      },
-      "IsArrayStmt": {
-         "@id": "IsArrayStmt"
-      },
-      "IsDefinedStmt": {
-         "@id": "IsDefinedStmt"
-      },
-      "IsObjectStmt": {
-         "@id": "IsObjectStmt"
-      },
-      "IsSetStmt": {
-         "@id": "IsSetStmt"
-      },
-      "IsUndefinedStmt": {
-         "@id": "IsUndefinedStmt"
-      },
-      "LenStmt": {
-         "@id": "LenStmt"
-      },
-      "MakeArrayStmt": {
-         "@id": "MakeArrayStmt"
-      },
-      "MakeNullStmt": {
-         "@id": "MakeNullStmt"
-      },
-      "MakeNumberIntStmt": {
-         "@id": "MakeNumberIntStmt"
-      },
-      "MakeNumberRefStmt": {
-         "@id": "MakeNumberRefStmt"
-      },
-      "MakeObjectStmt": {
-         "@id": "MakeObjectStmt"
-      },
-      "MakeSetStmt": {
-         "@id": "MakeSetStmt"
-      },
-      "Manifest": {
-         "@id": "Manifest"
-      },
-      "NopStmt": {
-         "@id": "NopStmt"
-      },
-      "NotEqualStmt": {
-         "@id": "NotEqualStmt"
-      },
-      "NotStmt": {
-         "@id": "NotStmt"
-      },
-      "ObjectInsertOnceStmt": {
-         "@id": "ObjectInsertOnceStmt"
-      },
-      "ObjectInsertStmt": {
-         "@id": "ObjectInsertStmt"
-      },
-      "ObjectMergeStmt": {
-         "@id": "ObjectMergeStmt"
-      },
-      "Operand": {
-         "@id": "Operand"
-      },
-      "Plan": {
-         "@id": "Plan"
-      },
-      "Plans": {
-         "@id": "Plans"
-      },
-      "Policy": {
-         "@id": "Policy"
-      },
-      "ResetLocalStmt": {
-         "@id": "ResetLocalStmt"
-      },
-      "ResultSetAddStmt": {
-         "@id": "ResultSetAddStmt"
-      },
-      "ReturnLocalStmt": {
-         "@id": "ReturnLocalStmt"
-      },
-      "ScanStmt": {
-         "@id": "ScanStmt"
-      },
-      "SetAddStmt": {
-         "@id": "SetAddStmt"
-      },
-      "Static": {
-         "@id": "Static"
-      },
-      "Stmt": {
-         "@id": "Stmt"
-      },
-      "StringConst": {
-         "@id": "StringConst"
-      },
-      "TypeDecl": {
-         "@id": "TypeDecl"
-      },
-      "Val": {
-         "@id": "Val"
-      },
-      "VersionIndex": {
-         "@id": "VersionIndex"
-      },
-      "WasmABIVersion": {
-         "@id": "WasmABIVersion"
-      },
-      "WasmResolver": {
-         "@id": "WasmResolver"
-      },
-      "WithStmt": {
-         "@id": "WithStmt"
+      "OpaWithStmtBody": {
+         "@id": "OpaWithStmtBody"
       }
    }
 }

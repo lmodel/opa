@@ -1,1146 +1,1358 @@
-export type BuiltinName = string;
-export type BuiltinCategoryGroupName = string;
-export type BuiltinMetadataName = string;
-export type ElementVersionName = string;
-export type FileRegoVersionPath = string;
+export type OpaBuiltinCategoryName = string;
+export type OpaImplementationSupportImplementation = string;
+export type OpaVersionEntryName = string;
+export type OpaFileRegoVersionPath = string;
 /**
-* Kinds of value that a TypeDecl can describe.
+* The future keywords the shipped capabilities files name.
 */
-export enum BuiltinTypeKind {
+export enum OpaFutureKeyword {
     
-    string = "string",
-    number = "number",
-    boolean = "boolean",
-    null = "null",
-    any = "any",
-    array = "array",
-    set = "set",
-    object = "object",
-    function = "function",
+    and = "and",
+    contains = "contains",
+    every = "every",
+    if = "if",
+    in = "in",
+    not = "not",
+    or = "or",
 };
 /**
-* Optional features advertised by the OPA build. The permissible values below are seeded from the upstream capabilities.json snapshot at generation time; future releases may introduce new flags.
+* The language features the shipped capabilities files name.
 */
-export enum FeatureName {
+export enum OpaFeature {
     
     keywords_in_refs = "keywords_in_refs",
     rego_v1 = "rego_v1",
+    rego_v1_import = "rego_v1_import",
+    rego_v2 = "rego_v2",
+    rego_v2_import = "rego_v2_import",
+    rule_head_ref_string_prefixes = "rule_head_ref_string_prefixes",
+    rule_head_refs = "rule_head_refs",
     template_strings = "template_strings",
 };
-/**
-* Identifiers reserved for upcoming Rego releases.
-*/
-export enum FutureKeyword {
-    
-    not = "not",
-};
-/**
-* Documentation category a built-in belongs to. Permissible values are seeded from ``builtin_metadata.json._categories`` at generation time. Enum symbols follow LinkML's snake_case convention; each permissible value carries the upstream label (e.g. ``providers.aws``) in both its description and its ``meaning`` mapping.
-*/
-export enum BuiltinCategory {
-    
-    aggregates = "aggregates",
-    array = "array",
-    bits = "bits",
-    comparison = "comparison",
-    conversions = "conversions",
-    crypto = "crypto",
-    encoding = "encoding",
-    glob = "glob",
-    graph = "graph",
-    graphql = "graphql",
-    http = "http",
-    internal = "internal",
-    net = "net",
-    numbers = "numbers",
-    object = "object",
-    opa = "opa",
-    /** providers.aws */
-    providers_aws = "providers_aws",
-    regex = "regex",
-    rego = "rego",
-    semver = "semver",
-    sets = "sets",
-    strings = "strings",
-    time = "time",
-    tokens = "tokens",
-    tokensign = "tokensign",
-    tracing = "tracing",
-    types = "types",
-    units = "units",
-    uri = "uri",
-    uuid = "uuid",
-};
-/**
-* Permissible discriminator tags for the ``Stmt`` union.
-*/
-export enum StmtTag {
-    
-    ArrayAppendStmt = "ArrayAppendStmt",
-    AssignIntStmt = "AssignIntStmt",
-    AssignVarOnceStmt = "AssignVarOnceStmt",
-    AssignVarStmt = "AssignVarStmt",
-    BlockStmt = "BlockStmt",
-    BreakStmt = "BreakStmt",
-    CallDynamicStmt = "CallDynamicStmt",
-    CallStmt = "CallStmt",
-    DotStmt = "DotStmt",
-    EqualStmt = "EqualStmt",
-    IsArrayStmt = "IsArrayStmt",
-    IsDefinedStmt = "IsDefinedStmt",
-    IsObjectStmt = "IsObjectStmt",
-    IsSetStmt = "IsSetStmt",
-    IsUndefinedStmt = "IsUndefinedStmt",
-    LenStmt = "LenStmt",
-    MakeArrayStmt = "MakeArrayStmt",
-    MakeNullStmt = "MakeNullStmt",
-    MakeNumberIntStmt = "MakeNumberIntStmt",
-    MakeNumberRefStmt = "MakeNumberRefStmt",
-    MakeObjectStmt = "MakeObjectStmt",
-    MakeSetStmt = "MakeSetStmt",
-    NopStmt = "NopStmt",
-    NotEqualStmt = "NotEqualStmt",
-    NotStmt = "NotStmt",
-    ObjectInsertOnceStmt = "ObjectInsertOnceStmt",
-    ObjectInsertStmt = "ObjectInsertStmt",
-    ObjectMergeStmt = "ObjectMergeStmt",
-    ResetLocalStmt = "ResetLocalStmt",
-    ResultSetAddStmt = "ResultSetAddStmt",
-    ReturnLocalStmt = "ReturnLocalStmt",
-    ScanStmt = "ScanStmt",
-    SetAddStmt = "SetAddStmt",
-    WithStmt = "WithStmt",
-};
-/**
-* Permissible discriminator tags for the ``Val`` union.
-*/
-export enum ValTag {
-    
-    bool = "bool",
-    local = "local",
-    string_index = "string_index",
-};
 
 
 /**
- * Free-form value placeholder (scalar, list, or object). Used to model source slots whose representation is heterogeneous or intentionally open (e.g. ``TypeDecl.key``, ``AuthorizationInput.body``).
+ * A JSON object whose keys OPA leaves open.
  */
-export interface Any {
+export interface OpaObject {
 }
 
 
 /**
- * Top-level capabilities document published by an OPA build. Lists every built-in function the runtime supports along with Wasm ABI compatibility, future keywords and feature flags.
+ * Any JSON value.
  */
-export interface Capabilities {
-    /** All built-in functions supported by this OPA build. */
-    builtins?: Builtin[],
-    /** Keywords reserved for future Rego releases. */
+export interface OpaValue {
+}
+
+
+/**
+ * A Rego type, as OPA's types package writes it in JSON. A named type is an argument or result of a built-in function, with a name and a description.
+ */
+export interface OpaType {
+    /** The argument's or result's name, on a named type. */
+    name?: string,
+    /** What the argument or result holds, on a named type. */
+    description?: string,
+}
+
+
+/**
+ * A union of the types it lists in `of`, or any value when it lists none.
+ */
+export interface OpaAnyType extends OpaType {
+    /** The kind of type. */
+    type: string,
+    /** The types the union admits. */
+    of?: OpaType[],
+}
+
+
+/**
+ * An array, with a type per position in `static` and one for the rest in `dynamic`.
+ */
+export interface OpaArrayType extends OpaType {
+    /** The kind of type. */
+    type: string,
+    /** The type of each element by position. */
+    static?: OpaType[],
+    /** The type of the elements after the static ones. */
+    dynamic?: OpaType,
+}
+
+
+/**
+ * A boolean.
+ */
+export interface OpaBooleanType extends OpaType {
+    /** The kind of type. */
+    type: string,
+}
+
+
+/**
+ * A function, with its arguments, its result and a variadic argument type.
+ */
+export interface OpaFunctionType extends OpaType {
+    /** The kind of type. */
+    type: string,
+    /** The argument types, in order. */
+    args?: OpaType[],
+    /** The result type. */
+    result?: OpaType,
+    /** The type of any further arguments. */
+    variadic?: OpaType,
+}
+
+
+/**
+ * The null value.
+ */
+export interface OpaNullType extends OpaType {
+    /** The kind of type. */
+    type: string,
+}
+
+
+/**
+ * A number.
+ */
+export interface OpaNumberType extends OpaType {
+    /** The kind of type. */
+    type: string,
+}
+
+
+/**
+ * An object, with typed known keys in `static` and a key and value type for the rest in `dynamic`.
+ */
+export interface OpaObjectType extends OpaType {
+    /** The kind of type. */
+    type: string,
+    /** The known keys and the types of their values. */
+    static?: OpaStaticProperty[],
+    /** The key type and value type of the other keys. */
+    dynamic?: OpaDynamicProperty,
+}
+
+
+/**
+ * A set, whose members have the type in `of`.
+ */
+export interface OpaSetType extends OpaType {
+    /** The kind of type. */
+    type: string,
+    /** The type of the set's members. */
+    of?: OpaType,
+}
+
+
+/**
+ * A string.
+ */
+export interface OpaStringType extends OpaType {
+    /** The kind of type. */
+    type: string,
+}
+
+
+/**
+ * A known key of an object type and the type of its value.
+ */
+export interface OpaStaticProperty {
+    /** The key, as a JSON value. */
+    key: OpaValue,
+    /** The type of the key's value. */
+    value: OpaType,
+}
+
+
+/**
+ * The key type and value type that an object type gives its other keys.
+ */
+export interface OpaDynamicProperty {
+    /** The type of the keys. */
+    key: OpaType,
+    /** The type of the values. */
+    value: OpaType,
+}
+
+
+/**
+ * What an OPA version supports, which a policy can be checked against.
+ */
+export interface OpaCapabilities {
+    /** The built-in functions. */
+    builtins?: OpaBuiltin[],
+    /** The keywords a policy may import from future.keywords. */
     future_keywords?: string,
-    /** Wasm ABI versions the runtime can host. */
-    wasm_abi_versions?: WasmABIVersion[],
-    /** Optional language / runtime features enabled in this build. */
+    /** The Wasm ABI versions supported. */
+    wasm_abi_versions?: OpaWasmAbiVersion[],
+    /** The language features supported. */
     features?: string,
-    /** Network destinations the built-ins are allowed to contact. Absent or empty means unrestricted; an empty list means no network access. */
+    /** The hosts OPA may connect to, as host names or IP addresses. OPA reaches any host when the key is absent, and none when the list is empty. */
     allow_net?: string[],
 }
 
 
 /**
- * A Rego built-in function exposed by the OPA runtime.
+ * A built-in function and its type declaration.
  */
-export interface Builtin {
-    /** Built-in identifier (dotted path, e.g. ``array.concat``). */
+export interface OpaBuiltin {
+    /** The function's name, such as `array.concat`. */
     name: string,
-    /** Type declaration: signature plus return type. */
-    decl: BuiltinDecl,
-    /** Optional infix operator symbol (e.g. ``&``, ``==``). */
+    /** What the function does. */
+    description?: string,
+    /** The categories the function belongs to. */
+    categories?: string[],
+    /** The function's type declaration. */
+    decl: OpaFunctionType,
+    /** The infix operator that calls the function, such as `+`. */
     infix?: string,
-    /** True when the built-in is scheduled for removal. */
-    deprecated?: boolean,
-    /** True when invocations may produce different results across runs. */
-    nondeterministic?: boolean,
-    /** True when the built-in is a relation (binds output variables). */
+    /** Whether the function acts as a relation. */
     relation?: boolean,
+    /** Whether the function is deprecated. */
+    deprecated?: boolean,
+    /** Whether the function may return different results for the same arguments. */
+    nondeterministic?: boolean,
 }
 
 
 /**
- * Type declaration of a built-in: function signature and return type.
+ * A Wasm ABI version, as a major and a minor number.
  */
-export interface BuiltinDecl {
-    /** Always the literal string ``function``. */
-    type: string,
-    /** Positional argument types in declaration order. */
-    args?: TypeDecl[],
-    /** Type of the result returned by the built-in. */
-    result?: TypeDecl,
-    /** When present, indicates the built-in accepts any number of trailing arguments of this type. */
-    variadic?: TypeDecl,
-}
-
-
-/**
- * Recursive type expression used throughout Capabilities declarations.
-
-All slots are optional because TypeDecl doubles as the structural envelope
-for the various heterogeneous shapes the source JSON uses:
-* ``string|number|boolean|null|function`` -- atomic; only ``type`` is set.
-* ``any`` -- ``of`` is a list of alternative TypeDecls.
-* ``set`` -- ``of`` holds the (single) element TypeDecl.
-* ``array`` -- ``dynamic`` is the homogeneous element TypeDecl, or
-  ``static`` is an ordered list describing a fixed-length tuple.
-* ``object`` -- ``static`` lists named property pairs (TypeDecls with
-  ``key`` and ``value`` populated); ``dynamic`` is a TypeDecl whose
-  ``key``/``value`` describe additional property typing.
-* Inside an ``object``'s ``dynamic`` value, the TypeDecl has only
-  ``key`` and ``value`` populated -- ``type`` is absent.
-
- */
-export interface TypeDecl {
-    /** Discriminator: the kind of value this TypeDecl describes. */
-    type?: string,
-    /** Element type(s). For ``set`` it is the (single) element type; for ``any`` it is a union of alternative types. Always represented as a list -- the instance generator wraps source scalar values for shape uniformity. */
-    of?: TypeDecl[],
-    /** For ``array`` types this is the element TypeDecl; for ``object`` types it is a TypeDecl with ``key`` and ``value`` populated. */
-    dynamic?: TypeDecl,
-    /** Either named property pairs of an ``object`` TypeDecl (each entry has ``key`` and ``value`` populated) or positional tuple element TypeDecls of a fixed-length ``array`` TypeDecl. Same recursive TypeDecl shape. */
-    static?: TypeDecl[],
-    /** Key of an object's dynamic-property mapping or static-property entry. When the parent TypeDecl is an object's ``dynamic`` slot, this is itself a TypeDecl (e.g. ``{type: string}``); when the parent is an object's ``static`` entry, it is a string literal naming the property. */
-    key?: Any,
-    /** Value type of an object's dynamic property mapping or static property entry. Always a TypeDecl. */
-    value?: TypeDecl,
-}
-
-
-/**
- * A supported Wasm ABI version pair.
- */
-export interface WasmABIVersion {
-    /** Major ABI version. */
+export interface OpaWasmAbiVersion {
+    /** The major version. */
     version: number,
-    /** Minor ABI version. */
+    /** The minor version. */
     minor_version: number,
 }
 
 
 /**
- * Wrapper class for the contents of ``builtin_metadata.json``. The source document is a flat map keyed by built-in name plus a ``_categories`` map; the generator script reshapes it so ``categories`` and ``builtins`` are explicit, inlined-as-dict slots on this wrapper.
+ * The catalogue: two keys that start with an underscore, and one key per built-in function, whose value describes it.
  */
-export interface BuiltinMetadataCatalog {
-    /** Category name -> list of built-in names belonging to it. */
-    categories?: {[index: BuiltinCategoryGroupName]: BuiltinCategoryGroup },
-    /** All documented built-ins keyed by name. */
-    builtins?: {[index: BuiltinMetadataName]: BuiltinMetadata },
+export interface OpaBuiltinMetadataCatalog {
+    /** The categories, each with the names of its functions. */
+    _categories?: {[index: OpaBuiltinCategoryName]: OpaBuiltinCategory },
+    /** The implementations of Rego besides OPA that the catalogue tracks. */
+    _implementations?: OpaImplementation[],
 }
 
 
 /**
- * Membership of built-ins in a documentation category.
+ * A category of built-in functions.
  */
-export interface BuiltinCategoryGroup {
-    /** Category identifier. Plain string (not the BuiltinCategory enum) so gen-python's identifier-slot machinery does not forward-reference the enum class. */
+export interface OpaBuiltinCategory {
+    /** The category's name. */
     name: string,
-    /** Same value as ``name``, typed against the BuiltinCategory enum for downstream consumers. */
-    category?: string,
-    /** Names of the built-ins belonging to this category. */
+    /** The names of the category's functions. */
     builtins: string[],
 }
 
 
 /**
- * Human-readable metadata for a single Rego built-in function.
+ * An implementation of Rego besides OPA.
  */
-export interface BuiltinMetadata {
-    /** Built-in identifier (dotted path). */
-    name: string,
-    /** Markdown description of the built-in. */
+export interface OpaImplementation {
+    /** The implementation's key in each function's `implementations`. */
+    id: string,
+    /** The implementation's display name. */
+    label: string,
+    /** The implementation's GitHub repository, as owner/name. */
+    repo: string,
+    /** The implementation's version the catalogue reflects. */
+    version: string,
+}
+
+
+/**
+ * What the catalogue says about one built-in function.
+ */
+export interface OpaBuiltinMetadata {
+    /** What the function does. */
     description?: string,
-    /** Earliest OPA release tag in which the built-in was available. */
-    introduced?: string,
-    /** Every OPA release tag in which the built-in is available. */
-    available?: string[],
-    /** True if the built-in is implemented for the Wasm target. */
-    wasm?: boolean,
-    /** Optional infix operator symbol. */
+    /** The OPA version that added the function. */
+    introduced: string,
+    /** The OPA versions that have the function, and `edge`. */
+    available: string[],
+    /** Whether OPA's Wasm target implements the function. */
+    wasm: boolean,
+    /** The arguments, in order. */
+    args: OpaBuiltinArgument[],
+    /** The result. */
+    result: OpaBuiltinResult,
+    /** The other implementations that support the function, with the version that added it. */
+    implementations: {[index: OpaImplementationSupportImplementation]: OpaImplementationSupport },
+    /** The infix operator that calls the function. */
     infix?: string,
-    /** True when the built-in is scheduled for removal. */
-    deprecated?: boolean,
-    /** True when the built-in is a relation. */
+    /** Whether the function acts as a relation. */
     relation?: boolean,
-    /** Positional argument descriptors in declaration order. */
-    args?: BuiltinArg[],
-    /** Descriptor for the value returned by the built-in. */
-    result?: BuiltinResult,
+    /** Whether the function is deprecated. */
+    deprecated?: boolean,
 }
 
 
 /**
- * Documentation for one positional argument of a built-in.
+ * An argument of a built-in function.
  */
-export interface BuiltinArg {
-    /** Argument identifier as documented (often single-letter). */
+export interface OpaBuiltinArgument {
+    /** The argument's name. */
     name?: string,
-    /** Markdown description of the argument. */
+    /** What the argument holds. */
     description?: string,
-    /** Compact textual form of the argument type (e.g. ``number``, ``set[any]``, ``any<string, number>``). */
+    /** The argument's type, written as OPA prints types, such as `array[string]`. */
+    type: string,
+}
+
+
+/**
+ * The result of a built-in function. Some functions declare none.
+ */
+export interface OpaBuiltinResult {
+    /** The result's name. */
+    name?: string,
+    /** What the result holds. */
+    description?: string,
+    /** The result's type, written as OPA prints types. */
     type?: string,
 }
 
 
 /**
- * Documentation for the value returned by a built-in.
+ * An implementation that supports a function, and the version that added it.
  */
-export interface BuiltinResult {
-    /** Result identifier as documented. */
-    name?: string,
-    /** Markdown description of the result. */
-    description?: string,
-    /** Compact textual form of the result type. */
-    type?: string,
+export interface OpaImplementationSupport {
+    /** The implementation's id. */
+    implementation: string,
+    /** The implementation's version that added the function. */
+    version: string,
 }
 
 
 /**
- * Mapping from language-element names to the OPA semantic version that first introduced them. Grouped into built-ins, future-keywords, and features.
+ * The version index.
  */
-export interface VersionIndex {
-    /** Built-in name -> introduction version. */
-    builtins?: {[index: ElementVersionName]: ElementVersion },
-    /** Feature flag -> introduction version. */
-    features?: {[index: ElementVersionName]: ElementVersion },
-    /** Future keyword -> introduction version. */
-    keywords?: {[index: ElementVersionName]: ElementVersion },
+export interface OpaVersionIndex {
+    /** The builtins, keyed by name, each with the version that introduced it. */
+    builtins: {[index: OpaVersionEntryName]: OpaVersionEntry },
+    /** The features, keyed by name, each with the version that introduced it. */
+    features: {[index: OpaVersionEntryName]: OpaVersionEntry },
+    /** The keywords, keyed by name, each with the version that introduced it. */
+    keywords: {[index: OpaVersionEntryName]: OpaVersionEntry },
 }
 
 
 /**
- * Semantic version triple identifying when an element was introduced.
+ * A built-in function, feature or keyword, and the OPA version that introduced it.
  */
-export interface ElementVersion {
-    /** Name of the language element (built-in, keyword, or feature). */
+export interface OpaVersionEntry {
+    /** The name of the function, feature or keyword. */
     name: string,
-    /** Major version number (source field ``Major``). */
-    major: number,
-    /** Minor version number (source field ``Minor``). */
-    minor: number,
-    /** Patch version number (source field ``Patch``). */
-    patch: number,
+    /** The major version. */
+    Major: number,
+    /** The minor version. */
+    Minor: number,
+    /** The patch version. */
+    Patch: number,
+    /** The pre-release label, such as `rc2`. */
+    PreRelease?: string,
 }
 
 
 /**
- * Input document the example HTTP API Authorization policy receives. Mirrors the OPA-provided JSON Schema at ``v1/schemas/authorizationPolicy.json``.
+ * The OPA Authorization Policy Input document.
  */
-export interface AuthorizationInput {
-    /** Caller identity, typically extracted from an authentication token. */
+export interface OpaAuthorizationInput {
+    /** The bearer token or client certificate subject that identifies the caller. */
     identity: string,
-    /** Client certificates presented during the TLS handshake. The example schema leaves the item shape opaque (free-form objects). */
-    client_certificates: Any[],
-    /** HTTP method of the request being authorized (e.g. ``GET``, ``POST``). */
+    /** The client's TLS certificates. */
+    client_certificates: OpaObject[],
+    /** The HTTP method of the request. */
     method: string,
-    /** Request URL path split on ``/`` and decoded into a list of path segments. */
+    /** The request path, one segment per element. */
     path: string[],
-    /** Query-string parameters as a free-form object. */
-    params: Any,
-    /** Request headers as a free-form object (case insensitive in HTTP). */
-    headers: Any,
-    /** Decoded request body as a free-form object. */
-    body: Any,
+    /** The query parameters. */
+    params: OpaObject,
+    /** The request headers. */
+    headers: OpaObject,
+    /** The request body. */
+    body: OpaObject,
 }
 
 
 /**
- * ``Manifest`` definition from upstream JSON Schema.
+ * A bundle manifest. OPA's schema leaves the manifest open to other keys.
  */
-export interface Manifest {
-    /** Per-file Rego language version overrides. Each record maps a bundle file path to ``version`` where ``0`` = Rego v0 and ``1`` = Rego v1. */
-    file_rego_versions?: FileRegoVersion[],
-    /** ``metadata`` field of ``Manifest`` (from upstream JSON Schema). */
-    metadata?: Any,
-    /** Rego language version pinned for files in this bundle. ``0`` = Rego v0 (legacy); ``1`` = Rego v1 (default since OPA 1.0). See ``v1/bundle/bundle.go`` for the canonical mapping. */
+export interface OpaManifest {
+    /** Rego versions for single files, which override `rego_version`. */
+    file_rego_versions?: {[index: OpaFileRegoVersionPath]: OpaFileRegoVersion },
+    /** Metadata the bundle's author adds. */
+    metadata?: OpaObject,
+    /** The Rego version of the bundle's files: 0 for v0, 1 for v1. */
     rego_version?: number,
-    /** ``revision`` field of ``Manifest`` (from upstream JSON Schema). */
+    /** The bundle's revision, a string the bundle's author chooses. */
     revision: string,
-    /** ``roots`` field of ``Manifest`` (from upstream JSON Schema). */
+    /** The paths in the data tree the bundle owns. A bundle without the key owns the whole tree. */
     roots?: string[],
-    /** ``wasm`` field of ``Manifest`` (from upstream JSON Schema). */
-    wasm?: WasmResolver[],
+    /** The Wasm modules the bundle holds, and the entrypoints they resolve. */
+    wasm?: OpaWasmResolver[],
 }
 
 
 /**
- * ``WasmResolver`` definition from upstream JSON Schema.
+ * A Wasm module in a bundle, and the entrypoint it resolves.
  */
-export interface WasmResolver {
-    /** ``annotations`` field of ``WasmResolver`` (from upstream JSON Schema). */
-    annotations?: Any[],
-    /** ``entrypoint`` field of ``WasmResolver`` (from upstream JSON Schema). */
+export interface OpaWasmResolver {
+    /** The entrypoint's Rego annotations. OPA's schema leaves their shape open. */
+    annotations?: OpaObject[],
+    /** The entrypoint the module resolves. */
     entrypoint?: string,
-    /** ``module`` field of ``WasmResolver`` (from upstream JSON Schema). */
+    /** The module's path in the bundle. */
     module?: string,
 }
 
 
 /**
- * Typed override record for ``Manifest.file_rego_versions``. Provides stronger validation than a free-form map while keeping the same semantics.
+ * The Rego version of one file in the bundle.
  */
-export interface FileRegoVersion {
-    /** Bundle-relative file path receiving a Rego version override. */
+export interface OpaFileRegoVersion {
+    /** The file's path in the bundle. */
     path: string,
-    /** Rego version for this file: ``0`` (v0) or ``1`` (v1). */
+    /** The file's Rego version. */
     version: number,
 }
 
 
 /**
- * ``ArrayAppendStmt`` definition from upstream JSON Schema.
+ * Policy represents a planned policy query.
  */
-export interface ArrayAppendStmt {
-    /** ``col`` field of ``ArrayAppendStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``ArrayAppendStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``ArrayAppendStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``array`` field of ``ArrayAppendStmt`` (from upstream JSON Schema). */
-    array: number,
-    /** ``value`` field of ``ArrayAppendStmt`` (from upstream JSON Schema). */
-    value: Operand,
+export interface OpaPolicy {
+    /** The functions the plans call. */
+    funcs?: OpaFuncs,
+    /** The query plans the policy exposes. */
+    plans?: OpaPlans,
+    /** The constants the plan indexes into. */
+    static?: OpaStatic,
+    /** The rules left out because no entrypoint reaches them. */
+    unplanned_rules?: OpaUnplannedRule[],
 }
 
 
 /**
- * ``AssignIntStmt`` definition from upstream JSON Schema.
+ * Static represents a static data segment that is indexed into by the policy.
  */
-export interface AssignIntStmt {
-    /** ``col`` field of ``AssignIntStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``AssignIntStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``AssignIntStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``target`` field of ``AssignIntStmt`` (from upstream JSON Schema). */
-    target: number,
-    /** ``value`` field of ``AssignIntStmt`` (from upstream JSON Schema). */
-    value: number,
+export interface OpaStatic {
+    /** The built-in functions the plan calls. */
+    builtin_funcs?: OpaBuiltinFunc[],
+    /** The names of the policy files, which a location refers to by position. */
+    files?: OpaStringConst[],
+    /** The string constants, which a string index refers to by position. */
+    strings?: OpaStringConst[],
 }
 
 
 /**
- * ``AssignVarOnceStmt`` definition from upstream JSON Schema.
+ * StringConst represents a string value.
  */
-export interface AssignVarOnceStmt {
-    /** ``col`` field of ``AssignVarOnceStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``AssignVarOnceStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``AssignVarOnceStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``source`` field of ``AssignVarOnceStmt`` (from upstream JSON Schema). */
-    source: Operand,
-    /** ``target`` field of ``AssignVarOnceStmt`` (from upstream JSON Schema). */
-    target: number,
-}
-
-
-/**
- * ``AssignVarStmt`` definition from upstream JSON Schema.
- */
-export interface AssignVarStmt {
-    /** ``col`` field of ``AssignVarStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``AssignVarStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``AssignVarStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``source`` field of ``AssignVarStmt`` (from upstream JSON Schema). */
-    source: Operand,
-    /** ``target`` field of ``AssignVarStmt`` (from upstream JSON Schema). */
-    target: number,
-}
-
-
-/**
- * ``Block`` definition from upstream JSON Schema.
- */
-export interface Block {
-    /** ``stmts`` field of ``Block`` (from upstream JSON Schema). */
-    stmts: Stmt[],
-}
-
-
-/**
- * ``BlockStmt`` definition from upstream JSON Schema.
- */
-export interface BlockStmt {
-    /** ``col`` field of ``BlockStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``BlockStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``BlockStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``blocks`` field of ``BlockStmt`` (from upstream JSON Schema). */
-    blocks: Block[],
-}
-
-
-/**
- * ``BreakStmt`` definition from upstream JSON Schema.
- */
-export interface BreakStmt {
-    /** ``col`` field of ``BreakStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``BreakStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``BreakStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``index`` field of ``BreakStmt`` (from upstream JSON Schema). */
-    index: number,
-}
-
-
-/**
- * ``BuiltinFunc`` definition from upstream JSON Schema.
- */
-export interface BuiltinFunc {
-    /** BuiltinFunc declaration; opaque in this schema. */
-    decl: Any,
-    /** ``name`` field of ``BuiltinFunc`` (from upstream JSON Schema). */
-    name: string,
-}
-
-
-/**
- * ``CallDynamicStmt`` definition from upstream JSON Schema.
- */
-export interface CallDynamicStmt {
-    /** ``col`` field of ``CallDynamicStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``CallDynamicStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``CallDynamicStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``args`` field of ``CallDynamicStmt`` (from upstream JSON Schema). */
-    args: number[],
-    /** ``path`` field of ``CallDynamicStmt`` (from upstream JSON Schema). */
-    path: Operand[],
-    /** ``result`` field of ``CallDynamicStmt`` (from upstream JSON Schema). */
-    result: number,
-}
-
-
-/**
- * ``CallStmt`` definition from upstream JSON Schema.
- */
-export interface CallStmt {
-    /** ``col`` field of ``CallStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``CallStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``CallStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``args`` field of ``CallStmt`` (from upstream JSON Schema). */
-    args: Operand[],
-    /** ``func`` field of ``CallStmt`` (from upstream JSON Schema). */
-    func: string,
-    /** ``result`` field of ``CallStmt`` (from upstream JSON Schema). */
-    result: number,
-}
-
-
-/**
- * ``DotStmt`` definition from upstream JSON Schema.
- */
-export interface DotStmt {
-    /** ``col`` field of ``DotStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``DotStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``DotStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``key`` field of ``DotStmt`` (from upstream JSON Schema). */
-    key: Operand,
-    /** ``source`` field of ``DotStmt`` (from upstream JSON Schema). */
-    source: Operand,
-    /** ``target`` field of ``DotStmt`` (from upstream JSON Schema). */
-    target: number,
-}
-
-
-/**
- * ``EqualStmt`` definition from upstream JSON Schema.
- */
-export interface EqualStmt {
-    /** ``col`` field of ``EqualStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``EqualStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``EqualStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``a`` field of ``EqualStmt`` (from upstream JSON Schema). */
-    a: Operand,
-    /** ``b`` field of ``EqualStmt`` (from upstream JSON Schema). */
-    b: Operand,
-}
-
-
-/**
- * ``Func`` definition from upstream JSON Schema.
- */
-export interface Func {
-    /** ``blocks`` field of ``Func`` (from upstream JSON Schema). */
-    blocks: Block[],
-    /** ``name`` field of ``Func`` (from upstream JSON Schema). */
-    name: string,
-    /** ``params`` field of ``Func`` (from upstream JSON Schema). */
-    params: number[],
-    /** ``path`` field of ``Func`` (from upstream JSON Schema). */
-    path?: string[],
-    /** ``return`` field of ``Func`` (from upstream JSON Schema). (Renamed from upstream wire-format key ``return`` to avoid the Python reserved word.) */
-    return_value: number,
-}
-
-
-/**
- * ``Funcs`` definition from upstream JSON Schema.
- */
-export interface Funcs {
-    /** ``funcs`` field of ``Funcs`` (from upstream JSON Schema). */
-    funcs: Func[],
-}
-
-
-/**
- * ``IsArrayStmt`` definition from upstream JSON Schema.
- */
-export interface IsArrayStmt {
-    /** ``col`` field of ``IsArrayStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``IsArrayStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``IsArrayStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``source`` field of ``IsArrayStmt`` (from upstream JSON Schema). */
-    source: Operand,
-}
-
-
-/**
- * ``IsDefinedStmt`` definition from upstream JSON Schema.
- */
-export interface IsDefinedStmt {
-    /** ``col`` field of ``IsDefinedStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``IsDefinedStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``IsDefinedStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``source`` field of ``IsDefinedStmt`` (from upstream JSON Schema). */
-    source: number,
-}
-
-
-/**
- * ``IsObjectStmt`` definition from upstream JSON Schema.
- */
-export interface IsObjectStmt {
-    /** ``col`` field of ``IsObjectStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``IsObjectStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``IsObjectStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``source`` field of ``IsObjectStmt`` (from upstream JSON Schema). */
-    source: Operand,
-}
-
-
-/**
- * ``IsSetStmt`` definition from upstream JSON Schema.
- */
-export interface IsSetStmt {
-    /** ``col`` field of ``IsSetStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``IsSetStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``IsSetStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``source`` field of ``IsSetStmt`` (from upstream JSON Schema). */
-    source: Operand,
-}
-
-
-/**
- * ``IsUndefinedStmt`` definition from upstream JSON Schema.
- */
-export interface IsUndefinedStmt {
-    /** ``col`` field of ``IsUndefinedStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``IsUndefinedStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``IsUndefinedStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``source`` field of ``IsUndefinedStmt`` (from upstream JSON Schema). */
-    source: number,
-}
-
-
-/**
- * ``LenStmt`` definition from upstream JSON Schema.
- */
-export interface LenStmt {
-    /** ``col`` field of ``LenStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``LenStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``LenStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``source`` field of ``LenStmt`` (from upstream JSON Schema). */
-    source: Operand,
-    /** ``target`` field of ``LenStmt`` (from upstream JSON Schema). */
-    target: number,
-}
-
-
-/**
- * ``MakeArrayStmt`` definition from upstream JSON Schema.
- */
-export interface MakeArrayStmt {
-    /** ``col`` field of ``MakeArrayStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``MakeArrayStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``MakeArrayStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``capacity`` field of ``MakeArrayStmt`` (from upstream JSON Schema). */
-    capacity: number,
-    /** ``target`` field of ``MakeArrayStmt`` (from upstream JSON Schema). */
-    target: number,
-}
-
-
-/**
- * ``MakeNullStmt`` definition from upstream JSON Schema.
- */
-export interface MakeNullStmt {
-    /** ``col`` field of ``MakeNullStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``MakeNullStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``MakeNullStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``target`` field of ``MakeNullStmt`` (from upstream JSON Schema). */
-    target: number,
-}
-
-
-/**
- * ``MakeNumberIntStmt`` definition from upstream JSON Schema.
- */
-export interface MakeNumberIntStmt {
-    /** ``col`` field of ``MakeNumberIntStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``MakeNumberIntStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``MakeNumberIntStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``target`` field of ``MakeNumberIntStmt`` (from upstream JSON Schema). */
-    target: number,
-    /** ``value`` field of ``MakeNumberIntStmt`` (from upstream JSON Schema). */
-    value: number,
-}
-
-
-/**
- * ``MakeNumberRefStmt`` definition from upstream JSON Schema.
- */
-export interface MakeNumberRefStmt {
-    /** ``col`` field of ``MakeNumberRefStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``MakeNumberRefStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``MakeNumberRefStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``index`` field of ``MakeNumberRefStmt`` (from upstream JSON Schema). */
-    index: number,
-    /** Deprecated alias for `index`. Both keys are emitted by current OPA versions for backwards compatibility; will be removed in a future major release. Read `index` instead. */
-    Index?: number,
-    /** ``target`` field of ``MakeNumberRefStmt`` (from upstream JSON Schema). */
-    target: number,
-}
-
-
-/**
- * ``MakeObjectStmt`` definition from upstream JSON Schema.
- */
-export interface MakeObjectStmt {
-    /** ``col`` field of ``MakeObjectStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``MakeObjectStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``MakeObjectStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``target`` field of ``MakeObjectStmt`` (from upstream JSON Schema). */
-    target: number,
-}
-
-
-/**
- * ``MakeSetStmt`` definition from upstream JSON Schema.
- */
-export interface MakeSetStmt {
-    /** ``col`` field of ``MakeSetStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``MakeSetStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``MakeSetStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``target`` field of ``MakeSetStmt`` (from upstream JSON Schema). */
-    target: number,
-}
-
-
-/**
- * ``NopStmt`` definition from upstream JSON Schema.
- */
-export interface NopStmt {
-    /** ``col`` field of ``NopStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``NopStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``NopStmt`` (from upstream JSON Schema). */
-    row: number,
-}
-
-
-/**
- * ``NotEqualStmt`` definition from upstream JSON Schema.
- */
-export interface NotEqualStmt {
-    /** ``col`` field of ``NotEqualStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``NotEqualStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``NotEqualStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``a`` field of ``NotEqualStmt`` (from upstream JSON Schema). */
-    a: Operand,
-    /** ``b`` field of ``NotEqualStmt`` (from upstream JSON Schema). */
-    b: Operand,
-}
-
-
-/**
- * ``NotStmt`` definition from upstream JSON Schema.
- */
-export interface NotStmt {
-    /** ``col`` field of ``NotStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``NotStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``NotStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``block`` field of ``NotStmt`` (from upstream JSON Schema). */
-    block: string,
-}
-
-
-/**
- * ``ObjectInsertOnceStmt`` definition from upstream JSON Schema.
- */
-export interface ObjectInsertOnceStmt {
-    /** ``col`` field of ``ObjectInsertOnceStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``ObjectInsertOnceStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``ObjectInsertOnceStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``key`` field of ``ObjectInsertOnceStmt`` (from upstream JSON Schema). */
-    key: Operand,
-    /** ``object`` field of ``ObjectInsertOnceStmt`` (from upstream JSON Schema). */
-    object: number,
-    /** ``value`` field of ``ObjectInsertOnceStmt`` (from upstream JSON Schema). */
-    value: Operand,
-}
-
-
-/**
- * ``ObjectInsertStmt`` definition from upstream JSON Schema.
- */
-export interface ObjectInsertStmt {
-    /** ``col`` field of ``ObjectInsertStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``ObjectInsertStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``ObjectInsertStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``key`` field of ``ObjectInsertStmt`` (from upstream JSON Schema). */
-    key: Operand,
-    /** ``object`` field of ``ObjectInsertStmt`` (from upstream JSON Schema). */
-    object: number,
-    /** ``value`` field of ``ObjectInsertStmt`` (from upstream JSON Schema). */
-    value: Operand,
-}
-
-
-/**
- * ``ObjectMergeStmt`` definition from upstream JSON Schema.
- */
-export interface ObjectMergeStmt {
-    /** ``col`` field of ``ObjectMergeStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``ObjectMergeStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``ObjectMergeStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``a`` field of ``ObjectMergeStmt`` (from upstream JSON Schema). */
-    a: number,
-    /** ``b`` field of ``ObjectMergeStmt`` (from upstream JSON Schema). */
-    b: number,
-    /** ``target`` field of ``ObjectMergeStmt`` (from upstream JSON Schema). */
-    target: number,
-}
-
-
-/**
- * ``Plan`` definition from upstream JSON Schema.
- */
-export interface Plan {
-    /** ``blocks`` field of ``Plan`` (from upstream JSON Schema). */
-    blocks: Block[],
-    /** ``name`` field of ``Plan`` (from upstream JSON Schema). */
-    name: string,
-}
-
-
-/**
- * ``Plans`` definition from upstream JSON Schema.
- */
-export interface Plans {
-    /** ``plans`` field of ``Plans`` (from upstream JSON Schema). */
-    plans: Plan[],
-}
-
-
-/**
- * ``Policy`` definition from upstream JSON Schema.
- */
-export interface Policy {
-    /** ``funcs`` field of ``Policy`` (from upstream JSON Schema). */
-    funcs?: Funcs,
-    /** ``plans`` field of ``Policy`` (from upstream JSON Schema). */
-    plans?: Plans,
-    /** ``static`` field of ``Policy`` (from upstream JSON Schema). */
-    static?: Static,
-}
-
-
-/**
- * ``ResetLocalStmt`` definition from upstream JSON Schema.
- */
-export interface ResetLocalStmt {
-    /** ``col`` field of ``ResetLocalStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``ResetLocalStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``ResetLocalStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``target`` field of ``ResetLocalStmt`` (from upstream JSON Schema). */
-    target: number,
-}
-
-
-/**
- * ``ResultSetAddStmt`` definition from upstream JSON Schema.
- */
-export interface ResultSetAddStmt {
-    /** ``col`` field of ``ResultSetAddStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``ResultSetAddStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``ResultSetAddStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``value`` field of ``ResultSetAddStmt`` (from upstream JSON Schema). */
-    value: number,
-}
-
-
-/**
- * ``ReturnLocalStmt`` definition from upstream JSON Schema.
- */
-export interface ReturnLocalStmt {
-    /** ``col`` field of ``ReturnLocalStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``ReturnLocalStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``ReturnLocalStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``source`` field of ``ReturnLocalStmt`` (from upstream JSON Schema). */
-    source: number,
-}
-
-
-/**
- * ``ScanStmt`` definition from upstream JSON Schema.
- */
-export interface ScanStmt {
-    /** ``col`` field of ``ScanStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``ScanStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``ScanStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``block`` field of ``ScanStmt`` (from upstream JSON Schema). */
-    block: string,
-    /** ``key`` field of ``ScanStmt`` (from upstream JSON Schema). */
-    key: number,
-    /** ``source`` field of ``ScanStmt`` (from upstream JSON Schema). */
-    source: number,
-    /** ``value`` field of ``ScanStmt`` (from upstream JSON Schema). */
-    value: number,
-}
-
-
-/**
- * ``SetAddStmt`` definition from upstream JSON Schema.
- */
-export interface SetAddStmt {
-    /** ``col`` field of ``SetAddStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``SetAddStmt`` (from upstream JSON Schema). */
-    file: number,
-    /** ``row`` field of ``SetAddStmt`` (from upstream JSON Schema). */
-    row: number,
-    /** ``set`` field of ``SetAddStmt`` (from upstream JSON Schema). */
-    set: number,
-    /** ``value`` field of ``SetAddStmt`` (from upstream JSON Schema). */
-    value: Operand,
-}
-
-
-/**
- * ``Static`` definition from upstream JSON Schema.
- */
-export interface Static {
-    /** ``builtin_funcs`` field of ``Static`` (from upstream JSON Schema). */
-    builtin_funcs?: BuiltinFunc[],
-    /** ``files`` field of ``Static`` (from upstream JSON Schema). */
-    files?: StringConst[],
-    /** ``strings`` field of ``Static`` (from upstream JSON Schema). */
-    strings?: StringConst[],
-}
-
-
-/**
- * Tagged-wrapper class for the ``Stmt`` discriminated union from
-the upstream JSON Schema.
-
-The ``type`` slot carries the discriminator tag and the
-``stmt`` slot carries the typed payload. Because the
-payload class varies by tag, ``stmt`` is typed as
-``Any`` with an ``any_of`` union over the known payload classes;
-consumers select the concrete class using the table below.
-
-* ``ArrayAppendStmt`` -- payload class ``ArrayAppendStmt``
-* ``AssignIntStmt`` -- payload class ``AssignIntStmt``
-* ``AssignVarOnceStmt`` -- payload class ``AssignVarOnceStmt``
-* ``AssignVarStmt`` -- payload class ``AssignVarStmt``
-* ``BlockStmt`` -- payload class ``BlockStmt``
-* ``BreakStmt`` -- payload class ``BreakStmt``
-* ``CallDynamicStmt`` -- payload class ``CallDynamicStmt``
-* ``CallStmt`` -- payload class ``CallStmt``
-* ``DotStmt`` -- payload class ``DotStmt``
-* ``EqualStmt`` -- payload class ``EqualStmt``
-* ``IsArrayStmt`` -- payload class ``IsArrayStmt``
-* ``IsDefinedStmt`` -- payload class ``IsDefinedStmt``
-* ``IsObjectStmt`` -- payload class ``IsObjectStmt``
-* ``IsSetStmt`` -- payload class ``IsSetStmt``
-* ``IsUndefinedStmt`` -- payload class ``IsUndefinedStmt``
-* ``LenStmt`` -- payload class ``LenStmt``
-* ``MakeArrayStmt`` -- payload class ``MakeArrayStmt``
-* ``MakeNullStmt`` -- payload class ``MakeNullStmt``
-* ``MakeNumberIntStmt`` -- payload class ``MakeNumberIntStmt``
-* ``MakeNumberRefStmt`` -- payload class ``MakeNumberRefStmt``
-* ``MakeObjectStmt`` -- payload class ``MakeObjectStmt``
-* ``MakeSetStmt`` -- payload class ``MakeSetStmt``
-* ``NopStmt`` -- payload class ``NopStmt``
-* ``NotEqualStmt`` -- payload class ``NotEqualStmt``
-* ``NotStmt`` -- payload class ``NotStmt``
-* ``ObjectInsertOnceStmt`` -- payload class ``ObjectInsertOnceStmt``
-* ``ObjectInsertStmt`` -- payload class ``ObjectInsertStmt``
-* ``ObjectMergeStmt`` -- payload class ``ObjectMergeStmt``
-* ``ResetLocalStmt`` -- payload class ``ResetLocalStmt``
-* ``ResultSetAddStmt`` -- payload class ``ResultSetAddStmt``
-* ``ReturnLocalStmt`` -- payload class ``ReturnLocalStmt``
-* ``ScanStmt`` -- payload class ``ScanStmt``
-* ``SetAddStmt`` -- payload class ``SetAddStmt``
-* ``WithStmt`` -- payload class ``WithStmt``
- */
-export interface Stmt {
-    /** Discriminator tag identifying the Stmt variant. */
-    type: string,
-    /** Typed payload; concrete class is selected by ``type``. */
-    stmt: Any,
-}
-
-
-/**
- * ``StringConst`` definition from upstream JSON Schema.
- */
-export interface StringConst {
-    /** ``value`` field of ``StringConst`` (from upstream JSON Schema). */
+export interface OpaStringConst {
+    /** The string. */
     value: string,
 }
 
 
 /**
- * Tagged-wrapper class for the ``Val`` discriminated union from
-the upstream JSON Schema.
-
-The ``type`` slot carries the discriminator tag and the
-``value`` slot carries the typed payload. Because the
-payload class varies by tag, ``value`` is typed as
-``Any`` with an ``any_of`` union over the known payload classes;
-consumers select the concrete class using the table below.
-
-* ``bool`` -- payload class ``boolean``
-* ``local`` -- payload class ``integer``
-* ``string_index`` -- payload class ``integer``
+ * BuiltinFunc represents a built-in function that may be required by the policy.
  */
-export interface Val {
-    /** Discriminator tag identifying the Val variant. */
-    type: string,
-    /** Typed payload; concrete class is selected by ``type``. */
-    value: Any,
+export interface OpaBuiltinFunc {
+    /** BuiltinFunc declaration; opaque in this schema. */
+    decl?: OpaFunctionType,
+    /** The function's name. */
+    name: string,
 }
 
 
 /**
- * ``WithStmt`` definition from upstream JSON Schema.
+ * Plans represents a collection of named query plans to expose in the policy.
  */
-export interface WithStmt {
-    /** ``col`` field of ``WithStmt`` (from upstream JSON Schema). */
-    col: number,
-    /** ``file`` field of ``WithStmt`` (from upstream JSON Schema). */
+export interface OpaPlans {
+    /** The plans. */
+    plans?: OpaPlan[],
+}
+
+
+/**
+ * Plan represents an ordered series of blocks to execute. Plan execution stops when a return statement is reached.
+ */
+export interface OpaPlan {
+    /** The blocks, run in order. */
+    blocks?: OpaBlock[],
+    /** The plan's name, which is its entrypoint. */
+    name: string,
+}
+
+
+/**
+ * Funcs represents a collection of planned functions to include in the policy.
+ */
+export interface OpaFuncs {
+    /** The functions. */
+    funcs?: OpaFunc[],
+}
+
+
+/**
+ * Func represents a named plan (function) that can be invoked. Functions accept one or more parameters and return a value.
+ */
+export interface OpaFunc {
+    /** The blocks, run in order. */
+    blocks?: OpaBlock[],
+    /** The function's name. */
+    name: string,
+    /** The locals that hold the parameters. The first two are the input and data documents. */
+    params?: number[],
+    /** Where the function sits in the data tree, when it has a path. */
+    path?: string[],
+    /** The local that holds the return value. */
+    return: number,
+}
+
+
+/**
+ * Block represents an ordered sequence of statements to execute. Blocks are executed until a return statement is encountered, a statement is undefined, or there are no more statements.
+ */
+export interface OpaBlock {
+    /** The statements, run in order. */
+    stmts: OpaStmt[],
+}
+
+
+/**
+ * UnplannedRule represents a rule that was parsed but not included in the plan because it is not reachable from the entrypoint. This is used for coverage reporting, to distinguish rules that were never planned from rules that were planned but never executed.
+ */
+export interface OpaUnplannedRule {
+    /** Where the rule is defined. */
+    location?: OpaLocation,
+    /** The rule's path. */
+    path: string,
+}
+
+
+/**
+ * Location records the filen index, and the row and column inside that file that a statement can be connected to.
+ */
+export interface OpaLocation {
+    /** Index, in the plan's static files, of the policy file the statement comes from. */
     file: number,
-    /** ``row`` field of ``WithStmt`` (from upstream JSON Schema). */
+    /** Column where the statement's source text starts. */
+    col: number,
+    /** Line where the statement's source text starts. */
     row: number,
-    /** ``block`` field of ``WithStmt`` (from upstream JSON Schema). */
-    block: string,
-    /** ``local`` field of ``WithStmt`` (from upstream JSON Schema). */
-    local: number,
-    /** ``path`` field of ``WithStmt`` (from upstream JSON Schema). */
-    path: number[],
-    /** ``value`` field of ``WithStmt`` (from upstream JSON Schema). */
-    value: Operand,
+    /** Column where the statement's source text ends. */
+    end_col: number,
+    /** Line where the statement's source text ends. */
+    end_row: number,
 }
 
 
 /**
- * Alias for ``Val`` (single-``$ref`` def in upstream JSON Schema).
+ * Stmt represents an operation (e.g., comparison, loop, dot, etc.) to execute. OPA writes each statement as its kind in `type` and its fields in `stmt`.
  */
-export interface Operand extends Val {
+export interface OpaStmt {
+}
+
+
+/**
+ * The fields of a statement. Every kind carries the location of its source text.
+ */
+export interface OpaStmtBody {
+    /** Index, in the plan's static files, of the policy file the statement comes from. */
+    file: number,
+    /** Column where the statement's source text starts. */
+    col: number,
+    /** Line where the statement's source text starts. */
+    row: number,
+    /** Column where the statement's source text ends. */
+    end_col: number,
+    /** Line where the statement's source text ends. */
+    end_row: number,
+}
+
+
+/**
+ * A statement of kind ArrayAppendStmt, with its fields in `stmt`.
+ */
+export interface OpaArrayAppendStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaArrayAppendStmtBody,
+}
+
+
+/**
+ * ArrayAppendStmt represents a dynamic append operation of a value onto an array.
+ */
+export interface OpaArrayAppendStmtBody extends OpaStmtBody {
+    /** The local that holds the array. */
+    array: number,
+    /** The value. */
+    value: OpaOperand,
+}
+
+
+/**
+ * A statement of kind AssignIntStmt, with its fields in `stmt`.
+ */
+export interface OpaAssignIntStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaAssignIntStmtBody,
+}
+
+
+/**
+ * AssignIntStmt represents an assignment of an integer value to a local variable.
+ */
+export interface OpaAssignIntStmtBody extends OpaStmtBody {
+    /** The local that receives the result. */
+    target: number,
+    /** The value. */
+    value: number,
+}
+
+
+/**
+ * A statement of kind AssignVarOnceStmt, with its fields in `stmt`.
+ */
+export interface OpaAssignVarOnceStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaAssignVarOnceStmtBody,
+}
+
+
+/**
+ * AssignVarOnceStmt represents an assignment of one local variable to another. If the target is defined, execution aborts with a conflict error.
+ */
+export interface OpaAssignVarOnceStmtBody extends OpaStmtBody {
+    /** What the statement reads. */
+    source: OpaOperand,
+    /** The local that receives the result. */
+    target: number,
+}
+
+
+/**
+ * A statement of kind AssignVarStmt, with its fields in `stmt`.
+ */
+export interface OpaAssignVarStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaAssignVarStmtBody,
+}
+
+
+/**
+ * AssignVarStmt represents an assignment of one local variable to another.
+ */
+export interface OpaAssignVarStmtBody extends OpaStmtBody {
+    /** What the statement reads. */
+    source: OpaOperand,
+    /** The local that receives the result. */
+    target: number,
+}
+
+
+/**
+ * A statement of kind BlockStmt, with its fields in `stmt`.
+ */
+export interface OpaBlockStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaBlockStmtBody,
+}
+
+
+/**
+ * BlockStmt represents a nested block. Nested blocks and break statements can be used to short-circuit execution.
+ */
+export interface OpaBlockStmtBody extends OpaStmtBody {
+    /** The blocks the statement runs. */
+    blocks?: OpaBlock[],
+}
+
+
+/**
+ * A statement of kind BreakStmt, with its fields in `stmt`.
+ */
+export interface OpaBreakStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaBreakStmtBody,
+}
+
+
+/**
+ * BreakStmt represents a jump out of the current block. The index specifies how many blocks to jump starting from zero (the current block).
+ */
+export interface OpaBreakStmtBody extends OpaStmtBody {
+    /** How many enclosing blocks to leave, counting the current block as zero. */
+    index: number,
+}
+
+
+/**
+ * A statement of kind CallDynamicStmt, with its fields in `stmt`.
+ */
+export interface OpaCallDynamicStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaCallDynamicStmtBody,
+}
+
+
+/**
+ * CallDynamicStmt represents an indirect (data) function call. The result should be stored in the result local.
+ */
+export interface OpaCallDynamicStmtBody extends OpaStmtBody {
+    /** The locals passed as arguments. */
+    args?: number[],
+    /** The path of the function in the data tree, one operand per segment. */
+    path?: OpaOperand[],
+    /** The local that receives the result. */
+    result: number,
+}
+
+
+/**
+ * A statement of kind CallStmt, with its fields in `stmt`.
+ */
+export interface OpaCallStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaCallStmtBody,
+}
+
+
+/**
+ * CallStmt represents a named function call. The result should be stored in the result local.
+ */
+export interface OpaCallStmtBody extends OpaStmtBody {
+    /** The arguments. */
+    args?: OpaOperand[],
+    /** The name of the function called. */
+    func: string,
+    /** The local that receives the result. */
+    result: number,
+}
+
+
+/**
+ * A statement of kind DotStmt, with its fields in `stmt`.
+ */
+export interface OpaDotStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaDotStmtBody,
+}
+
+
+/**
+ * DotStmt represents a lookup operation on a value (e.g., array, object, etc.) The source of a DotStmt may be a scalar value in which case the statement will be undefined.
+ */
+export interface OpaDotStmtBody extends OpaStmtBody {
+    /** The key. */
+    key: OpaOperand,
+    /** What the statement reads. */
+    source: OpaOperand,
+    /** The local that receives the result. */
+    target: number,
+}
+
+
+/**
+ * A statement of kind EqualStmt, with its fields in `stmt`.
+ */
+export interface OpaEqualStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaEqualStmtBody,
+}
+
+
+/**
+ * EqualStmt represents an value-equality check of two local variables.
+ */
+export interface OpaEqualStmtBody extends OpaStmtBody {
+    /** The first value. */
+    a: OpaOperand,
+    /** The second value. */
+    b: OpaOperand,
+}
+
+
+/**
+ * A statement of kind IsArrayStmt, with its fields in `stmt`.
+ */
+export interface OpaIsArrayStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaIsArrayStmtBody,
+}
+
+
+/**
+ * IsArrayStmt represents a dynamic type check on a local variable.
+ */
+export interface OpaIsArrayStmtBody extends OpaStmtBody {
+    /** What the statement reads. */
+    source: OpaOperand,
+}
+
+
+/**
+ * A statement of kind IsDefinedStmt, with its fields in `stmt`.
+ */
+export interface OpaIsDefinedStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaIsDefinedStmtBody,
+}
+
+
+/**
+ * IsDefinedStmt represents a check of whether a local variable is defined.
+ */
+export interface OpaIsDefinedStmtBody extends OpaStmtBody {
+    /** The local checked. */
+    source: number,
+}
+
+
+/**
+ * A statement of kind IsObjectStmt, with its fields in `stmt`.
+ */
+export interface OpaIsObjectStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaIsObjectStmtBody,
+}
+
+
+/**
+ * IsObjectStmt represents a dynamic type check on a local variable.
+ */
+export interface OpaIsObjectStmtBody extends OpaStmtBody {
+    /** What the statement reads. */
+    source: OpaOperand,
+}
+
+
+/**
+ * A statement of kind IsSetStmt, with its fields in `stmt`.
+ */
+export interface OpaIsSetStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaIsSetStmtBody,
+}
+
+
+/**
+ * IsSetStmt represents a dynamic type check on a local variable.
+ */
+export interface OpaIsSetStmtBody extends OpaStmtBody {
+    /** What the statement reads. */
+    source: OpaOperand,
+}
+
+
+/**
+ * A statement of kind IsUndefinedStmt, with its fields in `stmt`.
+ */
+export interface OpaIsUndefinedStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaIsUndefinedStmtBody,
+}
+
+
+/**
+ * IsUndefinedStmt represents a check of whether local variable is undefined.
+ */
+export interface OpaIsUndefinedStmtBody extends OpaStmtBody {
+    /** The local checked. */
+    source: number,
+}
+
+
+/**
+ * A statement of kind LenStmt, with its fields in `stmt`.
+ */
+export interface OpaLenStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaLenStmtBody,
+}
+
+
+/**
+ * LenStmt represents a length() operation on a local variable. The result is stored in the target local variable.
+ */
+export interface OpaLenStmtBody extends OpaStmtBody {
+    /** What the statement reads. */
+    source: OpaOperand,
+    /** The local that receives the result. */
+    target: number,
+}
+
+
+/**
+ * A statement of kind MakeArrayStmt, with its fields in `stmt`.
+ */
+export interface OpaMakeArrayStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaMakeArrayStmtBody,
+}
+
+
+/**
+ * MakeArrayStmt constructs a local variable that refers to an array value.
+ */
+export interface OpaMakeArrayStmtBody extends OpaStmtBody {
+    /** The capacity to allocate. */
+    capacity: number,
+    /** The local that receives the result. */
+    target: number,
+}
+
+
+/**
+ * A statement of kind MakeNullStmt, with its fields in `stmt`.
+ */
+export interface OpaMakeNullStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaMakeNullStmtBody,
+}
+
+
+/**
+ * MakeNullStmt constructs a local variable that refers to a null value.
+ */
+export interface OpaMakeNullStmtBody extends OpaStmtBody {
+    /** The local that receives the result. */
+    target: number,
+}
+
+
+/**
+ * A statement of kind MakeNumberIntStmt, with its fields in `stmt`.
+ */
+export interface OpaMakeNumberIntStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaMakeNumberIntStmtBody,
+}
+
+
+/**
+ * MakeNumberIntStmt constructs a local variable that refers to an integer value.
+ */
+export interface OpaMakeNumberIntStmtBody extends OpaStmtBody {
+    /** The local that receives the result. */
+    target: number,
+    /** The value. */
+    value: number,
+}
+
+
+/**
+ * A statement of kind MakeNumberRefStmt, with its fields in `stmt`.
+ */
+export interface OpaMakeNumberRefStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaMakeNumberRefStmtBody,
+}
+
+
+/**
+ * MakeNumberRefStmt constructs a local variable that refers to a number stored as a string.
+ */
+export interface OpaMakeNumberRefStmtBody extends OpaStmtBody {
+    /** Index, in the plan's static strings, of the number written as a string. */
+    index: number,
+    /** The local that receives the result. */
+    target: number,
+    /** Deprecated alias for `index`. Both keys are emitted by current OPA versions for backwards compatibility; will be removed in a future major release. Read `index` instead. */
+    Index?: number,
+}
+
+
+/**
+ * A statement of kind MakeObjectStmt, with its fields in `stmt`.
+ */
+export interface OpaMakeObjectStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaMakeObjectStmtBody,
+}
+
+
+/**
+ * MakeObjectStmt constructs a local variable that refers to an object value.
+ */
+export interface OpaMakeObjectStmtBody extends OpaStmtBody {
+    /** The local that receives the result. */
+    target: number,
+}
+
+
+/**
+ * A statement of kind MakeSetStmt, with its fields in `stmt`.
+ */
+export interface OpaMakeSetStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaMakeSetStmtBody,
+}
+
+
+/**
+ * MakeSetStmt constructs a local variable that refers to a set value.
+ */
+export interface OpaMakeSetStmtBody extends OpaStmtBody {
+    /** The local that receives the result. */
+    target: number,
+}
+
+
+/**
+ * A statement of kind NopStmt, with its fields in `stmt`.
+ */
+export interface OpaNopStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaNopStmtBody,
+}
+
+
+/**
+ * NopStmt adds a nop instruction. Useful during development and debugging only.
+ */
+export interface OpaNopStmtBody extends OpaStmtBody {
+}
+
+
+/**
+ * A statement of kind NotEqualStmt, with its fields in `stmt`.
+ */
+export interface OpaNotEqualStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaNotEqualStmtBody,
+}
+
+
+/**
+ * NotEqualStmt represents a != check of two local variables.
+ */
+export interface OpaNotEqualStmtBody extends OpaStmtBody {
+    /** The first value. */
+    a: OpaOperand,
+    /** The second value. */
+    b: OpaOperand,
+}
+
+
+/**
+ * A statement of kind NotStmt, with its fields in `stmt`.
+ */
+export interface OpaNotStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaNotStmtBody,
+}
+
+
+/**
+ * NotStmt represents a negated statement.
+ */
+export interface OpaNotStmtBody extends OpaStmtBody {
+    /** The block the statement runs. */
+    block?: OpaBlock,
+}
+
+
+/**
+ * A statement of kind ObjectInsertOnceStmt, with its fields in `stmt`.
+ */
+export interface OpaObjectInsertOnceStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaObjectInsertOnceStmtBody,
+}
+
+
+/**
+ * ObjectInsertOnceStmt represents a dynamic insert operation of a key/value pair into an object. If the key already exists and the value differs, execution aborts with a conflict error.
+ */
+export interface OpaObjectInsertOnceStmtBody extends OpaStmtBody {
+    /** The key. */
+    key: OpaOperand,
+    /** The local that holds the object. */
+    object: number,
+    /** The value. */
+    value: OpaOperand,
+}
+
+
+/**
+ * A statement of kind ObjectInsertStmt, with its fields in `stmt`.
+ */
+export interface OpaObjectInsertStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaObjectInsertStmtBody,
+}
+
+
+/**
+ * ObjectInsertStmt represents a dynamic insert operation of a key/value pair into an object.
+ */
+export interface OpaObjectInsertStmtBody extends OpaStmtBody {
+    /** The key. */
+    key: OpaOperand,
+    /** The local that holds the object. */
+    object: number,
+    /** The value. */
+    value: OpaOperand,
+}
+
+
+/**
+ * A statement of kind ObjectMergeStmt, with its fields in `stmt`.
+ */
+export interface OpaObjectMergeStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaObjectMergeStmtBody,
+}
+
+
+/**
+ * ObjectMergeStmt performs a recursive merge of two object values. If either of the locals refer to non-object values this operation will abort with a conflict error.
+ */
+export interface OpaObjectMergeStmtBody extends OpaStmtBody {
+    /** The local that receives the result. */
+    target: number,
+    /** The local that holds the first object. */
+    a: number,
+    /** The local that holds the second object. */
+    b: number,
+}
+
+
+/**
+ * A statement of kind ResetLocalStmt, with its fields in `stmt`.
+ */
+export interface OpaResetLocalStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaResetLocalStmtBody,
+}
+
+
+/**
+ * ResetLocalStmt resets a local variable to 0.
+ */
+export interface OpaResetLocalStmtBody extends OpaStmtBody {
+    /** The local that receives the result. */
+    target: number,
+}
+
+
+/**
+ * A statement of kind ResultSetAddStmt, with its fields in `stmt`.
+ */
+export interface OpaResultSetAddStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaResultSetAddStmtBody,
+}
+
+
+/**
+ * ResultSetAddStmt adds a value into the result set returned by the query plan.
+ */
+export interface OpaResultSetAddStmtBody extends OpaStmtBody {
+    /** The local added to the result set. */
+    value: number,
+}
+
+
+/**
+ * A statement of kind ReturnLocalStmt, with its fields in `stmt`.
+ */
+export interface OpaReturnLocalStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaReturnLocalStmtBody,
+}
+
+
+/**
+ * ReturnLocalStmt represents a return statement that yields a local value.
+ */
+export interface OpaReturnLocalStmtBody extends OpaStmtBody {
+    /** The local returned. */
+    source: number,
+}
+
+
+/**
+ * A statement of kind ScanStmt, with its fields in `stmt`.
+ */
+export interface OpaScanStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaScanStmtBody,
+}
+
+
+/**
+ * ScanStmt represents a linear scan over a composite value. The source may be a scalar in which case the block will never execute.
+ */
+export interface OpaScanStmtBody extends OpaStmtBody {
+    /** The block run for each key and value. */
+    block?: OpaBlock,
+    /** The local that receives each key. */
+    key: number,
+    /** The local whose value is scanned. */
+    source: number,
+    /** The local that receives each value. */
+    value: number,
+}
+
+
+/**
+ * A statement of kind SetAddStmt, with its fields in `stmt`.
+ */
+export interface OpaSetAddStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaSetAddStmtBody,
+}
+
+
+/**
+ * SetAddStmt represents a dynamic add operation of an element into a set.
+ */
+export interface OpaSetAddStmtBody extends OpaStmtBody {
+    /** The local that holds the set. */
+    set: number,
+    /** The value. */
+    value: OpaOperand,
+}
+
+
+/**
+ * A statement of kind WithStmt, with its fields in `stmt`.
+ */
+export interface OpaWithStmt extends OpaStmt {
+    /** The kind of statement. */
+    type: string,
+    /** The statement's fields. */
+    stmt: OpaWithStmtBody,
+}
+
+
+/**
+ * WithStmt replaces the Local or a portion of the document referred to by the Local with the Value and executes the contained block. If the Path is non-empty, the Value is upserted into the Local.
+ */
+export interface OpaWithStmtBody extends OpaStmtBody {
+    /** The block the statement runs. */
+    block?: OpaBlock,
+    /** The local whose value, or part of it, is replaced. */
+    local: number,
+    /** The path within the local's value to replace, as indices of static strings. Empty replaces the whole value. */
+    path?: number[],
+    /** The replacement value. */
+    value: OpaOperand,
+}
+
+
+/**
+ * Operand represents a value that a statement operates on. OPA writes it as its kind in `type` and the value in `value`.
+ */
+export interface OpaOperand {
+}
+
+
+/**
+ * Bool represents a constant boolean.
+ */
+export interface OpaBoolOperand extends OpaOperand {
+    /** The kind of operand. */
+    type: string,
+    /** The operand's value. */
+    value: boolean,
+}
+
+
+/**
+ * A local variable, by its number.
+ */
+export interface OpaLocalOperand extends OpaOperand {
+    /** The kind of operand. */
+    type: string,
+    /** The operand's value. */
+    value: number,
+}
+
+
+/**
+ * StringIndex represents the index into the plan's list of constant strings of a constant string.
+ */
+export interface OpaStringIndexOperand extends OpaOperand {
+    /** The kind of operand. */
+    type: string,
+    /** The operand's value. */
+    value: number,
 }
 
 

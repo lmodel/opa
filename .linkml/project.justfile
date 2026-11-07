@@ -4,16 +4,14 @@
 # name in this file is not possible until a known issue in just is fixed,
 # https://github.com/casey/just/issues/2540
 
-# Reads ../builtin_metadata.json, ../capabilities.json, ../v1/ast/version_index.json,
-# and ../v1/schemas/authorizationPolicy.json. Writes both schema YAMLs under
-# src/opa/schema/ and instance fixtures under tests/data/valid/.
-# Regenerate every LinkML schema submodule from upstream OPA source artifacts.
+# ============ OPA's formats ============
+
+# Write src/opa/schema/ from OPA's files at the merged release (run after a merge of OPA)
 [group('model development')]
 gen-linkml:
-  uv run python scripts/gen_linkml.py all
+  uv run python scripts/opa_to_linkml.py
 
-# Usage: just gen-one-linkml capabilities
-# Regenerate just one submodule. Useful while iterating on a single source.
+# Fail when src/opa/schema/ differs from what OPA's files give
 [group('model development')]
-gen-one-linkml target:
-  uv run python scripts/gen_linkml.py {{target}}
+check-linkml:
+  uv run python scripts/opa_to_linkml.py --check

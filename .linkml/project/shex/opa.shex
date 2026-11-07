@@ -1,11 +1,9 @@
-# metamodel_version: 1.11.0
-# version: 0.1.0
+# metamodel_version: 1.12.0
+# version: 1.22.2
 BASE <https://w3id.org/lmodel/opa/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX linkml: <https://w3id.org/linkml/>
-PREFIX schema1: <http://schema.org/>
 
 
 linkml:String xsd:string
@@ -46,669 +44,1139 @@ linkml:Jsonpath xsd:string
 
 linkml:Sparqlpath xsd:string
 
-<Any> CLOSED {
-    (  $<Any_tes> rdf:type . * ;
-       rdf:type [ linkml:Any ] ?
-    )
-}
-
-<ArrayAppendStmt> CLOSED {
-    (  $<ArrayAppendStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <array> @linkml:Integer ;
-          <value> @<Operand>
+<OpaAnyType> CLOSED {
+    (  $<OpaAnyType_tes> (  &<OpaType_tes> ;
+          rdf:type [ <OpaType> ] ? ;
+          <type> @linkml:String ;
+          <of> @<OpaType> *
        ) ;
-       rdf:type [ <ArrayAppendStmt> ] ?
+       rdf:type [ <OpaAnyType> ] ?
     )
 }
 
-<AssignIntStmt> CLOSED {
-    (  $<AssignIntStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
+<OpaArrayAppendStmt> CLOSED {
+    (  $<OpaArrayAppendStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaArrayAppendStmtBody>
+       ) ;
+       rdf:type [ <OpaArrayAppendStmt> ] ?
+    )
+}
+
+<OpaArrayAppendStmtBody> CLOSED {
+    (  $<OpaArrayAppendStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <array> @linkml:Integer ;
+          <value> @<OpaOperand>
+       ) ;
+       rdf:type [ <OpaArrayAppendStmtBody> ] ?
+    )
+}
+
+<OpaArrayType> CLOSED {
+    (  $<OpaArrayType_tes> (  &<OpaType_tes> ;
+          rdf:type [ <OpaType> ] ? ;
+          <type> @linkml:String ;
+          <static> @<OpaType> * ;
+          <dynamic> @<OpaType> ?
+       ) ;
+       rdf:type [ <OpaArrayType> ] ?
+    )
+}
+
+<OpaAssignIntStmt> CLOSED {
+    (  $<OpaAssignIntStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaAssignIntStmtBody>
+       ) ;
+       rdf:type [ <OpaAssignIntStmt> ] ?
+    )
+}
+
+<OpaAssignIntStmtBody> CLOSED {
+    (  $<OpaAssignIntStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
           <target> @linkml:Integer ;
           <value> @linkml:Integer
        ) ;
-       rdf:type [ <AssignIntStmt> ] ?
+       rdf:type [ <OpaAssignIntStmtBody> ] ?
     )
 }
 
-<AssignVarOnceStmt> CLOSED {
-    (  $<AssignVarOnceStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <source> @<Operand> ;
+<OpaAssignVarOnceStmt> CLOSED {
+    (  $<OpaAssignVarOnceStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaAssignVarOnceStmtBody>
+       ) ;
+       rdf:type [ <OpaAssignVarOnceStmt> ] ?
+    )
+}
+
+<OpaAssignVarOnceStmtBody> CLOSED {
+    (  $<OpaAssignVarOnceStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <source> @<OpaOperand> ;
           <target> @linkml:Integer
        ) ;
-       rdf:type [ <AssignVarOnceStmt> ] ?
+       rdf:type [ <OpaAssignVarOnceStmtBody> ] ?
     )
 }
 
-<AssignVarStmt> CLOSED {
-    (  $<AssignVarStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <source> @<Operand> ;
+<OpaAssignVarStmt> CLOSED {
+    (  $<OpaAssignVarStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaAssignVarStmtBody>
+       ) ;
+       rdf:type [ <OpaAssignVarStmt> ] ?
+    )
+}
+
+<OpaAssignVarStmtBody> CLOSED {
+    (  $<OpaAssignVarStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <source> @<OpaOperand> ;
           <target> @linkml:Integer
        ) ;
-       rdf:type [ <AssignVarStmt> ] ?
+       rdf:type [ <OpaAssignVarStmtBody> ] ?
     )
 }
 
-<AuthorizationInput> CLOSED {
-    (  $<AuthorizationInput_tes> (  <identity> @linkml:String ;
-          <client_certificates> @<Any> + ;
+<OpaAuthorizationInput> CLOSED {
+    (  $<OpaAuthorizationInput_tes> (  <identity> @linkml:String ;
+          <client_certificates> @<OpaObject> + ;
           <method> @linkml:String ;
           <path> @linkml:String + ;
-          <params> @<Any> ;
-          <headers> @<Any> ;
-          <body> @<Any>
+          <params> @<OpaObject> ;
+          <headers> @<OpaObject> ;
+          <body> @<OpaObject>
        ) ;
-       rdf:type [ <AuthorizationInput> ] ?
+       rdf:type [ <OpaAuthorizationInput> ] ?
     )
 }
 
-<Block> CLOSED {
-    (  $<Block_tes> <stmts> @<Stmt> + ;
-       rdf:type [ <Block> ] ?
+<OpaBlock> CLOSED {
+    (  $<OpaBlock_tes> <stmts> @<OpaStmt> + ;
+       rdf:type [ <OpaBlock> ] ?
     )
 }
 
-<BlockStmt> CLOSED {
-    (  $<BlockStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <blocks> @<Block> +
+<OpaBlockStmt> CLOSED {
+    (  $<OpaBlockStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaBlockStmtBody>
        ) ;
-       rdf:type [ <BlockStmt> ] ?
+       rdf:type [ <OpaBlockStmt> ] ?
     )
 }
 
-<BreakStmt> CLOSED {
-    (  $<BreakStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
+<OpaBlockStmtBody> CLOSED {
+    (  $<OpaBlockStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <blocks> @<OpaBlock> *
+       ) ;
+       rdf:type [ <OpaBlockStmtBody> ] ?
+    )
+}
+
+<OpaBooleanType> CLOSED {
+    (  $<OpaBooleanType_tes> (  &<OpaType_tes> ;
+          rdf:type [ <OpaType> ] ? ;
+          <type> @linkml:String
+       ) ;
+       rdf:type [ <OpaBooleanType> ] ?
+    )
+}
+
+<OpaBoolOperand> CLOSED {
+    (  $<OpaBoolOperand_tes> (  &<OpaOperand_tes> ;
+          rdf:type [ <OpaOperand> ] ? ;
+          <type> @linkml:String ;
+          <value> @linkml:Boolean
+       ) ;
+       rdf:type [ <OpaBoolOperand> ] ?
+    )
+}
+
+<OpaBreakStmt> CLOSED {
+    (  $<OpaBreakStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaBreakStmtBody>
+       ) ;
+       rdf:type [ <OpaBreakStmt> ] ?
+    )
+}
+
+<OpaBreakStmtBody> CLOSED {
+    (  $<OpaBreakStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
           <index> @linkml:Integer
        ) ;
-       rdf:type [ <BreakStmt> ] ?
+       rdf:type [ <OpaBreakStmtBody> ] ?
     )
 }
 
-<Builtin> CLOSED {
-    (  $<Builtin_tes> (  <decl> @<BuiltinDecl> ;
+<OpaBuiltin> CLOSED {
+    (  $<OpaBuiltin_tes> (  <name> @linkml:String ;
+          <description> @linkml:String ? ;
+          <categories> @linkml:String * ;
+          <decl> @<OpaFunctionType> ;
           <infix> @linkml:String ? ;
-          <deprecated> @linkml:Boolean ? ;
-          <nondeterministic> @linkml:Boolean ? ;
-          <relation> @linkml:Boolean ?
-       ) ;
-       rdf:type [ <Builtin> ]
-    )
-}
-
-<BuiltinArg> CLOSED {
-    (  $<BuiltinArg_tes> (  rdfs:label @linkml:String ? ;
-          schema1:description @linkml:String ? ;
-          <type> @linkml:String ?
-       ) ;
-       rdf:type [ <BuiltinArg> ] ?
-    )
-}
-
-<BuiltinCategoryGroup> CLOSED {
-    (  $<BuiltinCategoryGroup_tes> (  <category> [ <https://w3id.org/lmodel/opa/category/aggregates>
-             <https://w3id.org/lmodel/opa/category/array> <https://w3id.org/lmodel/opa/category/bits>
-             <https://w3id.org/lmodel/opa/category/comparison> <https://w3id.org/lmodel/opa/category/conversions>
-             <https://w3id.org/lmodel/opa/category/crypto> <https://w3id.org/lmodel/opa/category/encoding>
-             <https://w3id.org/lmodel/opa/category/glob> <https://w3id.org/lmodel/opa/category/graph>
-             <https://w3id.org/lmodel/opa/category/graphql> <https://w3id.org/lmodel/opa/category/http>
-             <https://w3id.org/lmodel/opa/category/internal> <https://w3id.org/lmodel/opa/category/net>
-             <https://w3id.org/lmodel/opa/category/numbers> <https://w3id.org/lmodel/opa/category/object>
-             <https://w3id.org/lmodel/opa/category/opa> <https://w3id.org/lmodel/opa/category/providers.aws>
-             <https://w3id.org/lmodel/opa/category/regex> <https://w3id.org/lmodel/opa/category/rego>
-             <https://w3id.org/lmodel/opa/category/semver> <https://w3id.org/lmodel/opa/category/sets>
-             <https://w3id.org/lmodel/opa/category/strings> <https://w3id.org/lmodel/opa/category/time>
-             <https://w3id.org/lmodel/opa/category/tokens> <https://w3id.org/lmodel/opa/category/tokensign>
-             <https://w3id.org/lmodel/opa/category/tracing> <https://w3id.org/lmodel/opa/category/types>
-             <https://w3id.org/lmodel/opa/category/units> <https://w3id.org/lmodel/opa/category/uri>
-             <https://w3id.org/lmodel/opa/category/uuid> ] ? ;
-          <builtins> @linkml:String +
-       ) ;
-       rdf:type [ <BuiltinCategoryGroup> ]
-    )
-}
-
-<BuiltinDecl> CLOSED {
-    (  $<BuiltinDecl_tes> (  <type> @linkml:String ;
-          <args> @<TypeDecl> * ;
-          <result> @<TypeDecl> ? ;
-          <variadic> @<TypeDecl> ?
-       ) ;
-       rdf:type [ <BuiltinDecl> ] ?
-    )
-}
-
-<BuiltinFunc> CLOSED {
-    (  $<BuiltinFunc_tes> (  <decl> @<Any> ;
-          rdfs:label @linkml:String
-       ) ;
-       rdf:type [ <BuiltinFunc> ] ?
-    )
-}
-
-<BuiltinMetadata> CLOSED {
-    (  $<BuiltinMetadata_tes> (  schema1:description @linkml:String ? ;
-          <introduced> @linkml:String ? ;
-          <available> @linkml:String * ;
-          <wasm> @linkml:Boolean ? ;
-          <infix> @linkml:String ? ;
-          <deprecated> @linkml:Boolean ? ;
           <relation> @linkml:Boolean ? ;
-          <args> @<BuiltinArg> * ;
-          <result> @<BuiltinResult> ?
+          <deprecated> @linkml:Boolean ? ;
+          <nondeterministic> @linkml:Boolean ?
        ) ;
-       rdf:type [ <BuiltinMetadata> ]
+       rdf:type [ <OpaBuiltin> ] ?
     )
 }
 
-<BuiltinMetadataCatalog> CLOSED {
-    (  $<BuiltinMetadataCatalog_tes> (  <categories> @<BuiltinCategoryGroup> * ;
-          <builtins> @<BuiltinMetadata> *
+<OpaBuiltinArgument> CLOSED {
+    (  $<OpaBuiltinArgument_tes> (  <name> @linkml:String ? ;
+          <description> @linkml:String ? ;
+          <type> @linkml:String
        ) ;
-       rdf:type [ <BuiltinMetadataCatalog> ] ?
+       rdf:type [ <OpaBuiltinArgument> ] ?
     )
 }
 
-<BuiltinResult> CLOSED {
-    (  $<BuiltinResult_tes> (  rdfs:label @linkml:String ? ;
-          schema1:description @linkml:String ? ;
+<OpaBuiltinCategory> CLOSED {
+    (  $<OpaBuiltinCategory_tes> <builtins> @linkml:String + ;
+       rdf:type [ <OpaBuiltinCategory> ]
+    )
+}
+
+<OpaBuiltinFunc> CLOSED {
+    (  $<OpaBuiltinFunc_tes> (  <decl> @<OpaFunctionType> ? ;
+          <name> @linkml:String
+       ) ;
+       rdf:type [ <OpaBuiltinFunc> ] ?
+    )
+}
+
+<OpaBuiltinMetadata> CLOSED {
+    (  $<OpaBuiltinMetadata_tes> (  <description> @linkml:String ? ;
+          <introduced> @linkml:String ;
+          <available> @linkml:String + ;
+          <wasm> @linkml:Boolean ;
+          <args> @<OpaBuiltinArgument> + ;
+          <result> @<OpaBuiltinResult> ;
+          <implementations> @<OpaImplementationSupport> + ;
+          <infix> @linkml:String ? ;
+          <relation> @linkml:Boolean ? ;
+          <deprecated> @linkml:Boolean ?
+       ) ;
+       rdf:type [ <OpaBuiltinMetadata> ] ?
+    )
+}
+
+<OpaBuiltinMetadataCatalog> CLOSED {
+    (  $<OpaBuiltinMetadataCatalog_tes> (  <_categories> @<OpaBuiltinCategory> * ;
+          <_implementations> @<OpaImplementation> *
+       ) ;
+       rdf:type [ <OpaBuiltinMetadataCatalog> ] ?
+    )
+}
+
+<OpaBuiltinResult> CLOSED {
+    (  $<OpaBuiltinResult_tes> (  <name> @linkml:String ? ;
+          <description> @linkml:String ? ;
           <type> @linkml:String ?
        ) ;
-       rdf:type [ <BuiltinResult> ] ?
+       rdf:type [ <OpaBuiltinResult> ] ?
     )
 }
 
-<CallDynamicStmt> CLOSED {
-    (  $<CallDynamicStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <args> @linkml:Integer + ;
-          <path> @<Operand> + ;
+<OpaCallDynamicStmt> CLOSED {
+    (  $<OpaCallDynamicStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaCallDynamicStmtBody>
+       ) ;
+       rdf:type [ <OpaCallDynamicStmt> ] ?
+    )
+}
+
+<OpaCallDynamicStmtBody> CLOSED {
+    (  $<OpaCallDynamicStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <args> @linkml:Integer * ;
+          <path> @<OpaOperand> * ;
           <result> @linkml:Integer
        ) ;
-       rdf:type [ <CallDynamicStmt> ] ?
+       rdf:type [ <OpaCallDynamicStmtBody> ] ?
     )
 }
 
-<CallStmt> CLOSED {
-    (  $<CallStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <args> @<Operand> + ;
+<OpaCallStmt> CLOSED {
+    (  $<OpaCallStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaCallStmtBody>
+       ) ;
+       rdf:type [ <OpaCallStmt> ] ?
+    )
+}
+
+<OpaCallStmtBody> CLOSED {
+    (  $<OpaCallStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <args> @<OpaOperand> * ;
           <func> @linkml:String ;
           <result> @linkml:Integer
        ) ;
-       rdf:type [ <CallStmt> ] ?
+       rdf:type [ <OpaCallStmtBody> ] ?
     )
 }
 
-<Capabilities> CLOSED {
-    (  $<Capabilities_tes> (  <builtins> @<Builtin> * ;
-          <future_keywords> [ <https://w3id.org/lmodel/opa/future_keyword/not> ] * ;
-          <wasm_abi_versions> @<WasmABIVersion> * ;
-          <features> [ <https://w3id.org/lmodel/opa/feature/keywords_in_refs> <https://w3id.org/lmodel/opa/feature/rego_v1>
-             <https://w3id.org/lmodel/opa/feature/template_strings> ] * ;
+<OpaCapabilities> CLOSED {
+    (  $<OpaCapabilities_tes> (  <builtins> @<OpaBuiltin> * ;
+          <future_keywords> [ <https://w3id.org/lmodel/opa/OpaFutureKeyword#and>
+             <https://w3id.org/lmodel/opa/OpaFutureKeyword#contains> <https://w3id.org/lmodel/opa/OpaFutureKeyword#every>
+             <https://w3id.org/lmodel/opa/OpaFutureKeyword#if> <https://w3id.org/lmodel/opa/OpaFutureKeyword#in>
+             <https://w3id.org/lmodel/opa/OpaFutureKeyword#not> <https://w3id.org/lmodel/opa/OpaFutureKeyword#or> ] * ;
+          <wasm_abi_versions> @<OpaWasmAbiVersion> * ;
+          <features> [ <https://w3id.org/lmodel/opa/OpaFeature#keywords_in_refs> <https://w3id.org/lmodel/opa/OpaFeature#rego_v1>
+             <https://w3id.org/lmodel/opa/OpaFeature#rego_v1_import> <https://w3id.org/lmodel/opa/OpaFeature#rego_v2>
+             <https://w3id.org/lmodel/opa/OpaFeature#rego_v2_import>
+             <https://w3id.org/lmodel/opa/OpaFeature#rule_head_ref_string_prefixes>
+             <https://w3id.org/lmodel/opa/OpaFeature#rule_head_refs> <https://w3id.org/lmodel/opa/OpaFeature#template_strings> ] *
+          ;
           <allow_net> @linkml:String *
        ) ;
-       rdf:type [ <Capabilities> ] ?
+       rdf:type [ <OpaCapabilities> ] ?
     )
 }
 
-<DotStmt> CLOSED {
-    (  $<DotStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <key> @<Operand> ;
-          <source> @<Operand> ;
+<OpaDotStmt> CLOSED {
+    (  $<OpaDotStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaDotStmtBody>
+       ) ;
+       rdf:type [ <OpaDotStmt> ] ?
+    )
+}
+
+<OpaDotStmtBody> CLOSED {
+    (  $<OpaDotStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <key> @<OpaOperand> ;
+          <source> @<OpaOperand> ;
           <target> @linkml:Integer
        ) ;
-       rdf:type [ <DotStmt> ] ?
+       rdf:type [ <OpaDotStmtBody> ] ?
     )
 }
 
-<ElementVersion> CLOSED {
-    (  $<ElementVersion_tes> (  <major> @linkml:Integer ;
-          <minor> @linkml:Integer ;
-          <patch> @linkml:Integer
+<OpaDynamicProperty> CLOSED {
+    (  $<OpaDynamicProperty_tes> (  <key> @<OpaType> ;
+          <value> @<OpaType>
        ) ;
-       rdf:type [ <ElementVersion> ]
+       rdf:type [ <OpaDynamicProperty> ] ?
     )
 }
 
-<EqualStmt> CLOSED {
-    (  $<EqualStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <a> @<Operand> ;
-          <b> @<Operand>
+<OpaEqualStmt> CLOSED {
+    (  $<OpaEqualStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaEqualStmtBody>
        ) ;
-       rdf:type [ <EqualStmt> ] ?
+       rdf:type [ <OpaEqualStmt> ] ?
     )
 }
 
-<FileRegoVersion> CLOSED {
-    (  $<FileRegoVersion_tes> <version> @linkml:Integer ;
-       rdf:type [ <FileRegoVersion> ]
+<OpaEqualStmtBody> CLOSED {
+    (  $<OpaEqualStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <a> @<OpaOperand> ;
+          <b> @<OpaOperand>
+       ) ;
+       rdf:type [ <OpaEqualStmtBody> ] ?
     )
 }
 
-<Func> CLOSED {
-    (  $<Func_tes> (  <blocks> @<Block> + ;
-          rdfs:label @linkml:String ;
-          <params> @linkml:Integer + ;
+<OpaFileRegoVersion> CLOSED {
+    (  $<OpaFileRegoVersion_tes> <version> @linkml:Integer ;
+       rdf:type [ <OpaFileRegoVersion> ]
+    )
+}
+
+<OpaFunc> CLOSED {
+    (  $<OpaFunc_tes> (  <blocks> @<OpaBlock> * ;
+          <name> @linkml:String ;
+          <params> @linkml:Integer * ;
           <path> @linkml:String * ;
-          <return_value> @linkml:Integer
+          <return> @linkml:Integer
        ) ;
-       rdf:type [ <Func> ] ?
+       rdf:type [ <OpaFunc> ] ?
     )
 }
 
-<Funcs> CLOSED {
-    (  $<Funcs_tes> <funcs> @<Func> + ;
-       rdf:type [ <Funcs> ] ?
+<OpaFuncs> CLOSED {
+    (  $<OpaFuncs_tes> <funcs> @<OpaFunc> * ;
+       rdf:type [ <OpaFuncs> ] ?
     )
 }
 
-<IsArrayStmt> CLOSED {
-    (  $<IsArrayStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <source> @<Operand>
+<OpaFunctionType> CLOSED {
+    (  $<OpaFunctionType_tes> (  &<OpaType_tes> ;
+          rdf:type [ <OpaType> ] ? ;
+          <type> @linkml:String ;
+          <args> @<OpaType> * ;
+          <result> @<OpaType> ? ;
+          <variadic> @<OpaType> ?
        ) ;
-       rdf:type [ <IsArrayStmt> ] ?
+       rdf:type [ <OpaFunctionType> ] ?
     )
 }
 
-<IsDefinedStmt> CLOSED {
-    (  $<IsDefinedStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
+<OpaImplementation> CLOSED {
+    (  $<OpaImplementation_tes> (  <id> @linkml:String ;
+          <label> @linkml:String ;
+          <repo> @linkml:String ;
+          <version> @linkml:String
+       ) ;
+       rdf:type [ <OpaImplementation> ] ?
+    )
+}
+
+<OpaImplementationSupport> CLOSED {
+    (  $<OpaImplementationSupport_tes> <version> @linkml:String ;
+       rdf:type [ <OpaImplementationSupport> ]
+    )
+}
+
+<OpaIsArrayStmt> CLOSED {
+    (  $<OpaIsArrayStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaIsArrayStmtBody>
+       ) ;
+       rdf:type [ <OpaIsArrayStmt> ] ?
+    )
+}
+
+<OpaIsArrayStmtBody> CLOSED {
+    (  $<OpaIsArrayStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <source> @<OpaOperand>
+       ) ;
+       rdf:type [ <OpaIsArrayStmtBody> ] ?
+    )
+}
+
+<OpaIsDefinedStmt> CLOSED {
+    (  $<OpaIsDefinedStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaIsDefinedStmtBody>
+       ) ;
+       rdf:type [ <OpaIsDefinedStmt> ] ?
+    )
+}
+
+<OpaIsDefinedStmtBody> CLOSED {
+    (  $<OpaIsDefinedStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
           <source> @linkml:Integer
        ) ;
-       rdf:type [ <IsDefinedStmt> ] ?
+       rdf:type [ <OpaIsDefinedStmtBody> ] ?
     )
 }
 
-<IsObjectStmt> CLOSED {
-    (  $<IsObjectStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <source> @<Operand>
+<OpaIsObjectStmt> CLOSED {
+    (  $<OpaIsObjectStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaIsObjectStmtBody>
        ) ;
-       rdf:type [ <IsObjectStmt> ] ?
+       rdf:type [ <OpaIsObjectStmt> ] ?
     )
 }
 
-<IsSetStmt> CLOSED {
-    (  $<IsSetStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <source> @<Operand>
+<OpaIsObjectStmtBody> CLOSED {
+    (  $<OpaIsObjectStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <source> @<OpaOperand>
        ) ;
-       rdf:type [ <IsSetStmt> ] ?
+       rdf:type [ <OpaIsObjectStmtBody> ] ?
     )
 }
 
-<IsUndefinedStmt> CLOSED {
-    (  $<IsUndefinedStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
+<OpaIsSetStmt> CLOSED {
+    (  $<OpaIsSetStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaIsSetStmtBody>
+       ) ;
+       rdf:type [ <OpaIsSetStmt> ] ?
+    )
+}
+
+<OpaIsSetStmtBody> CLOSED {
+    (  $<OpaIsSetStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <source> @<OpaOperand>
+       ) ;
+       rdf:type [ <OpaIsSetStmtBody> ] ?
+    )
+}
+
+<OpaIsUndefinedStmt> CLOSED {
+    (  $<OpaIsUndefinedStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaIsUndefinedStmtBody>
+       ) ;
+       rdf:type [ <OpaIsUndefinedStmt> ] ?
+    )
+}
+
+<OpaIsUndefinedStmtBody> CLOSED {
+    (  $<OpaIsUndefinedStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
           <source> @linkml:Integer
        ) ;
-       rdf:type [ <IsUndefinedStmt> ] ?
+       rdf:type [ <OpaIsUndefinedStmtBody> ] ?
     )
 }
 
-<LenStmt> CLOSED {
-    (  $<LenStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <source> @<Operand> ;
+<OpaLenStmt> CLOSED {
+    (  $<OpaLenStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaLenStmtBody>
+       ) ;
+       rdf:type [ <OpaLenStmt> ] ?
+    )
+}
+
+<OpaLenStmtBody> CLOSED {
+    (  $<OpaLenStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <source> @<OpaOperand> ;
           <target> @linkml:Integer
        ) ;
-       rdf:type [ <LenStmt> ] ?
+       rdf:type [ <OpaLenStmtBody> ] ?
     )
 }
 
-<MakeArrayStmt> CLOSED {
-    (  $<MakeArrayStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
+<OpaLocalOperand> CLOSED {
+    (  $<OpaLocalOperand_tes> (  &<OpaOperand_tes> ;
+          rdf:type [ <OpaOperand> ] ? ;
+          <type> @linkml:String ;
+          <value> @linkml:Integer
+       ) ;
+       rdf:type [ <OpaLocalOperand> ] ?
+    )
+}
+
+<OpaLocation> CLOSED {
+    (  $<OpaLocation_tes> (  <file> @linkml:Integer ;
+          <col> @linkml:Integer ;
           <row> @linkml:Integer ;
+          <end_col> @linkml:Integer ;
+          <end_row> @linkml:Integer
+       ) ;
+       rdf:type [ <OpaLocation> ] ?
+    )
+}
+
+<OpaMakeArrayStmt> CLOSED {
+    (  $<OpaMakeArrayStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaMakeArrayStmtBody>
+       ) ;
+       rdf:type [ <OpaMakeArrayStmt> ] ?
+    )
+}
+
+<OpaMakeArrayStmtBody> CLOSED {
+    (  $<OpaMakeArrayStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
           <capacity> @linkml:Integer ;
           <target> @linkml:Integer
        ) ;
-       rdf:type [ <MakeArrayStmt> ] ?
+       rdf:type [ <OpaMakeArrayStmtBody> ] ?
     )
 }
 
-<MakeNullStmt> CLOSED {
-    (  $<MakeNullStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
+<OpaMakeNullStmt> CLOSED {
+    (  $<OpaMakeNullStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaMakeNullStmtBody>
+       ) ;
+       rdf:type [ <OpaMakeNullStmt> ] ?
+    )
+}
+
+<OpaMakeNullStmtBody> CLOSED {
+    (  $<OpaMakeNullStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
           <target> @linkml:Integer
        ) ;
-       rdf:type [ <MakeNullStmt> ] ?
+       rdf:type [ <OpaMakeNullStmtBody> ] ?
     )
 }
 
-<MakeNumberIntStmt> CLOSED {
-    (  $<MakeNumberIntStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
+<OpaMakeNumberIntStmt> CLOSED {
+    (  $<OpaMakeNumberIntStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaMakeNumberIntStmtBody>
+       ) ;
+       rdf:type [ <OpaMakeNumberIntStmt> ] ?
+    )
+}
+
+<OpaMakeNumberIntStmtBody> CLOSED {
+    (  $<OpaMakeNumberIntStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
           <target> @linkml:Integer ;
           <value> @linkml:Integer
        ) ;
-       rdf:type [ <MakeNumberIntStmt> ] ?
+       rdf:type [ <OpaMakeNumberIntStmtBody> ] ?
     )
 }
 
-<MakeNumberRefStmt> CLOSED {
-    (  $<MakeNumberRefStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
+<OpaMakeNumberRefStmt> CLOSED {
+    (  $<OpaMakeNumberRefStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaMakeNumberRefStmtBody>
+       ) ;
+       rdf:type [ <OpaMakeNumberRefStmt> ] ?
+    )
+}
+
+<OpaMakeNumberRefStmtBody> CLOSED {
+    (  $<OpaMakeNumberRefStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
           <index> @linkml:Integer ;
-          <Index> @linkml:Integer ? ;
-          <target> @linkml:Integer
+          <target> @linkml:Integer ;
+          <Index> @linkml:Integer ?
        ) ;
-       rdf:type [ <MakeNumberRefStmt> ] ?
+       rdf:type [ <OpaMakeNumberRefStmtBody> ] ?
     )
 }
 
-<MakeObjectStmt> CLOSED {
-    (  $<MakeObjectStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <target> @linkml:Integer
+<OpaMakeObjectStmt> CLOSED {
+    (  $<OpaMakeObjectStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaMakeObjectStmtBody>
        ) ;
-       rdf:type [ <MakeObjectStmt> ] ?
+       rdf:type [ <OpaMakeObjectStmt> ] ?
     )
 }
 
-<MakeSetStmt> CLOSED {
-    (  $<MakeSetStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
+<OpaMakeObjectStmtBody> CLOSED {
+    (  $<OpaMakeObjectStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
           <target> @linkml:Integer
        ) ;
-       rdf:type [ <MakeSetStmt> ] ?
+       rdf:type [ <OpaMakeObjectStmtBody> ] ?
     )
 }
 
-<Manifest> CLOSED {
-    (  $<Manifest_tes> (  <file_rego_versions> @<FileRegoVersion> * ;
-          <metadata> @<Any> ? ;
+<OpaMakeSetStmt> CLOSED {
+    (  $<OpaMakeSetStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaMakeSetStmtBody>
+       ) ;
+       rdf:type [ <OpaMakeSetStmt> ] ?
+    )
+}
+
+<OpaMakeSetStmtBody> CLOSED {
+    (  $<OpaMakeSetStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <target> @linkml:Integer
+       ) ;
+       rdf:type [ <OpaMakeSetStmtBody> ] ?
+    )
+}
+
+<OpaManifest> CLOSED {
+    (  $<OpaManifest_tes> (  <file_rego_versions> @<OpaFileRegoVersion> * ;
+          <metadata> @<OpaObject> ? ;
           <rego_version> @linkml:Integer ? ;
           <revision> @linkml:String ;
           <roots> @linkml:String * ;
-          <wasm> @<WasmResolver> *
+          <wasm> @<OpaWasmResolver> *
        ) ;
-       rdf:type [ <Manifest> ] ?
+       rdf:type [ <OpaManifest> ] ?
     )
 }
 
-<NopStmt> CLOSED {
-    (  $<NopStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer
+<OpaNopStmt> CLOSED {
+    (  $<OpaNopStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaNopStmtBody>
        ) ;
-       rdf:type [ <NopStmt> ] ?
+       rdf:type [ <OpaNopStmt> ] ?
     )
 }
 
-<NotEqualStmt> CLOSED {
-    (  $<NotEqualStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <a> @<Operand> ;
-          <b> @<Operand>
+<OpaNopStmtBody> CLOSED {
+    (  $<OpaNopStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ?
        ) ;
-       rdf:type [ <NotEqualStmt> ] ?
+       rdf:type [ <OpaNopStmtBody> ] ?
     )
 }
 
-<NotStmt> CLOSED {
-    (  $<NotStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <block> @linkml:String
+<OpaNotEqualStmt> CLOSED {
+    (  $<OpaNotEqualStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaNotEqualStmtBody>
        ) ;
-       rdf:type [ <NotStmt> ] ?
+       rdf:type [ <OpaNotEqualStmt> ] ?
     )
 }
 
-<ObjectInsertOnceStmt> CLOSED {
-    (  $<ObjectInsertOnceStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <key> @<Operand> ;
+<OpaNotEqualStmtBody> CLOSED {
+    (  $<OpaNotEqualStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <a> @<OpaOperand> ;
+          <b> @<OpaOperand>
+       ) ;
+       rdf:type [ <OpaNotEqualStmtBody> ] ?
+    )
+}
+
+<OpaNotStmt> CLOSED {
+    (  $<OpaNotStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaNotStmtBody>
+       ) ;
+       rdf:type [ <OpaNotStmt> ] ?
+    )
+}
+
+<OpaNotStmtBody> CLOSED {
+    (  $<OpaNotStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <block> @<OpaBlock> ?
+       ) ;
+       rdf:type [ <OpaNotStmtBody> ] ?
+    )
+}
+
+<OpaNullType> CLOSED {
+    (  $<OpaNullType_tes> (  &<OpaType_tes> ;
+          rdf:type [ <OpaType> ] ? ;
+          <type> @linkml:String
+       ) ;
+       rdf:type [ <OpaNullType> ] ?
+    )
+}
+
+<OpaNumberType> CLOSED {
+    (  $<OpaNumberType_tes> (  &<OpaType_tes> ;
+          rdf:type [ <OpaType> ] ? ;
+          <type> @linkml:String
+       ) ;
+       rdf:type [ <OpaNumberType> ] ?
+    )
+}
+
+<OpaObject> CLOSED {
+    (  $<OpaObject_tes> rdf:type . * ;
+       rdf:type [ <OpaObject> ] ?
+    )
+}
+
+<OpaObjectInsertOnceStmt> CLOSED {
+    (  $<OpaObjectInsertOnceStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaObjectInsertOnceStmtBody>
+       ) ;
+       rdf:type [ <OpaObjectInsertOnceStmt> ] ?
+    )
+}
+
+<OpaObjectInsertOnceStmtBody> CLOSED {
+    (  $<OpaObjectInsertOnceStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <key> @<OpaOperand> ;
           <object> @linkml:Integer ;
-          <value> @<Operand>
+          <value> @<OpaOperand>
        ) ;
-       rdf:type [ <ObjectInsertOnceStmt> ] ?
+       rdf:type [ <OpaObjectInsertOnceStmtBody> ] ?
     )
 }
 
-<ObjectInsertStmt> CLOSED {
-    (  $<ObjectInsertStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <key> @<Operand> ;
+<OpaObjectInsertStmt> CLOSED {
+    (  $<OpaObjectInsertStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaObjectInsertStmtBody>
+       ) ;
+       rdf:type [ <OpaObjectInsertStmt> ] ?
+    )
+}
+
+<OpaObjectInsertStmtBody> CLOSED {
+    (  $<OpaObjectInsertStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <key> @<OpaOperand> ;
           <object> @linkml:Integer ;
-          <value> @<Operand>
+          <value> @<OpaOperand>
        ) ;
-       rdf:type [ <ObjectInsertStmt> ] ?
+       rdf:type [ <OpaObjectInsertStmtBody> ] ?
     )
 }
 
-<ObjectMergeStmt> CLOSED {
-    (  $<ObjectMergeStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
+<OpaObjectMergeStmt> CLOSED {
+    (  $<OpaObjectMergeStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaObjectMergeStmtBody>
+       ) ;
+       rdf:type [ <OpaObjectMergeStmt> ] ?
+    )
+}
+
+<OpaObjectMergeStmtBody> CLOSED {
+    (  $<OpaObjectMergeStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <target> @linkml:Integer ;
           <a> @linkml:Integer ;
-          <b> @linkml:Integer ;
+          <b> @linkml:Integer
+       ) ;
+       rdf:type [ <OpaObjectMergeStmtBody> ] ?
+    )
+}
+
+<OpaObjectType> CLOSED {
+    (  $<OpaObjectType_tes> (  &<OpaType_tes> ;
+          rdf:type [ <OpaType> ] ? ;
+          <type> @linkml:String ;
+          <static> @<OpaStaticProperty> * ;
+          <dynamic> @<OpaDynamicProperty> ?
+       ) ;
+       rdf:type [ <OpaObjectType> ] ?
+    )
+}
+
+<OpaOperand>  (
+    @<OpaBoolOperand> OR @<OpaLocalOperand> OR @<OpaStringIndexOperand>
+)
+
+<OpaOperand_struct> {
+    (  $<OpaOperand_tes> rdf:type . * ;
+       rdf:type [ <OpaOperand> ] ?
+    )
+}
+
+<OpaPlan> CLOSED {
+    (  $<OpaPlan_tes> (  <blocks> @<OpaBlock> * ;
+          <name> @linkml:String
+       ) ;
+       rdf:type [ <OpaPlan> ] ?
+    )
+}
+
+<OpaPlans> CLOSED {
+    (  $<OpaPlans_tes> <plans> @<OpaPlan> * ;
+       rdf:type [ <OpaPlans> ] ?
+    )
+}
+
+<OpaPolicy> CLOSED {
+    (  $<OpaPolicy_tes> (  <funcs> @<OpaFuncs> ? ;
+          <plans> @<OpaPlans> ? ;
+          <static> @<OpaStatic> ? ;
+          <unplanned_rules> @<OpaUnplannedRule> *
+       ) ;
+       rdf:type [ <OpaPolicy> ] ?
+    )
+}
+
+<OpaResetLocalStmt> CLOSED {
+    (  $<OpaResetLocalStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaResetLocalStmtBody>
+       ) ;
+       rdf:type [ <OpaResetLocalStmt> ] ?
+    )
+}
+
+<OpaResetLocalStmtBody> CLOSED {
+    (  $<OpaResetLocalStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
           <target> @linkml:Integer
        ) ;
-       rdf:type [ <ObjectMergeStmt> ] ?
+       rdf:type [ <OpaResetLocalStmtBody> ] ?
     )
 }
 
-<Operand> CLOSED {
-    (  $<Operand_tes> (  &<Val_tes> ;
-          rdf:type [ <Val> ] ?
+<OpaResultSetAddStmt> CLOSED {
+    (  $<OpaResultSetAddStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaResultSetAddStmtBody>
        ) ;
-       rdf:type [ <Operand> ] ?
+       rdf:type [ <OpaResultSetAddStmt> ] ?
     )
 }
 
-<Plan> CLOSED {
-    (  $<Plan_tes> (  <blocks> @<Block> + ;
-          rdfs:label @linkml:String
-       ) ;
-       rdf:type [ <Plan> ] ?
-    )
-}
-
-<Plans> CLOSED {
-    (  $<Plans_tes> <plans> @<Plan> + ;
-       rdf:type [ <Plans> ] ?
-    )
-}
-
-<Policy> CLOSED {
-    (  $<Policy_tes> (  <funcs> @<Funcs> ? ;
-          <plans> @<Plans> ? ;
-          <static> @<Static> ?
-       ) ;
-       rdf:type [ <Policy> ] ?
-    )
-}
-
-<ResetLocalStmt> CLOSED {
-    (  $<ResetLocalStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <target> @linkml:Integer
-       ) ;
-       rdf:type [ <ResetLocalStmt> ] ?
-    )
-}
-
-<ResultSetAddStmt> CLOSED {
-    (  $<ResultSetAddStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
+<OpaResultSetAddStmtBody> CLOSED {
+    (  $<OpaResultSetAddStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
           <value> @linkml:Integer
        ) ;
-       rdf:type [ <ResultSetAddStmt> ] ?
+       rdf:type [ <OpaResultSetAddStmtBody> ] ?
     )
 }
 
-<ReturnLocalStmt> CLOSED {
-    (  $<ReturnLocalStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
+<OpaReturnLocalStmt> CLOSED {
+    (  $<OpaReturnLocalStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaReturnLocalStmtBody>
+       ) ;
+       rdf:type [ <OpaReturnLocalStmt> ] ?
+    )
+}
+
+<OpaReturnLocalStmtBody> CLOSED {
+    (  $<OpaReturnLocalStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
           <source> @linkml:Integer
        ) ;
-       rdf:type [ <ReturnLocalStmt> ] ?
+       rdf:type [ <OpaReturnLocalStmtBody> ] ?
     )
 }
 
-<ScanStmt> CLOSED {
-    (  $<ScanStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <block> @linkml:String ;
+<OpaScanStmt> CLOSED {
+    (  $<OpaScanStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaScanStmtBody>
+       ) ;
+       rdf:type [ <OpaScanStmt> ] ?
+    )
+}
+
+<OpaScanStmtBody> CLOSED {
+    (  $<OpaScanStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <block> @<OpaBlock> ? ;
           <key> @linkml:Integer ;
           <source> @linkml:Integer ;
           <value> @linkml:Integer
        ) ;
-       rdf:type [ <ScanStmt> ] ?
+       rdf:type [ <OpaScanStmtBody> ] ?
     )
 }
 
-<SetAddStmt> CLOSED {
-    (  $<SetAddStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
+<OpaSetAddStmt> CLOSED {
+    (  $<OpaSetAddStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaSetAddStmtBody>
+       ) ;
+       rdf:type [ <OpaSetAddStmt> ] ?
+    )
+}
+
+<OpaSetAddStmtBody> CLOSED {
+    (  $<OpaSetAddStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
           <set> @linkml:Integer ;
-          <value> @<Operand>
+          <value> @<OpaOperand>
        ) ;
-       rdf:type [ <SetAddStmt> ] ?
+       rdf:type [ <OpaSetAddStmtBody> ] ?
     )
 }
 
-<Static> CLOSED {
-    (  $<Static_tes> (  <builtin_funcs> @<BuiltinFunc> * ;
-          <files> @<StringConst> * ;
-          <strings> @<StringConst> *
+<OpaSetType> CLOSED {
+    (  $<OpaSetType_tes> (  &<OpaType_tes> ;
+          rdf:type [ <OpaType> ] ? ;
+          <type> @linkml:String ;
+          <of> @<OpaType> ?
        ) ;
-       rdf:type [ <Static> ] ?
+       rdf:type [ <OpaSetType> ] ?
     )
 }
 
-<Stmt> CLOSED {
-    (  $<Stmt_tes> (  <type> [ <https://w3id.org/lmodel/opa/StmtTag#ArrayAppendStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#AssignIntStmt> <https://w3id.org/lmodel/opa/StmtTag#AssignVarOnceStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#AssignVarStmt> <https://w3id.org/lmodel/opa/StmtTag#BlockStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#BreakStmt> <https://w3id.org/lmodel/opa/StmtTag#CallDynamicStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#CallStmt> <https://w3id.org/lmodel/opa/StmtTag#DotStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#EqualStmt> <https://w3id.org/lmodel/opa/StmtTag#IsArrayStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#IsDefinedStmt> <https://w3id.org/lmodel/opa/StmtTag#IsObjectStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#IsSetStmt> <https://w3id.org/lmodel/opa/StmtTag#IsUndefinedStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#LenStmt> <https://w3id.org/lmodel/opa/StmtTag#MakeArrayStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#MakeNullStmt> <https://w3id.org/lmodel/opa/StmtTag#MakeNumberIntStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#MakeNumberRefStmt> <https://w3id.org/lmodel/opa/StmtTag#MakeObjectStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#MakeSetStmt> <https://w3id.org/lmodel/opa/StmtTag#NopStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#NotEqualStmt> <https://w3id.org/lmodel/opa/StmtTag#NotStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#ObjectInsertOnceStmt> <https://w3id.org/lmodel/opa/StmtTag#ObjectInsertStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#ObjectMergeStmt> <https://w3id.org/lmodel/opa/StmtTag#ResetLocalStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#ResultSetAddStmt> <https://w3id.org/lmodel/opa/StmtTag#ReturnLocalStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#ScanStmt> <https://w3id.org/lmodel/opa/StmtTag#SetAddStmt>
-             <https://w3id.org/lmodel/opa/StmtTag#WithStmt> ] ;
-          <stmt> @<Any>
+<OpaStatic> CLOSED {
+    (  $<OpaStatic_tes> (  <builtin_funcs> @<OpaBuiltinFunc> * ;
+          <files> @<OpaStringConst> * ;
+          <strings> @<OpaStringConst> *
        ) ;
-       rdf:type [ <Stmt> ] ?
+       rdf:type [ <OpaStatic> ] ?
     )
 }
 
-<StringConst> CLOSED {
-    (  $<StringConst_tes> <value> @linkml:String ;
-       rdf:type [ <StringConst> ] ?
-    )
-}
-
-<TypeDecl> CLOSED {
-    (  $<TypeDecl_tes> (  <type> [ <https://w3id.org/lmodel/opa/BuiltinTypeKind#string>
-             <https://w3id.org/lmodel/opa/BuiltinTypeKind#number> <https://w3id.org/lmodel/opa/BuiltinTypeKind#boolean>
-             <https://w3id.org/lmodel/opa/BuiltinTypeKind#null> <https://w3id.org/lmodel/opa/BuiltinTypeKind#any>
-             <https://w3id.org/lmodel/opa/BuiltinTypeKind#array> <https://w3id.org/lmodel/opa/BuiltinTypeKind#set>
-             <https://w3id.org/lmodel/opa/BuiltinTypeKind#object> <https://w3id.org/lmodel/opa/BuiltinTypeKind#function> ] ? ;
-          <of> @<TypeDecl> * ;
-          <dynamic> @<TypeDecl> ? ;
-          <static> @<TypeDecl> * ;
-          <key> @<Any> ? ;
-          <value> @<TypeDecl> ?
+<OpaStaticProperty> CLOSED {
+    (  $<OpaStaticProperty_tes> (  <key> @<OpaValue> ;
+          <value> @<OpaType>
        ) ;
-       rdf:type [ <TypeDecl> ] ?
+       rdf:type [ <OpaStaticProperty> ] ?
     )
 }
 
-<Val>  (
-    CLOSED {
-       (  $<Val_tes> (  <type> [ <https://w3id.org/lmodel/opa/ValTag#bool> <https://w3id.org/lmodel/opa/ValTag#local>
-                <https://w3id.org/lmodel/opa/ValTag#string_index> ] ;
-             <value> @<Any>
-          ) ;
-          rdf:type [ <Val> ] ?
-       )
-    } OR @<Operand>
+<OpaStmt>  (
+    @<OpaArrayAppendStmt> OR @<OpaAssignIntStmt> OR @<OpaAssignVarOnceStmt> OR @<OpaAssignVarStmt> OR @<OpaBlockStmt> OR
+    @<OpaBreakStmt> OR @<OpaCallDynamicStmt> OR @<OpaCallStmt> OR @<OpaDotStmt> OR @<OpaEqualStmt> OR @<OpaIsArrayStmt> OR
+    @<OpaIsDefinedStmt> OR @<OpaIsObjectStmt> OR @<OpaIsSetStmt> OR @<OpaIsUndefinedStmt> OR @<OpaLenStmt> OR @<OpaMakeArrayStmt>
+    OR @<OpaMakeNullStmt> OR @<OpaMakeNumberIntStmt> OR @<OpaMakeNumberRefStmt> OR @<OpaMakeObjectStmt> OR @<OpaMakeSetStmt> OR
+    @<OpaNopStmt> OR @<OpaNotEqualStmt> OR @<OpaNotStmt> OR @<OpaObjectInsertOnceStmt> OR @<OpaObjectInsertStmt> OR
+    @<OpaObjectMergeStmt> OR @<OpaResetLocalStmt> OR @<OpaResultSetAddStmt> OR @<OpaReturnLocalStmt> OR @<OpaScanStmt> OR
+    @<OpaSetAddStmt> OR @<OpaWithStmt>
 )
 
-<VersionIndex> CLOSED {
-    (  $<VersionIndex_tes> (  <builtins> @<ElementVersion> * ;
-          <features> @<ElementVersion> * ;
-          <keywords> @<ElementVersion> *
-       ) ;
-       rdf:type [ <VersionIndex> ] ?
+<OpaStmt_struct> {
+    (  $<OpaStmt_tes> rdf:type . * ;
+       rdf:type [ <OpaStmt> ] ?
     )
 }
 
-<WasmABIVersion> CLOSED {
-    (  $<WasmABIVersion_tes> (  <version> @linkml:Integer ;
+<OpaStmtBody>  (
+    @<OpaArrayAppendStmtBody> OR @<OpaAssignIntStmtBody> OR @<OpaAssignVarOnceStmtBody> OR @<OpaAssignVarStmtBody> OR
+    @<OpaBlockStmtBody> OR @<OpaBreakStmtBody> OR @<OpaCallDynamicStmtBody> OR @<OpaCallStmtBody> OR @<OpaDotStmtBody> OR
+    @<OpaEqualStmtBody> OR @<OpaIsArrayStmtBody> OR @<OpaIsDefinedStmtBody> OR @<OpaIsObjectStmtBody> OR @<OpaIsSetStmtBody> OR
+    @<OpaIsUndefinedStmtBody> OR @<OpaLenStmtBody> OR @<OpaMakeArrayStmtBody> OR @<OpaMakeNullStmtBody> OR
+    @<OpaMakeNumberIntStmtBody> OR @<OpaMakeNumberRefStmtBody> OR @<OpaMakeObjectStmtBody> OR @<OpaMakeSetStmtBody> OR
+    @<OpaNopStmtBody> OR @<OpaNotEqualStmtBody> OR @<OpaNotStmtBody> OR @<OpaObjectInsertOnceStmtBody> OR
+    @<OpaObjectInsertStmtBody> OR @<OpaObjectMergeStmtBody> OR @<OpaResetLocalStmtBody> OR @<OpaResultSetAddStmtBody> OR
+    @<OpaReturnLocalStmtBody> OR @<OpaScanStmtBody> OR @<OpaSetAddStmtBody> OR @<OpaWithStmtBody>
+)
+
+<OpaStmtBody_struct> {
+    (  $<OpaStmtBody_tes> (  <file> @linkml:Integer ;
+          <col> @linkml:Integer ;
+          <row> @linkml:Integer ;
+          <end_col> @linkml:Integer ;
+          <end_row> @linkml:Integer
+       ) ;
+       rdf:type [ <OpaStmtBody> ] ?
+    )
+}
+
+<OpaStringConst> CLOSED {
+    (  $<OpaStringConst_tes> <value> @linkml:String ;
+       rdf:type [ <OpaStringConst> ] ?
+    )
+}
+
+<OpaStringIndexOperand> CLOSED {
+    (  $<OpaStringIndexOperand_tes> (  &<OpaOperand_tes> ;
+          rdf:type [ <OpaOperand> ] ? ;
+          <type> @linkml:String ;
+          <value> @linkml:Integer
+       ) ;
+       rdf:type [ <OpaStringIndexOperand> ] ?
+    )
+}
+
+<OpaStringType> CLOSED {
+    (  $<OpaStringType_tes> (  &<OpaType_tes> ;
+          rdf:type [ <OpaType> ] ? ;
+          <type> @linkml:String
+       ) ;
+       rdf:type [ <OpaStringType> ] ?
+    )
+}
+
+<OpaType>  (
+    @<OpaAnyType> OR @<OpaArrayType> OR @<OpaBooleanType> OR @<OpaFunctionType> OR @<OpaNullType> OR @<OpaNumberType> OR
+    @<OpaObjectType> OR @<OpaSetType> OR @<OpaStringType>
+)
+
+<OpaType_struct> {
+    (  $<OpaType_tes> (  <name> @linkml:String ? ;
+          <description> @linkml:String ?
+       ) ;
+       rdf:type [ <OpaType> ] ?
+    )
+}
+
+<OpaUnplannedRule> CLOSED {
+    (  $<OpaUnplannedRule_tes> (  <location> @<OpaLocation> ? ;
+          <path> @linkml:String
+       ) ;
+       rdf:type [ <OpaUnplannedRule> ] ?
+    )
+}
+
+<OpaValue> CLOSED {
+    (  $<OpaValue_tes> rdf:type . * ;
+       rdf:type [ linkml:Any ] ?
+    )
+}
+
+<OpaVersionEntry> CLOSED {
+    (  $<OpaVersionEntry_tes> (  <Major> @linkml:Integer ;
+          <Minor> @linkml:Integer ;
+          <Patch> @linkml:Integer ;
+          <PreRelease> @linkml:String ?
+       ) ;
+       rdf:type [ <OpaVersionEntry> ]
+    )
+}
+
+<OpaVersionIndex> CLOSED {
+    (  $<OpaVersionIndex_tes> (  <builtins> @<OpaVersionEntry> + ;
+          <features> @<OpaVersionEntry> + ;
+          <keywords> @<OpaVersionEntry> +
+       ) ;
+       rdf:type [ <OpaVersionIndex> ] ?
+    )
+}
+
+<OpaWasmAbiVersion> CLOSED {
+    (  $<OpaWasmAbiVersion_tes> (  <version> @linkml:Integer ;
           <minor_version> @linkml:Integer
        ) ;
-       rdf:type [ <WasmABIVersion> ] ?
+       rdf:type [ <OpaWasmAbiVersion> ] ?
     )
 }
 
-<WasmResolver> CLOSED {
-    (  $<WasmResolver_tes> (  <annotations> @<Any> * ;
+<OpaWasmResolver> CLOSED {
+    (  $<OpaWasmResolver_tes> (  <annotations> @<OpaObject> * ;
           <entrypoint> @linkml:String ? ;
           <module> @linkml:String ?
        ) ;
-       rdf:type [ <WasmResolver> ] ?
+       rdf:type [ <OpaWasmResolver> ] ?
     )
 }
 
-<WithStmt> CLOSED {
-    (  $<WithStmt_tes> (  <col> @linkml:Integer ;
-          <file> @linkml:Integer ;
-          <row> @linkml:Integer ;
-          <block> @linkml:String ;
-          <local> @linkml:Integer ;
-          <path> @linkml:Integer + ;
-          <value> @<Operand>
+<OpaWithStmt> CLOSED {
+    (  $<OpaWithStmt_tes> (  &<OpaStmt_tes> ;
+          rdf:type [ <OpaStmt> ] ? ;
+          <type> @linkml:String ;
+          <stmt> @<OpaWithStmtBody>
        ) ;
-       rdf:type [ <WithStmt> ] ?
+       rdf:type [ <OpaWithStmt> ] ?
+    )
+}
+
+<OpaWithStmtBody> CLOSED {
+    (  $<OpaWithStmtBody_tes> (  &<OpaStmtBody_tes> ;
+          rdf:type [ <OpaStmtBody> ] ? ;
+          <block> @<OpaBlock> ? ;
+          <local> @linkml:Integer ;
+          <path> @linkml:Integer * ;
+          <value> @<OpaOperand>
+       ) ;
+       rdf:type [ <OpaWithStmtBody> ] ?
     )
 }
