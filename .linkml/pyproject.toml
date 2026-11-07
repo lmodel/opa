@@ -67,6 +67,7 @@ skip = [
   # adapt copies.
   "tests/upstream_tree.tsv",
   "tests/neighbours/*",
+  "tests/data/captured/*",
   # Copied in by the KTL sidecar sync or written by npm, not by hand.
   ".lokf/scripts/*",
   ".lokf/schema/lokf.yaml",
@@ -92,6 +93,7 @@ extend-exclude = [
   "src/opa/datamodel/opa.py",
   "tests/upstream_tree.tsv",
   "tests/neighbours/*",
+  "tests/data/captured/*",
   ".lokf/scripts/*",
   ".lokf/schema/lokf.yaml",
   "website/package-lock.json",

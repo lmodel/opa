@@ -1,0 +1,31 @@
+{
+  "headers": {
+    "Accept-Encoding": [
+      "identity"
+    ],
+    "Authorization": [
+      "Bearer s3cret"
+    ],
+    "Connection": [
+      "close"
+    ],
+    "User-Agent": [
+      "Python-urllib/3.14"
+    ]
+  },
+  "identity": "s3cret",
+  "method": "GET",
+  "params": {
+    "explain": [
+      "notes"
+    ],
+    "pretty": [
+      "true"
+    ]
+  },
+  "path": [
+    "v1",
+    "data",
+    "http"
+  ]
+}

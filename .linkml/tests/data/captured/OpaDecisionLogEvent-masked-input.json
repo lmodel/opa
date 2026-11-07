@@ -1,0 +1,58 @@
+{
+  "labels": {
+    "id": "0e82b58c-d645-408e-9117-82be944ae3b4",
+    "region": "eu-west-1",
+    "version": "1.22.2"
+  },
+  "decision_id": "8736184e-3107-48db-b793-8834dbc4ae52",
+  "bundles": {
+    "authz": {
+      "revision": "rev-1"
+    }
+  },
+  "path": "http/example/authz/allow",
+  "input": {
+    "method": "GET",
+    "token": "***",
+    "user": "alice"
+  },
+  "result": true,
+  "nd_builtin_cache": {},
+  "erased": [
+    "/input/password"
+  ],
+  "masked": [
+    "/input/token"
+  ],
+  "requested_by": "127.0.0.1:51752",
+  "timestamp": "2026-11-07T10:29:09.693443448Z",
+  "metrics": {
+    "counter_server_query_cache_hit": 0,
+    "timer_rego_external_resolve_ns": 247,
+    "timer_rego_input_parse_ns": 81599,
+    "timer_rego_query_compile_ns": 62363,
+    "timer_rego_query_eval_ns": 73173,
+    "timer_server_handler_ns": 315602
+  },
+  "req_id": 4,
+  "rule_labels": [
+    {
+      "severity": "high",
+      "team": "identity"
+    }
+  ],
+  "request_context": {
+    "http": {
+      "headers": {
+        "X-Request-Id": [
+          "req-1"
+        ]
+      }
+    }
+  },
+  "custom": {
+    "request_metadata": {
+      "trace": "abc"
+    }
+  }
+}

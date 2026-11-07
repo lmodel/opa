@@ -16,6 +16,11 @@ gen-linkml:
 check-linkml:
   uv run python scripts/opa_to_linkml.py --check
 
+# Write tests/data/captured/ from OPA's release image (needs podman, or OPA_CONTAINER_CLI, and the network)
+[group('model development')]
+capture-opa-documents:
+  uv run python scripts/capture_opa_documents.py
+
 # ============ Upstream ============
 
 # Report whether OPA has released past the merged tag, and what moved on its default branch

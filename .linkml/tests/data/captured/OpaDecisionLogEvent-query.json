@@ -1,0 +1,31 @@
+{
+  "labels": {
+    "id": "0e82b58c-d645-408e-9117-82be944ae3b4",
+    "region": "eu-west-1",
+    "version": "1.22.2"
+  },
+  "decision_id": "f1794986-df06-473d-8987-a8af40e84051",
+  "bundles": {
+    "authz": {
+      "revision": "rev-1"
+    }
+  },
+  "query": "data.http.example.authz.allow",
+  "result": [
+    {}
+  ],
+  "nd_builtin_cache": {},
+  "requested_by": "127.0.0.1:51774",
+  "timestamp": "2026-11-07T10:29:09.696390726Z",
+  "metrics": {
+    "timer_rego_query_compile_ns": 67705,
+    "timer_rego_query_eval_ns": 58466,
+    "timer_server_handler_ns": 0
+  },
+  "req_id": 7,
+  "rule_labels": [
+    {
+      "team": "identity"
+    }
+  ]
+}

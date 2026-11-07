@@ -1,0 +1,25 @@
+{
+  "revision": "",
+  "roots": [
+    ""
+  ],
+  "wasm": [
+    {
+      "entrypoint": "http/example/authz/allow",
+      "module": "/policy.wasm",
+      "annotations": [
+        {
+          "labels": {
+            "severity": "high"
+          },
+          "scope": "rule"
+        }
+      ]
+    },
+    {
+      "entrypoint": "http/example/authz/reasons",
+      "module": "/policy.wasm"
+    }
+  ],
+  "rego_version": 1
+}

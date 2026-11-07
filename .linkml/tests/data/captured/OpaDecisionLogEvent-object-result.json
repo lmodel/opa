@@ -1,0 +1,46 @@
+{
+  "labels": {
+    "id": "0e82b58c-d645-408e-9117-82be944ae3b4",
+    "region": "eu-west-1",
+    "version": "1.22.2"
+  },
+  "decision_id": "b5a4b20f-2631-4ed7-bd36-57bb6315a98b",
+  "bundles": {
+    "authz": {
+      "revision": "rev-1"
+    }
+  },
+  "path": "http/example/authz",
+  "input": {
+    "method": "PUT",
+    "user": "bob"
+  },
+  "result": {
+    "allow": false,
+    "reasons": [
+      "bob may not PUT"
+    ],
+    "stamp": 1794047349694324896
+  },
+  "nd_builtin_cache": {
+    "time.now_ns": {
+      "[]": 1794047349694324896
+    }
+  },
+  "requested_by": "127.0.0.1:51764",
+  "timestamp": "2026-11-07T10:29:09.694445667Z",
+  "metrics": {
+    "counter_server_query_cache_hit": 0,
+    "timer_rego_external_resolve_ns": 423,
+    "timer_rego_input_parse_ns": 47899,
+    "timer_rego_query_compile_ns": 65219,
+    "timer_rego_query_eval_ns": 114352,
+    "timer_server_handler_ns": 339222
+  },
+  "req_id": 5,
+  "rule_labels": [
+    {
+      "team": "identity"
+    }
+  ]
+}
