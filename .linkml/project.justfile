@@ -16,6 +16,11 @@ gen-linkml:
 check-linkml:
   uv run python scripts/opa_to_linkml.py --check
 
+# Write the schema's pages into docs/elements for the website, and leave docs/schema as it is
+[group('model development')]
+gen-doc-pages:
+  uv run gen-doc {{gen_doc_args}} -d {{docdir}} {{source_schema_path}}
+
 # Write tests/data/captured/ from OPA's release image (needs podman, or OPA_CONTAINER_CLI, and the network)
 [group('model development')]
 capture-opa-documents:
