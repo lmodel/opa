@@ -3,7 +3,7 @@ name: Benchmarks
 on:
   workflow_dispatch: {}
   push:
-    branches: [main-disable]
+    branches: [main]
 
 # NOTE(sr): No concurrency group here on purpose: GitHub only ever queues one
 # waiting run per group, so a shared group dropped regression comments whenever
