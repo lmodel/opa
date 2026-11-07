@@ -235,7 +235,7 @@ openpolicyagent:OpaFeature\#template_strings a owl:Class ;
 openpolicyagent:OpaFeature a owl:Class ;
 	rdfs:label "OpaFeature" ;
 	owl:unionOf _:c14n487 ;
-	skos:definition "The language features the shipped capabilities files name." ;
+	skos:definition "The language features the capabilities files OPA includes name." ;
 	skos:inScheme openpolicyagent:capabilities ;
 	linkml:permissible_values openpolicyagent:OpaFeature\#keywords_in_refs , openpolicyagent:OpaFeature\#rego_v1 , openpolicyagent:OpaFeature\#rego_v1_import , openpolicyagent:OpaFeature\#rego_v2 , openpolicyagent:OpaFeature\#rego_v2_import , openpolicyagent:OpaFeature\#rule_head_ref_string_prefixes , openpolicyagent:OpaFeature\#rule_head_refs , openpolicyagent:OpaFeature\#template_strings .
 openpolicyagent:OpaFileRegoVersion a owl:Class ;
@@ -284,7 +284,7 @@ openpolicyagent:OpaFutureKeyword\#or a owl:Class ;
 openpolicyagent:OpaFutureKeyword a owl:Class ;
 	rdfs:label "OpaFutureKeyword" ;
 	owl:unionOf _:c14n565 ;
-	skos:definition "The future keywords the shipped capabilities files name." ;
+	skos:definition "The future keywords the capabilities files OPA includes name." ;
 	skos:inScheme openpolicyagent:capabilities ;
 	linkml:permissible_values openpolicyagent:OpaFutureKeyword\#and , openpolicyagent:OpaFutureKeyword\#contains , openpolicyagent:OpaFutureKeyword\#every , openpolicyagent:OpaFutureKeyword\#if , openpolicyagent:OpaFutureKeyword\#in , openpolicyagent:OpaFutureKeyword\#not , openpolicyagent:OpaFutureKeyword\#or .
 openpolicyagent:OpaImplementation a owl:Class ;

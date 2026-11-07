@@ -323,7 +323,7 @@ enums:
   OpaFutureKeyword:
     name: OpaFutureKeyword
     definition_uri: https://w3id.org/lmodel/opa/OpaFutureKeyword
-    description: The future keywords the shipped capabilities files name.
+    description: The future keywords the capabilities files OPA includes name.
     from_schema: https://w3id.org/lmodel/opa/capabilities
     permissible_values:
       and:
@@ -343,7 +343,7 @@ enums:
   OpaFeature:
     name: OpaFeature
     definition_uri: https://w3id.org/lmodel/opa/OpaFeature
-    description: The language features the shipped capabilities files name.
+    description: The language features the capabilities files OPA includes name.
     from_schema: https://w3id.org/lmodel/opa/capabilities
     permissible_values:
       keywords_in_refs:
@@ -1677,7 +1677,7 @@ slots:
     multivalued: true
   opaFunc__path:
     name: opaFunc__path
-    description: Where the function sits in the data tree, when it has a path.
+    description: Where the function is in the data tree, when it has a path.
     from_schema: https://w3id.org/lmodel/opa/ir_plan
     slot_uri: openpolicyagent:path
     alias: path
@@ -5403,7 +5403,7 @@ classes:
         multivalued: true
       path:
         name: path
-        description: Where the function sits in the data tree, when it has a path.
+        description: Where the function is in the data tree, when it has a path.
         range: string
         multivalued: true
       return_local:
@@ -7423,6 +7423,6 @@ classes:
     class_uri: openpolicyagent:OpaStringIndexOperand
 metamodel_version: 1.12.0
 source_file: opa.yaml
-source_file_date: '2026-11-07T04:20:52'
+source_file_date: '2026-11-07T04:27:04'
 source_file_size: 1283
 

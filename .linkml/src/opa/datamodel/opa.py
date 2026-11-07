@@ -3629,14 +3629,14 @@ class OpaStringIndexOperand(OpaOperand):
 # Enumerations
 class OpaFutureKeyword(EnumDefinitionImpl):
     """
-    The future keywords the shipped capabilities files name.
+    The future keywords the capabilities files OPA includes name.
     """
     contains = PermissibleValue(text="contains")
     every = PermissibleValue(text="every")
 
     _defn = EnumDefinition(
         name="OpaFutureKeyword",
-        description="The future keywords the shipped capabilities files name.",
+        description="The future keywords the capabilities files OPA includes name.",
     )
 
     @classmethod
@@ -3654,7 +3654,7 @@ class OpaFutureKeyword(EnumDefinitionImpl):
 
 class OpaFeature(EnumDefinitionImpl):
     """
-    The language features the shipped capabilities files name.
+    The language features the capabilities files OPA includes name.
     """
     keywords_in_refs = PermissibleValue(text="keywords_in_refs")
     rego_v1 = PermissibleValue(text="rego_v1")
@@ -3667,7 +3667,7 @@ class OpaFeature(EnumDefinitionImpl):
 
     _defn = EnumDefinition(
         name="OpaFeature",
-        description="The language features the shipped capabilities files name.",
+        description="The language features the capabilities files OPA includes name.",
     )
 
 # Slots

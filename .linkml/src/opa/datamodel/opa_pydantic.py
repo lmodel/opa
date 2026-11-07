@@ -107,7 +107,7 @@ linkml_meta = LinkMLMeta({'annotations': {'upstream_commit': {'tag': 'upstream_c
 
 class OpaFutureKeyword(str, Enum):
     """
-    The future keywords the shipped capabilities files name.
+    The future keywords the capabilities files OPA includes name.
     """
     and_ = "and"
     contains = "contains"
@@ -120,7 +120,7 @@ class OpaFutureKeyword(str, Enum):
 
 class OpaFeature(str, Enum):
     """
-    The language features the shipped capabilities files name.
+    The language features the capabilities files OPA includes name.
     """
     keywords_in_refs = "keywords_in_refs"
     rego_v1 = "rego_v1"
@@ -1510,7 +1510,7 @@ class OpaFunc(ConfiguredBaseModel):
                        'OpaFunc'],
          'slot_uri': 'schema:name'} })
     params: Optional[list[int]] = Field(default=None, description="""The locals that hold the parameters. The first two are the input and data documents.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput', 'OpaFunc']} })
-    path: Optional[list[str]] = Field(default=None, description="""Where the function sits in the data tree, when it has a path.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput',
+    path: Optional[list[str]] = Field(default=None, description="""Where the function is in the data tree, when it has a path.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput',
                        'OpaFileRegoVersion',
                        'OpaFunc',
                        'OpaUnplannedRule',

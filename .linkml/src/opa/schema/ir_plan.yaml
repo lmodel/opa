@@ -188,7 +188,7 @@ classes:
       path:
         range: string
         multivalued: true
-        description: Where the function sits in the data tree, when it has a path.
+        description: Where the function is in the data tree, when it has a path.
       return_local:
         range: integer
         required: true

@@ -8,7 +8,7 @@
 linkml:Any a sh:NodeShape ;
 	rdfs:comment "Any JSON value." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n253 ;
+	sh:ignoredProperties _:c14n252 ;
 	sh:targetClass linkml:Any .
 openpolicyagent:OpaAnyType a sh:NodeShape ;
 	rdfs:comment "A union of the types it lists in `of`, or any value when it lists none." ;
@@ -25,14 +25,14 @@ openpolicyagent:OpaArrayAppendStmt a sh:NodeShape ;
 openpolicyagent:OpaArrayAppendStmtBody a sh:NodeShape ;
 	rdfs:comment "ArrayAppendStmt represents a dynamic append operation of a value onto an array." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n273 ;
+	sh:ignoredProperties _:c14n272 ;
 	sh:property _:c14n143 , _:c14n174 , _:c14n189 , _:c14n222 , _:c14n372 , _:c14n414 , _:c14n616 ;
 	sh:targetClass openpolicyagent:OpaArrayAppendStmtBody .
 openpolicyagent:OpaArrayType a sh:NodeShape ;
 	rdfs:comment "An array, with a type per position in `static` and one for the rest in `dynamic`." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n427 ;
-	sh:property _:c14n198 , _:c14n339 , _:c14n464 , _:c14n476 , _:c14n68 ;
+	sh:property _:c14n198 , _:c14n338 , _:c14n464 , _:c14n476 , _:c14n68 ;
 	sh:targetClass openpolicyagent:OpaArrayType .
 openpolicyagent:OpaAssignIntStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind AssignIntStmt, with its fields in `stmt`." ;
@@ -44,7 +44,7 @@ openpolicyagent:OpaAssignIntStmtBody a sh:NodeShape ;
 	rdfs:comment "AssignIntStmt represents an assignment of an integer value to a local variable." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n56 ;
-	sh:property _:c14n140 , _:c14n15 , _:c14n280 , _:c14n5 , _:c14n542 , _:c14n547 , _:c14n84 ;
+	sh:property _:c14n140 , _:c14n15 , _:c14n279 , _:c14n5 , _:c14n542 , _:c14n547 , _:c14n84 ;
 	sh:targetClass openpolicyagent:OpaAssignIntStmtBody .
 openpolicyagent:OpaAssignVarOnceStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind AssignVarOnceStmt, with its fields in `stmt`." ;
@@ -56,30 +56,30 @@ openpolicyagent:OpaAssignVarOnceStmtBody a sh:NodeShape ;
 	rdfs:comment "AssignVarOnceStmt represents an assignment of one local variable to another. If the target is defined, execution aborts with a conflict error." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n439 ;
-	sh:property _:c14n322 , _:c14n405 , _:c14n502 , _:c14n59 , _:c14n612 , _:c14n77 , _:c14n82 ;
+	sh:property _:c14n321 , _:c14n405 , _:c14n502 , _:c14n59 , _:c14n612 , _:c14n77 , _:c14n82 ;
 	sh:targetClass openpolicyagent:OpaAssignVarOnceStmtBody .
 openpolicyagent:OpaAssignVarStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind AssignVarStmt, with its fields in `stmt`." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n314 ;
+	sh:ignoredProperties _:c14n313 ;
 	sh:property _:c14n178 , _:c14n569 ;
 	sh:targetClass openpolicyagent:OpaAssignVarStmt .
 openpolicyagent:OpaAssignVarStmtBody a sh:NodeShape ;
 	rdfs:comment "AssignVarStmt represents an assignment of one local variable to another." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n62 ;
-	sh:property _:c14n244 , _:c14n343 , _:c14n383 , _:c14n492 , _:c14n510 , _:c14n61 , _:c14n69 ;
+	sh:property _:c14n244 , _:c14n342 , _:c14n383 , _:c14n492 , _:c14n510 , _:c14n61 , _:c14n69 ;
 	sh:targetClass openpolicyagent:OpaAssignVarStmtBody .
 openpolicyagent:OpaAuthorizationInput a sh:NodeShape ;
 	rdfs:comment "The OPA Authorization Policy Input document." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n19 ;
-	sh:property _:c14n1 , _:c14n105 , _:c14n114 , _:c14n337 , _:c14n338 , _:c14n436 , _:c14n574 ;
+	sh:property _:c14n1 , _:c14n105 , _:c14n114 , _:c14n336 , _:c14n337 , _:c14n436 , _:c14n574 ;
 	sh:targetClass openpolicyagent:OpaAuthorizationInput .
 openpolicyagent:OpaBlock a sh:NodeShape ;
 	rdfs:comment "Block represents an ordered sequence of statements to execute. Blocks are executed until a return statement is encountered, a statement is undefined, or there are no more statements." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n334 ;
+	sh:ignoredProperties _:c14n333 ;
 	sh:property _:c14n467 ;
 	sh:targetClass openpolicyagent:OpaBlock .
 openpolicyagent:OpaBlockStmt a sh:NodeShape ;
@@ -91,8 +91,8 @@ openpolicyagent:OpaBlockStmt a sh:NodeShape ;
 openpolicyagent:OpaBlockStmtBody a sh:NodeShape ;
 	rdfs:comment "BlockStmt represents a nested block. Nested blocks and break statements can be used to short-circuit execution." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n341 ;
-	sh:property _:c14n147 , _:c14n157 , _:c14n292 , _:c14n389 , _:c14n504 , _:c14n517 ;
+	sh:ignoredProperties _:c14n340 ;
+	sh:property _:c14n147 , _:c14n157 , _:c14n291 , _:c14n389 , _:c14n504 , _:c14n517 ;
 	sh:targetClass openpolicyagent:OpaBlockStmtBody .
 openpolicyagent:OpaBoolOperand a sh:NodeShape ;
 	rdfs:comment "Bool represents a constant boolean." ;
@@ -128,12 +128,12 @@ openpolicyagent:OpaBuiltinArgument a sh:NodeShape ;
 	rdfs:comment "An argument of a built-in function." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n520 ;
-	sh:property _:c14n103 , _:c14n284 , _:c14n312 ;
+	sh:property _:c14n103 , _:c14n283 , _:c14n311 ;
 	sh:targetClass openpolicyagent:OpaBuiltinArgument .
 openpolicyagent:OpaBuiltinCategory a sh:NodeShape ;
 	rdfs:comment "A category of built-in functions." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n282 ;
+	sh:ignoredProperties _:c14n281 ;
 	sh:property _:c14n124 , _:c14n555 ;
 	sh:targetClass openpolicyagent:OpaBuiltinCategory .
 openpolicyagent:OpaBuiltinFunc a sh:NodeShape ;
@@ -146,7 +146,7 @@ openpolicyagent:OpaBuiltinMetadata a sh:NodeShape ;
 	rdfs:comment "What the catalogue says about one built-in function." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n494 ;
-	sh:property _:c14n195 , _:c14n209 , _:c14n232 , _:c14n243 , _:c14n254 , _:c14n294 , _:c14n399 , _:c14n443 , _:c14n528 , _:c14n609 ;
+	sh:property _:c14n195 , _:c14n209 , _:c14n232 , _:c14n243 , _:c14n253 , _:c14n293 , _:c14n399 , _:c14n443 , _:c14n528 , _:c14n609 ;
 	sh:targetClass openpolicyagent:OpaBuiltinMetadata .
 openpolicyagent:OpaBuiltinMetadataCatalog a sh:NodeShape ;
 	rdfs:comment "The catalogue: two keys that start with an underscore, and one key per built-in function, whose value describes it." ;
@@ -170,7 +170,7 @@ openpolicyagent:OpaCallDynamicStmtBody a sh:NodeShape ;
 	rdfs:comment "CallDynamicStmt represents an indirect (data) function call. The result should be stored in the result local." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n53 ;
-	sh:property _:c14n158 , _:c14n16 , _:c14n241 , _:c14n268 , _:c14n331 , _:c14n582 , _:c14n594 , _:c14n598 ;
+	sh:property _:c14n158 , _:c14n16 , _:c14n241 , _:c14n267 , _:c14n330 , _:c14n582 , _:c14n594 , _:c14n598 ;
 	sh:targetClass openpolicyagent:OpaCallDynamicStmtBody .
 openpolicyagent:OpaCallStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind CallStmt, with its fields in `stmt`." ;
@@ -182,13 +182,13 @@ openpolicyagent:OpaCallStmtBody a sh:NodeShape ;
 	rdfs:comment "CallStmt represents a named function call. The result should be stored in the result local." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n362 ;
-	sh:property _:c14n145 , _:c14n171 , _:c14n310 , _:c14n373 , _:c14n376 , _:c14n398 , _:c14n409 , _:c14n642 ;
+	sh:property _:c14n145 , _:c14n171 , _:c14n309 , _:c14n373 , _:c14n376 , _:c14n398 , _:c14n409 , _:c14n642 ;
 	sh:targetClass openpolicyagent:OpaCallStmtBody .
 openpolicyagent:OpaCapabilities a sh:NodeShape ;
 	rdfs:comment "What an OPA version supports, which a policy can be checked against." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n567 ;
-	sh:property _:c14n154 , _:c14n2 , _:c14n261 , _:c14n48 , _:c14n571 ;
+	sh:property _:c14n154 , _:c14n2 , _:c14n260 , _:c14n48 , _:c14n571 ;
 	sh:targetClass openpolicyagent:OpaCapabilities .
 openpolicyagent:OpaDotStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind DotStmt, with its fields in `stmt`." ;
@@ -200,7 +200,7 @@ openpolicyagent:OpaDotStmtBody a sh:NodeShape ;
 	rdfs:comment "DotStmt represents a lookup operation on a value (e.g., array, object, etc.) The source of a DotStmt may be a scalar value in which case the statement will be undefined." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n621 ;
-	sh:property _:c14n190 , _:c14n305 , _:c14n320 , _:c14n421 , _:c14n473 , _:c14n552 , _:c14n560 , _:c14n99 ;
+	sh:property _:c14n190 , _:c14n304 , _:c14n319 , _:c14n421 , _:c14n473 , _:c14n552 , _:c14n560 , _:c14n99 ;
 	sh:targetClass openpolicyagent:OpaDotStmtBody .
 openpolicyagent:OpaDynamicProperty a sh:NodeShape ;
 	rdfs:comment "The key type and value type that an object type gives its other keys." ;
@@ -217,8 +217,8 @@ openpolicyagent:OpaEqualStmt a sh:NodeShape ;
 openpolicyagent:OpaEqualStmtBody a sh:NodeShape ;
 	rdfs:comment "EqualStmt represents an value-equality check of two local variables." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n291 ;
-	sh:property _:c14n212 , _:c14n328 , _:c14n354 , _:c14n420 , _:c14n438 , _:c14n450 , _:c14n639 ;
+	sh:ignoredProperties _:c14n290 ;
+	sh:property _:c14n212 , _:c14n327 , _:c14n353 , _:c14n420 , _:c14n438 , _:c14n450 , _:c14n639 ;
 	sh:targetClass openpolicyagent:OpaEqualStmtBody .
 openpolicyagent:OpaFileRegoVersion a sh:NodeShape ;
 	rdfs:comment "The Rego version of one file in the bundle." ;
@@ -229,8 +229,8 @@ openpolicyagent:OpaFileRegoVersion a sh:NodeShape ;
 openpolicyagent:OpaFunc a sh:NodeShape ;
 	rdfs:comment "Func represents a named plan (function) that can be invoked. Functions accept one or more parameters and return a value." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n333 ;
-	sh:property _:c14n175 , _:c14n246 , _:c14n378 , _:c14n559 , _:c14n578 ;
+	sh:ignoredProperties _:c14n332 ;
+	sh:property _:c14n175 , _:c14n354 , _:c14n378 , _:c14n559 , _:c14n578 ;
 	sh:targetClass openpolicyagent:OpaFunc .
 openpolicyagent:OpaFuncs a sh:NodeShape ;
 	rdfs:comment "Funcs represents a collection of planned functions to include in the policy." ;
@@ -241,38 +241,38 @@ openpolicyagent:OpaFuncs a sh:NodeShape ;
 openpolicyagent:OpaFunctionType a sh:NodeShape ;
 	rdfs:comment "A function, with its arguments, its result and a variadic argument type." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n300 ;
-	sh:property _:c14n141 , _:c14n17 , _:c14n272 , _:c14n31 , _:c14n493 , _:c14n545 ;
+	sh:ignoredProperties _:c14n299 ;
+	sh:property _:c14n141 , _:c14n17 , _:c14n271 , _:c14n31 , _:c14n493 , _:c14n545 ;
 	sh:targetClass openpolicyagent:OpaFunctionType .
 openpolicyagent:OpaImplementation a sh:NodeShape ;
 	rdfs:comment "An implementation of Rego besides OPA." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n434 ;
-	sh:property _:c14n224 , _:c14n26 , _:c14n342 , _:c14n570 ;
+	sh:property _:c14n224 , _:c14n26 , _:c14n341 , _:c14n570 ;
 	sh:targetClass openpolicyagent:OpaImplementation .
 openpolicyagent:OpaImplementationSupport a sh:NodeShape ;
 	rdfs:comment "An implementation that supports a function, and the version that added it." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n96 ;
-	sh:property _:c14n290 , _:c14n365 ;
+	sh:property _:c14n289 , _:c14n365 ;
 	sh:targetClass openpolicyagent:OpaImplementationSupport .
 openpolicyagent:OpaIsArrayStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind IsArrayStmt, with its fields in `stmt`." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n293 ;
+	sh:ignoredProperties _:c14n292 ;
 	sh:property _:c14n156 , _:c14n70 ;
 	sh:targetClass openpolicyagent:OpaIsArrayStmt .
 openpolicyagent:OpaIsArrayStmtBody a sh:NodeShape ;
 	rdfs:comment "IsArrayStmt represents a dynamic type check on a local variable." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n505 ;
-	sh:property _:c14n317 , _:c14n39 , _:c14n408 , _:c14n423 , _:c14n461 , _:c14n79 ;
+	sh:property _:c14n316 , _:c14n39 , _:c14n408 , _:c14n423 , _:c14n461 , _:c14n79 ;
 	sh:targetClass openpolicyagent:OpaIsArrayStmtBody .
 openpolicyagent:OpaIsDefinedStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind IsDefinedStmt, with its fields in `stmt`." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n55 ;
-	sh:property _:c14n308 , _:c14n44 ;
+	sh:property _:c14n307 , _:c14n44 ;
 	sh:targetClass openpolicyagent:OpaIsDefinedStmt .
 openpolicyagent:OpaIsDefinedStmtBody a sh:NodeShape ;
 	rdfs:comment "IsDefinedStmt represents a check of whether a local variable is defined." ;
@@ -284,7 +284,7 @@ openpolicyagent:OpaIsObjectStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind IsObjectStmt, with its fields in `stmt`." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n200 ;
-	sh:property _:c14n259 , _:c14n579 ;
+	sh:property _:c14n258 , _:c14n579 ;
 	sh:targetClass openpolicyagent:OpaIsObjectStmt .
 openpolicyagent:OpaIsObjectStmtBody a sh:NodeShape ;
 	rdfs:comment "IsObjectStmt represents a dynamic type check on a local variable." ;
@@ -296,13 +296,13 @@ openpolicyagent:OpaIsSetStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind IsSetStmt, with its fields in `stmt`." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n218 ;
-	sh:property _:c14n281 , _:c14n489 ;
+	sh:property _:c14n280 , _:c14n489 ;
 	sh:targetClass openpolicyagent:OpaIsSetStmt .
 openpolicyagent:OpaIsSetStmtBody a sh:NodeShape ;
 	rdfs:comment "IsSetStmt represents a dynamic type check on a local variable." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n615 ;
-	sh:property _:c14n238 , _:c14n256 , _:c14n296 , _:c14n539 , _:c14n597 , _:c14n640 ;
+	sh:property _:c14n238 , _:c14n255 , _:c14n295 , _:c14n539 , _:c14n597 , _:c14n640 ;
 	sh:targetClass openpolicyagent:OpaIsSetStmtBody .
 openpolicyagent:OpaIsUndefinedStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind IsUndefinedStmt, with its fields in `stmt`." ;
@@ -320,13 +320,13 @@ openpolicyagent:OpaLenStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind LenStmt, with its fields in `stmt`." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n196 ;
-	sh:property _:c14n336 , _:c14n543 ;
+	sh:property _:c14n335 , _:c14n543 ;
 	sh:targetClass openpolicyagent:OpaLenStmt .
 openpolicyagent:OpaLenStmtBody a sh:NodeShape ;
 	rdfs:comment "LenStmt represents a length() operation on a local variable. The result is stored in the target local variable." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n101 ;
-	sh:property _:c14n183 , _:c14n288 , _:c14n360 , _:c14n381 , _:c14n488 , _:c14n540 , _:c14n546 ;
+	sh:property _:c14n183 , _:c14n287 , _:c14n360 , _:c14n381 , _:c14n488 , _:c14n540 , _:c14n546 ;
 	sh:targetClass openpolicyagent:OpaLenStmtBody .
 openpolicyagent:OpaLocalOperand a sh:NodeShape ;
 	rdfs:comment "A local variable, by its number." ;
@@ -350,37 +350,37 @@ openpolicyagent:OpaMakeArrayStmtBody a sh:NodeShape ;
 	rdfs:comment "MakeArrayStmt constructs a local variable that refers to an array value." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n177 ;
-	sh:property _:c14n125 , _:c14n225 , _:c14n283 , _:c14n45 , _:c14n480 , _:c14n620 , _:c14n65 ;
+	sh:property _:c14n125 , _:c14n225 , _:c14n282 , _:c14n45 , _:c14n480 , _:c14n620 , _:c14n65 ;
 	sh:targetClass openpolicyagent:OpaMakeArrayStmtBody .
 openpolicyagent:OpaMakeNullStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind MakeNullStmt, with its fields in `stmt`." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n351 ;
+	sh:ignoredProperties _:c14n350 ;
 	sh:property _:c14n160 , _:c14n613 ;
 	sh:targetClass openpolicyagent:OpaMakeNullStmt .
 openpolicyagent:OpaMakeNullStmtBody a sh:NodeShape ;
 	rdfs:comment "MakeNullStmt constructs a local variable that refers to a null value." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n633 ;
-	sh:property _:c14n172 , _:c14n255 , _:c14n262 , _:c14n352 , _:c14n393 , _:c14n644 ;
+	sh:property _:c14n172 , _:c14n254 , _:c14n261 , _:c14n351 , _:c14n393 , _:c14n644 ;
 	sh:targetClass openpolicyagent:OpaMakeNullStmtBody .
 openpolicyagent:OpaMakeNumberIntStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind MakeNumberIntStmt, with its fields in `stmt`." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n335 ;
+	sh:ignoredProperties _:c14n334 ;
 	sh:property _:c14n429 , _:c14n86 ;
 	sh:targetClass openpolicyagent:OpaMakeNumberIntStmt .
 openpolicyagent:OpaMakeNumberIntStmtBody a sh:NodeShape ;
 	rdfs:comment "MakeNumberIntStmt constructs a local variable that refers to an integer value." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n486 ;
-	sh:property _:c14n202 , _:c14n258 , _:c14n313 , _:c14n43 , _:c14n503 , _:c14n583 , _:c14n600 ;
+	sh:property _:c14n202 , _:c14n257 , _:c14n312 , _:c14n43 , _:c14n503 , _:c14n583 , _:c14n600 ;
 	sh:targetClass openpolicyagent:OpaMakeNumberIntStmtBody .
 openpolicyagent:OpaMakeNumberRefStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind MakeNumberRefStmt, with its fields in `stmt`." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n346 ;
-	sh:property _:c14n289 , _:c14n75 ;
+	sh:ignoredProperties _:c14n345 ;
+	sh:property _:c14n288 , _:c14n75 ;
 	sh:targetClass openpolicyagent:OpaMakeNumberRefStmt .
 openpolicyagent:OpaMakeNumberRefStmtBody a sh:NodeShape ;
 	rdfs:comment "MakeNumberRefStmt constructs a local variable that refers to a number stored as a string." ;
@@ -391,7 +391,7 @@ openpolicyagent:OpaMakeNumberRefStmtBody a sh:NodeShape ;
 openpolicyagent:OpaMakeObjectStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind MakeObjectStmt, with its fields in `stmt`." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n247 ;
+	sh:ignoredProperties _:c14n246 ;
 	sh:property _:c14n150 , _:c14n472 ;
 	sh:targetClass openpolicyagent:OpaMakeObjectStmt .
 openpolicyagent:OpaMakeObjectStmtBody a sh:NodeShape ;
@@ -404,18 +404,18 @@ openpolicyagent:OpaMakeSetStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind MakeSetStmt, with its fields in `stmt`." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n199 ;
-	sh:property _:c14n276 , _:c14n635 ;
+	sh:property _:c14n275 , _:c14n635 ;
 	sh:targetClass openpolicyagent:OpaMakeSetStmt .
 openpolicyagent:OpaMakeSetStmtBody a sh:NodeShape ;
 	rdfs:comment "MakeSetStmt constructs a local variable that refers to a set value." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n192 ;
-	sh:property _:c14n109 , _:c14n121 , _:c14n133 , _:c14n251 , _:c14n32 , _:c14n530 ;
+	sh:property _:c14n109 , _:c14n121 , _:c14n133 , _:c14n250 , _:c14n32 , _:c14n530 ;
 	sh:targetClass openpolicyagent:OpaMakeSetStmtBody .
 openpolicyagent:OpaManifest a sh:NodeShape ;
 	rdfs:comment "A bundle manifest. OPA's schema leaves the manifest open to other keys." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n302 ;
+	sh:ignoredProperties _:c14n301 ;
 	sh:property _:c14n131 , _:c14n20 , _:c14n22 , _:c14n38 , _:c14n478 , _:c14n529 ;
 	sh:targetClass openpolicyagent:OpaManifest .
 openpolicyagent:OpaNopStmt a sh:NodeShape ;
@@ -428,19 +428,19 @@ openpolicyagent:OpaNopStmtBody a sh:NodeShape ;
 	rdfs:comment "NopStmt adds a nop instruction. Useful during development and debugging only." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n234 ;
-	sh:property _:c14n264 , _:c14n350 , _:c14n368 , _:c14n491 , _:c14n645 ;
+	sh:property _:c14n263 , _:c14n349 , _:c14n368 , _:c14n491 , _:c14n645 ;
 	sh:targetClass openpolicyagent:OpaNopStmtBody .
 openpolicyagent:OpaNotEqualStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind NotEqualStmt, with its fields in `stmt`." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n519 ;
-	sh:property _:c14n318 , _:c14n430 ;
+	sh:property _:c14n317 , _:c14n430 ;
 	sh:targetClass openpolicyagent:OpaNotEqualStmt .
 openpolicyagent:OpaNotEqualStmtBody a sh:NodeShape ;
 	rdfs:comment "NotEqualStmt represents a != check of two local variables." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n119 ;
-	sh:property _:c14n0 , _:c14n267 , _:c14n363 , _:c14n428 , _:c14n544 , _:c14n589 , _:c14n614 ;
+	sh:property _:c14n0 , _:c14n266 , _:c14n363 , _:c14n428 , _:c14n544 , _:c14n589 , _:c14n614 ;
 	sh:targetClass openpolicyagent:OpaNotEqualStmtBody .
 openpolicyagent:OpaNotStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind NotStmt, with its fields in `stmt`." ;
@@ -452,19 +452,19 @@ openpolicyagent:OpaNotStmtBody a sh:NodeShape ;
 	rdfs:comment "NotStmt represents a negated statement." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n484 ;
-	sh:property _:c14n113 , _:c14n164 , _:c14n285 , _:c14n357 , _:c14n442 , _:c14n556 ;
+	sh:property _:c14n113 , _:c14n164 , _:c14n284 , _:c14n357 , _:c14n442 , _:c14n556 ;
 	sh:targetClass openpolicyagent:OpaNotStmtBody .
 openpolicyagent:OpaNullType a sh:NodeShape ;
 	rdfs:comment "The null value." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n245 ;
-	sh:property _:c14n236 , _:c14n347 , _:c14n458 ;
+	sh:property _:c14n236 , _:c14n346 , _:c14n458 ;
 	sh:targetClass openpolicyagent:OpaNullType .
 openpolicyagent:OpaNumberType a sh:NodeShape ;
 	rdfs:comment "A number." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n126 ;
-	sh:property _:c14n250 , _:c14n419 , _:c14n584 ;
+	sh:property _:c14n249 , _:c14n419 , _:c14n584 ;
 	sh:targetClass openpolicyagent:OpaNumberType .
 openpolicyagent:OpaObject a sh:NodeShape ;
 	rdfs:comment "A JSON object whose keys OPA leaves open." ;
@@ -474,20 +474,20 @@ openpolicyagent:OpaObject a sh:NodeShape ;
 openpolicyagent:OpaObjectInsertOnceStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind ObjectInsertOnceStmt, with its fields in `stmt`." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n266 ;
+	sh:ignoredProperties _:c14n265 ;
 	sh:property _:c14n207 , _:c14n235 ;
 	sh:targetClass openpolicyagent:OpaObjectInsertOnceStmt .
 openpolicyagent:OpaObjectInsertOnceStmtBody a sh:NodeShape ;
 	rdfs:comment "ObjectInsertOnceStmt represents a dynamic insert operation of a key/value pair into an object. If the key already exists and the value differs, execution aborts with a conflict error." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n535 ;
-	sh:property _:c14n249 , _:c14n349 , _:c14n396 , _:c14n422 , _:c14n580 , _:c14n590 , _:c14n595 , _:c14n601 ;
+	sh:property _:c14n248 , _:c14n348 , _:c14n396 , _:c14n422 , _:c14n580 , _:c14n590 , _:c14n595 , _:c14n601 ;
 	sh:targetClass openpolicyagent:OpaObjectInsertOnceStmtBody .
 openpolicyagent:OpaObjectInsertStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind ObjectInsertStmt, with its fields in `stmt`." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n604 ;
-	sh:property _:c14n128 , _:c14n327 ;
+	sh:property _:c14n128 , _:c14n326 ;
 	sh:targetClass openpolicyagent:OpaObjectInsertStmt .
 openpolicyagent:OpaObjectInsertStmtBody a sh:NodeShape ;
 	rdfs:comment "ObjectInsertStmt represents a dynamic insert operation of a key/value pair into an object." ;
@@ -505,13 +505,13 @@ openpolicyagent:OpaObjectMergeStmtBody a sh:NodeShape ;
 	rdfs:comment "ObjectMergeStmt performs a recursive merge of two object values. If either of the locals refer to non-object values this operation will abort with a conflict error." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n490 ;
-	sh:property _:c14n179 , _:c14n181 , _:c14n204 , _:c14n277 , _:c14n309 , _:c14n401 , _:c14n515 , _:c14n89 ;
+	sh:property _:c14n179 , _:c14n181 , _:c14n204 , _:c14n276 , _:c14n308 , _:c14n401 , _:c14n515 , _:c14n89 ;
 	sh:targetClass openpolicyagent:OpaObjectMergeStmtBody .
 openpolicyagent:OpaObjectType a sh:NodeShape ;
 	rdfs:comment "An object, with typed known keys in `static` and a key and value type for the rest in `dynamic`." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n323 ;
-	sh:property _:c14n287 , _:c14n319 , _:c14n449 , _:c14n564 , _:c14n585 ;
+	sh:ignoredProperties _:c14n322 ;
+	sh:property _:c14n286 , _:c14n318 , _:c14n449 , _:c14n564 , _:c14n585 ;
 	sh:targetClass openpolicyagent:OpaObjectType .
 openpolicyagent:OpaOperand a sh:NodeShape ;
 	rdfs:comment "Operand represents a value that a statement operates on. OPA writes it as its kind in `type` and the value in `value`." ;
@@ -522,13 +522,13 @@ openpolicyagent:OpaPlan a sh:NodeShape ;
 	rdfs:comment "Plan represents an ordered series of blocks to execute. Plan execution stops when a return statement is reached." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n509 ;
-	sh:property _:c14n321 , _:c14n532 ;
+	sh:property _:c14n320 , _:c14n532 ;
 	sh:targetClass openpolicyagent:OpaPlan .
 openpolicyagent:OpaPlans a sh:NodeShape ;
 	rdfs:comment "Plans represents a collection of named query plans to expose in the policy." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n37 ;
-	sh:property _:c14n330 ;
+	sh:property _:c14n329 ;
 	sh:targetClass openpolicyagent:OpaPlans .
 openpolicyagent:OpaPolicy a sh:NodeShape ;
 	rdfs:comment "Policy represents a planned policy query." ;
@@ -540,25 +540,25 @@ openpolicyagent:OpaResetLocalStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind ResetLocalStmt, with its fields in `stmt`." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n97 ;
-	sh:property _:c14n315 , _:c14n548 ;
+	sh:property _:c14n314 , _:c14n548 ;
 	sh:targetClass openpolicyagent:OpaResetLocalStmt .
 openpolicyagent:OpaResetLocalStmtBody a sh:NodeShape ;
 	rdfs:comment "ResetLocalStmt resets a local variable to 0." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n324 ;
-	sh:property _:c14n213 , _:c14n252 , _:c14n28 , _:c14n444 , _:c14n591 , _:c14n603 ;
+	sh:ignoredProperties _:c14n323 ;
+	sh:property _:c14n213 , _:c14n251 , _:c14n28 , _:c14n444 , _:c14n591 , _:c14n603 ;
 	sh:targetClass openpolicyagent:OpaResetLocalStmtBody .
 openpolicyagent:OpaResultSetAddStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind ResultSetAddStmt, with its fields in `stmt`." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n371 ;
-	sh:property _:c14n155 , _:c14n329 ;
+	sh:property _:c14n155 , _:c14n328 ;
 	sh:targetClass openpolicyagent:OpaResultSetAddStmt .
 openpolicyagent:OpaResultSetAddStmtBody a sh:NodeShape ;
 	rdfs:comment "ResultSetAddStmt adds a value into the result set returned by the query plan." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n508 ;
-	sh:property _:c14n217 , _:c14n316 , _:c14n340 , _:c14n617 , _:c14n624 , _:c14n93 ;
+	sh:property _:c14n217 , _:c14n315 , _:c14n339 , _:c14n617 , _:c14n624 , _:c14n93 ;
 	sh:targetClass openpolicyagent:OpaResultSetAddStmtBody .
 openpolicyagent:OpaReturnLocalStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind ReturnLocalStmt, with its fields in `stmt`." ;
@@ -570,7 +570,7 @@ openpolicyagent:OpaReturnLocalStmtBody a sh:NodeShape ;
 	rdfs:comment "ReturnLocalStmt represents a return statement that yields a local value." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n34 ;
-	sh:property _:c14n166 , _:c14n297 , _:c14n358 , _:c14n415 , _:c14n483 , _:c14n566 ;
+	sh:property _:c14n166 , _:c14n296 , _:c14n358 , _:c14n415 , _:c14n483 , _:c14n566 ;
 	sh:targetClass openpolicyagent:OpaReturnLocalStmtBody .
 openpolicyagent:OpaScanStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind ScanStmt, with its fields in `stmt`." ;
@@ -582,7 +582,7 @@ openpolicyagent:OpaScanStmtBody a sh:NodeShape ;
 	rdfs:comment "ScanStmt represents a linear scan over a composite value. The source may be a scalar in which case the block will never execute." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n572 ;
-	sh:property _:c14n180 , _:c14n230 , _:c14n298 , _:c14n303 , _:c14n379 , _:c14n482 , _:c14n51 , _:c14n577 , _:c14n90 ;
+	sh:property _:c14n180 , _:c14n230 , _:c14n297 , _:c14n302 , _:c14n379 , _:c14n482 , _:c14n51 , _:c14n577 , _:c14n90 ;
 	sh:targetClass openpolicyagent:OpaScanStmtBody .
 openpolicyagent:OpaSetAddStmt a sh:NodeShape ;
 	rdfs:comment "A statement of kind SetAddStmt, with its fields in `stmt`." ;
@@ -594,19 +594,19 @@ openpolicyagent:OpaSetAddStmtBody a sh:NodeShape ;
 	rdfs:comment "SetAddStmt represents a dynamic add operation of an element into a set." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n386 ;
-	sh:property _:c14n248 , _:c14n265 , _:c14n433 , _:c14n453 , _:c14n581 , _:c14n623 , _:c14n8 ;
+	sh:property _:c14n247 , _:c14n264 , _:c14n433 , _:c14n453 , _:c14n581 , _:c14n623 , _:c14n8 ;
 	sh:targetClass openpolicyagent:OpaSetAddStmtBody .
 openpolicyagent:OpaSetType a sh:NodeShape ;
 	rdfs:comment "A set, whose members have the type in `of`." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n106 ;
-	sh:property _:c14n120 , _:c14n203 , _:c14n260 , _:c14n634 ;
+	sh:property _:c14n120 , _:c14n203 , _:c14n259 , _:c14n634 ;
 	sh:targetClass openpolicyagent:OpaSetType .
 openpolicyagent:OpaStatic a sh:NodeShape ;
 	rdfs:comment "Static represents a static data segment that is indexed into by the policy." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n326 ;
-	sh:property _:c14n270 , _:c14n404 , _:c14n416 ;
+	sh:ignoredProperties _:c14n325 ;
+	sh:property _:c14n269 , _:c14n404 , _:c14n416 ;
 	sh:targetClass openpolicyagent:OpaStatic .
 openpolicyagent:OpaStaticProperty a sh:NodeShape ;
 	rdfs:comment "A known key of an object type and the type of its value." ;
@@ -623,7 +623,7 @@ openpolicyagent:OpaStmtBody a sh:NodeShape ;
 	rdfs:comment "The fields of a statement. Every kind carries the location of its source text." ;
 	sh:closed false ;
 	sh:ignoredProperties _:c14n7 ;
-	sh:property _:c14n170 , _:c14n201 , _:c14n348 , _:c14n36 , _:c14n469 ;
+	sh:property _:c14n170 , _:c14n201 , _:c14n347 , _:c14n36 , _:c14n469 ;
 	sh:targetClass openpolicyagent:OpaStmtBody .
 openpolicyagent:OpaStringConst a sh:NodeShape ;
 	rdfs:comment "StringConst represents a string value." ;
@@ -635,13 +635,13 @@ openpolicyagent:OpaStringIndexOperand a sh:NodeShape ;
 	rdfs:comment "StringIndex represents the index into the plan's list of constant strings of a constant string." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n63 ;
-	sh:property _:c14n299 , _:c14n332 ;
+	sh:property _:c14n298 , _:c14n331 ;
 	sh:targetClass openpolicyagent:OpaStringIndexOperand .
 openpolicyagent:OpaStringType a sh:NodeShape ;
 	rdfs:comment "A string." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n263 ;
-	sh:property _:c14n123 , _:c14n269 , _:c14n437 ;
+	sh:ignoredProperties _:c14n262 ;
+	sh:property _:c14n123 , _:c14n268 , _:c14n437 ;
 	sh:targetClass openpolicyagent:OpaStringType .
 openpolicyagent:OpaType a sh:NodeShape ;
 	rdfs:comment "A Rego type, as OPA's types package writes it in JSON. A named type is an argument or result of a built-in function, with a name and a description." ;
@@ -653,7 +653,7 @@ openpolicyagent:OpaUnplannedRule a sh:NodeShape ;
 	rdfs:comment "UnplannedRule represents a rule that was parsed but not included in the plan because it is not reachable from the entrypoint. This is used for coverage reporting, to distinguish rules that were never planned from rules that were planned but never executed." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n359 ;
-	sh:property _:c14n278 , _:c14n83 ;
+	sh:property _:c14n277 , _:c14n83 ;
 	sh:targetClass openpolicyagent:OpaUnplannedRule .
 openpolicyagent:OpaVersionEntry a sh:NodeShape ;
 	rdfs:comment "A built-in function, feature or keyword, and the OPA version that introduced it." ;
@@ -671,12 +671,12 @@ openpolicyagent:OpaWasmAbiVersion a sh:NodeShape ;
 	rdfs:comment "A Wasm ABI version, as a major and a minor number." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n4 ;
-	sh:property _:c14n311 , _:c14n353 ;
+	sh:property _:c14n310 , _:c14n352 ;
 	sh:targetClass openpolicyagent:OpaWasmAbiVersion .
 openpolicyagent:OpaWasmResolver a sh:NodeShape ;
 	rdfs:comment "A Wasm module in a bundle, and the entrypoint it resolves." ;
 	sh:closed true ;
-	sh:ignoredProperties _:c14n345 ;
+	sh:ignoredProperties _:c14n344 ;
 	sh:property _:c14n149 , _:c14n397 , _:c14n511 ;
 	sh:targetClass openpolicyagent:OpaWasmResolver .
 openpolicyagent:OpaWithStmt a sh:NodeShape ;
@@ -689,7 +689,7 @@ openpolicyagent:OpaWithStmtBody a sh:NodeShape ;
 	rdfs:comment "WithStmt replaces the Local or a portion of the document referred to by the Local with the Value and executes the contained block. If the Path is non-empty, the Value is upserted into the Local." ;
 	sh:closed true ;
 	sh:ignoredProperties _:c14n392 ;
-	sh:property _:c14n108 , _:c14n14 , _:c14n279 , _:c14n301 , _:c14n306 , _:c14n377 , _:c14n41 , _:c14n457 , _:c14n602 ;
+	sh:property _:c14n108 , _:c14n14 , _:c14n278 , _:c14n300 , _:c14n305 , _:c14n377 , _:c14n41 , _:c14n457 , _:c14n602 ;
 	sh:targetClass openpolicyagent:OpaWithStmtBody .
 _:c14n0 sh:class openpolicyagent:OpaOperand ;
 	sh:description "The first value." ;
@@ -849,7 +849,7 @@ _:c14n127 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
 _:c14n128 sh:datatype xsd:string ;
 	sh:description "The kind of statement." ;
-	sh:in _:c14n271 ;
+	sh:in _:c14n270 ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
@@ -1032,7 +1032,7 @@ _:c14n158 sh:datatype xsd:integer ;
 	sh:order 7 ;
 	sh:path openpolicyagent:end_row .
 _:c14n159 rdf:first "and" ;
-	rdf:rest _:c14n257 .
+	rdf:rest _:c14n256 .
 _:c14n16 sh:class openpolicyagent:OpaOperand ;
 	sh:description "The path of the function in the data tree, one operand per segment." ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
@@ -1129,7 +1129,7 @@ _:c14n172 sh:datatype xsd:integer ;
 	sh:path openpolicyagent:end_col .
 _:c14n173 sh:datatype xsd:string ;
 	sh:description "The kind of statement." ;
-	sh:in _:c14n304 ;
+	sh:in _:c14n303 ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
@@ -1491,7 +1491,7 @@ _:c14n234 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
 _:c14n235 sh:datatype xsd:string ;
 	sh:description "The kind of statement." ;
-	sh:in _:c14n295 ;
+	sh:in _:c14n294 ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
@@ -1549,82 +1549,77 @@ _:c14n244 sh:datatype xsd:integer ;
 	sh:path openpolicyagent:target .
 _:c14n245 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n246 sh:datatype xsd:string ;
-	sh:description "Where the function sits in the data tree, when it has a path." ;
-	sh:nodeKind sh:Literal ;
-	sh:order 3 ;
-	sh:path openpolicyagent:path .
-_:c14n247 rdf:first rdf:type ;
+_:c14n246 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n248 sh:datatype xsd:integer ;
+_:c14n247 sh:datatype xsd:integer ;
 	sh:description "The local that holds the set." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:set .
-_:c14n249 sh:class openpolicyagent:OpaOperand ;
+_:c14n248 sh:class openpolicyagent:OpaOperand ;
 	sh:description "The key." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 0 ;
 	sh:path openpolicyagent:key .
-_:c14n25 rdf:first "bool" ;
-	rdf:rest rdf:nil .
-_:c14n250 sh:datatype xsd:string ;
+_:c14n249 sh:datatype xsd:string ;
 	sh:description "What the argument or result holds, on a named type." ;
 	sh:maxCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 2 ;
 	sh:path schema1:description .
-_:c14n251 sh:datatype xsd:integer ;
+_:c14n25 rdf:first "bool" ;
+	rdf:rest rdf:nil .
+_:c14n250 sh:datatype xsd:integer ;
 	sh:description "Line where the statement's source text starts." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 3 ;
 	sh:path openpolicyagent:row .
-_:c14n252 sh:datatype xsd:integer ;
+_:c14n251 sh:datatype xsd:integer ;
 	sh:description "Index, in the plan's static files, of the policy file the statement comes from." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 1 ;
 	sh:path openpolicyagent:file .
-_:c14n253 rdf:first rdf:type ;
+_:c14n252 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n254 sh:class openpolicyagent:OpaBuiltinResult ;
+_:c14n253 sh:class openpolicyagent:OpaBuiltinResult ;
 	sh:description "The result." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 5 ;
 	sh:path openpolicyagent:result .
-_:c14n255 sh:datatype xsd:integer ;
+_:c14n254 sh:datatype xsd:integer ;
 	sh:description "The local that receives the result." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:target .
-_:c14n256 sh:datatype xsd:integer ;
+_:c14n255 sh:datatype xsd:integer ;
 	sh:description "Column where the statement's source text ends." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 4 ;
 	sh:path openpolicyagent:end_col .
-_:c14n257 rdf:first "contains" ;
+_:c14n256 rdf:first "contains" ;
 	rdf:rest _:c14n139 .
-_:c14n258 sh:datatype xsd:integer ;
+_:c14n257 sh:datatype xsd:integer ;
 	sh:description "The local that receives the result." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:target .
-_:c14n259 sh:datatype xsd:string ;
+_:c14n258 sh:datatype xsd:string ;
 	sh:description "The kind of statement." ;
 	sh:in _:c14n498 ;
 	sh:maxCount 1 ;
@@ -1632,6 +1627,12 @@ _:c14n259 sh:datatype xsd:string ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:type .
+_:c14n259 sh:class openpolicyagent:OpaType ;
+	sh:description "The type of the set's members." ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 1 ;
+	sh:path openpolicyagent:of .
 _:c14n26 sh:datatype xsd:string ;
 	sh:description "The implementation's key in each function's `implementations`." ;
 	sh:maxCount 1 ;
@@ -1639,109 +1640,110 @@ _:c14n26 sh:datatype xsd:string ;
 	sh:nodeKind sh:Literal ;
 	sh:order 1 ;
 	sh:path schema1:identifier .
-_:c14n260 sh:class openpolicyagent:OpaType ;
-	sh:description "The type of the set's members." ;
-	sh:maxCount 1 ;
-	sh:nodeKind sh:BlankNodeOrIRI ;
-	sh:order 1 ;
-	sh:path openpolicyagent:of .
-_:c14n261 sh:class openpolicyagent:OpaBuiltin ;
+_:c14n260 sh:class openpolicyagent:OpaBuiltin ;
 	sh:description "The built-in functions." ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 0 ;
 	sh:path openpolicyagent:builtins .
-_:c14n262 sh:datatype xsd:integer ;
+_:c14n261 sh:datatype xsd:integer ;
 	sh:description "Line where the statement's source text starts." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 3 ;
 	sh:path openpolicyagent:row .
-_:c14n263 rdf:first rdf:type ;
+_:c14n262 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n264 sh:datatype xsd:integer ;
+_:c14n263 sh:datatype xsd:integer ;
 	sh:description "Line where the statement's source text ends." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 4 ;
 	sh:path openpolicyagent:end_row .
-_:c14n265 sh:datatype xsd:integer ;
+_:c14n264 sh:datatype xsd:integer ;
 	sh:description "Column where the statement's source text starts." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 3 ;
 	sh:path openpolicyagent:col .
-_:c14n266 rdf:first rdf:type ;
+_:c14n265 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n267 sh:class openpolicyagent:OpaOperand ;
+_:c14n266 sh:class openpolicyagent:OpaOperand ;
 	sh:description "The second value." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 1 ;
 	sh:path openpolicyagent:operand_b .
-_:c14n268 sh:datatype xsd:integer ;
+_:c14n267 sh:datatype xsd:integer ;
 	sh:description "Column where the statement's source text starts." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 4 ;
 	sh:path openpolicyagent:col .
-_:c14n269 sh:datatype xsd:string ;
+_:c14n268 sh:datatype xsd:string ;
 	sh:description "What the argument or result holds, on a named type." ;
 	sh:maxCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 2 ;
 	sh:path schema1:description .
-_:c14n27 rdf:first "IsDefinedStmt" ;
-	rdf:rest rdf:nil .
-_:c14n270 sh:class openpolicyagent:OpaStringConst ;
+_:c14n269 sh:class openpolicyagent:OpaStringConst ;
 	sh:description "The string constants, which a string index refers to by position." ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 2 ;
 	sh:path openpolicyagent:strings .
-_:c14n271 rdf:first "ObjectInsertStmt" ;
+_:c14n27 rdf:first "IsDefinedStmt" ;
 	rdf:rest rdf:nil .
-_:c14n272 sh:class openpolicyagent:OpaType ;
+_:c14n270 rdf:first "ObjectInsertStmt" ;
+	rdf:rest rdf:nil .
+_:c14n271 sh:class openpolicyagent:OpaType ;
 	sh:description "The type of any further arguments." ;
 	sh:maxCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 3 ;
 	sh:path openpolicyagent:variadic .
-_:c14n273 rdf:first rdf:type ;
+_:c14n272 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n274 rdf:first openpolicyagent:index ;
+_:c14n273 rdf:first openpolicyagent:index ;
 	rdf:rest _:c14n152 .
-_:c14n275 rdf:first "NotEqualStmt" ;
+_:c14n274 rdf:first "NotEqualStmt" ;
 	rdf:rest rdf:nil .
-_:c14n276 sh:class openpolicyagent:OpaMakeSetStmtBody ;
+_:c14n275 sh:class openpolicyagent:OpaMakeSetStmtBody ;
 	sh:description "The statement's fields." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 1 ;
 	sh:path openpolicyagent:stmt .
-_:c14n277 sh:datatype xsd:integer ;
+_:c14n276 sh:datatype xsd:integer ;
 	sh:description "Column where the statement's source text ends." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 6 ;
 	sh:path openpolicyagent:end_col .
-_:c14n278 sh:class openpolicyagent:OpaLocation ;
+_:c14n277 sh:class openpolicyagent:OpaLocation ;
 	sh:description "Where the rule is defined." ;
 	sh:maxCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 0 ;
 	sh:path openpolicyagent:location .
-_:c14n279 sh:datatype xsd:integer ;
+_:c14n278 sh:datatype xsd:integer ;
 	sh:description "Column where the statement's source text starts." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 5 ;
+	sh:path openpolicyagent:col .
+_:c14n279 sh:datatype xsd:integer ;
+	sh:description "Column where the statement's source text starts." ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
 	sh:path openpolicyagent:col .
 _:c14n28 sh:datatype xsd:integer ;
 	sh:description "Column where the statement's source text ends." ;
@@ -1750,58 +1752,51 @@ _:c14n28 sh:datatype xsd:integer ;
 	sh:nodeKind sh:Literal ;
 	sh:order 4 ;
 	sh:path openpolicyagent:end_col .
-_:c14n280 sh:datatype xsd:integer ;
-	sh:description "Column where the statement's source text starts." ;
-	sh:maxCount 1 ;
-	sh:minCount 1 ;
-	sh:nodeKind sh:Literal ;
-	sh:order 3 ;
-	sh:path openpolicyagent:col .
-_:c14n281 sh:class openpolicyagent:OpaIsSetStmtBody ;
+_:c14n280 sh:class openpolicyagent:OpaIsSetStmtBody ;
 	sh:description "The statement's fields." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 1 ;
 	sh:path openpolicyagent:stmt .
-_:c14n282 rdf:first rdf:type ;
+_:c14n281 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n283 sh:datatype xsd:integer ;
+_:c14n282 sh:datatype xsd:integer ;
 	sh:description "Index, in the plan's static files, of the policy file the statement comes from." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 2 ;
 	sh:path openpolicyagent:file .
-_:c14n284 sh:datatype xsd:string ;
+_:c14n283 sh:datatype xsd:string ;
 	sh:description "What the argument holds." ;
 	sh:maxCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 2 ;
 	sh:path schema1:description .
-_:c14n285 sh:datatype xsd:integer ;
+_:c14n284 sh:datatype xsd:integer ;
 	sh:description "Line where the statement's source text starts." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 3 ;
 	sh:path openpolicyagent:row .
-_:c14n286 rdf:first "in" ;
+_:c14n285 rdf:first "in" ;
 	rdf:rest _:c14n512 .
-_:c14n287 sh:class openpolicyagent:OpaDynamicProperty ;
+_:c14n286 sh:class openpolicyagent:OpaDynamicProperty ;
 	sh:description "The key type and value type of the other keys." ;
 	sh:maxCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 2 ;
 	sh:path openpolicyagent:dynamic .
-_:c14n288 sh:datatype xsd:integer ;
+_:c14n287 sh:datatype xsd:integer ;
 	sh:description "Line where the statement's source text ends." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 6 ;
 	sh:path openpolicyagent:end_row .
-_:c14n289 sh:datatype xsd:string ;
+_:c14n288 sh:datatype xsd:string ;
 	sh:description "The kind of statement." ;
 	sh:in _:c14n526 ;
 	sh:maxCount 1 ;
@@ -1809,104 +1804,104 @@ _:c14n289 sh:datatype xsd:string ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:type .
-_:c14n29 sh:datatype xsd:string ;
-	sh:description "What the argument or result holds, on a named type." ;
-	sh:maxCount 1 ;
-	sh:nodeKind sh:Literal ;
-	sh:order 2 ;
-	sh:path schema1:description .
-_:c14n290 sh:datatype xsd:string ;
+_:c14n289 sh:datatype xsd:string ;
 	sh:description "The implementation's version that added the function." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:version .
-_:c14n291 rdf:first rdf:type ;
+_:c14n29 sh:datatype xsd:string ;
+	sh:description "What the argument or result holds, on a named type." ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path schema1:description .
+_:c14n290 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n292 sh:datatype xsd:integer ;
+_:c14n291 sh:datatype xsd:integer ;
 	sh:description "Line where the statement's source text ends." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 5 ;
 	sh:path openpolicyagent:end_row .
-_:c14n293 rdf:first rdf:type ;
+_:c14n292 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n294 sh:class openpolicyagent:OpaBuiltinArgument ;
+_:c14n293 sh:class openpolicyagent:OpaBuiltinArgument ;
 	sh:description "The arguments, in order." ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 4 ;
 	sh:path openpolicyagent:args .
-_:c14n295 rdf:first "ObjectInsertOnceStmt" ;
+_:c14n294 rdf:first "ObjectInsertOnceStmt" ;
 	rdf:rest rdf:nil .
-_:c14n296 sh:class openpolicyagent:OpaOperand ;
+_:c14n295 sh:class openpolicyagent:OpaOperand ;
 	sh:description "What the statement reads." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 0 ;
 	sh:path openpolicyagent:source .
-_:c14n297 sh:datatype xsd:integer ;
+_:c14n296 sh:datatype xsd:integer ;
 	sh:description "Index, in the plan's static files, of the policy file the statement comes from." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 1 ;
 	sh:path openpolicyagent:file .
-_:c14n298 sh:datatype xsd:integer ;
+_:c14n297 sh:datatype xsd:integer ;
 	sh:description "Column where the statement's source text ends." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 7 ;
 	sh:path openpolicyagent:end_col .
-_:c14n299 sh:datatype xsd:integer ;
+_:c14n298 sh:datatype xsd:integer ;
 	sh:description "The operand's value." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 1 ;
 	sh:path openpolicyagent:value .
+_:c14n299 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
 _:c14n3 rdf:first "ScanStmt" ;
 	rdf:rest rdf:nil .
 _:c14n30 rdf:first "ObjectMergeStmt" ;
 	rdf:rest rdf:nil .
-_:c14n300 rdf:first rdf:type ;
-	rdf:rest rdf:nil .
-_:c14n301 sh:class openpolicyagent:OpaBlock ;
+_:c14n300 sh:class openpolicyagent:OpaBlock ;
 	sh:description "The block the statement runs." ;
 	sh:maxCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 0 ;
 	sh:path openpolicyagent:block .
-_:c14n302 rdf:first rdf:type ;
+_:c14n301 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n303 sh:datatype xsd:integer ;
+_:c14n302 sh:datatype xsd:integer ;
 	sh:description "The local that receives each key." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 2 ;
 	sh:path openpolicyagent:key .
-_:c14n304 rdf:first "WithStmt" ;
+_:c14n303 rdf:first "WithStmt" ;
 	rdf:rest rdf:nil .
-_:c14n305 sh:datatype xsd:integer ;
+_:c14n304 sh:datatype xsd:integer ;
 	sh:description "Line where the statement's source text ends." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 7 ;
 	sh:path openpolicyagent:end_row .
-_:c14n306 sh:datatype xsd:integer ;
+_:c14n305 sh:datatype xsd:integer ;
 	sh:description "The path within the local's value to replace, as indices of static strings. Empty replaces the whole value." ;
 	sh:nodeKind sh:Literal ;
 	sh:order 2 ;
 	sh:path openpolicyagent:path .
-_:c14n307 rdf:first openpolicyagent:source ;
+_:c14n306 rdf:first openpolicyagent:source ;
 	rdf:rest _:c14n176 .
-_:c14n308 sh:datatype xsd:string ;
+_:c14n307 sh:datatype xsd:string ;
 	sh:description "The kind of statement." ;
 	sh:in _:c14n27 ;
 	sh:maxCount 1 ;
@@ -1914,83 +1909,90 @@ _:c14n308 sh:datatype xsd:string ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:type .
-_:c14n309 sh:datatype xsd:integer ;
+_:c14n308 sh:datatype xsd:integer ;
 	sh:description "Line where the statement's source text starts." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 5 ;
 	sh:path openpolicyagent:row .
-_:c14n31 sh:datatype xsd:string ;
-	sh:description "The argument's or result's name, on a named type." ;
-	sh:maxCount 1 ;
-	sh:nodeKind sh:Literal ;
-	sh:order 4 ;
-	sh:path schema1:name .
-_:c14n310 sh:datatype xsd:string ;
+_:c14n309 sh:datatype xsd:string ;
 	sh:description "The name of the function called." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 1 ;
 	sh:path openpolicyagent:func .
-_:c14n311 sh:datatype xsd:integer ;
+_:c14n31 sh:datatype xsd:string ;
+	sh:description "The argument's or result's name, on a named type." ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path schema1:name .
+_:c14n310 sh:datatype xsd:integer ;
 	sh:description "The major version." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:version .
-_:c14n312 sh:datatype xsd:string ;
+_:c14n311 sh:datatype xsd:string ;
 	sh:description "The argument's type, written as OPA prints types, such as `array[string]`." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:type .
-_:c14n313 sh:datatype xsd:integer ;
+_:c14n312 sh:datatype xsd:integer ;
 	sh:description "Line where the statement's source text starts." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 4 ;
 	sh:path openpolicyagent:row .
-_:c14n314 rdf:first rdf:type ;
+_:c14n313 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n315 sh:class openpolicyagent:OpaResetLocalStmtBody ;
+_:c14n314 sh:class openpolicyagent:OpaResetLocalStmtBody ;
 	sh:description "The statement's fields." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 1 ;
 	sh:path openpolicyagent:stmt .
-_:c14n316 sh:datatype xsd:integer ;
+_:c14n315 sh:datatype xsd:integer ;
 	sh:description "The local added to the result set." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:value .
-_:c14n317 sh:class openpolicyagent:OpaOperand ;
+_:c14n316 sh:class openpolicyagent:OpaOperand ;
 	sh:description "What the statement reads." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 0 ;
 	sh:path openpolicyagent:source .
-_:c14n318 sh:class openpolicyagent:OpaNotEqualStmtBody ;
+_:c14n317 sh:class openpolicyagent:OpaNotEqualStmtBody ;
 	sh:description "The statement's fields." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 1 ;
 	sh:path openpolicyagent:stmt .
-_:c14n319 sh:datatype xsd:string ;
+_:c14n318 sh:datatype xsd:string ;
 	sh:description "What the argument or result holds, on a named type." ;
 	sh:maxCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 4 ;
 	sh:path schema1:description .
+_:c14n319 sh:class openpolicyagent:OpaOperand ;
+	sh:description "What the statement reads." ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 0 ;
+	sh:path openpolicyagent:source .
 _:c14n32 sh:datatype xsd:integer ;
 	sh:description "Column where the statement's source text ends." ;
 	sh:maxCount 1 ;
@@ -1998,54 +2000,52 @@ _:c14n32 sh:datatype xsd:integer ;
 	sh:nodeKind sh:Literal ;
 	sh:order 4 ;
 	sh:path openpolicyagent:end_col .
-_:c14n320 sh:class openpolicyagent:OpaOperand ;
-	sh:description "What the statement reads." ;
-	sh:maxCount 1 ;
-	sh:minCount 1 ;
-	sh:nodeKind sh:BlankNodeOrIRI ;
-	sh:order 0 ;
-	sh:path openpolicyagent:source .
-_:c14n321 sh:class openpolicyagent:OpaBlock ;
+_:c14n320 sh:class openpolicyagent:OpaBlock ;
 	sh:description "The blocks, run in order." ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 0 ;
 	sh:path openpolicyagent:blocks .
-_:c14n322 sh:datatype xsd:integer ;
+_:c14n321 sh:datatype xsd:integer ;
 	sh:description "Column where the statement's source text starts." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 3 ;
 	sh:path openpolicyagent:col .
+_:c14n322 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
 _:c14n323 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n324 rdf:first rdf:type ;
+_:c14n324 rdf:first "MakeNumberIntStmt" ;
 	rdf:rest rdf:nil .
-_:c14n325 rdf:first "MakeNumberIntStmt" ;
+_:c14n325 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n326 rdf:first rdf:type ;
-	rdf:rest rdf:nil .
-_:c14n327 sh:class openpolicyagent:OpaObjectInsertStmtBody ;
+_:c14n326 sh:class openpolicyagent:OpaObjectInsertStmtBody ;
 	sh:description "The statement's fields." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 1 ;
 	sh:path openpolicyagent:stmt .
-_:c14n328 sh:class openpolicyagent:OpaOperand ;
+_:c14n327 sh:class openpolicyagent:OpaOperand ;
 	sh:description "The first value." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 0 ;
 	sh:path openpolicyagent:operand_a .
-_:c14n329 sh:class openpolicyagent:OpaResultSetAddStmtBody ;
+_:c14n328 sh:class openpolicyagent:OpaResultSetAddStmtBody ;
 	sh:description "The statement's fields." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 1 ;
 	sh:path openpolicyagent:stmt .
+_:c14n329 sh:class openpolicyagent:OpaPlan ;
+	sh:description "The plans." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 0 ;
+	sh:path openpolicyagent:plans .
 _:c14n33 sh:datatype xsd:string ;
 	sh:description "The kind of statement." ;
 	sh:in _:c14n413 ;
@@ -2054,19 +2054,14 @@ _:c14n33 sh:datatype xsd:string ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:type .
-_:c14n330 sh:class openpolicyagent:OpaPlan ;
-	sh:description "The plans." ;
-	sh:nodeKind sh:BlankNodeOrIRI ;
-	sh:order 0 ;
-	sh:path openpolicyagent:plans .
-_:c14n331 sh:datatype xsd:integer ;
+_:c14n330 sh:datatype xsd:integer ;
 	sh:description "Index, in the plan's static files, of the policy file the statement comes from." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 3 ;
 	sh:path openpolicyagent:file .
-_:c14n332 sh:datatype xsd:string ;
+_:c14n331 sh:datatype xsd:string ;
 	sh:description "The kind of operand." ;
 	sh:in _:c14n562 ;
 	sh:maxCount 1 ;
@@ -2074,13 +2069,13 @@ _:c14n332 sh:datatype xsd:string ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:type .
+_:c14n332 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
 _:c14n333 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
 _:c14n334 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n335 rdf:first rdf:type ;
-	rdf:rest rdf:nil .
-_:c14n336 sh:datatype xsd:string ;
+_:c14n335 sh:datatype xsd:string ;
 	sh:description "The kind of statement." ;
 	sh:in _:c14n92 ;
 	sh:maxCount 1 ;
@@ -2088,21 +2083,21 @@ _:c14n336 sh:datatype xsd:string ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:type .
-_:c14n337 sh:class openpolicyagent:OpaObject ;
+_:c14n336 sh:class openpolicyagent:OpaObject ;
 	sh:description "The request body." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:BlankNodeOrIRI ;
 	sh:order 0 ;
 	sh:path openpolicyagent:body .
-_:c14n338 sh:datatype xsd:string ;
+_:c14n337 sh:datatype xsd:string ;
 	sh:description "The HTTP method of the request." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 3 ;
 	sh:path openpolicyagent:method .
-_:c14n339 sh:datatype xsd:string ;
+_:c14n338 sh:datatype xsd:string ;
 	sh:description "The kind of type." ;
 	sh:in _:c14n390 ;
 	sh:maxCount 1 ;
@@ -2110,57 +2105,64 @@ _:c14n339 sh:datatype xsd:string ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:type .
-_:c14n34 rdf:first rdf:type ;
-	rdf:rest rdf:nil .
-_:c14n340 sh:datatype xsd:integer ;
+_:c14n339 sh:datatype xsd:integer ;
 	sh:description "Column where the statement's source text starts." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 2 ;
 	sh:path openpolicyagent:col .
-_:c14n341 rdf:first rdf:type ;
+_:c14n34 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n342 sh:datatype xsd:string ;
+_:c14n340 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n341 sh:datatype xsd:string ;
 	sh:description "The implementation's version the catalogue reflects." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 0 ;
 	sh:path openpolicyagent:version .
-_:c14n343 sh:datatype xsd:integer ;
+_:c14n342 sh:datatype xsd:integer ;
 	sh:description "Line where the statement's source text starts." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 4 ;
 	sh:path openpolicyagent:row .
-_:c14n344 rdf:first "rule_head_refs" ;
+_:c14n343 rdf:first "rule_head_refs" ;
 	rdf:rest _:c14n111 .
+_:c14n344 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
 _:c14n345 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n346 rdf:first rdf:type ;
-	rdf:rest rdf:nil .
-_:c14n347 sh:datatype xsd:string ;
+_:c14n346 sh:datatype xsd:string ;
 	sh:description "What the argument or result holds, on a named type." ;
 	sh:maxCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 2 ;
 	sh:path schema1:description .
-_:c14n348 sh:datatype xsd:integer ;
+_:c14n347 sh:datatype xsd:integer ;
 	sh:description "Line where the statement's source text ends." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 4 ;
 	sh:path openpolicyagent:end_row .
-_:c14n349 sh:datatype xsd:integer ;
+_:c14n348 sh:datatype xsd:integer ;
 	sh:description "Line where the statement's source text ends." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 7 ;
 	sh:path openpolicyagent:end_row .
+_:c14n349 sh:datatype xsd:integer ;
+	sh:description "Column where the statement's source text ends." ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path openpolicyagent:end_col .
 _:c14n35 sh:datatype xsd:integer ;
 	sh:description "Line where the statement's source text starts." ;
 	sh:maxCount 1 ;
@@ -2168,36 +2170,34 @@ _:c14n35 sh:datatype xsd:integer ;
 	sh:nodeKind sh:Literal ;
 	sh:order 5 ;
 	sh:path openpolicyagent:row .
-_:c14n350 sh:datatype xsd:integer ;
-	sh:description "Column where the statement's source text ends." ;
-	sh:maxCount 1 ;
-	sh:minCount 1 ;
-	sh:nodeKind sh:Literal ;
-	sh:order 3 ;
-	sh:path openpolicyagent:end_col .
-_:c14n351 rdf:first rdf:type ;
+_:c14n350 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
-_:c14n352 sh:datatype xsd:integer ;
+_:c14n351 sh:datatype xsd:integer ;
 	sh:description "Index, in the plan's static files, of the policy file the statement comes from." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 1 ;
 	sh:path openpolicyagent:file .
-_:c14n353 sh:datatype xsd:integer ;
+_:c14n352 sh:datatype xsd:integer ;
 	sh:description "The minor version." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 1 ;
 	sh:path openpolicyagent:minor_version .
-_:c14n354 sh:datatype xsd:integer ;
+_:c14n353 sh:datatype xsd:integer ;
 	sh:description "Column where the statement's source text ends." ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
 	sh:order 5 ;
 	sh:path openpolicyagent:end_col .
+_:c14n354 sh:datatype xsd:string ;
+	sh:description "Where the function is in the data tree, when it has a path." ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path openpolicyagent:path .
 _:c14n355 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
 _:c14n356 sh:datatype xsd:string ;
@@ -2277,7 +2277,7 @@ _:c14n368 sh:datatype xsd:integer ;
 	sh:order 0 ;
 	sh:path openpolicyagent:file .
 _:c14n369 rdf:first openpolicyagent:set ;
-	rdf:rest _:c14n307 .
+	rdf:rest _:c14n306 .
 _:c14n37 rdf:first rdf:type ;
 	rdf:rest rdf:nil .
 _:c14n370 sh:class openpolicyagent:OpaReturnLocalStmtBody ;
@@ -2656,7 +2656,7 @@ _:c14n43 sh:datatype xsd:integer ;
 	sh:path openpolicyagent:value .
 _:c14n430 sh:datatype xsd:string ;
 	sh:description "The kind of statement." ;
-	sh:in _:c14n275 ;
+	sh:in _:c14n274 ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;
@@ -2895,7 +2895,7 @@ _:c14n469 sh:datatype xsd:integer ;
 	sh:order 0 ;
 	sh:path openpolicyagent:file .
 _:c14n47 rdf:first "rule_head_ref_string_prefixes" ;
-	rdf:rest _:c14n344 .
+	rdf:rest _:c14n343 .
 _:c14n470 rdf:first "BlockStmt" ;
 	rdf:rest rdf:nil .
 _:c14n471 sh:datatype xsd:integer ;
@@ -2947,7 +2947,7 @@ _:c14n478 sh:datatype xsd:integer ;
 	sh:order 3 ;
 	sh:path openpolicyagent:rego_version .
 _:c14n479 rdf:first "if" ;
-	rdf:rest _:c14n286 .
+	rdf:rest _:c14n285 .
 _:c14n48 sh:datatype xsd:string ;
 	sh:description "The hosts OPA may connect to, as host names or IP addresses. OPA reaches any host when the key is absent, and none when the list is empty." ;
 	sh:nodeKind sh:Literal ;
@@ -3832,7 +3832,7 @@ _:c14n627 sh:class openpolicyagent:OpaAssignVarOnceStmtBody ;
 	sh:order 1 ;
 	sh:path openpolicyagent:stmt .
 _:c14n628 rdf:first openpolicyagent:func ;
-	rdf:rest _:c14n274 .
+	rdf:rest _:c14n273 .
 _:c14n629 sh:datatype xsd:string ;
 	sh:description "The function's name." ;
 	sh:maxCount 1 ;
@@ -4082,7 +4082,7 @@ _:c14n85 rdf:first openpolicyagent:object ;
 	rdf:rest _:c14n631 .
 _:c14n86 sh:datatype xsd:string ;
 	sh:description "The kind of statement." ;
-	sh:in _:c14n325 ;
+	sh:in _:c14n324 ;
 	sh:maxCount 1 ;
 	sh:minCount 1 ;
 	sh:nodeKind sh:Literal ;

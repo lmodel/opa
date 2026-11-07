@@ -686,7 +686,7 @@
 --     * Slot: params Description: The locals that hold the parameters. The first two are the input and data documents.
 -- # Class: OpaFunc_path
 --     * Slot: OpaFunc_id Description: Autocreated FK slot
---     * Slot: path Description: Where the function sits in the data tree, when it has a path.
+--     * Slot: path Description: Where the function is in the data tree, when it has a path.
 -- # Class: OpaCallDynamicStmtBody_args
 --     * Slot: OpaCallDynamicStmtBody_id Description: Autocreated FK slot
 --     * Slot: args Description: The locals passed as arguments.
@@ -1194,8 +1194,8 @@ CREATE TABLE "OpaBuiltinCategory" (
 	UNIQUE ("OpaBuiltinMetadataCatalog_id", name),
 	FOREIGN KEY("OpaBuiltinMetadataCatalog_id") REFERENCES "OpaBuiltinMetadataCatalog" (id)
 );
-CREATE INDEX "OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id_name_idx" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id", name);
 CREATE INDEX "ix_OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id");
+CREATE INDEX "OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id_name_idx" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id", name);
 CREATE INDEX "ix_OpaBuiltinCategory_name" ON "OpaBuiltinCategory" (name);
 
 CREATE TABLE "OpaImplementation" (
@@ -1235,13 +1235,13 @@ CREATE TABLE "OpaVersionEntry" (
 	UNIQUE ("OpaVersionIndex_id", name),
 	FOREIGN KEY("OpaVersionIndex_id") REFERENCES "OpaVersionIndex" (id)
 );
-CREATE INDEX "OpaVersionEntry_OpaVersionIndex_id_name_idx" ON "OpaVersionEntry" ("OpaVersionIndex_id", name);
-CREATE INDEX "ix_OpaVersionEntry_Major" ON "OpaVersionEntry" ("Major");
 CREATE INDEX "ix_OpaVersionEntry_Minor" ON "OpaVersionEntry" ("Minor");
-CREATE INDEX "ix_OpaVersionEntry_OpaVersionIndex_id" ON "OpaVersionEntry" ("OpaVersionIndex_id");
-CREATE INDEX "ix_OpaVersionEntry_Patch" ON "OpaVersionEntry" ("Patch");
-CREATE INDEX "ix_OpaVersionEntry_PreRelease" ON "OpaVersionEntry" ("PreRelease");
+CREATE INDEX "ix_OpaVersionEntry_Major" ON "OpaVersionEntry" ("Major");
+CREATE INDEX "OpaVersionEntry_OpaVersionIndex_id_name_idx" ON "OpaVersionEntry" ("OpaVersionIndex_id", name);
 CREATE INDEX "ix_OpaVersionEntry_name" ON "OpaVersionEntry" (name);
+CREATE INDEX "ix_OpaVersionEntry_Patch" ON "OpaVersionEntry" ("Patch");
+CREATE INDEX "ix_OpaVersionEntry_OpaVersionIndex_id" ON "OpaVersionEntry" ("OpaVersionIndex_id");
+CREATE INDEX "ix_OpaVersionEntry_PreRelease" ON "OpaVersionEntry" ("PreRelease");
 
 CREATE TABLE "OpaFileRegoVersion" (
 	version INTEGER NOT NULL,
@@ -1250,8 +1250,8 @@ CREATE TABLE "OpaFileRegoVersion" (
 	PRIMARY KEY (version, path, "OpaManifest_id"),
 	FOREIGN KEY("OpaManifest_id") REFERENCES "OpaManifest" (id)
 );
-CREATE INDEX "ix_OpaFileRegoVersion_path" ON "OpaFileRegoVersion" (path);
 CREATE INDEX "ix_OpaFileRegoVersion_OpaManifest_id" ON "OpaFileRegoVersion" ("OpaManifest_id");
+CREATE INDEX "ix_OpaFileRegoVersion_path" ON "OpaFileRegoVersion" (path);
 CREATE INDEX "ix_OpaFileRegoVersion_version" ON "OpaFileRegoVersion" (version);
 
 CREATE TABLE "OpaPolicy" (
@@ -1561,10 +1561,10 @@ CREATE TABLE "OpaImplementationSupport" (
 	UNIQUE ("OpaBuiltinMetadata_id", implementation),
 	FOREIGN KEY("OpaBuiltinMetadata_id") REFERENCES "OpaBuiltinMetadata" (id)
 );
-CREATE INDEX "ix_OpaImplementationSupport_OpaBuiltinMetadata_id" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id");
-CREATE INDEX "ix_OpaImplementationSupport_version" ON "OpaImplementationSupport" (version);
-CREATE INDEX "ix_OpaImplementationSupport_implementation" ON "OpaImplementationSupport" (implementation);
 CREATE INDEX "OpaImplementationSupport_OpaBuiltinMetadata_id_implementation_idx" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id", implementation);
+CREATE INDEX "ix_OpaImplementationSupport_version" ON "OpaImplementationSupport" (version);
+CREATE INDEX "ix_OpaImplementationSupport_OpaBuiltinMetadata_id" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id");
+CREATE INDEX "ix_OpaImplementationSupport_implementation" ON "OpaImplementationSupport" (implementation);
 
 CREATE TABLE "OpaBlock" (
 	id INTEGER NOT NULL,

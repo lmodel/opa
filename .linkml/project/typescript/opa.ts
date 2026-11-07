@@ -3,7 +3,7 @@ export type OpaImplementationSupportImplementation = string;
 export type OpaVersionEntryName = string;
 export type OpaFileRegoVersionPath = string;
 /**
-* The future keywords the shipped capabilities files name.
+* The future keywords the capabilities files OPA includes name.
 */
 export enum OpaFutureKeyword {
     
@@ -16,7 +16,7 @@ export enum OpaFutureKeyword {
     or = "or",
 };
 /**
-* The language features the shipped capabilities files name.
+* The language features the capabilities files OPA includes name.
 */
 export enum OpaFeature {
     
@@ -510,7 +510,7 @@ export interface OpaFunc {
     name: string,
     /** The locals that hold the parameters. The first two are the input and data documents. */
     params?: number[],
-    /** Where the function sits in the data tree, when it has a path. */
+    /** Where the function is in the data tree, when it has a path. */
     path?: string[],
     /** The local that holds the return value. */
     return: number,

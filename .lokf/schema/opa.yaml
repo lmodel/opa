@@ -748,7 +748,7 @@ classes:
       path:
         range: string
         multivalued: true
-        description: Where the function sits in the data tree, when it has a path.
+        description: Where the function is in the data tree, when it has a path.
       return_local:
         range: integer
         required: true
@@ -2066,7 +2066,7 @@ slots:
     range: integer
 enums:
   OpaFutureKeyword:
-    description: The future keywords the shipped capabilities files name.
+    description: The future keywords the capabilities files OPA includes name.
     permissible_values:
       and: {}
       contains: {}
@@ -2076,7 +2076,7 @@ enums:
       not: {}
       or: {}
   OpaFeature:
-    description: The language features the shipped capabilities files name.
+    description: The language features the capabilities files OPA includes name.
     permissible_values:
       keywords_in_refs: {}
       rego_v1: {}

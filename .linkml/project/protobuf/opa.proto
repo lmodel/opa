@@ -422,7 +422,7 @@ message OpaFunc {
   string name = 2;
   // The locals that hold the parameters. The first two are the input and data documents.
   repeated int32 params = 3;
-  // Where the function sits in the data tree, when it has a path.
+  // Where the function is in the data tree, when it has a path.
   repeated string path = 4;
   // The local that holds the return value.
   int32 return = 5;
@@ -1244,7 +1244,7 @@ message OpaWithStmtBody {
   OpaOperand value = 9;
 }
 
-// The language features the shipped capabilities files name.
+// The language features the capabilities files OPA includes name.
 enum OpaFeature {
   OPA_FEATURE_UNSPECIFIED = 0;
   OPA_FEATURE_KEYWORDS_IN_REFS = 1;
@@ -1256,7 +1256,7 @@ enum OpaFeature {
   OPA_FEATURE_RULE_HEAD_REFS = 7;
   OPA_FEATURE_TEMPLATE_STRINGS = 8;
 }
-// The future keywords the shipped capabilities files name.
+// The future keywords the capabilities files OPA includes name.
 enum OpaFutureKeyword {
   OPA_FUTURE_KEYWORD_UNSPECIFIED = 0;
   OPA_FUTURE_KEYWORD_AND = 1;

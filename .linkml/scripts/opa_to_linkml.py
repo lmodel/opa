@@ -283,8 +283,8 @@ def build_capabilities() -> dict:
         "capabilities",
         "OPA capabilities",
         "The capabilities document: the built-in functions, future keywords, Wasm ABI versions "
-        "and language features an OPA version supports, and the hosts it may reach. OPA ships one "
-        "per release in capabilities/, and `opa capabilities` prints it.",
+        "and language features an OPA version supports, and the hosts it may reach. OPA includes "
+        "one per release in capabilities/, and `opa capabilities` prints it.",
         f"{BLOB}v1/ast/capabilities.go",
         ["common"],
     )
@@ -360,11 +360,11 @@ def build_capabilities() -> dict:
     }
     schema["enums"] = {
         "OpaFutureKeyword": {
-            "description": "The future keywords the shipped capabilities files name.",
+            "description": "The future keywords the capabilities files OPA includes name.",
             "permissible_values": {k: {} for k in sorted(keywords)},
         },
         "OpaFeature": {
-            "description": "The language features the shipped capabilities files name.",
+            "description": "The language features the capabilities files OPA includes name.",
             "permissible_values": {f: {} for f in sorted(features)},
         },
     }
@@ -681,7 +681,7 @@ FIELD_TEXT = {
     ): "The locals that hold the parameters. The first two are the input and data documents.",
     ("Func", "return"): "The local that holds the return value.",
     ("Func", "blocks"): "The blocks, run in order.",
-    ("Func", "path"): "Where the function sits in the data tree, when it has a path.",
+    ("Func", "path"): "Where the function is in the data tree, when it has a path.",
     ("Block", "stmts"): "The statements, run in order.",
     ("UnplannedRule", "path"): "The rule's path.",
     ("UnplannedRule", "location"): "Where the rule is defined.",

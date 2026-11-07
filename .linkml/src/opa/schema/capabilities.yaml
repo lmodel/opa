@@ -5,8 +5,8 @@ name: capabilities
 title: OPA capabilities
 description: >-
   The capabilities document: the built-in functions, future keywords, Wasm ABI versions and
-  language features an OPA version supports, and the hosts it may reach. OPA ships one per
-  release in capabilities/, and `opa capabilities` prints it.
+  language features an OPA version supports, and the hosts it may reach. OPA includes one
+  per release in capabilities/, and `opa capabilities` prints it.
 version: 1.22.2
 source: >-
   https://github.com/open-policy-agent/opa/blob/482d9e368c2ddfed67ced59259fa6a247bb5f1e5/v1/ast/capabilities.go
@@ -104,7 +104,7 @@ classes:
         required: true
 enums:
   OpaFutureKeyword:
-    description: The future keywords the shipped capabilities files name.
+    description: The future keywords the capabilities files OPA includes name.
     permissible_values:
       and: {}
       contains: {}
@@ -114,7 +114,7 @@ enums:
       not: {}
       or: {}
   OpaFeature:
-    description: The language features the shipped capabilities files name.
+    description: The language features the capabilities files OPA includes name.
     permissible_values:
       keywords_in_refs: {}
       rego_v1: {}
