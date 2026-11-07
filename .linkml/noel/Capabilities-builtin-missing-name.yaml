@@ -1,8 +1,0 @@
-builtins:
-  - decl:
-      type: function
-      args: []
-future_keywords: []
-wasm_abi_versions: []
-features: []
-allow_net: []
