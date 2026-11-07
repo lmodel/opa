@@ -10,7 +10,7 @@ the merged release, and writes one module per format under src/opa/schema/.
 - capabilities.json and capabilities/*.json, builtin_metadata.json and
   v1/ast/version_index.json have no JSON Schema. Their modules render the Go types
   that write them (ast.Capabilities, ast.Builtin, types.Type, the generators under
-  internal/cmd/) and take each enumeration from the values every shipped file uses.
+  internal/cmd/) and take each enumeration from the values the files OPA includes use.
 - v1/ir/ir.go gives the plan's descriptions: the opening sentences of its doc
   comments.
 

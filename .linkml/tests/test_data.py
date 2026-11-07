@@ -2,7 +2,7 @@
 
 An example is a document OPA writes, with OPA's keys, such as `_categories`, `Major` or
 `return`. linkml-validate and the example runner read keys by slot name, so they cannot
-read one; the examples sit under tests/data/problem/, where the runner does not look,
+read one. The examples are kept under tests/data/problem/, where the runner does not look,
 and this test validates them against the JSON Schema LinkML generates, in which each
 key is the slot's alias. `tests/data/problem/valid/<Class>-<anything>.yaml` must pass,
 and `tests/data/problem/invalid/<Class>-<anything>.yaml` must fail. The plan, the

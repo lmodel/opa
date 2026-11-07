@@ -1,6 +1,6 @@
-"""Holds OPA's tree, the converter and the schema headers to the merged release.
+"""Checks OPA's tree, the converter and the schema headers against the merged release.
 
-OPA's tree at the release sits beside .linkml/, unchanged. These tests show that it
+OPA's tree at the release is beside .linkml/, unchanged. These tests show that it
 matches its pin byte for byte, that the schema is what the converter writes from it,
 and that the schema, the converter and the watch name one release.
 """

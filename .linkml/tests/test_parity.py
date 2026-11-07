@@ -8,7 +8,7 @@
    one with every key, and mutations of each: a required key dropped, an unknown key
    added, a key set to null or to a value of the wrong type, and a branch's kind given
    another branch's fields. OPA's data files that have no JSON Schema (every capabilities
-   file it ships, builtin_metadata.json and the version index) all validate.
+   file it includes, builtin_metadata.json and the version index) all validate.
 3. Shape: parity/structural.yaml gives the reason for each difference, and every case it
    lists still differs.
 """
