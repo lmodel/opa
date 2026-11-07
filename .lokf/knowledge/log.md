@@ -2,6 +2,7 @@
 
 ## 2026-11-07
 
+* **Changed**: Licence and attribution says that only the authorization input's class description is OPA's, as NOTICE now does.
 * **Changed**: the schema concept names the nine modules, with the decision log event and the status report.
 * **Changed**: What the schema leaves out names only the configuration file and the discovery bundle, now that the decision log event and the status report are modelled.
 * **Changed**: Where the model differs from OPA's JSON Schemas gives the fourth reason, the keys OPA's server leaves out of the authorization input.
