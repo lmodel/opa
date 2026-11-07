@@ -1,9 +1,13 @@
 """Compares the adapt copy's names and slot IRIs with LOKF's and the neighbours' copies'."""
 
 import hashlib
+from functools import lru_cache
 from pathlib import Path
 
 import yaml
+
+# libyaml's loader, where PyYAML has it: the neighbours are large.
+LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
 
 ROOT = Path(__file__).parent.parent
 TREE = ROOT.parent
@@ -167,12 +171,17 @@ MAPPING_KEYS = (
 )
 
 
+@lru_cache(maxsize=None)
+def _load(path):
+    return yaml.load(path.read_text(encoding="utf-8"), Loader=LOADER)
+
+
 def _names(path):
     """Each kind of element a schema file declares, and every slot and
     attribute key with the IRI it expands to. A slot's key is its alias where it
     has one, with a hyphen read as an underscore, as the JSON-LD context and
     JSON Schema generators write it."""
-    doc = yaml.safe_load(path.read_text())
+    doc = _load(path)
     prefixes = doc.get("prefixes") or {}
 
     def expand(curie):
@@ -247,7 +256,7 @@ def test_names_apart_from_neighbours():
 def test_copy_roots_the_concept_classes():
     """The copy re-roots exactly the listed classes on Concept and imports nothing
     but the LinkML types and LOKF."""
-    doc = yaml.safe_load(COPY.read_text())
+    doc = _load(COPY)
     rooted = {
         name for name, cls in doc["classes"].items() if cls.get("is_a") == "Concept"
     }
@@ -271,7 +280,7 @@ def test_mappings_use_a_bound_prefix():
     """Every mapping in the copy is a CURIE whose prefix the copy binds. A full
     address that no prefix covers makes every `lokf convert --schema` over the
     copy warn that it has no namespace."""
-    doc = yaml.safe_load(COPY.read_text())
+    doc = _load(COPY)
     prefixes = doc.get("prefixes") or {}
     mappings = list(_mappings(doc))
     assert mappings
@@ -289,7 +298,7 @@ def test_every_mapping_names_a_definition_in_opas_files():
         "opa_plan": "v1/ir/plan.schema.json",
         "opa_manifest": "v1/bundle/manifest.schema.json",
     }
-    doc = yaml.safe_load(COPY.read_text())
+    doc = _load(COPY)
     for mapping in _mappings(doc):
         prefix, _, name = mapping.partition(":")
         published = json.loads((TREE / files[prefix]).read_text(encoding="utf-8"))

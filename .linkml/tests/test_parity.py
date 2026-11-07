@@ -213,12 +213,29 @@ def _capabilities():
     return [TREE / "capabilities.json", *sorted((TREE / "capabilities").glob("*.json"))]
 
 
+@lru_cache(maxsize=None)
+def _builtin_errors(text: str) -> tuple[str, ...]:
+    return tuple(parity.errors("generated", "OpaBuiltin", json.loads(text))[:3])
+
+
+def test_a_capabilities_document_checks_its_builtins_one_by_one():
+    """The generated schema checks each item of `builtins` against OpaBuiltin and
+    nothing else, so the next test may check each distinct built-in once."""
+    prop = parity.generated()["$defs"]["OpaCapabilities"]["properties"]["builtins"]
+    assert prop["items"] == {"$ref": "#/$defs/OpaBuiltin"}
+    assert set(prop) <= {"description", "items", "type"}
+
+
 @pytest.mark.parametrize("path", _capabilities(), ids=lambda p: p.name)
 def test_every_shipped_capabilities_file_validates(path):
+    """The document with its builtins left out, and each built-in on its own. The
+    files repeat most built-ins, and each distinct one is checked once."""
     doc = json.loads(path.read_text(encoding="utf-8"))
-    assert parity.verdict("generated", "OpaCapabilities", doc), parity.errors(
-        "generated", "OpaCapabilities", doc
-    )[:3]
+    builtins = doc.pop("builtins", [])
+    assert parity.verdict("generated", "OpaCapabilities", {**doc, "builtins": []})
+    for builtin in builtins:
+        errors = _builtin_errors(json.dumps(builtin, sort_keys=True))
+        assert not errors, (builtin.get("name"), errors)
 
 
 @pytest.mark.parametrize(
