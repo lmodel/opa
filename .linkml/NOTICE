@@ -2,9 +2,9 @@ Open Policy Agent LinkML Schema (opa)
 Copyright 2026 Noel McLoughlin
 
 This repository is a fork of Open Policy Agent (OPA). Everything in it is
-under the Apache License, Version 2.0, except the knowledge bundle, which is
-under CC BY 4.0. The copyright in each part is its author's, as this notice
-sets out by path.
+under the Apache License, Version 2.0, except the knowledge bundle and the
+LOKF schema's copy, which are under CC BY 4.0. The copyright in each part is
+its author's, as this notice sets out by path.
 
 The schema project, everything under .linkml/, and what this project adds beside
 OPA's tree (.lokf/, knowledge_bundle, linkml_schema, website/, llms.txt,
@@ -16,7 +16,9 @@ beside this file), except for what the sections below list.
 
 The concepts under .lokf/knowledge/ are this project's work, licensed under
 the Creative Commons Attribution 4.0 International Public License (CC BY 4.0,
-https://creativecommons.org/licenses/by/4.0/), as .lokf/schema/lokf.yaml states.
+https://creativecommons.org/licenses/by/4.0/), as .lokf/knowledge/index.md
+states. .lokf/schema/lokf.yaml is a copy of the Linked Open Knowledge Format
+(LOKF) schema, version 0.9.0 (https://w3id.org/lokf/schema), under CC BY 4.0.
 
 Everything else is OPA's, unchanged, and under OPA's terms: LICENSE at the
 repository's root.

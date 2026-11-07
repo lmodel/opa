@@ -40,7 +40,7 @@ Run `just` from this folder to list the project's [just](https://github.com/case
 
 ## Knowledge Trust Ladder (KTL)
 
-`.lokf/` holds this project's [KTL](https://w3id.org/ktl/) sidecar. Its domain schema, `.lokf/schema/opa.yaml`, is the copy `just lokf-adapt` writes from `src/opa/schema/opa.yaml`, and `just lokf-adapt-check` says when it is stale. Edit the converter, never the copy. Once `KNOWLEDGE_RELEASE_ENABLED` is `true`, a release carries the copy as `schema-<tag>-opa.yaml`.
+`.lokf/` holds this project's [KTL](https://w3id.org/ktl/) sidecar. Its domain schema, `.lokf/schema/opa.yaml`, is the copy `just lokf-adapt` writes from `src/opa/schema/opa.yaml`, and `just lokf-adapt-check` says when it is stale. Edit the converter, never the copy. Once `KNOWLEDGE_RELEASE_ENABLED` is `true`, a release whose bundle or schema changed carries the copy as `schema-<tag>-opa.yaml`.
 
 In Obsidian, add these to the *Known LOKF types* setting of the KTL Registrar and KTL Curator plugins:
 
