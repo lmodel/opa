@@ -27,7 +27,7 @@ def watch():
 def _answers(watch):
     """The answers of an unchanged upstream, built from the pins."""
     edition = watch.EDITION
-    pins = watch.pinned({watch.LICENCE, *watch.SCHEMAS})
+    pins = watch.pinned({watch.LICENCE, *watch.FORMATS})
     folders = {}
     for path, sha in pins.items():
         folder = path.rpartition("/")[0]
@@ -65,7 +65,7 @@ def test_unchanged_upstream_passes(watch, capsys):
     code, out = _run(watch, capsys)
     assert code == 0
     assert "latest release is the merged" in out
-    assert "holds v1.22.2's JSON Schemas" in out
+    assert "holds v1.22.2's format files" in out
 
 
 def test_a_later_release_fails(watch, capsys):
@@ -107,15 +107,19 @@ def test_a_changed_licence_fails(watch, capsys):
     assert "LICENSE on OPA's default branch changed" in out
 
 
-def test_a_changed_json_schema_is_reported_only(watch, capsys):
+@pytest.mark.parametrize(
+    "path", ["v1/ir/plan.schema.json", "v1/plugins/logs/plugin.go"]
+)
+def test_a_changed_format_file_is_reported_only(watch, capsys, path):
     answers = _answers(watch)
-    answers["/contents/v1/ir?ref=main"] = [
-        {"path": "v1/ir/plan.schema.json", "sha": "0" * 40, "type": "file"}
+    folder = path.rpartition("/")[0]
+    answers[f"/contents/{folder}?ref=main"] = [
+        {"path": path, "sha": "0" * 40, "type": "file"}
     ]
     _stub(watch, answers)
     code, out = _run(watch, capsys)
     assert code == 0
-    assert "For information" in out and "`v1/ir/plan.schema.json`" in out
+    assert "For information" in out and f"`{path}`" in out
 
 
 def test_a_failed_request_fails_and_says_which_check(watch, capsys):

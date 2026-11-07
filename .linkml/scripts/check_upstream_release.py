@@ -13,9 +13,11 @@ change here:
 - the pinned tag moves to another commit;
 - the licence on OPA's default branch changes.
 
-Each of these fails the check. One more is reported for information only: OPA's JSON
-Schemas for the plan, the manifest and the authorization input differ on its default
-branch from the release's, which says what the next release may change.
+Each of these fails the check. One more is reported for information only: a file that
+defines a format the schema renders key for key differs on OPA's default branch from the
+release's, which says what the next release may change. Those files are the JSON Schemas
+of the plan, the manifest and the authorization input, and the Go files of the decision
+log event and the status report.
 
 The script reads only GitHub's API and compares git object hashes, so it downloads no
 file. It prints a Markdown report and exits 1 on any failing check, or when a check
@@ -60,12 +62,18 @@ EDITION = {
 }
 
 # The files compared on OPA's default branch: its licence, which fails the check when it
-# changes, and the JSON Schemas the schema renders, which are reported for information.
+# changes, and the files that define the formats the schema renders key for key, which
+# are reported for information.
 LICENCE = "LICENSE"
-SCHEMAS = (
+FORMATS = (
     "v1/ir/plan.schema.json",
     "v1/bundle/manifest.schema.json",
     "v1/schemas/authorizationPolicy.json",
+    "v1/plugins/logs/plugin.go",
+    "v1/plugins/status/plugin.go",
+    "v1/plugins/bundle/status.go",
+    "v1/plugins/logs/status/status.go",
+    "v1/plugins/plugins.go",
 )
 
 
@@ -186,18 +194,19 @@ def check_licence() -> tuple[list[str], bool]:
     return [f"- {LICENCE} on OPA's default branch is unchanged."], False
 
 
-def check_schemas() -> tuple[list[str], bool]:
-    """Report, for information, which of OPA's JSON Schemas differ on its default branch."""
-    pins = pinned(set(SCHEMAS))
-    found = _files(set(SCHEMAS), default_branch())
-    moved = sorted(path for path in SCHEMAS if found.get(path) != pins[path])
+def check_formats() -> tuple[list[str], bool]:
+    """Report, for information, which files that define a format differ on OPA's
+    default branch."""
+    pins = pinned(set(FORMATS))
+    found = _files(set(FORMATS), default_branch())
+    moved = sorted(path for path in FORMATS if found.get(path) != pins[path])
     if moved:
         shown = ", ".join(_code(path) for path in moved)
         return [
-            f"- For information, OPA's default branch has JSON Schemas that differ from "
-            f"{EDITION['tag']}'s: {shown}. They are unreleased."
+            f"- For information, OPA's default branch has format files that differ "
+            f"from {EDITION['tag']}'s: {shown}. They are unreleased."
         ], False
-    return [f"- OPA's default branch holds {EDITION['tag']}'s JSON Schemas."], False
+    return [f"- OPA's default branch holds {EDITION['tag']}'s format files."], False
 
 
 # Each check, by the name the report gives it when it cannot finish.
@@ -205,7 +214,7 @@ CHECKS = (
     ("release", check_release),
     ("pinned tag", check_pinned_tag),
     ("licence", check_licence),
-    ("JSON Schema", check_schemas),
+    ("format", check_formats),
 )
 
 
