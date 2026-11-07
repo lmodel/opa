@@ -25,6 +25,7 @@ The weekly watch opens an issue when OPA publishes a release. Then:[^contributin
 2. Run `just pin-opa-tree <commit>`.
 3. Update `TAG`, `COMMIT` and `RELEASE_DATE` in the converter, `EDITION` in the watch and `IMAGE` in the capture script.
 4. Regenerate, and run `just capture-opa-documents`.
-5. Merge with a merge commit: a squash loses OPA's history.
+
+Merge with a merge commit: a squash loses OPA's history.
 
 [^contributing.md]: .linkml/CONTRIBUTING.md, Taking a new release of OPA

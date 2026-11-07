@@ -183,7 +183,7 @@ def call(base: str, method: str, path: str, body=None, headers=None) -> None:
         with urllib.request.urlopen(req, timeout=10):
             pass
     except urllib.error.HTTPError:
-        pass  # Only what OPA sends and prints is kept, never its answer.
+        pass  # The script does not keep OPA's answer.
 
 
 def wait_for(base: str) -> None:
