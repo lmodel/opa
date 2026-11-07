@@ -22,7 +22,7 @@ status: draft
 
 # Parity allowances
 
-The file lists each case of the parity corpus that the schema and OPA's JSON Schema decide differently, and says what the schema does with it.[^structural.yaml] The test fails when a case is added, or a listed one no longer differs.[^test_parity.py]
+The file lists each case of the parity corpus on which the schema and OPA's JSON Schema give different verdicts, and says what the schema does with it.[^structural.yaml] The test fails when a case is added, or a listed one no longer differs.[^test_parity.py]
 
 [^structural.yaml]: .linkml/parity/structural.yaml, the header
 [^test_parity.py]: .linkml/tests/test_parity.py, the docstring

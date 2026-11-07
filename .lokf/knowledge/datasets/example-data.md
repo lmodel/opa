@@ -21,7 +21,7 @@ status: draft
 
 # Example data
 
-Each file is named after the class it must validate against. `problem/valid/` holds documents that must pass, and `problem/invalid/` documents that must fail.[^data-readme.md] The test also asks OPA's own JSON Schema for the plan, the manifest and the authorization input.[^test_data.py]
+Each file is named after the class it must validate against. `problem/valid/` holds documents that must pass, and `problem/invalid/` documents that must fail.[^data-readme.md] The test also checks the examples of the plan, the manifest and the authorization input against OPA's own JSON Schema for each.[^test_data.py]
 
 [^data-readme.md]: .linkml/tests/data/README.md
 [^test_data.py]: .linkml/tests/test_data.py, the docstring

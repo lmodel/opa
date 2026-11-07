@@ -2,6 +2,7 @@
 
 ## 2026-11-07
 
+* **Prose**: reworded 9 concept bodies in plain English. No fact, link, number or frontmatter changed.
 * **Changed**: the adapt copy renames the six keys LOKF defines with another meaning.
 * **Changed**: the schema concept cites the umbrella for its imports.
 * **Bootstrap**: the first concepts, derived from the schema project, its docs, tests and workflows.

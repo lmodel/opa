@@ -17,6 +17,6 @@ status: draft
 
 # Release
 
-Only `feat:`, `fix:`, `security:` and a breaking `!` start a release, and OPA's commits in a merge count too.[^contributing.md] The `v0.0.0` baseline tag sits on the merge of OPA's release, so OPA's older commits do not count.[^contributing.md]
+Only `feat:`, `fix:`, `security:` and a breaking `!` start a release, and OPA's commits in a merge count too.[^contributing.md] The `v0.0.0` baseline tag is on the merge of OPA's release, so OPA's older commits do not count.[^contributing.md]
 
 [^contributing.md]: .linkml/CONTRIBUTING.md, Releasing (maintainers)

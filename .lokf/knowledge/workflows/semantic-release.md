@@ -16,6 +16,6 @@ status: draft
 
 # Semantic release (semantic-release.yml)
 
-The baseline tag sits on the merge of OPA's release, so OPA's older commits do not count.[^semantic-release.yml]
+The baseline tag is on the merge of OPA's release, so OPA's older commits do not count.[^semantic-release.yml]
 
 [^semantic-release.yml]: .github/workflows/semantic-release.yml

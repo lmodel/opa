@@ -19,6 +19,6 @@ status: draft
 
 # The neighbours' adapt copies
 
-Each file is the schema asset of an lmodel release, checked against the release's checksum and attestation. The test holds each copy to its checksum, and lists the keys this schema's copy shares with each.[^test_schema_rules.py]
+Each file is the schema asset of an lmodel release, checked against the release's checksum and attestation. The test checks each copy against its checksum, and lists the keys this schema's copy shares with each.[^test_schema_rules.py]
 
 [^test_schema_rules.py]: .linkml/tests/test_schema_rules.py, NEIGHBOURS
