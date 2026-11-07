@@ -190,6 +190,13 @@ def test_every_class_of_a_go_module_renders_a_struct():
         assert set(names) <= set(GO_STRUCTS), module
 
 
+def test_the_committed_json_schema_is_what_the_schema_generates():
+    """project/jsonschema/opa.schema.json, which a user validates with, is the JSON
+    Schema these tests read, so a schema change without `just gen-project` fails."""
+    committed = ROOT / "project" / "jsonschema" / "opa.schema.json"
+    assert json.loads(committed.read_text(encoding="utf-8")) == parity.generated()
+
+
 def test_corpus_is_large():
     assert len(corpus()) > 900
 
