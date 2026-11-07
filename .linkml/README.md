@@ -20,7 +20,7 @@ This repository is a fork of [open-policy-agent/opa](https://github.com/open-pol
 
 ## Mappings
 
-* **OPA's JSON Schemas**: the `exact_mappings` of each class of the plan and the manifest name the definition it renders, such as `opa_plan:CallStmt`. `tests/test_parity.py` resolves each one in OPA's file.
+* **OPA's JSON Schemas**: each class that renders a definition of OPA's plan or manifest schema names it in `exact_mappings`, such as `opa_plan:CallStmt`. `tests/test_parity.py` resolves each one in OPA's file.
 
 ## Repository Structure
 
@@ -36,7 +36,7 @@ The knowledge bundle is in `.lokf/` and the website in `website/`, at the reposi
 
 ## Developer Tools
 
-Run `just` from this folder to list the project's [just](https://github.com/casey/just/) recipes. Never run `just setup`, which nests a repository, or `just deploy`, which pushes the root of `gh-pages`.
+Run `just` from this folder to list the project's [just](https://github.com/casey/just/) recipes. Never run `just setup`, which nests a repository.
 
 ## Knowledge Trust Ladder (KTL)
 
@@ -48,7 +48,7 @@ In Obsidian, add these to the *Known LOKF types* setting of the KTL Registrar an
 OpaBuiltin, OpaCapabilities, OpaManifest, OpaPolicy
 ```
 
-In the copy, `OpaManifest`, `OpaCapabilities`, `OpaBuiltin` and `OpaPolicy` descend from LOKF's `Concept`, and `description` folds into LOKF's. Each `name` keeps its key. Six of OPA's keys are words LOKF defines with another meaning: `body`, `revision`, `source`, `target`, `type` and `version`. Each is a top-level slot with an IRI of this schema's, so a document OPA writes keeps the key. The copy renames them `openpolicyagent_body`, `openpolicyagent_revision`, `openpolicyagent_source`, `openpolicyagent_target`, `openpolicyagent_type` and `openpolicyagent_version`. Every class carries the `Opa` prefix, so no class name is also a neighbour's. OPA's keys are ordinary words, so the copy shares some with other lmodel copies, which `tests/test_schema_rules.py` lists.
+In the copy, `OpaManifest`, `OpaCapabilities`, `OpaBuiltin` and `OpaPolicy` descend from LOKF's `Concept`, and `description` folds into LOKF's. Each `name` keeps its key. Six of OPA's keys are words LOKF defines with another meaning: `body`, `revision`, `source`, `target`, `type` and `version`. Each is a top-level slot with an IRI of this schema's, so the schema keeps OPA's key and the copy renames the slot: `openpolicyagent_body`, `openpolicyagent_revision`, `openpolicyagent_source`, `openpolicyagent_target`, `openpolicyagent_type` and `openpolicyagent_version`. A document with OPA's keys therefore validates against the schema, not the copy. Every class carries the `Opa` prefix, so no class name is also a neighbour's. OPA's keys are ordinary words, so the copy shares some with other lmodel copies, which `tests/test_schema_rules.py` lists.
 
 ## Credits
 

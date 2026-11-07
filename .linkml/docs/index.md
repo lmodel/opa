@@ -8,7 +8,7 @@ This project is a LinkML model of the JSON formats Open Policy Agent (OPA) defin
 
 ## Validating a document
 
-`linkml-validate` reads keys by slot name, and a few of OPA's keys differ from the slot's name: `_categories`, `Major`, `return`, `a`, `b` and `Index`. Validate against the JSON Schema the schema generates instead, in which each such key is the slot's alias:
+`linkml-validate` reads keys by slot name, and some of OPA's keys differ from the slot's name, such as `_categories`, `Major`, `return` and `Index`. Validate against the JSON Schema the schema generates instead, in which each such key is the slot's alias:
 
 ```bash
 uv run gen-json-schema --include-range-class-descendants --top-class OpaManifest \

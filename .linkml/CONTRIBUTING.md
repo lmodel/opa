@@ -28,7 +28,7 @@ uv sync --group dev
 just --list
 ```
 
-Never run `just setup` (it nests a repository) or `just deploy` (it pushes the root of `gh-pages`).
+Never run `just setup` (it nests a repository).
 
 ### Agent skills (optional, only for this repo's `.lokf/` bundle)
 
@@ -53,7 +53,7 @@ npx skills add noelmcloughlin/knowledge-trust-ladder --skill ktl-curator --yes  
 - **Lock files are part of the change.** CI installs with `uv sync --locked`, so an edit without its `.linkml/uv.lock` (or `.lokf/uv.lock`) fails.
 - **Knowledge-bundle changes**: `cd .lokf && just lokf-validate` must pass, and `knowledge-registrar.yaml` runs on any `.lokf/**` change.
 - **`lint-and-docs.yaml`** runs ShellCheck, actionlint, markdownlint, lychee and codespell over this project's files, never OPA's.
-- **Actions are pinned to commit hashes**; Dependabot bumps them.
+- **Actions are pinned to commit hashes**; bump them by hand, since this fork leaves Dependabot off.
 - **The skills pin moves with the sidecar copies.** When moving `TRUST_LADDER_SKILLS_REF` in `.github/workflows/knowledge-librarian.yaml`, copy the other `knowledge-*.yaml` workflows and `.lokf/scripts/` and `.lokf/m365/` from that release's `skills/ktl-sidecar/templates/` in the same pull request.
 - **If your change alters behaviour**, add an entry under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md).
 

@@ -31,4 +31,4 @@ The enumerations of future keywords and features take every value that the capab
 
 ## What it leaves out
 
-The first release covers the formats OPA publishes a JSON Schema for or includes as a data file. OPA documents more formats in prose: the decision log event, the status report, the discovery bundle and the configuration file. Their shapes are defined by Go types under `plugins/` and `config/`, and OPA publishes no schema for them. Each can follow as a module that the converter reads from those types.
+The first release covers the formats OPA publishes a JSON Schema for or keeps as a data file: the capabilities files, `builtin_metadata.json` and `version_index.json`. OPA documents more formats in prose: the decision log event, the status report, the discovery bundle and the configuration file. Their shapes are defined by Go types in `v1/plugins/` and `v1/config/`, and OPA publishes no schema for them. Each can follow as a module that the converter reads from those types.

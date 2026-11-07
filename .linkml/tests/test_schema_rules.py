@@ -1,4 +1,4 @@
-"""Checks that the adapt copy can be imported beside LOKF and the neighbours' copies."""
+"""Compares the adapt copy's names and slot IRIs with LOKF's and the neighbours' copies'."""
 
 import hashlib
 from pathlib import Path
