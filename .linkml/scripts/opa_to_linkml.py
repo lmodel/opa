@@ -258,6 +258,10 @@ def build_common() -> dict:
         },
     }
     schema["classes"] = classes
+    schema["slots"] = {
+        key: {"description": text, "slot_uri": f"openpolicyagent:{key}"}
+        for key, text in PROMOTED.items()
+    }
     return schema
 
 
@@ -378,7 +382,7 @@ def build_builtin_metadata() -> dict:
         "documentation: each built-in function with its arguments, its result, the OPA versions "
         "that have it and the other implementations that support it, keyed by name.",
         f"{BLOB}internal/cmd/genbuiltinmetadata/main.go",
-        [],
+        ["common"],
     )
     schema["classes"] = {
         "OpaBuiltinMetadataCatalog": {
@@ -1024,21 +1028,41 @@ _Dumper.add_representer(str, _str)
 SHARED_IRIS = {
     "description": "schema:description",
     "name": "schema:name",
-    "version": "schema:version",
     "id": "schema:identifier",
 }
+
+
+# OPA's keys that LOKF also defines, with another meaning. Each is a top-level slot
+# in common, with an IRI in this schema's namespace, that a class uses through
+# `slots` and `slot_usage`, so OPA's documents keep the key and `lokf adapt` renames
+# the slot in its copy and keeps the IRI. As an attribute, the key would keep its
+# name in the copy, and a composite's JSON-LD context would read it as LOKF's.
+PROMOTED = {
+    "body": "The body of an HTTP request.",
+    "revision": "A bundle's revision, a string the bundle's author chooses.",
+    "source": "What a plan statement reads: a local, or an operand.",
+    "target": "The local a plan statement writes its result to.",
+    "type": "The kind of an object: of a Rego type, a plan statement or an operand, "
+    "or a type written as OPA prints types.",
+    "version": "A version: an implementation's, a Wasm ABI's major number or a file's "
+    "Rego version.",
+}
+
+
+def promote_lokf_keys(schema: dict) -> None:
+    for cls in (schema.get("classes") or {}).values():
+        attrs = cls.get("attributes") or {}
+        for key in [k for k in attrs if k in PROMOTED]:
+            cls.setdefault("slots", []).append(key)
+            cls.setdefault("slot_usage", {})[key] = attrs.pop(key)
+        if "attributes" in cls and not attrs:
+            del cls["attributes"]
 
 
 def share_lokf_iris(schema: dict) -> None:
     for cls in (schema.get("classes") or {}).values():
         for key, slot in (cls.get("attributes") or {}).items():
-            # An integer version, a Wasm ABI's major number or a file's Rego
-            # version, is not LOKF's version string.
-            if (
-                key in SHARED_IRIS
-                and "alias" not in slot
-                and slot.get("range") != "integer"
-            ):
+            if key in SHARED_IRIS and "alias" not in slot:
                 slot["slot_uri"] = SHARED_IRIS[key]
 
 
@@ -1061,6 +1085,7 @@ def main(argv: list[str] | None = None) -> int:
         path = SCHEMA_DIR / f"{module}.yaml"
         schema = build()
         share_lokf_iris(schema)
+        promote_lokf_keys(schema)
         text = render(schema)
         if args.check:
             if not path.exists() or path.read_text(encoding="utf-8") != text:

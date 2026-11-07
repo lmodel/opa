@@ -16,10 +16,10 @@ import lombok.*;
 @EqualsAndHashCode(callSuper=false)
 public class OpaImplementation  {
 
+  private String version;
   private String id;
   private String label;
   private String repo;
-  private String version;
 
 
 }

@@ -171,7 +171,12 @@ class OpaAnyType(OpaType):
     """
     A union of the types it lists in `of`, or any value when it lists none.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common',
+         'slot_usage': {'type': {'description': 'The kind of type.',
+                                 'equals_string': 'any',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["any"] = Field(default=..., description="""The kind of type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -221,7 +226,8 @@ class OpaAnyType(OpaType):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'any'} })
+         'equals_string': 'any',
+         'slot_uri': 'openpolicyagent:type'} })
     of: Optional[list[OpaType]] = Field(default=None, description="""The types the union admits.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType', 'OpaSetType']} })
     name: Optional[str] = Field(default=None, description="""The argument's or result's name, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -245,7 +251,12 @@ class OpaArrayType(OpaType):
     """
     An array, with a type per position in `static` and one for the rest in `dynamic`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common',
+         'slot_usage': {'type': {'description': 'The kind of type.',
+                                 'equals_string': 'array',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["array"] = Field(default=..., description="""The kind of type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -295,7 +306,8 @@ class OpaArrayType(OpaType):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'array'} })
+         'equals_string': 'array',
+         'slot_uri': 'openpolicyagent:type'} })
     static: Optional[list[OpaType]] = Field(default=None, description="""The type of each element by position.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayType', 'OpaObjectType', 'OpaPolicy']} })
     dynamic: Optional[OpaType] = Field(default=None, description="""The type of the elements after the static ones.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayType', 'OpaObjectType']} })
     name: Optional[str] = Field(default=None, description="""The argument's or result's name, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
@@ -320,7 +332,12 @@ class OpaBooleanType(OpaType):
     """
     A boolean.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common',
+         'slot_usage': {'type': {'description': 'The kind of type.',
+                                 'equals_string': 'boolean',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["boolean"] = Field(default=..., description="""The kind of type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -370,7 +387,8 @@ class OpaBooleanType(OpaType):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'boolean'} })
+         'equals_string': 'boolean',
+         'slot_uri': 'openpolicyagent:type'} })
     name: Optional[str] = Field(default=None, description="""The argument's or result's name, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinCategory',
@@ -393,7 +411,12 @@ class OpaFunctionType(OpaType):
     """
     A function, with its arguments, its result and a variadic argument type.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common',
+         'slot_usage': {'type': {'description': 'The kind of type.',
+                                 'equals_string': 'function',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["function"] = Field(default=..., description="""The kind of type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -443,7 +466,8 @@ class OpaFunctionType(OpaType):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'function'} })
+         'equals_string': 'function',
+         'slot_uri': 'openpolicyagent:type'} })
     args: Optional[list[OpaType]] = Field(default=None, description="""The argument types, in order.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaFunctionType',
                        'OpaBuiltinMetadata',
                        'OpaCallDynamicStmtBody',
@@ -475,7 +499,12 @@ class OpaNullType(OpaType):
     """
     The null value.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common',
+         'slot_usage': {'type': {'description': 'The kind of type.',
+                                 'equals_string': 'null',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["null"] = Field(default=..., description="""The kind of type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -525,7 +554,8 @@ class OpaNullType(OpaType):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'null'} })
+         'equals_string': 'null',
+         'slot_uri': 'openpolicyagent:type'} })
     name: Optional[str] = Field(default=None, description="""The argument's or result's name, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinCategory',
@@ -548,7 +578,12 @@ class OpaNumberType(OpaType):
     """
     A number.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common',
+         'slot_usage': {'type': {'description': 'The kind of type.',
+                                 'equals_string': 'number',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["number"] = Field(default=..., description="""The kind of type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -598,7 +633,8 @@ class OpaNumberType(OpaType):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'number'} })
+         'equals_string': 'number',
+         'slot_uri': 'openpolicyagent:type'} })
     name: Optional[str] = Field(default=None, description="""The argument's or result's name, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinCategory',
@@ -621,7 +657,12 @@ class OpaObjectType(OpaType):
     """
     An object, with typed known keys in `static` and a key and value type for the rest in `dynamic`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common',
+         'slot_usage': {'type': {'description': 'The kind of type.',
+                                 'equals_string': 'object',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["object"] = Field(default=..., description="""The kind of type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -671,7 +712,8 @@ class OpaObjectType(OpaType):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'object'} })
+         'equals_string': 'object',
+         'slot_uri': 'openpolicyagent:type'} })
     static: Optional[list[OpaStaticProperty]] = Field(default=None, description="""The known keys and the types of their values.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayType', 'OpaObjectType', 'OpaPolicy']} })
     dynamic: Optional[OpaDynamicProperty] = Field(default=None, description="""The key type and value type of the other keys.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayType', 'OpaObjectType']} })
     name: Optional[str] = Field(default=None, description="""The argument's or result's name, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
@@ -696,7 +738,12 @@ class OpaSetType(OpaType):
     """
     A set, whose members have the type in `of`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common',
+         'slot_usage': {'type': {'description': 'The kind of type.',
+                                 'equals_string': 'set',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["set"] = Field(default=..., description="""The kind of type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -746,7 +793,8 @@ class OpaSetType(OpaType):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'set'} })
+         'equals_string': 'set',
+         'slot_uri': 'openpolicyagent:type'} })
     of: Optional[OpaType] = Field(default=None, description="""The type of the set's members.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType', 'OpaSetType']} })
     name: Optional[str] = Field(default=None, description="""The argument's or result's name, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
@@ -770,7 +818,12 @@ class OpaStringType(OpaType):
     """
     A string.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/common',
+         'slot_usage': {'type': {'description': 'The kind of type.',
+                                 'equals_string': 'string',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["string"] = Field(default=..., description="""The kind of type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -820,7 +873,8 @@ class OpaStringType(OpaType):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'string'} })
+         'equals_string': 'string',
+         'slot_uri': 'openpolicyagent:type'} })
     name: Optional[str] = Field(default=None, description="""The argument's or result's name, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinCategory',
@@ -944,12 +998,17 @@ class OpaWasmAbiVersion(ConfiguredBaseModel):
     """
     A Wasm ABI version, as a major and a minor number.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/capabilities'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/capabilities',
+         'slot_usage': {'version': {'description': 'The major version.',
+                                    'name': 'version',
+                                    'range': 'integer',
+                                    'required': True}}})
 
     version: int = Field(default=..., description="""The major version.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaWasmAbiVersion',
                        'OpaImplementation',
                        'OpaImplementationSupport',
-                       'OpaFileRegoVersion']} })
+                       'OpaFileRegoVersion'],
+         'slot_uri': 'openpolicyagent:version'} })
     minor_version: int = Field(default=..., description="""The minor version.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaWasmAbiVersion']} })
 
 
@@ -988,16 +1047,20 @@ class OpaImplementation(ConfiguredBaseModel):
     """
     An implementation of Rego besides OPA.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/builtin_metadata'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/builtin_metadata',
+         'slot_usage': {'version': {'description': "The implementation's version the "
+                                                   'catalogue reflects.',
+                                    'name': 'version',
+                                    'required': True}}})
 
-    id: str = Field(default=..., description="""The implementation's key in each function's `implementations`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaImplementation'], 'slot_uri': 'schema:identifier'} })
-    label: str = Field(default=..., description="""The implementation's display name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaImplementation']} })
-    repo: str = Field(default=..., description="""The implementation's GitHub repository, as owner/name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaImplementation']} })
     version: str = Field(default=..., description="""The implementation's version the catalogue reflects.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaWasmAbiVersion',
                        'OpaImplementation',
                        'OpaImplementationSupport',
                        'OpaFileRegoVersion'],
-         'slot_uri': 'schema:version'} })
+         'slot_uri': 'openpolicyagent:version'} })
+    id: str = Field(default=..., description="""The implementation's key in each function's `implementations`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaImplementation'], 'slot_uri': 'schema:identifier'} })
+    label: str = Field(default=..., description="""The implementation's display name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaImplementation']} })
+    repo: str = Field(default=..., description="""The implementation's GitHub repository, as owner/name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaImplementation']} })
 
 
 class OpaBuiltinMetadata(ConfiguredBaseModel):
@@ -1033,24 +1096,13 @@ class OpaBuiltinArgument(ConfiguredBaseModel):
     """
     An argument of a built-in function.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/builtin_metadata'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/builtin_metadata',
+         'slot_usage': {'type': {'description': "The argument's type, written as OPA "
+                                                'prints types, such as '
+                                                '`array[string]`.',
+                                 'name': 'type',
+                                 'required': True}}})
 
-    name: Optional[str] = Field(default=None, description="""The argument's name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
-                       'OpaBuiltin',
-                       'OpaBuiltinCategory',
-                       'OpaBuiltinArgument',
-                       'OpaBuiltinResult',
-                       'OpaVersionEntry',
-                       'OpaBuiltinFunc',
-                       'OpaPlan',
-                       'OpaFunc'],
-         'slot_uri': 'schema:name'} })
-    description: Optional[str] = Field(default=None, description="""What the argument holds.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
-                       'OpaBuiltin',
-                       'OpaBuiltinMetadata',
-                       'OpaBuiltinArgument',
-                       'OpaBuiltinResult'],
-         'slot_uri': 'schema:description'} })
     type: str = Field(default=..., description="""The argument's type, written as OPA prints types, such as `array[string]`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
                        'OpaBooleanType',
@@ -1098,16 +1150,9 @@ class OpaBuiltinArgument(ConfiguredBaseModel):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand']} })
-
-
-class OpaBuiltinResult(ConfiguredBaseModel):
-    """
-    The result of a built-in function. Some functions declare none.
-    """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/builtin_metadata'})
-
-    name: Optional[str] = Field(default=None, description="""The result's name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
+                       'OpaStringIndexOperand'],
+         'slot_uri': 'openpolicyagent:type'} })
+    name: Optional[str] = Field(default=None, description="""The argument's name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinCategory',
                        'OpaBuiltinArgument',
@@ -1117,12 +1162,23 @@ class OpaBuiltinResult(ConfiguredBaseModel):
                        'OpaPlan',
                        'OpaFunc'],
          'slot_uri': 'schema:name'} })
-    description: Optional[str] = Field(default=None, description="""What the result holds.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
+    description: Optional[str] = Field(default=None, description="""What the argument holds.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
                        'OpaBuiltinResult'],
          'slot_uri': 'schema:description'} })
+
+
+class OpaBuiltinResult(ConfiguredBaseModel):
+    """
+    The result of a built-in function. Some functions declare none.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/builtin_metadata',
+         'slot_usage': {'type': {'description': "The result's type, written as OPA "
+                                                'prints types.',
+                                 'name': 'type'}}})
+
     type: Optional[str] = Field(default=None, description="""The result's type, written as OPA prints types.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
                        'OpaBooleanType',
@@ -1170,21 +1226,42 @@ class OpaBuiltinResult(ConfiguredBaseModel):
                        'OpaWithStmt',
                        'OpaBoolOperand',
                        'OpaLocalOperand',
-                       'OpaStringIndexOperand']} })
+                       'OpaStringIndexOperand'],
+         'slot_uri': 'openpolicyagent:type'} })
+    name: Optional[str] = Field(default=None, description="""The result's name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
+                       'OpaBuiltin',
+                       'OpaBuiltinCategory',
+                       'OpaBuiltinArgument',
+                       'OpaBuiltinResult',
+                       'OpaVersionEntry',
+                       'OpaBuiltinFunc',
+                       'OpaPlan',
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
+    description: Optional[str] = Field(default=None, description="""What the result holds.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
+                       'OpaBuiltin',
+                       'OpaBuiltinMetadata',
+                       'OpaBuiltinArgument',
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
 
 
 class OpaImplementationSupport(ConfiguredBaseModel):
     """
     An implementation that supports a function, and the version that added it.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/builtin_metadata'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/builtin_metadata',
+         'slot_usage': {'version': {'description': "The implementation's version that "
+                                                   'added the function.',
+                                    'name': 'version',
+                                    'required': True}}})
 
-    implementation: str = Field(default=..., description="""The implementation's id.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaImplementationSupport']} })
     version: str = Field(default=..., description="""The implementation's version that added the function.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaWasmAbiVersion',
                        'OpaImplementation',
                        'OpaImplementationSupport',
                        'OpaFileRegoVersion'],
-         'slot_uri': 'schema:version'} })
+         'slot_uri': 'openpolicyagent:version'} })
+    implementation: str = Field(default=..., description="""The implementation's id.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaImplementationSupport']} })
 
 
 class OpaVersionIndex(ConfiguredBaseModel):
@@ -1226,8 +1303,14 @@ class OpaAuthorizationInput(ConfiguredBaseModel):
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'extra_slots': {'allowed': True},
          'from_schema': 'https://w3id.org/lmodel/opa/authorization_input',
+         'slot_usage': {'body': {'description': 'The request body.',
+                                 'inlined': True,
+                                 'name': 'body',
+                                 'range': 'OpaObject',
+                                 'required': True}},
          'tree_root': True})
 
+    body: OpaObject = Field(default=..., description="""The request body.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput'], 'slot_uri': 'openpolicyagent:body'} })
     identity: str = Field(default=..., description="""The bearer token or client certificate subject that identifies the caller.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
     client_certificates: list[OpaObject] = Field(default=..., description="""The client's TLS certificates.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
     method: str = Field(default=..., description="""The HTTP method of the request.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
@@ -1239,7 +1322,6 @@ class OpaAuthorizationInput(ConfiguredBaseModel):
                        'OpaWithStmtBody']} })
     params: OpaObject = Field(default=..., description="""The query parameters.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput', 'OpaFunc']} })
     headers: OpaObject = Field(default=..., description="""The request headers.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
-    body: OpaObject = Field(default=..., description="""The request body.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput']} })
 
 
 class OpaManifest(ConfiguredBaseModel):
@@ -1249,12 +1331,17 @@ class OpaManifest(ConfiguredBaseModel):
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_manifest:Manifest'],
          'extra_slots': {'allowed': True},
          'from_schema': 'https://w3id.org/lmodel/opa/bundle_manifest',
+         'slot_usage': {'revision': {'description': "The bundle's revision, a string "
+                                                    "the bundle's author chooses.",
+                                     'name': 'revision',
+                                     'range': 'string',
+                                     'required': True}},
          'tree_root': True})
 
+    revision: str = Field(default=..., description="""The bundle's revision, a string the bundle's author chooses.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest'], 'slot_uri': 'openpolicyagent:revision'} })
     file_rego_versions: Optional[dict[str, Union[int, OpaFileRegoVersion]]] = Field(default=None, description="""Rego versions for single files, which override `rego_version`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest']} })
     metadata: Optional[OpaObject] = Field(default=None, description="""Metadata the bundle's author adds.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest']} })
     rego_version: Optional[int] = Field(default=None, description="""The Rego version of the bundle's files: 0 for v0, 1 for v1.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest']} })
-    revision: str = Field(default=..., description="""The bundle's revision, a string the bundle's author chooses.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest']} })
     roots: Optional[list[str]] = Field(default=None, description="""The paths in the data tree the bundle owns. A bundle without the key owns the whole tree.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaManifest']} })
     wasm: Optional[list[OpaWasmResolver]] = Field(default=None, description="""The Wasm modules the bundle holds, and the entrypoints they resolve.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltinMetadata', 'OpaManifest']} })
 
@@ -1275,18 +1362,23 @@ class OpaFileRegoVersion(ConfiguredBaseModel):
     """
     The Rego version of one file in the bundle.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/bundle_manifest'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/bundle_manifest',
+         'slot_usage': {'version': {'description': "The file's Rego version.",
+                                    'name': 'version',
+                                    'range': 'integer',
+                                    'required': True}}})
 
+    version: int = Field(default=..., description="""The file's Rego version.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaWasmAbiVersion',
+                       'OpaImplementation',
+                       'OpaImplementationSupport',
+                       'OpaFileRegoVersion'],
+         'slot_uri': 'openpolicyagent:version'} })
     path: str = Field(default=..., description="""The file's path in the bundle.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput',
                        'OpaFileRegoVersion',
                        'OpaFunc',
                        'OpaUnplannedRule',
                        'OpaCallDynamicStmtBody',
                        'OpaWithStmtBody']} })
-    version: int = Field(default=..., description="""The file's Rego version.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaWasmAbiVersion',
-                       'OpaImplementation',
-                       'OpaImplementationSupport',
-                       'OpaFileRegoVersion']} })
 
 
 class OpaPolicy(ConfiguredBaseModel):
@@ -1506,7 +1598,12 @@ class OpaArrayAppendStmt(OpaStmt):
     """
     A statement of kind ArrayAppendStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'ArrayAppendStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["ArrayAppendStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -1556,7 +1653,8 @@ class OpaArrayAppendStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'ArrayAppendStmt'} })
+         'equals_string': 'ArrayAppendStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaArrayAppendStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -1627,7 +1725,12 @@ class OpaAssignIntStmt(OpaStmt):
     """
     A statement of kind AssignIntStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'AssignIntStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["AssignIntStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -1677,7 +1780,8 @@ class OpaAssignIntStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'AssignIntStmt'} })
+         'equals_string': 'AssignIntStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaAssignIntStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -1719,7 +1823,11 @@ class OpaAssignIntStmtBody(OpaStmtBody):
     AssignIntStmt represents an assignment of an integer value to a local variable.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:AssignIntStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'target': {'description': 'The local that receives the result.',
+                                   'name': 'target',
+                                   'range': 'integer',
+                                   'required': True}}})
 
     target: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignIntStmtBody',
                        'OpaAssignVarOnceStmtBody',
@@ -1733,7 +1841,8 @@ class OpaAssignIntStmtBody(OpaStmtBody):
                        'OpaMakeObjectStmtBody',
                        'OpaMakeSetStmtBody',
                        'OpaObjectMergeStmtBody',
-                       'OpaResetLocalStmtBody']} })
+                       'OpaResetLocalStmtBody'],
+         'slot_uri': 'openpolicyagent:target'} })
     value: int = Field(default=..., description="""The value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
                        'OpaDynamicProperty',
                        'OpaStringConst',
@@ -1760,7 +1869,12 @@ class OpaAssignVarOnceStmt(OpaStmt):
     """
     A statement of kind AssignVarOnceStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'AssignVarOnceStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["AssignVarOnceStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -1810,7 +1924,8 @@ class OpaAssignVarOnceStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'AssignVarOnceStmt'} })
+         'equals_string': 'AssignVarOnceStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaAssignVarOnceStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -1852,7 +1967,16 @@ class OpaAssignVarOnceStmtBody(OpaStmtBody):
     AssignVarOnceStmt represents an assignment of one local variable to another. If the target is defined, execution aborts with a conflict error.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:AssignVarOnceStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'source': {'description': 'What the statement reads.',
+                                   'inlined': True,
+                                   'name': 'source',
+                                   'range': 'OpaOperand',
+                                   'required': True},
+                        'target': {'description': 'The local that receives the result.',
+                                   'name': 'target',
+                                   'range': 'integer',
+                                   'required': True}}})
 
     source: OpaOperand = Field(default=..., description="""What the statement reads.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -1864,7 +1988,8 @@ class OpaAssignVarOnceStmtBody(OpaStmtBody):
                        'OpaIsUndefinedStmtBody',
                        'OpaLenStmtBody',
                        'OpaReturnLocalStmtBody',
-                       'OpaScanStmtBody']} })
+                       'OpaScanStmtBody'],
+         'slot_uri': 'openpolicyagent:source'} })
     target: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignIntStmtBody',
                        'OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -1877,7 +2002,8 @@ class OpaAssignVarOnceStmtBody(OpaStmtBody):
                        'OpaMakeObjectStmtBody',
                        'OpaMakeSetStmtBody',
                        'OpaObjectMergeStmtBody',
-                       'OpaResetLocalStmtBody']} })
+                       'OpaResetLocalStmtBody'],
+         'slot_uri': 'openpolicyagent:target'} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -1889,7 +2015,12 @@ class OpaAssignVarStmt(OpaStmt):
     """
     A statement of kind AssignVarStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'AssignVarStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["AssignVarStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -1939,7 +2070,8 @@ class OpaAssignVarStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'AssignVarStmt'} })
+         'equals_string': 'AssignVarStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaAssignVarStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -1981,7 +2113,16 @@ class OpaAssignVarStmtBody(OpaStmtBody):
     AssignVarStmt represents an assignment of one local variable to another.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:AssignVarStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'source': {'description': 'What the statement reads.',
+                                   'inlined': True,
+                                   'name': 'source',
+                                   'range': 'OpaOperand',
+                                   'required': True},
+                        'target': {'description': 'The local that receives the result.',
+                                   'name': 'target',
+                                   'range': 'integer',
+                                   'required': True}}})
 
     source: OpaOperand = Field(default=..., description="""What the statement reads.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -1993,7 +2134,8 @@ class OpaAssignVarStmtBody(OpaStmtBody):
                        'OpaIsUndefinedStmtBody',
                        'OpaLenStmtBody',
                        'OpaReturnLocalStmtBody',
-                       'OpaScanStmtBody']} })
+                       'OpaScanStmtBody'],
+         'slot_uri': 'openpolicyagent:source'} })
     target: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignIntStmtBody',
                        'OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -2006,7 +2148,8 @@ class OpaAssignVarStmtBody(OpaStmtBody):
                        'OpaMakeObjectStmtBody',
                        'OpaMakeSetStmtBody',
                        'OpaObjectMergeStmtBody',
-                       'OpaResetLocalStmtBody']} })
+                       'OpaResetLocalStmtBody'],
+         'slot_uri': 'openpolicyagent:target'} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -2018,7 +2161,12 @@ class OpaBlockStmt(OpaStmt):
     """
     A statement of kind BlockStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'BlockStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["BlockStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -2068,7 +2216,8 @@ class OpaBlockStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'BlockStmt'} })
+         'equals_string': 'BlockStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaBlockStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -2124,7 +2273,12 @@ class OpaBreakStmt(OpaStmt):
     """
     A statement of kind BreakStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'BreakStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["BreakStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -2174,7 +2328,8 @@ class OpaBreakStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'BreakStmt'} })
+         'equals_string': 'BreakStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaBreakStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -2230,7 +2385,12 @@ class OpaCallDynamicStmt(OpaStmt):
     """
     A statement of kind CallDynamicStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'CallDynamicStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["CallDynamicStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -2280,7 +2440,8 @@ class OpaCallDynamicStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'CallDynamicStmt'} })
+         'equals_string': 'CallDynamicStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaCallDynamicStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -2349,7 +2510,12 @@ class OpaCallStmt(OpaStmt):
     """
     A statement of kind CallStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'CallStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["CallStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -2399,7 +2565,8 @@ class OpaCallStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'CallStmt'} })
+         'equals_string': 'CallStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaCallStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -2463,7 +2630,12 @@ class OpaDotStmt(OpaStmt):
     """
     A statement of kind DotStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'DotStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["DotStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -2513,7 +2685,8 @@ class OpaDotStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'DotStmt'} })
+         'equals_string': 'DotStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaDotStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -2555,14 +2728,17 @@ class OpaDotStmtBody(OpaStmtBody):
     DotStmt represents a lookup operation on a value (e.g., array, object, etc.) The source of a DotStmt may be a scalar value in which case the statement will be undefined.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:DotStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'source': {'description': 'What the statement reads.',
+                                   'inlined': True,
+                                   'name': 'source',
+                                   'range': 'OpaOperand',
+                                   'required': True},
+                        'target': {'description': 'The local that receives the result.',
+                                   'name': 'target',
+                                   'range': 'integer',
+                                   'required': True}}})
 
-    key: OpaOperand = Field(default=..., description="""The key.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
-                       'OpaDynamicProperty',
-                       'OpaDotStmtBody',
-                       'OpaObjectInsertOnceStmtBody',
-                       'OpaObjectInsertStmtBody',
-                       'OpaScanStmtBody']} })
     source: OpaOperand = Field(default=..., description="""What the statement reads.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
                        'OpaDotStmtBody',
@@ -2573,7 +2749,8 @@ class OpaDotStmtBody(OpaStmtBody):
                        'OpaIsUndefinedStmtBody',
                        'OpaLenStmtBody',
                        'OpaReturnLocalStmtBody',
-                       'OpaScanStmtBody']} })
+                       'OpaScanStmtBody'],
+         'slot_uri': 'openpolicyagent:source'} })
     target: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignIntStmtBody',
                        'OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -2586,7 +2763,14 @@ class OpaDotStmtBody(OpaStmtBody):
                        'OpaMakeObjectStmtBody',
                        'OpaMakeSetStmtBody',
                        'OpaObjectMergeStmtBody',
-                       'OpaResetLocalStmtBody']} })
+                       'OpaResetLocalStmtBody'],
+         'slot_uri': 'openpolicyagent:target'} })
+    key: OpaOperand = Field(default=..., description="""The key.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
+                       'OpaDynamicProperty',
+                       'OpaDotStmtBody',
+                       'OpaObjectInsertOnceStmtBody',
+                       'OpaObjectInsertStmtBody',
+                       'OpaScanStmtBody']} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -2598,7 +2782,12 @@ class OpaEqualStmt(OpaStmt):
     """
     A statement of kind EqualStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'EqualStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["EqualStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -2648,7 +2837,8 @@ class OpaEqualStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'EqualStmt'} })
+         'equals_string': 'EqualStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaEqualStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -2709,7 +2899,12 @@ class OpaIsArrayStmt(OpaStmt):
     """
     A statement of kind IsArrayStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'IsArrayStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["IsArrayStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -2759,7 +2954,8 @@ class OpaIsArrayStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'IsArrayStmt'} })
+         'equals_string': 'IsArrayStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaIsArrayStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -2801,7 +2997,12 @@ class OpaIsArrayStmtBody(OpaStmtBody):
     IsArrayStmt represents a dynamic type check on a local variable.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:IsArrayStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'source': {'description': 'What the statement reads.',
+                                   'inlined': True,
+                                   'name': 'source',
+                                   'range': 'OpaOperand',
+                                   'required': True}}})
 
     source: OpaOperand = Field(default=..., description="""What the statement reads.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -2813,7 +3014,8 @@ class OpaIsArrayStmtBody(OpaStmtBody):
                        'OpaIsUndefinedStmtBody',
                        'OpaLenStmtBody',
                        'OpaReturnLocalStmtBody',
-                       'OpaScanStmtBody']} })
+                       'OpaScanStmtBody'],
+         'slot_uri': 'openpolicyagent:source'} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -2825,7 +3027,12 @@ class OpaIsDefinedStmt(OpaStmt):
     """
     A statement of kind IsDefinedStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'IsDefinedStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["IsDefinedStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -2875,7 +3082,8 @@ class OpaIsDefinedStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'IsDefinedStmt'} })
+         'equals_string': 'IsDefinedStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaIsDefinedStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -2917,7 +3125,11 @@ class OpaIsDefinedStmtBody(OpaStmtBody):
     IsDefinedStmt represents a check of whether a local variable is defined.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:IsDefinedStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'source': {'description': 'The local checked.',
+                                   'name': 'source',
+                                   'range': 'integer',
+                                   'required': True}}})
 
     source: int = Field(default=..., description="""The local checked.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -2929,7 +3141,8 @@ class OpaIsDefinedStmtBody(OpaStmtBody):
                        'OpaIsUndefinedStmtBody',
                        'OpaLenStmtBody',
                        'OpaReturnLocalStmtBody',
-                       'OpaScanStmtBody']} })
+                       'OpaScanStmtBody'],
+         'slot_uri': 'openpolicyagent:source'} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -2941,7 +3154,12 @@ class OpaIsObjectStmt(OpaStmt):
     """
     A statement of kind IsObjectStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'IsObjectStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["IsObjectStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -2991,7 +3209,8 @@ class OpaIsObjectStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'IsObjectStmt'} })
+         'equals_string': 'IsObjectStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaIsObjectStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -3033,7 +3252,12 @@ class OpaIsObjectStmtBody(OpaStmtBody):
     IsObjectStmt represents a dynamic type check on a local variable.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:IsObjectStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'source': {'description': 'What the statement reads.',
+                                   'inlined': True,
+                                   'name': 'source',
+                                   'range': 'OpaOperand',
+                                   'required': True}}})
 
     source: OpaOperand = Field(default=..., description="""What the statement reads.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -3045,7 +3269,8 @@ class OpaIsObjectStmtBody(OpaStmtBody):
                        'OpaIsUndefinedStmtBody',
                        'OpaLenStmtBody',
                        'OpaReturnLocalStmtBody',
-                       'OpaScanStmtBody']} })
+                       'OpaScanStmtBody'],
+         'slot_uri': 'openpolicyagent:source'} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -3057,7 +3282,12 @@ class OpaIsSetStmt(OpaStmt):
     """
     A statement of kind IsSetStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'IsSetStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["IsSetStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -3107,7 +3337,8 @@ class OpaIsSetStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'IsSetStmt'} })
+         'equals_string': 'IsSetStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaIsSetStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -3149,7 +3380,12 @@ class OpaIsSetStmtBody(OpaStmtBody):
     IsSetStmt represents a dynamic type check on a local variable.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:IsSetStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'source': {'description': 'What the statement reads.',
+                                   'inlined': True,
+                                   'name': 'source',
+                                   'range': 'OpaOperand',
+                                   'required': True}}})
 
     source: OpaOperand = Field(default=..., description="""What the statement reads.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -3161,7 +3397,8 @@ class OpaIsSetStmtBody(OpaStmtBody):
                        'OpaIsUndefinedStmtBody',
                        'OpaLenStmtBody',
                        'OpaReturnLocalStmtBody',
-                       'OpaScanStmtBody']} })
+                       'OpaScanStmtBody'],
+         'slot_uri': 'openpolicyagent:source'} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -3173,7 +3410,12 @@ class OpaIsUndefinedStmt(OpaStmt):
     """
     A statement of kind IsUndefinedStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'IsUndefinedStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["IsUndefinedStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -3223,7 +3465,8 @@ class OpaIsUndefinedStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'IsUndefinedStmt'} })
+         'equals_string': 'IsUndefinedStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaIsUndefinedStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -3265,7 +3508,11 @@ class OpaIsUndefinedStmtBody(OpaStmtBody):
     IsUndefinedStmt represents a check of whether local variable is undefined.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:IsUndefinedStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'source': {'description': 'The local checked.',
+                                   'name': 'source',
+                                   'range': 'integer',
+                                   'required': True}}})
 
     source: int = Field(default=..., description="""The local checked.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -3277,7 +3524,8 @@ class OpaIsUndefinedStmtBody(OpaStmtBody):
                        'OpaIsUndefinedStmtBody',
                        'OpaLenStmtBody',
                        'OpaReturnLocalStmtBody',
-                       'OpaScanStmtBody']} })
+                       'OpaScanStmtBody'],
+         'slot_uri': 'openpolicyagent:source'} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -3289,7 +3537,12 @@ class OpaLenStmt(OpaStmt):
     """
     A statement of kind LenStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'LenStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["LenStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -3339,7 +3592,8 @@ class OpaLenStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'LenStmt'} })
+         'equals_string': 'LenStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaLenStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -3381,7 +3635,16 @@ class OpaLenStmtBody(OpaStmtBody):
     LenStmt represents a length() operation on a local variable. The result is stored in the target local variable.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:LenStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'source': {'description': 'What the statement reads.',
+                                   'inlined': True,
+                                   'name': 'source',
+                                   'range': 'OpaOperand',
+                                   'required': True},
+                        'target': {'description': 'The local that receives the result.',
+                                   'name': 'target',
+                                   'range': 'integer',
+                                   'required': True}}})
 
     source: OpaOperand = Field(default=..., description="""What the statement reads.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -3393,7 +3656,8 @@ class OpaLenStmtBody(OpaStmtBody):
                        'OpaIsUndefinedStmtBody',
                        'OpaLenStmtBody',
                        'OpaReturnLocalStmtBody',
-                       'OpaScanStmtBody']} })
+                       'OpaScanStmtBody'],
+         'slot_uri': 'openpolicyagent:source'} })
     target: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignIntStmtBody',
                        'OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -3406,7 +3670,8 @@ class OpaLenStmtBody(OpaStmtBody):
                        'OpaMakeObjectStmtBody',
                        'OpaMakeSetStmtBody',
                        'OpaObjectMergeStmtBody',
-                       'OpaResetLocalStmtBody']} })
+                       'OpaResetLocalStmtBody'],
+         'slot_uri': 'openpolicyagent:target'} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -3418,7 +3683,12 @@ class OpaMakeArrayStmt(OpaStmt):
     """
     A statement of kind MakeArrayStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'MakeArrayStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["MakeArrayStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -3468,7 +3738,8 @@ class OpaMakeArrayStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'MakeArrayStmt'} })
+         'equals_string': 'MakeArrayStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaMakeArrayStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -3510,9 +3781,12 @@ class OpaMakeArrayStmtBody(OpaStmtBody):
     MakeArrayStmt constructs a local variable that refers to an array value.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:MakeArrayStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'target': {'description': 'The local that receives the result.',
+                                   'name': 'target',
+                                   'range': 'integer',
+                                   'required': True}}})
 
-    capacity: int = Field(default=..., description="""The capacity to allocate.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaMakeArrayStmtBody']} })
     target: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignIntStmtBody',
                        'OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -3525,7 +3799,9 @@ class OpaMakeArrayStmtBody(OpaStmtBody):
                        'OpaMakeObjectStmtBody',
                        'OpaMakeSetStmtBody',
                        'OpaObjectMergeStmtBody',
-                       'OpaResetLocalStmtBody']} })
+                       'OpaResetLocalStmtBody'],
+         'slot_uri': 'openpolicyagent:target'} })
+    capacity: int = Field(default=..., description="""The capacity to allocate.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaMakeArrayStmtBody']} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -3537,7 +3813,12 @@ class OpaMakeNullStmt(OpaStmt):
     """
     A statement of kind MakeNullStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'MakeNullStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["MakeNullStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -3587,7 +3868,8 @@ class OpaMakeNullStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'MakeNullStmt'} })
+         'equals_string': 'MakeNullStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaMakeNullStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -3629,7 +3911,11 @@ class OpaMakeNullStmtBody(OpaStmtBody):
     MakeNullStmt constructs a local variable that refers to a null value.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:MakeNullStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'target': {'description': 'The local that receives the result.',
+                                   'name': 'target',
+                                   'range': 'integer',
+                                   'required': True}}})
 
     target: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignIntStmtBody',
                        'OpaAssignVarOnceStmtBody',
@@ -3643,7 +3929,8 @@ class OpaMakeNullStmtBody(OpaStmtBody):
                        'OpaMakeObjectStmtBody',
                        'OpaMakeSetStmtBody',
                        'OpaObjectMergeStmtBody',
-                       'OpaResetLocalStmtBody']} })
+                       'OpaResetLocalStmtBody'],
+         'slot_uri': 'openpolicyagent:target'} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -3655,7 +3942,12 @@ class OpaMakeNumberIntStmt(OpaStmt):
     """
     A statement of kind MakeNumberIntStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'MakeNumberIntStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["MakeNumberIntStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -3705,7 +3997,8 @@ class OpaMakeNumberIntStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'MakeNumberIntStmt'} })
+         'equals_string': 'MakeNumberIntStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaMakeNumberIntStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -3747,7 +4040,11 @@ class OpaMakeNumberIntStmtBody(OpaStmtBody):
     MakeNumberIntStmt constructs a local variable that refers to an integer value.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:MakeNumberIntStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'target': {'description': 'The local that receives the result.',
+                                   'name': 'target',
+                                   'range': 'integer',
+                                   'required': True}}})
 
     target: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignIntStmtBody',
                        'OpaAssignVarOnceStmtBody',
@@ -3761,7 +4058,8 @@ class OpaMakeNumberIntStmtBody(OpaStmtBody):
                        'OpaMakeObjectStmtBody',
                        'OpaMakeSetStmtBody',
                        'OpaObjectMergeStmtBody',
-                       'OpaResetLocalStmtBody']} })
+                       'OpaResetLocalStmtBody'],
+         'slot_uri': 'openpolicyagent:target'} })
     value: int = Field(default=..., description="""The value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
                        'OpaDynamicProperty',
                        'OpaStringConst',
@@ -3788,7 +4086,12 @@ class OpaMakeNumberRefStmt(OpaStmt):
     """
     A statement of kind MakeNumberRefStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'MakeNumberRefStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["MakeNumberRefStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -3838,7 +4141,8 @@ class OpaMakeNumberRefStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'MakeNumberRefStmt'} })
+         'equals_string': 'MakeNumberRefStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaMakeNumberRefStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -3880,9 +4184,12 @@ class OpaMakeNumberRefStmtBody(OpaStmtBody):
     MakeNumberRefStmt constructs a local variable that refers to a number stored as a string.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:MakeNumberRefStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'target': {'description': 'The local that receives the result.',
+                                   'name': 'target',
+                                   'range': 'integer',
+                                   'required': True}}})
 
-    index: int = Field(default=..., description="""Index, in the plan's static strings, of the number written as a string.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBreakStmtBody', 'OpaMakeNumberRefStmtBody']} })
     target: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignIntStmtBody',
                        'OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -3895,7 +4202,9 @@ class OpaMakeNumberRefStmtBody(OpaStmtBody):
                        'OpaMakeObjectStmtBody',
                        'OpaMakeSetStmtBody',
                        'OpaObjectMergeStmtBody',
-                       'OpaResetLocalStmtBody']} })
+                       'OpaResetLocalStmtBody'],
+         'slot_uri': 'openpolicyagent:target'} })
+    index: int = Field(default=..., description="""Index, in the plan's static strings, of the number written as a string.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBreakStmtBody', 'OpaMakeNumberRefStmtBody']} })
     Index: Optional[int] = Field(default=None, description="""Deprecated alias for `index`. Both keys are emitted by current OPA versions for backwards compatibility; will be removed in a future major release. Read `index` instead.""", json_schema_extra = { "linkml_meta": {'deprecated': 'Deprecated alias for `index`. Both keys are emitted by current '
                        'OPA versions for backwards compatibility; will be removed in a '
                        'future major release. Read `index` instead.',
@@ -3911,7 +4220,12 @@ class OpaMakeObjectStmt(OpaStmt):
     """
     A statement of kind MakeObjectStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'MakeObjectStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["MakeObjectStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -3961,7 +4275,8 @@ class OpaMakeObjectStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'MakeObjectStmt'} })
+         'equals_string': 'MakeObjectStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaMakeObjectStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -4003,7 +4318,11 @@ class OpaMakeObjectStmtBody(OpaStmtBody):
     MakeObjectStmt constructs a local variable that refers to an object value.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:MakeObjectStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'target': {'description': 'The local that receives the result.',
+                                   'name': 'target',
+                                   'range': 'integer',
+                                   'required': True}}})
 
     target: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignIntStmtBody',
                        'OpaAssignVarOnceStmtBody',
@@ -4017,7 +4336,8 @@ class OpaMakeObjectStmtBody(OpaStmtBody):
                        'OpaMakeObjectStmtBody',
                        'OpaMakeSetStmtBody',
                        'OpaObjectMergeStmtBody',
-                       'OpaResetLocalStmtBody']} })
+                       'OpaResetLocalStmtBody'],
+         'slot_uri': 'openpolicyagent:target'} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -4029,7 +4349,12 @@ class OpaMakeSetStmt(OpaStmt):
     """
     A statement of kind MakeSetStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'MakeSetStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["MakeSetStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -4079,7 +4404,8 @@ class OpaMakeSetStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'MakeSetStmt'} })
+         'equals_string': 'MakeSetStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaMakeSetStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -4121,7 +4447,11 @@ class OpaMakeSetStmtBody(OpaStmtBody):
     MakeSetStmt constructs a local variable that refers to a set value.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:MakeSetStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'target': {'description': 'The local that receives the result.',
+                                   'name': 'target',
+                                   'range': 'integer',
+                                   'required': True}}})
 
     target: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignIntStmtBody',
                        'OpaAssignVarOnceStmtBody',
@@ -4135,7 +4465,8 @@ class OpaMakeSetStmtBody(OpaStmtBody):
                        'OpaMakeObjectStmtBody',
                        'OpaMakeSetStmtBody',
                        'OpaObjectMergeStmtBody',
-                       'OpaResetLocalStmtBody']} })
+                       'OpaResetLocalStmtBody'],
+         'slot_uri': 'openpolicyagent:target'} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -4147,7 +4478,12 @@ class OpaNopStmt(OpaStmt):
     """
     A statement of kind NopStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'NopStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["NopStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -4197,7 +4533,8 @@ class OpaNopStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'NopStmt'} })
+         'equals_string': 'NopStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaNopStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -4252,7 +4589,12 @@ class OpaNotEqualStmt(OpaStmt):
     """
     A statement of kind NotEqualStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'NotEqualStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["NotEqualStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -4302,7 +4644,8 @@ class OpaNotEqualStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'NotEqualStmt'} })
+         'equals_string': 'NotEqualStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaNotEqualStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -4363,7 +4706,12 @@ class OpaNotStmt(OpaStmt):
     """
     A statement of kind NotStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'NotStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["NotStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -4413,7 +4761,8 @@ class OpaNotStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'NotStmt'} })
+         'equals_string': 'NotStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaNotStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -4469,7 +4818,12 @@ class OpaObjectInsertOnceStmt(OpaStmt):
     """
     A statement of kind ObjectInsertOnceStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'ObjectInsertOnceStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["ObjectInsertOnceStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -4519,7 +4873,8 @@ class OpaObjectInsertOnceStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'ObjectInsertOnceStmt'} })
+         'equals_string': 'ObjectInsertOnceStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaObjectInsertOnceStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -4596,7 +4951,12 @@ class OpaObjectInsertStmt(OpaStmt):
     """
     A statement of kind ObjectInsertStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'ObjectInsertStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["ObjectInsertStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -4646,7 +5006,8 @@ class OpaObjectInsertStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'ObjectInsertStmt'} })
+         'equals_string': 'ObjectInsertStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaObjectInsertStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -4723,7 +5084,12 @@ class OpaObjectMergeStmt(OpaStmt):
     """
     A statement of kind ObjectMergeStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'ObjectMergeStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["ObjectMergeStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -4773,7 +5139,8 @@ class OpaObjectMergeStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'ObjectMergeStmt'} })
+         'equals_string': 'ObjectMergeStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaObjectMergeStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -4815,7 +5182,11 @@ class OpaObjectMergeStmtBody(OpaStmtBody):
     ObjectMergeStmt performs a recursive merge of two object values. If either of the locals refer to non-object values this operation will abort with a conflict error.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:ObjectMergeStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'target': {'description': 'The local that receives the result.',
+                                   'name': 'target',
+                                   'range': 'integer',
+                                   'required': True}}})
 
     target: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignIntStmtBody',
                        'OpaAssignVarOnceStmtBody',
@@ -4829,7 +5200,8 @@ class OpaObjectMergeStmtBody(OpaStmtBody):
                        'OpaMakeObjectStmtBody',
                        'OpaMakeSetStmtBody',
                        'OpaObjectMergeStmtBody',
-                       'OpaResetLocalStmtBody']} })
+                       'OpaResetLocalStmtBody'],
+         'slot_uri': 'openpolicyagent:target'} })
     a: int = Field(default=..., description="""The local that holds the first object.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaEqualStmtBody',
                        'OpaNotEqualStmtBody',
                        'OpaObjectMergeStmtBody']} })
@@ -4847,7 +5219,12 @@ class OpaResetLocalStmt(OpaStmt):
     """
     A statement of kind ResetLocalStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'ResetLocalStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["ResetLocalStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -4897,7 +5274,8 @@ class OpaResetLocalStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'ResetLocalStmt'} })
+         'equals_string': 'ResetLocalStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaResetLocalStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -4939,7 +5317,11 @@ class OpaResetLocalStmtBody(OpaStmtBody):
     ResetLocalStmt resets a local variable to 0.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:ResetLocalStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'target': {'description': 'The local that receives the result.',
+                                   'name': 'target',
+                                   'range': 'integer',
+                                   'required': True}}})
 
     target: int = Field(default=..., description="""The local that receives the result.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignIntStmtBody',
                        'OpaAssignVarOnceStmtBody',
@@ -4953,7 +5335,8 @@ class OpaResetLocalStmtBody(OpaStmtBody):
                        'OpaMakeObjectStmtBody',
                        'OpaMakeSetStmtBody',
                        'OpaObjectMergeStmtBody',
-                       'OpaResetLocalStmtBody']} })
+                       'OpaResetLocalStmtBody'],
+         'slot_uri': 'openpolicyagent:target'} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -4965,7 +5348,12 @@ class OpaResultSetAddStmt(OpaStmt):
     """
     A statement of kind ResultSetAddStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'ResultSetAddStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["ResultSetAddStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -5015,7 +5403,8 @@ class OpaResultSetAddStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'ResultSetAddStmt'} })
+         'equals_string': 'ResultSetAddStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaResultSetAddStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -5085,7 +5474,12 @@ class OpaReturnLocalStmt(OpaStmt):
     """
     A statement of kind ReturnLocalStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'ReturnLocalStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["ReturnLocalStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -5135,7 +5529,8 @@ class OpaReturnLocalStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'ReturnLocalStmt'} })
+         'equals_string': 'ReturnLocalStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaReturnLocalStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -5177,7 +5572,11 @@ class OpaReturnLocalStmtBody(OpaStmtBody):
     ReturnLocalStmt represents a return statement that yields a local value.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:ReturnLocalStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'source': {'description': 'The local returned.',
+                                   'name': 'source',
+                                   'range': 'integer',
+                                   'required': True}}})
 
     source: int = Field(default=..., description="""The local returned.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
@@ -5189,7 +5588,8 @@ class OpaReturnLocalStmtBody(OpaStmtBody):
                        'OpaIsUndefinedStmtBody',
                        'OpaLenStmtBody',
                        'OpaReturnLocalStmtBody',
-                       'OpaScanStmtBody']} })
+                       'OpaScanStmtBody'],
+         'slot_uri': 'openpolicyagent:source'} })
     file: int = Field(default=..., description="""Index, in the plan's static files, of the policy file the statement comes from.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     col: int = Field(default=..., description="""Column where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
     row: int = Field(default=..., description="""Line where the statement's source text starts.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaLocation', 'OpaStmtBody']} })
@@ -5201,7 +5601,12 @@ class OpaScanStmt(OpaStmt):
     """
     A statement of kind ScanStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'ScanStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["ScanStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -5251,7 +5656,8 @@ class OpaScanStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'ScanStmt'} })
+         'equals_string': 'ScanStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaScanStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -5293,15 +5699,12 @@ class OpaScanStmtBody(OpaStmtBody):
     ScanStmt represents a linear scan over a composite value. The source may be a scalar in which case the block will never execute.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'exact_mappings': ['opa_plan:ScanStmt'],
-         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+         'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'source': {'description': 'The local whose value is scanned.',
+                                   'name': 'source',
+                                   'range': 'integer',
+                                   'required': True}}})
 
-    block: Optional[OpaBlock] = Field(default=None, description="""The block run for each key and value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaNotStmtBody', 'OpaScanStmtBody', 'OpaWithStmtBody']} })
-    key: int = Field(default=..., description="""The local that receives each key.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
-                       'OpaDynamicProperty',
-                       'OpaDotStmtBody',
-                       'OpaObjectInsertOnceStmtBody',
-                       'OpaObjectInsertStmtBody',
-                       'OpaScanStmtBody']} })
     source: int = Field(default=..., description="""The local whose value is scanned.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAssignVarOnceStmtBody',
                        'OpaAssignVarStmtBody',
                        'OpaDotStmtBody',
@@ -5312,6 +5715,14 @@ class OpaScanStmtBody(OpaStmtBody):
                        'OpaIsUndefinedStmtBody',
                        'OpaLenStmtBody',
                        'OpaReturnLocalStmtBody',
+                       'OpaScanStmtBody'],
+         'slot_uri': 'openpolicyagent:source'} })
+    block: Optional[OpaBlock] = Field(default=None, description="""The block run for each key and value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaNotStmtBody', 'OpaScanStmtBody', 'OpaWithStmtBody']} })
+    key: int = Field(default=..., description="""The local that receives each key.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
+                       'OpaDynamicProperty',
+                       'OpaDotStmtBody',
+                       'OpaObjectInsertOnceStmtBody',
+                       'OpaObjectInsertStmtBody',
                        'OpaScanStmtBody']} })
     value: int = Field(default=..., description="""The local that receives each value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
                        'OpaDynamicProperty',
@@ -5339,7 +5750,12 @@ class OpaSetAddStmt(OpaStmt):
     """
     A statement of kind SetAddStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'SetAddStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["SetAddStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -5389,7 +5805,8 @@ class OpaSetAddStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'SetAddStmt'} })
+         'equals_string': 'SetAddStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaSetAddStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -5460,7 +5877,12 @@ class OpaWithStmt(OpaStmt):
     """
     A statement of kind WithStmt, with its fields in `stmt`.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of statement.',
+                                 'equals_string': 'WithStmt',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["WithStmt"] = Field(default=..., description="""The kind of statement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -5510,7 +5932,8 @@ class OpaWithStmt(OpaStmt):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'WithStmt'} })
+         'equals_string': 'WithStmt',
+         'slot_uri': 'openpolicyagent:type'} })
     stmt: OpaWithStmtBody = Field(default=..., description="""The statement's fields.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaArrayAppendStmt',
                        'OpaAssignIntStmt',
                        'OpaAssignVarOnceStmt',
@@ -5599,7 +6022,12 @@ class OpaBoolOperand(OpaOperand):
     """
     Bool represents a constant boolean.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of operand.',
+                                 'equals_string': 'bool',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["bool"] = Field(default=..., description="""The kind of operand.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -5649,7 +6077,8 @@ class OpaBoolOperand(OpaOperand):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'bool'} })
+         'equals_string': 'bool',
+         'slot_uri': 'openpolicyagent:type'} })
     value: bool = Field(default=..., description="""The operand's value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
                        'OpaDynamicProperty',
                        'OpaStringConst',
@@ -5671,7 +6100,12 @@ class OpaLocalOperand(OpaOperand):
     """
     A local variable, by its number.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of operand.',
+                                 'equals_string': 'local',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["local"] = Field(default=..., description="""The kind of operand.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -5721,7 +6155,8 @@ class OpaLocalOperand(OpaOperand):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'local'} })
+         'equals_string': 'local',
+         'slot_uri': 'openpolicyagent:type'} })
     value: int = Field(default=..., description="""The operand's value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
                        'OpaDynamicProperty',
                        'OpaStringConst',
@@ -5743,7 +6178,12 @@ class OpaStringIndexOperand(OpaOperand):
     """
     StringIndex represents the index into the plan's list of constant strings of a constant string.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/ir_plan',
+         'slot_usage': {'type': {'description': 'The kind of operand.',
+                                 'equals_string': 'string_index',
+                                 'name': 'type',
+                                 'range': 'string',
+                                 'required': True}}})
 
     type: Literal["string_index"] = Field(default=..., description="""The kind of operand.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
@@ -5793,7 +6233,8 @@ class OpaStringIndexOperand(OpaOperand):
                        'OpaBoolOperand',
                        'OpaLocalOperand',
                        'OpaStringIndexOperand'],
-         'equals_string': 'string_index'} })
+         'equals_string': 'string_index',
+         'slot_uri': 'openpolicyagent:type'} })
     value: int = Field(default=..., description="""The operand's value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaStaticProperty',
                        'OpaDynamicProperty',
                        'OpaStringConst',

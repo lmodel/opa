@@ -16,9 +16,9 @@ import lombok.*;
 @EqualsAndHashCode(callSuper=false)
 public class OpaScanStmtBody extends OpaStmtBody {
 
+  private int source;
   private OpaBlock block;
   private int key;
-  private int source;
   private int value;
 
 

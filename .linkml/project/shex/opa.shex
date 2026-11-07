@@ -147,13 +147,13 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaAuthorizationInput> CLOSED {
-    (  $<OpaAuthorizationInput_tes> (  <identity> @linkml:String ;
+    (  $<OpaAuthorizationInput_tes> (  <body> @<OpaObject> ;
+          <identity> @linkml:String ;
           <client_certificates> @<OpaObject> + ;
           <method> @linkml:String ;
           <path> @linkml:String + ;
           <params> @<OpaObject> ;
-          <headers> @<OpaObject> ;
-          <body> @<OpaObject>
+          <headers> @<OpaObject>
        ) ;
        rdf:type [ <OpaAuthorizationInput> ] ?
     )
@@ -237,9 +237,9 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaBuiltinArgument> CLOSED {
-    (  $<OpaBuiltinArgument_tes> (  schema1:name @linkml:String ? ;
-          schema1:description @linkml:String ? ;
-          <type> @linkml:String
+    (  $<OpaBuiltinArgument_tes> (  <type> @linkml:String ;
+          schema1:name @linkml:String ? ;
+          schema1:description @linkml:String ?
        ) ;
        rdf:type [ <OpaBuiltinArgument> ] ?
     )
@@ -286,9 +286,9 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaBuiltinResult> CLOSED {
-    (  $<OpaBuiltinResult_tes> (  schema1:name @linkml:String ? ;
-          schema1:description @linkml:String ? ;
-          <type> @linkml:String ?
+    (  $<OpaBuiltinResult_tes> (  <type> @linkml:String ? ;
+          schema1:name @linkml:String ? ;
+          schema1:description @linkml:String ?
        ) ;
        rdf:type [ <OpaBuiltinResult> ] ?
     )
@@ -368,9 +368,9 @@ linkml:Sparqlpath xsd:string
 <OpaDotStmtBody> CLOSED {
     (  $<OpaDotStmtBody_tes> (  &<OpaStmtBody_tes> ;
           rdf:type [ <OpaStmtBody> ] ? ;
-          <key> @<OpaOperand> ;
           <source> @<OpaOperand> ;
-          <target> @linkml:Integer
+          <target> @linkml:Integer ;
+          <key> @<OpaOperand>
        ) ;
        rdf:type [ <OpaDotStmtBody> ] ?
     )
@@ -405,8 +405,8 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaFileRegoVersion> CLOSED {
-    (  $<OpaFileRegoVersion_tes> (  <path> @linkml:String ;
-          <version> @linkml:Integer
+    (  $<OpaFileRegoVersion_tes> (  <version> @linkml:Integer ;
+          <path> @linkml:String
        ) ;
        rdf:type [ <OpaFileRegoVersion> ]
     )
@@ -442,18 +442,18 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaImplementation> CLOSED {
-    (  $<OpaImplementation_tes> (  schema1:identifier @linkml:String ;
+    (  $<OpaImplementation_tes> (  <version> @linkml:String ;
+          schema1:identifier @linkml:String ;
           <label> @linkml:String ;
-          <repo> @linkml:String ;
-          schema1:version @linkml:String
+          <repo> @linkml:String
        ) ;
        rdf:type [ <OpaImplementation> ] ?
     )
 }
 
 <OpaImplementationSupport> CLOSED {
-    (  $<OpaImplementationSupport_tes> (  <implementation> @linkml:String ;
-          schema1:version @linkml:String
+    (  $<OpaImplementationSupport_tes> (  <version> @linkml:String ;
+          <implementation> @linkml:String
        ) ;
        rdf:type [ <OpaImplementationSupport> ]
     )
@@ -608,8 +608,8 @@ linkml:Sparqlpath xsd:string
 <OpaMakeArrayStmtBody> CLOSED {
     (  $<OpaMakeArrayStmtBody_tes> (  &<OpaStmtBody_tes> ;
           rdf:type [ <OpaStmtBody> ] ? ;
-          <capacity> @linkml:Integer ;
-          <target> @linkml:Integer
+          <target> @linkml:Integer ;
+          <capacity> @linkml:Integer
        ) ;
        rdf:type [ <OpaMakeArrayStmtBody> ] ?
     )
@@ -667,8 +667,8 @@ linkml:Sparqlpath xsd:string
 <OpaMakeNumberRefStmtBody> CLOSED {
     (  $<OpaMakeNumberRefStmtBody_tes> (  &<OpaStmtBody_tes> ;
           rdf:type [ <OpaStmtBody> ] ? ;
-          <index> @linkml:Integer ;
           <target> @linkml:Integer ;
+          <index> @linkml:Integer ;
           <Index> @linkml:Integer ?
        ) ;
        rdf:type [ <OpaMakeNumberRefStmtBody> ] ?
@@ -714,10 +714,10 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaManifest> CLOSED {
-    (  $<OpaManifest_tes> (  <file_rego_versions> @<OpaFileRegoVersion> * ;
+    (  $<OpaManifest_tes> (  <revision> @linkml:String ;
+          <file_rego_versions> @<OpaFileRegoVersion> * ;
           <metadata> @<OpaObject> ? ;
           <rego_version> @linkml:Integer ? ;
-          <revision> @linkml:String ;
           <roots> @linkml:String * ;
           <wasm> @<OpaWasmResolver> *
        ) ;
@@ -984,9 +984,9 @@ linkml:Sparqlpath xsd:string
 <OpaScanStmtBody> CLOSED {
     (  $<OpaScanStmtBody_tes> (  &<OpaStmtBody_tes> ;
           rdf:type [ <OpaStmtBody> ] ? ;
+          <source> @linkml:Integer ;
           <block> @<OpaBlock> ? ;
           <key> @linkml:Integer ;
-          <source> @linkml:Integer ;
           <value> @linkml:Integer
        ) ;
        rdf:type [ <OpaScanStmtBody> ] ?

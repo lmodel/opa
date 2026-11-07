@@ -16,8 +16,8 @@ import lombok.*;
 @EqualsAndHashCode(callSuper=false)
 public class OpaMakeArrayStmtBody extends OpaStmtBody {
 
-  private int capacity;
   private int target;
+  private int capacity;
 
 
 }

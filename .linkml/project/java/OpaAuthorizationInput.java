@@ -16,13 +16,13 @@ import lombok.*;
 @EqualsAndHashCode(callSuper=false)
 public class OpaAuthorizationInput  {
 
+  private OpaObject body;
   private String identity;
   private List<OpaObject> clientCertificates;
   private String method;
   private List<String> path;
   private OpaObject params;
   private OpaObject headers;
-  private OpaObject body;
 
 
 }

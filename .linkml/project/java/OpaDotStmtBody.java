@@ -16,9 +16,9 @@ import lombok.*;
 @EqualsAndHashCode(callSuper=false)
 public class OpaDotStmtBody extends OpaStmtBody {
 
-  private OpaOperand key;
   private OpaOperand source;
   private int target;
+  private OpaOperand key;
 
 
 }

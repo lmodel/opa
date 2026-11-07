@@ -124,20 +124,20 @@ message OpaAssignVarStmtBody {
 }
 // The OPA Authorization Policy Input document.
 message OpaAuthorizationInput {
-  // The bearer token or client certificate subject that identifies the caller.
-  string identity = 1;
-  // The client's TLS certificates.
-  repeated OpaObject client_certificates = 2;
-  // The HTTP method of the request.
-  string method = 3;
-  // The request path, one segment per element.
-  repeated string path = 4;
-  // The query parameters.
-  OpaObject params = 5;
-  // The request headers.
-  OpaObject headers = 6;
   // The request body.
-  OpaObject body = 7;
+  OpaObject body = 1;
+  // The bearer token or client certificate subject that identifies the caller.
+  string identity = 2;
+  // The client's TLS certificates.
+  repeated OpaObject client_certificates = 3;
+  // The HTTP method of the request.
+  string method = 4;
+  // The request path, one segment per element.
+  repeated string path = 5;
+  // The query parameters.
+  OpaObject params = 6;
+  // The request headers.
+  OpaObject headers = 7;
 }
 // Block represents an ordered sequence of statements to execute. Blocks are executed until a return statement is encountered, a statement is undefined, or there are no more statements.
 message OpaBlock {
@@ -225,12 +225,12 @@ message OpaBuiltin {
 }
 // An argument of a built-in function.
 message OpaBuiltinArgument {
-  // The argument's name.
-  string name = 1;
-  // What the argument holds.
-  string description = 2;
   // The argument's type, written as OPA prints types, such as `array[string]`.
-  string type = 3;
+  string type = 1;
+  // The argument's name.
+  string name = 2;
+  // What the argument holds.
+  string description = 3;
 }
 // A category of built-in functions.
 message OpaBuiltinCategory {
@@ -278,12 +278,12 @@ message OpaBuiltinMetadataCatalog {
 }
 // The result of a built-in function. Some functions declare none.
 message OpaBuiltinResult {
-  // The result's name.
-  string name = 1;
-  // What the result holds.
-  string description = 2;
   // The result's type, written as OPA prints types.
-  string type = 3;
+  string type = 1;
+  // The result's name.
+  string name = 2;
+  // What the result holds.
+  string description = 3;
 }
 // A statement of kind CallDynamicStmt, with its fields in `stmt`.
 message OpaCallDynamicStmt {
@@ -369,12 +369,12 @@ message OpaDotStmtBody {
   int32 end_col = 4;
   // Line where the statement's source text ends.
   int32 end_row = 5;
-  // The key.
-  OpaOperand key = 6;
   // What the statement reads.
-  OpaOperand source = 7;
+  OpaOperand source = 6;
   // The local that receives the result.
-  int32 target = 8;
+  int32 target = 7;
+  // The key.
+  OpaOperand key = 8;
 }
 // The key type and value type that an object type gives its other keys.
 message OpaDynamicProperty {
@@ -409,10 +409,10 @@ message OpaEqualStmtBody {
 }
 // The Rego version of one file in the bundle.
 message OpaFileRegoVersion {
-  // The file's path in the bundle.
-  string path = 1;
   // The file's Rego version.
-  int32 version = 2;
+  int32 version = 1;
+  // The file's path in the bundle.
+  string path = 2;
 }
 // Func represents a named plan (function) that can be invoked. Functions accept one or more parameters and return a value.
 message OpaFunc {
@@ -449,21 +449,21 @@ message OpaFunctionType {
 }
 // An implementation of Rego besides OPA.
 message OpaImplementation {
-  // The implementation's key in each function's `implementations`.
-  string id = 1;
-  // The implementation's display name.
-  string label = 2;
-  // The implementation's GitHub repository, as owner/name.
-  string repo = 3;
   // The implementation's version the catalogue reflects.
-  string version = 4;
+  string version = 1;
+  // The implementation's key in each function's `implementations`.
+  string id = 2;
+  // The implementation's display name.
+  string label = 3;
+  // The implementation's GitHub repository, as owner/name.
+  string repo = 4;
 }
 // An implementation that supports a function, and the version that added it.
 message OpaImplementationSupport {
-  // The implementation's id.
-  string implementation = 1;
   // The implementation's version that added the function.
-  string version = 2;
+  string version = 1;
+  // The implementation's id.
+  string implementation = 2;
 }
 // A statement of kind IsArrayStmt, with its fields in `stmt`.
 message OpaIsArrayStmt {
@@ -638,10 +638,10 @@ message OpaMakeArrayStmtBody {
   int32 end_col = 4;
   // Line where the statement's source text ends.
   int32 end_row = 5;
-  // The capacity to allocate.
-  int32 capacity = 6;
   // The local that receives the result.
-  int32 target = 7;
+  int32 target = 6;
+  // The capacity to allocate.
+  int32 capacity = 7;
 }
 // A statement of kind MakeNullStmt, with its fields in `stmt`.
 message OpaMakeNullStmt {
@@ -708,10 +708,10 @@ message OpaMakeNumberRefStmtBody {
   int32 end_col = 4;
   // Line where the statement's source text ends.
   int32 end_row = 5;
-  // Index, in the plan's static strings, of the number written as a string.
-  int32 index = 6;
   // The local that receives the result.
-  int32 target = 7;
+  int32 target = 6;
+  // Index, in the plan's static strings, of the number written as a string.
+  int32 index = 7;
   // Deprecated alias for `index`. Both keys are emitted by current OPA versions for backwards compatibility; will be removed in a future major release. Read `index` instead.
   int32 Index = 8;
 }
@@ -761,14 +761,14 @@ message OpaMakeSetStmtBody {
 }
 // A bundle manifest. OPA's schema leaves the manifest open to other keys.
 message OpaManifest {
-  // Rego versions for single files, which override `rego_version`.
-  repeated OpaFileRegoVersion file_rego_versions = 1;
-  // Metadata the bundle's author adds.
-  OpaObject metadata = 2;
-  // The Rego version of the bundle's files: 0 for v0, 1 for v1.
-  int32 rego_version = 3;
   // The bundle's revision, a string the bundle's author chooses.
-  string revision = 4;
+  string revision = 1;
+  // Rego versions for single files, which override `rego_version`.
+  repeated OpaFileRegoVersion file_rego_versions = 2;
+  // Metadata the bundle's author adds.
+  OpaObject metadata = 3;
+  // The Rego version of the bundle's files: 0 for v0, 1 for v1.
+  int32 rego_version = 4;
   // The paths in the data tree the bundle owns. A bundle without the key owns the whole tree.
   repeated string roots = 5;
   // The Wasm modules the bundle holds, and the entrypoints they resolve.
@@ -1063,12 +1063,12 @@ message OpaScanStmtBody {
   int32 end_col = 4;
   // Line where the statement's source text ends.
   int32 end_row = 5;
-  // The block run for each key and value.
-  OpaBlock block = 6;
-  // The local that receives each key.
-  int32 key = 7;
   // The local whose value is scanned.
-  int32 source = 8;
+  int32 source = 6;
+  // The block run for each key and value.
+  OpaBlock block = 7;
+  // The local that receives each key.
+  int32 key = 8;
   // The local that receives each value.
   int32 value = 9;
 }

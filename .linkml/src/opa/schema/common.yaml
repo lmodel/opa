@@ -50,27 +50,25 @@ classes:
     is_a: OpaType
     description: A union of the types it lists in `of`, or any value when it lists none.
     attributes:
-      type:
-        description: The kind of type.
-        range: string
-        required: true
-        equals_string: any
       of:
         description: The types the union admits.
         range: OpaType
         multivalued: true
         inlined: true
         inlined_as_list: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of type.
+        range: string
+        required: true
+        equals_string: any
   OpaArrayType:
     is_a: OpaType
     description: >-
       An array, with a type per position in `static` and one for the rest in `dynamic`.
     attributes:
-      type:
-        description: The kind of type.
-        range: string
-        required: true
-        equals_string: array
       static:
         description: The type of each element by position.
         range: OpaType
@@ -81,10 +79,20 @@ classes:
         description: The type of the elements after the static ones.
         range: OpaType
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of type.
+        range: string
+        required: true
+        equals_string: array
   OpaBooleanType:
     is_a: OpaType
     description: A boolean.
-    attributes:
+    slots:
+      - type
+    slot_usage:
       type:
         description: The kind of type.
         range: string
@@ -94,11 +102,6 @@ classes:
     is_a: OpaType
     description: A function, with its arguments, its result and a variadic argument type.
     attributes:
-      type:
-        description: The kind of type.
-        range: string
-        required: true
-        equals_string: function
       args:
         description: The argument types, in order.
         range: OpaType
@@ -113,10 +116,20 @@ classes:
         description: The type of any further arguments.
         range: OpaType
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of type.
+        range: string
+        required: true
+        equals_string: function
   OpaNullType:
     is_a: OpaType
     description: The null value.
-    attributes:
+    slots:
+      - type
+    slot_usage:
       type:
         description: The kind of type.
         range: string
@@ -125,7 +138,9 @@ classes:
   OpaNumberType:
     is_a: OpaType
     description: A number.
-    attributes:
+    slots:
+      - type
+    slot_usage:
       type:
         description: The kind of type.
         range: string
@@ -137,11 +152,6 @@ classes:
       An object, with typed known keys in `static` and a key and value type for the rest in
       `dynamic`.
     attributes:
-      type:
-        description: The kind of type.
-        range: string
-        required: true
-        equals_string: object
       static:
         description: The known keys and the types of their values.
         range: OpaStaticProperty
@@ -152,23 +162,36 @@ classes:
         description: The key type and value type of the other keys.
         range: OpaDynamicProperty
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of type.
+        range: string
+        required: true
+        equals_string: object
   OpaSetType:
     is_a: OpaType
     description: A set, whose members have the type in `of`.
     attributes:
+      of:
+        description: The type of the set's members.
+        range: OpaType
+        inlined: true
+    slots:
+      - type
+    slot_usage:
       type:
         description: The kind of type.
         range: string
         required: true
         equals_string: set
-      of:
-        description: The type of the set's members.
-        range: OpaType
-        inlined: true
   OpaStringType:
     is_a: OpaType
     description: A string.
-    attributes:
+    slots:
+      - type
+    slot_usage:
       type:
         description: The kind of type.
         range: string
@@ -199,3 +222,25 @@ classes:
         range: OpaType
         required: true
         inlined: true
+slots:
+  body:
+    description: The body of an HTTP request.
+    slot_uri: openpolicyagent:body
+  revision:
+    description: A bundle's revision, a string the bundle's author chooses.
+    slot_uri: openpolicyagent:revision
+  source:
+    description: 'What a plan statement reads: a local, or an operand.'
+    slot_uri: openpolicyagent:source
+  target:
+    description: The local a plan statement writes its result to.
+    slot_uri: openpolicyagent:target
+  type:
+    description: >-
+      The kind of an object: of a Rego type, a plan statement or an operand, or a type written
+      as OPA prints types.
+    slot_uri: openpolicyagent:type
+  version:
+    description: >-
+      A version: an implementation's, a Wasm ABI's major number or a file's Rego version.
+    slot_uri: openpolicyagent:version

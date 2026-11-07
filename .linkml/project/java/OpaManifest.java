@@ -16,10 +16,10 @@ import lombok.*;
 @EqualsAndHashCode(callSuper=false)
 public class OpaManifest  {
 
+  private String revision;
   private List<OpaFileRegoVersion> fileRegoVersions;
   private OpaObject metadata;
   private Integer regoVersion;
-  private String revision;
   private List<String> roots;
   private List<OpaWasmResolver> wasm;
 

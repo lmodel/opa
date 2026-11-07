@@ -110,13 +110,13 @@ type OpaAssignVarStmtBody
 
 type OpaAuthorizationInput
   {
+    body: OpaObject!
     identity: String!
     clientCertificates: [OpaObject]!
     method: String!
     path: [String]!
     params: OpaObject!
     headers: OpaObject!
-    body: OpaObject!
   }
 
 type OpaBlock
@@ -183,9 +183,9 @@ type OpaBuiltin
 
 type OpaBuiltinArgument
   {
+    type: String!
     name: String
     description: String
-    type: String!
   }
 
 type OpaBuiltinCategory
@@ -222,9 +222,9 @@ type OpaBuiltinMetadataCatalog
 
 type OpaBuiltinResult
   {
+    type: String
     name: String
     description: String
-    type: String
   }
 
 type OpaCallDynamicStmt
@@ -285,9 +285,9 @@ type OpaDotStmtBody
     row: Int!
     endCol: Int!
     endRow: Int!
-    key: OpaOperand!
     source: OpaOperand!
     target: Int!
+    key: OpaOperand!
   }
 
 type OpaDynamicProperty
@@ -315,8 +315,8 @@ type OpaEqualStmtBody
 
 type OpaFileRegoVersion
   {
-    path: String!
     version: Int!
+    path: String!
   }
 
 type OpaFunc
@@ -345,16 +345,16 @@ type OpaFunctionType
 
 type OpaImplementation
   {
+    version: String!
     id: String!
     label: String!
     repo: String!
-    version: String!
   }
 
 type OpaImplementationSupport
   {
-    implementation: String!
     version: String!
+    implementation: String!
   }
 
 type OpaIsArrayStmt
@@ -482,8 +482,8 @@ type OpaMakeArrayStmtBody
     row: Int!
     endCol: Int!
     endRow: Int!
-    capacity: Int!
     target: Int!
+    capacity: Int!
   }
 
 type OpaMakeNullStmt
@@ -532,8 +532,8 @@ type OpaMakeNumberRefStmtBody
     row: Int!
     endCol: Int!
     endRow: Int!
-    index: Int!
     target: Int!
+    index: Int!
     index: Int
   }
 
@@ -571,10 +571,10 @@ type OpaMakeSetStmtBody
 
 type OpaManifest
   {
+    revision: String!
     fileRegoVersions: [OpaFileRegoVersion]
     metadata: OpaObject
     regoVersion: Int
-    revision: String!
     roots: [String]
     wasm: [OpaWasmResolver]
   }
@@ -792,9 +792,9 @@ type OpaScanStmtBody
     row: Int!
     endCol: Int!
     endRow: Int!
+    source: Int!
     block: OpaBlock
     key: Int!
-    source: Int!
     value: Int!
   }
 

@@ -16,8 +16,8 @@ import lombok.*;
 @EqualsAndHashCode(callSuper=false)
 public class OpaMakeNumberRefStmtBody extends OpaStmtBody {
 
-  private int index;
   private int target;
+  private int index;
   private Integer indexLegacy;
 
 

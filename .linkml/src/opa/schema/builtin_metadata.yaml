@@ -27,6 +27,7 @@ default_prefix: openpolicyagent
 default_range: string
 imports:
   - linkml:types
+  - common
 classes:
   OpaBuiltinMetadataCatalog:
     tree_root: true
@@ -74,10 +75,12 @@ classes:
       repo:
         description: The implementation's GitHub repository, as owner/name.
         required: true
+    slots:
+      - version
+    slot_usage:
       version:
         description: The implementation's version the catalogue reflects.
         required: true
-        slot_uri: schema:version
   OpaBuiltinMetadata:
     description: What the catalogue says about one built-in function.
     attributes:
@@ -132,6 +135,9 @@ classes:
       description:
         description: What the argument holds.
         slot_uri: schema:description
+    slots:
+      - type
+    slot_usage:
       type:
         description: >-
           The argument's type, written as OPA prints types, such as `array[string]`.
@@ -145,6 +151,9 @@ classes:
       description:
         description: What the result holds.
         slot_uri: schema:description
+    slots:
+      - type
+    slot_usage:
       type:
         description: The result's type, written as OPA prints types.
   OpaImplementationSupport:
@@ -154,7 +163,9 @@ classes:
       implementation:
         description: The implementation's id.
         key: true
+    slots:
+      - version
+    slot_usage:
       version:
         description: The implementation's version that added the function.
         required: true
-        slot_uri: schema:version

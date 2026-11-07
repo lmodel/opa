@@ -51,10 +51,6 @@ classes:
       rego_version:
         range: integer
         description: 'The Rego version of the bundle''s files: 0 for v0, 1 for v1.'
-      revision:
-        range: string
-        required: true
-        description: The bundle's revision, a string the bundle's author chooses.
       roots:
         range: string
         multivalued: true
@@ -68,6 +64,13 @@ classes:
         inlined_as_list: true
         description: The Wasm modules the bundle holds, and the entrypoints they resolve.
     tree_root: true
+    slots:
+      - revision
+    slot_usage:
+      revision:
+        range: string
+        required: true
+        description: The bundle's revision, a string the bundle's author chooses.
   OpaWasmResolver:
     description: A Wasm module in a bundle, and the entrypoint it resolves.
     exact_mappings:
@@ -91,6 +94,9 @@ classes:
       path:
         description: The file's path in the bundle.
         key: true
+    slots:
+      - version
+    slot_usage:
       version:
         description: The file's Rego version.
         range: integer

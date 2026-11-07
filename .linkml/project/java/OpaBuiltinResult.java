@@ -16,9 +16,9 @@ import lombok.*;
 @EqualsAndHashCode(callSuper=false)
 public class OpaBuiltinResult  {
 
+  private String type;
   private String name;
   private String description;
-  private String type;
 
 
 }

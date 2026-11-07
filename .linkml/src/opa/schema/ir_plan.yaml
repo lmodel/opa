@@ -279,16 +279,19 @@ classes:
     is_a: OpaStmt
     description: A statement of kind ArrayAppendStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: ArrayAppendStmt
       stmt:
         description: The statement's fields.
         range: OpaArrayAppendStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: ArrayAppendStmt
   OpaArrayAppendStmtBody:
     description: >-
       ArrayAppendStmt represents a dynamic append operation of a value onto an array.
@@ -309,52 +312,65 @@ classes:
     is_a: OpaStmt
     description: A statement of kind AssignIntStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: AssignIntStmt
       stmt:
         description: The statement's fields.
         range: OpaAssignIntStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: AssignIntStmt
   OpaAssignIntStmtBody:
     description: >-
       AssignIntStmt represents an assignment of an integer value to a local variable.
     exact_mappings:
       - opa_plan:AssignIntStmt
     attributes:
-      target:
-        range: integer
-        required: true
-        description: The local that receives the result.
       value:
         range: integer
         required: true
         description: The value.
     is_a: OpaStmtBody
+    slots:
+      - target
+    slot_usage:
+      target:
+        range: integer
+        required: true
+        description: The local that receives the result.
   OpaAssignVarOnceStmt:
     is_a: OpaStmt
     description: A statement of kind AssignVarOnceStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: AssignVarOnceStmt
       stmt:
         description: The statement's fields.
         range: OpaAssignVarOnceStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: AssignVarOnceStmt
   OpaAssignVarOnceStmtBody:
     description: >-
       AssignVarOnceStmt represents an assignment of one local variable to another. If the
       target is defined, execution aborts with a conflict error.
     exact_mappings:
       - opa_plan:AssignVarOnceStmt
-    attributes:
+    is_a: OpaStmtBody
+    slots:
+      - source
+      - target
+    slot_usage:
       source:
         range: OpaOperand
         inlined: true
@@ -364,26 +380,32 @@ classes:
         range: integer
         required: true
         description: The local that receives the result.
-    is_a: OpaStmtBody
   OpaAssignVarStmt:
     is_a: OpaStmt
     description: A statement of kind AssignVarStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: AssignVarStmt
       stmt:
         description: The statement's fields.
         range: OpaAssignVarStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: AssignVarStmt
   OpaAssignVarStmtBody:
     description: AssignVarStmt represents an assignment of one local variable to another.
     exact_mappings:
       - opa_plan:AssignVarStmt
-    attributes:
+    is_a: OpaStmtBody
+    slots:
+      - source
+      - target
+    slot_usage:
       source:
         range: OpaOperand
         inlined: true
@@ -393,21 +415,23 @@ classes:
         range: integer
         required: true
         description: The local that receives the result.
-    is_a: OpaStmtBody
   OpaBlockStmt:
     is_a: OpaStmt
     description: A statement of kind BlockStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: BlockStmt
       stmt:
         description: The statement's fields.
         range: OpaBlockStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: BlockStmt
   OpaBlockStmtBody:
     description: >-
       BlockStmt represents a nested block. Nested blocks and break statements can be used
@@ -426,16 +450,19 @@ classes:
     is_a: OpaStmt
     description: A statement of kind BreakStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: BreakStmt
       stmt:
         description: The statement's fields.
         range: OpaBreakStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: BreakStmt
   OpaBreakStmtBody:
     description: >-
       BreakStmt represents a jump out of the current block. The index specifies how many blocks
@@ -452,16 +479,19 @@ classes:
     is_a: OpaStmt
     description: A statement of kind CallDynamicStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: CallDynamicStmt
       stmt:
         description: The statement's fields.
         range: OpaCallDynamicStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: CallDynamicStmt
   OpaCallDynamicStmtBody:
     description: >-
       CallDynamicStmt represents an indirect (data) function call. The result should be stored
@@ -488,16 +518,19 @@ classes:
     is_a: OpaStmt
     description: A statement of kind CallStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: CallStmt
       stmt:
         description: The statement's fields.
         range: OpaCallStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: CallStmt
   OpaCallStmtBody:
     description: >-
       CallStmt represents a named function call. The result should be stored in the result
@@ -524,16 +557,19 @@ classes:
     is_a: OpaStmt
     description: A statement of kind DotStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: DotStmt
       stmt:
         description: The statement's fields.
         range: OpaDotStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: DotStmt
   OpaDotStmtBody:
     description: >-
       DotStmt represents a lookup operation on a value (e.g., array, object, etc.) The source
@@ -546,6 +582,11 @@ classes:
         inlined: true
         required: true
         description: The key.
+    is_a: OpaStmtBody
+    slots:
+      - source
+      - target
+    slot_usage:
       source:
         range: OpaOperand
         inlined: true
@@ -555,21 +596,23 @@ classes:
         range: integer
         required: true
         description: The local that receives the result.
-    is_a: OpaStmtBody
   OpaEqualStmt:
     is_a: OpaStmt
     description: A statement of kind EqualStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: EqualStmt
       stmt:
         description: The statement's fields.
         range: OpaEqualStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: EqualStmt
   OpaEqualStmtBody:
     description: EqualStmt represents an value-equality check of two local variables.
     exact_mappings:
@@ -592,147 +635,179 @@ classes:
     is_a: OpaStmt
     description: A statement of kind IsArrayStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: IsArrayStmt
       stmt:
         description: The statement's fields.
         range: OpaIsArrayStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: IsArrayStmt
   OpaIsArrayStmtBody:
     description: IsArrayStmt represents a dynamic type check on a local variable.
     exact_mappings:
       - opa_plan:IsArrayStmt
-    attributes:
+    is_a: OpaStmtBody
+    slots:
+      - source
+    slot_usage:
       source:
         range: OpaOperand
         inlined: true
         required: true
         description: What the statement reads.
-    is_a: OpaStmtBody
   OpaIsDefinedStmt:
     is_a: OpaStmt
     description: A statement of kind IsDefinedStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: IsDefinedStmt
       stmt:
         description: The statement's fields.
         range: OpaIsDefinedStmtBody
         required: true
         inlined: true
-  OpaIsDefinedStmtBody:
-    description: IsDefinedStmt represents a check of whether a local variable is defined.
-    exact_mappings:
-      - opa_plan:IsDefinedStmt
-    attributes:
-      source:
-        range: integer
-        required: true
-        description: The local checked.
-    is_a: OpaStmtBody
-  OpaIsObjectStmt:
-    is_a: OpaStmt
-    description: A statement of kind IsObjectStmt, with its fields in `stmt`.
-    attributes:
+    slots:
+      - type
+    slot_usage:
       type:
         description: The kind of statement.
         range: string
         required: true
-        equals_string: IsObjectStmt
+        equals_string: IsDefinedStmt
+  OpaIsDefinedStmtBody:
+    description: IsDefinedStmt represents a check of whether a local variable is defined.
+    exact_mappings:
+      - opa_plan:IsDefinedStmt
+    is_a: OpaStmtBody
+    slots:
+      - source
+    slot_usage:
+      source:
+        range: integer
+        required: true
+        description: The local checked.
+  OpaIsObjectStmt:
+    is_a: OpaStmt
+    description: A statement of kind IsObjectStmt, with its fields in `stmt`.
+    attributes:
       stmt:
         description: The statement's fields.
         range: OpaIsObjectStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: IsObjectStmt
   OpaIsObjectStmtBody:
     description: IsObjectStmt represents a dynamic type check on a local variable.
     exact_mappings:
       - opa_plan:IsObjectStmt
-    attributes:
+    is_a: OpaStmtBody
+    slots:
+      - source
+    slot_usage:
       source:
         range: OpaOperand
         inlined: true
         required: true
         description: What the statement reads.
-    is_a: OpaStmtBody
   OpaIsSetStmt:
     is_a: OpaStmt
     description: A statement of kind IsSetStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: IsSetStmt
       stmt:
         description: The statement's fields.
         range: OpaIsSetStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: IsSetStmt
   OpaIsSetStmtBody:
     description: IsSetStmt represents a dynamic type check on a local variable.
     exact_mappings:
       - opa_plan:IsSetStmt
-    attributes:
+    is_a: OpaStmtBody
+    slots:
+      - source
+    slot_usage:
       source:
         range: OpaOperand
         inlined: true
         required: true
         description: What the statement reads.
-    is_a: OpaStmtBody
   OpaIsUndefinedStmt:
     is_a: OpaStmt
     description: A statement of kind IsUndefinedStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: IsUndefinedStmt
       stmt:
         description: The statement's fields.
         range: OpaIsUndefinedStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: IsUndefinedStmt
   OpaIsUndefinedStmtBody:
     description: >-
       IsUndefinedStmt represents a check of whether local variable is undefined.
     exact_mappings:
       - opa_plan:IsUndefinedStmt
-    attributes:
+    is_a: OpaStmtBody
+    slots:
+      - source
+    slot_usage:
       source:
         range: integer
         required: true
         description: The local checked.
-    is_a: OpaStmtBody
   OpaLenStmt:
     is_a: OpaStmt
     description: A statement of kind LenStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: LenStmt
       stmt:
         description: The statement's fields.
         range: OpaLenStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: LenStmt
   OpaLenStmtBody:
     description: >-
       LenStmt represents a length() operation on a local variable. The result is stored in
       the target local variable.
     exact_mappings:
       - opa_plan:LenStmt
-    attributes:
+    is_a: OpaStmtBody
+    slots:
+      - source
+      - target
+    slot_usage:
       source:
         range: OpaOperand
         inlined: true
@@ -742,21 +817,23 @@ classes:
         range: integer
         required: true
         description: The local that receives the result.
-    is_a: OpaStmtBody
   OpaMakeArrayStmt:
     is_a: OpaStmt
     description: A statement of kind MakeArrayStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: MakeArrayStmt
       stmt:
         description: The statement's fields.
         range: OpaMakeArrayStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: MakeArrayStmt
   OpaMakeArrayStmtBody:
     description: MakeArrayStmt constructs a local variable that refers to an array value.
     exact_mappings:
@@ -766,78 +843,95 @@ classes:
         range: integer
         required: true
         description: The capacity to allocate.
+    is_a: OpaStmtBody
+    slots:
+      - target
+    slot_usage:
       target:
         range: integer
         required: true
         description: The local that receives the result.
-    is_a: OpaStmtBody
   OpaMakeNullStmt:
     is_a: OpaStmt
     description: A statement of kind MakeNullStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: MakeNullStmt
       stmt:
         description: The statement's fields.
         range: OpaMakeNullStmtBody
         required: true
         inlined: true
-  OpaMakeNullStmtBody:
-    description: MakeNullStmt constructs a local variable that refers to a null value.
-    exact_mappings:
-      - opa_plan:MakeNullStmt
-    attributes:
-      target:
-        range: integer
-        required: true
-        description: The local that receives the result.
-    is_a: OpaStmtBody
-  OpaMakeNumberIntStmt:
-    is_a: OpaStmt
-    description: A statement of kind MakeNumberIntStmt, with its fields in `stmt`.
-    attributes:
+    slots:
+      - type
+    slot_usage:
       type:
         description: The kind of statement.
         range: string
         required: true
-        equals_string: MakeNumberIntStmt
+        equals_string: MakeNullStmt
+  OpaMakeNullStmtBody:
+    description: MakeNullStmt constructs a local variable that refers to a null value.
+    exact_mappings:
+      - opa_plan:MakeNullStmt
+    is_a: OpaStmtBody
+    slots:
+      - target
+    slot_usage:
+      target:
+        range: integer
+        required: true
+        description: The local that receives the result.
+  OpaMakeNumberIntStmt:
+    is_a: OpaStmt
+    description: A statement of kind MakeNumberIntStmt, with its fields in `stmt`.
+    attributes:
       stmt:
         description: The statement's fields.
         range: OpaMakeNumberIntStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: MakeNumberIntStmt
   OpaMakeNumberIntStmtBody:
     description: >-
       MakeNumberIntStmt constructs a local variable that refers to an integer value.
     exact_mappings:
       - opa_plan:MakeNumberIntStmt
     attributes:
-      target:
-        range: integer
-        required: true
-        description: The local that receives the result.
       value:
         range: integer
         required: true
         description: The value.
     is_a: OpaStmtBody
+    slots:
+      - target
+    slot_usage:
+      target:
+        range: integer
+        required: true
+        description: The local that receives the result.
   OpaMakeNumberRefStmt:
     is_a: OpaStmt
     description: A statement of kind MakeNumberRefStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: MakeNumberRefStmt
       stmt:
         description: The statement's fields.
         range: OpaMakeNumberRefStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: MakeNumberRefStmt
   OpaMakeNumberRefStmtBody:
     description: >-
       MakeNumberRefStmt constructs a local variable that refers to a number stored as a string.
@@ -848,10 +942,6 @@ classes:
         range: integer
         required: true
         description: Index, in the plan's static strings, of the number written as a string.
-      target:
-        range: integer
-        required: true
-        description: The local that receives the result.
       index_legacy:
         range: integer
         description: >-
@@ -864,69 +954,89 @@ classes:
           instead.
         alias: Index
     is_a: OpaStmtBody
+    slots:
+      - target
+    slot_usage:
+      target:
+        range: integer
+        required: true
+        description: The local that receives the result.
   OpaMakeObjectStmt:
     is_a: OpaStmt
     description: A statement of kind MakeObjectStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: MakeObjectStmt
       stmt:
         description: The statement's fields.
         range: OpaMakeObjectStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: MakeObjectStmt
   OpaMakeObjectStmtBody:
     description: >-
       MakeObjectStmt constructs a local variable that refers to an object value.
     exact_mappings:
       - opa_plan:MakeObjectStmt
-    attributes:
+    is_a: OpaStmtBody
+    slots:
+      - target
+    slot_usage:
       target:
         range: integer
         required: true
         description: The local that receives the result.
-    is_a: OpaStmtBody
   OpaMakeSetStmt:
     is_a: OpaStmt
     description: A statement of kind MakeSetStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: MakeSetStmt
       stmt:
         description: The statement's fields.
         range: OpaMakeSetStmtBody
         required: true
         inlined: true
-  OpaMakeSetStmtBody:
-    description: MakeSetStmt constructs a local variable that refers to a set value.
-    exact_mappings:
-      - opa_plan:MakeSetStmt
-    attributes:
-      target:
-        range: integer
-        required: true
-        description: The local that receives the result.
-    is_a: OpaStmtBody
-  OpaNopStmt:
-    is_a: OpaStmt
-    description: A statement of kind NopStmt, with its fields in `stmt`.
-    attributes:
+    slots:
+      - type
+    slot_usage:
       type:
         description: The kind of statement.
         range: string
         required: true
-        equals_string: NopStmt
+        equals_string: MakeSetStmt
+  OpaMakeSetStmtBody:
+    description: MakeSetStmt constructs a local variable that refers to a set value.
+    exact_mappings:
+      - opa_plan:MakeSetStmt
+    is_a: OpaStmtBody
+    slots:
+      - target
+    slot_usage:
+      target:
+        range: integer
+        required: true
+        description: The local that receives the result.
+  OpaNopStmt:
+    is_a: OpaStmt
+    description: A statement of kind NopStmt, with its fields in `stmt`.
+    attributes:
       stmt:
         description: The statement's fields.
         range: OpaNopStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: NopStmt
   OpaNopStmtBody:
     description: >-
       NopStmt adds a nop instruction. Useful during development and debugging only.
@@ -937,16 +1047,19 @@ classes:
     is_a: OpaStmt
     description: A statement of kind NotEqualStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: NotEqualStmt
       stmt:
         description: The statement's fields.
         range: OpaNotEqualStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: NotEqualStmt
   OpaNotEqualStmtBody:
     description: NotEqualStmt represents a != check of two local variables.
     exact_mappings:
@@ -969,16 +1082,19 @@ classes:
     is_a: OpaStmt
     description: A statement of kind NotStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: NotStmt
       stmt:
         description: The statement's fields.
         range: OpaNotStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: NotStmt
   OpaNotStmtBody:
     description: NotStmt represents a negated statement.
     exact_mappings:
@@ -993,16 +1109,19 @@ classes:
     is_a: OpaStmt
     description: A statement of kind ObjectInsertOnceStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: ObjectInsertOnceStmt
       stmt:
         description: The statement's fields.
         range: OpaObjectInsertOnceStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: ObjectInsertOnceStmt
   OpaObjectInsertOnceStmtBody:
     description: >-
       ObjectInsertOnceStmt represents a dynamic insert operation of a key/value pair into
@@ -1030,16 +1149,19 @@ classes:
     is_a: OpaStmt
     description: A statement of kind ObjectInsertStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: ObjectInsertStmt
       stmt:
         description: The statement's fields.
         range: OpaObjectInsertStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: ObjectInsertStmt
   OpaObjectInsertStmtBody:
     description: >-
       ObjectInsertStmt represents a dynamic insert operation of a key/value pair into an object.
@@ -1065,16 +1187,19 @@ classes:
     is_a: OpaStmt
     description: A statement of kind ObjectMergeStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: ObjectMergeStmt
       stmt:
         description: The statement's fields.
         range: OpaObjectMergeStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: ObjectMergeStmt
   OpaObjectMergeStmtBody:
     description: >-
       ObjectMergeStmt performs a recursive merge of two object values. If either of the locals
@@ -1082,10 +1207,6 @@ classes:
     exact_mappings:
       - opa_plan:ObjectMergeStmt
     attributes:
-      target:
-        range: integer
-        required: true
-        description: The local that receives the result.
       operand_a:
         range: integer
         required: true
@@ -1097,44 +1218,59 @@ classes:
         description: The local that holds the second object.
         alias: b
     is_a: OpaStmtBody
+    slots:
+      - target
+    slot_usage:
+      target:
+        range: integer
+        required: true
+        description: The local that receives the result.
   OpaResetLocalStmt:
     is_a: OpaStmt
     description: A statement of kind ResetLocalStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: ResetLocalStmt
       stmt:
         description: The statement's fields.
         range: OpaResetLocalStmtBody
         required: true
         inlined: true
-  OpaResetLocalStmtBody:
-    description: ResetLocalStmt resets a local variable to 0.
-    exact_mappings:
-      - opa_plan:ResetLocalStmt
-    attributes:
-      target:
-        range: integer
-        required: true
-        description: The local that receives the result.
-    is_a: OpaStmtBody
-  OpaResultSetAddStmt:
-    is_a: OpaStmt
-    description: A statement of kind ResultSetAddStmt, with its fields in `stmt`.
-    attributes:
+    slots:
+      - type
+    slot_usage:
       type:
         description: The kind of statement.
         range: string
         required: true
-        equals_string: ResultSetAddStmt
+        equals_string: ResetLocalStmt
+  OpaResetLocalStmtBody:
+    description: ResetLocalStmt resets a local variable to 0.
+    exact_mappings:
+      - opa_plan:ResetLocalStmt
+    is_a: OpaStmtBody
+    slots:
+      - target
+    slot_usage:
+      target:
+        range: integer
+        required: true
+        description: The local that receives the result.
+  OpaResultSetAddStmt:
+    is_a: OpaStmt
+    description: A statement of kind ResultSetAddStmt, with its fields in `stmt`.
+    attributes:
       stmt:
         description: The statement's fields.
         range: OpaResultSetAddStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: ResultSetAddStmt
   OpaResultSetAddStmtBody:
     description: >-
       ResultSetAddStmt adds a value into the result set returned by the query plan.
@@ -1150,40 +1286,48 @@ classes:
     is_a: OpaStmt
     description: A statement of kind ReturnLocalStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: ReturnLocalStmt
       stmt:
         description: The statement's fields.
         range: OpaReturnLocalStmtBody
         required: true
         inlined: true
-  OpaReturnLocalStmtBody:
-    description: ReturnLocalStmt represents a return statement that yields a local value.
-    exact_mappings:
-      - opa_plan:ReturnLocalStmt
-    attributes:
-      source:
-        range: integer
-        required: true
-        description: The local returned.
-    is_a: OpaStmtBody
-  OpaScanStmt:
-    is_a: OpaStmt
-    description: A statement of kind ScanStmt, with its fields in `stmt`.
-    attributes:
+    slots:
+      - type
+    slot_usage:
       type:
         description: The kind of statement.
         range: string
         required: true
-        equals_string: ScanStmt
+        equals_string: ReturnLocalStmt
+  OpaReturnLocalStmtBody:
+    description: ReturnLocalStmt represents a return statement that yields a local value.
+    exact_mappings:
+      - opa_plan:ReturnLocalStmt
+    is_a: OpaStmtBody
+    slots:
+      - source
+    slot_usage:
+      source:
+        range: integer
+        required: true
+        description: The local returned.
+  OpaScanStmt:
+    is_a: OpaStmt
+    description: A statement of kind ScanStmt, with its fields in `stmt`.
+    attributes:
       stmt:
         description: The statement's fields.
         range: OpaScanStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: ScanStmt
   OpaScanStmtBody:
     description: >-
       ScanStmt represents a linear scan over a composite value. The source may be a scalar
@@ -1199,29 +1343,35 @@ classes:
         range: integer
         required: true
         description: The local that receives each key.
-      source:
-        range: integer
-        required: true
-        description: The local whose value is scanned.
       value:
         range: integer
         required: true
         description: The local that receives each value.
     is_a: OpaStmtBody
+    slots:
+      - source
+    slot_usage:
+      source:
+        range: integer
+        required: true
+        description: The local whose value is scanned.
   OpaSetAddStmt:
     is_a: OpaStmt
     description: A statement of kind SetAddStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: SetAddStmt
       stmt:
         description: The statement's fields.
         range: OpaSetAddStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: SetAddStmt
   OpaSetAddStmtBody:
     description: SetAddStmt represents a dynamic add operation of an element into a set.
     exact_mappings:
@@ -1241,16 +1391,19 @@ classes:
     is_a: OpaStmt
     description: A statement of kind WithStmt, with its fields in `stmt`.
     attributes:
-      type:
-        description: The kind of statement.
-        range: string
-        required: true
-        equals_string: WithStmt
       stmt:
         description: The statement's fields.
         range: OpaWithStmtBody
         required: true
         inlined: true
+    slots:
+      - type
+    slot_usage:
+      type:
+        description: The kind of statement.
+        range: string
+        required: true
+        equals_string: WithStmt
   OpaWithStmtBody:
     description: >-
       WithStmt replaces the Local or a portion of the document referred to by the Local with
@@ -1291,40 +1444,49 @@ classes:
     is_a: OpaOperand
     description: Bool represents a constant boolean.
     attributes:
+      value:
+        description: The operand's value.
+        range: boolean
+        required: true
+    slots:
+      - type
+    slot_usage:
       type:
         description: The kind of operand.
         range: string
         required: true
         equals_string: bool
-      value:
-        description: The operand's value.
-        range: boolean
-        required: true
   OpaLocalOperand:
     is_a: OpaOperand
     description: A local variable, by its number.
     attributes:
+      value:
+        description: The operand's value.
+        range: integer
+        required: true
+    slots:
+      - type
+    slot_usage:
       type:
         description: The kind of operand.
         range: string
         required: true
         equals_string: local
-      value:
-        description: The operand's value.
-        range: integer
-        required: true
   OpaStringIndexOperand:
     is_a: OpaOperand
     description: >-
       StringIndex represents the index into the plan's list of constant strings of a constant
       string.
     attributes:
+      value:
+        description: The operand's value.
+        range: integer
+        required: true
+    slots:
+      - type
+    slot_usage:
       type:
         description: The kind of operand.
         range: string
         required: true
         equals_string: string_index
-      value:
-        description: The operand's value.
-        range: integer
-        required: true

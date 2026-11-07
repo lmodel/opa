@@ -568,7 +568,7 @@ class OpaBuiltinMetadataCatalog(YAMLRoot):
     def __post_init__(self, *_: str, **kwargs: Any):
         self._normalize_inlined_as_dict(slot_name="_categories", slot_type=OpaBuiltinCategory, key_name="name", keyed=True)
 
-        self._normalize_inlined_as_list(slot_name="_implementations", slot_type=OpaImplementation, key_name="id", keyed=False)
+        self._normalize_inlined_as_list(slot_name="_implementations", slot_type=OpaImplementation, key_name="version", keyed=False)
 
         super().__post_init__(**kwargs)
 
@@ -615,12 +615,17 @@ class OpaImplementation(YAMLRoot):
     class_name: ClassVar[str] = "OpaImplementation"
     class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaImplementation
 
+    version: str = None
     id: str = None
     label: str = None
     repo: str = None
-    version: str = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.version):
+            self.MissingRequiredField("version")
+        if not isinstance(self.version, str):
+            self.version = str(self.version)
+
         if self._is_empty(self.id):
             self.MissingRequiredField("id")
         if not isinstance(self.id, str):
@@ -635,11 +640,6 @@ class OpaImplementation(YAMLRoot):
             self.MissingRequiredField("repo")
         if not isinstance(self.repo, str):
             self.repo = str(self.repo)
-
-        if self._is_empty(self.version):
-            self.MissingRequiredField("version")
-        if not isinstance(self.version, str):
-            self.version = str(self.version)
 
         super().__post_init__(**kwargs)
 
@@ -755,19 +755,19 @@ class OpaBuiltinResult(YAMLRoot):
     class_name: ClassVar[str] = "OpaBuiltinResult"
     class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaBuiltinResult
 
+    type: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None
-    type: Optional[str] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
+        if self.type is not None and not isinstance(self.type, str):
+            self.type = str(self.type)
+
         if self.name is not None and not isinstance(self.name, str):
             self.name = str(self.name)
 
         if self.description is not None and not isinstance(self.description, str):
             self.description = str(self.description)
-
-        if self.type is not None and not isinstance(self.type, str):
-            self.type = str(self.type)
 
         super().__post_init__(**kwargs)
 
@@ -890,15 +890,20 @@ class OpaAuthorizationInput(YAMLRoot):
     class_name: ClassVar[str] = "OpaAuthorizationInput"
     class_model_uri: ClassVar[URIRef] = OPENPOLICYAGENT.OpaAuthorizationInput
 
+    body: Union[dict, OpaObject] = None
     identity: str = None
     client_certificates: Union[Union[dict, OpaObject], list[Union[dict, OpaObject]]] = None
     method: str = None
     path: Union[str, list[str]] = None
     params: Union[dict, OpaObject] = None
     headers: Union[dict, OpaObject] = None
-    body: Union[dict, OpaObject] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
+        if self._is_empty(self.body):
+            self.MissingRequiredField("body")
+        if not isinstance(self.body, OpaObject):
+            self.body = OpaObject()
+
         if self._is_empty(self.identity):
             self.MissingRequiredField("identity")
         if not isinstance(self.identity, str):
@@ -930,11 +935,6 @@ class OpaAuthorizationInput(YAMLRoot):
             self.MissingRequiredField("headers")
         if not isinstance(self.headers, OpaObject):
             self.headers = OpaObject()
-
-        if self._is_empty(self.body):
-            self.MissingRequiredField("body")
-        if not isinstance(self.body, OpaObject):
-            self.body = OpaObject()
 
         super().__post_init__(**kwargs)
 
@@ -1973,16 +1973,11 @@ class OpaDotStmtBody(OpaStmtBody):
     row: int = None
     end_col: int = None
     end_row: int = None
-    key: Union[dict, "OpaOperand"] = None
     source: Union[dict, "OpaOperand"] = None
     target: int = None
+    key: Union[dict, "OpaOperand"] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.key):
-            self.MissingRequiredField("key")
-        if not isinstance(self.key, OpaOperand):
-            self.key = OpaOperand()
-
         if self._is_empty(self.source):
             self.MissingRequiredField("source")
         if not isinstance(self.source, OpaOperand):
@@ -1992,6 +1987,11 @@ class OpaDotStmtBody(OpaStmtBody):
             self.MissingRequiredField("target")
         if not isinstance(self.target, int):
             self.target = int(self.target)
+
+        if self._is_empty(self.key):
+            self.MissingRequiredField("key")
+        if not isinstance(self.key, OpaOperand):
+            self.key = OpaOperand()
 
         super().__post_init__(**kwargs)
 
@@ -2453,19 +2453,19 @@ class OpaMakeArrayStmtBody(OpaStmtBody):
     row: int = None
     end_col: int = None
     end_row: int = None
-    capacity: int = None
     target: int = None
+    capacity: int = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.capacity):
-            self.MissingRequiredField("capacity")
-        if not isinstance(self.capacity, int):
-            self.capacity = int(self.capacity)
-
         if self._is_empty(self.target):
             self.MissingRequiredField("target")
         if not isinstance(self.target, int):
             self.target = int(self.target)
+
+        if self._is_empty(self.capacity):
+            self.MissingRequiredField("capacity")
+        if not isinstance(self.capacity, int):
+            self.capacity = int(self.capacity)
 
         super().__post_init__(**kwargs)
 
@@ -2636,20 +2636,20 @@ class OpaMakeNumberRefStmtBody(OpaStmtBody):
     row: int = None
     end_col: int = None
     end_row: int = None
-    index: int = None
     target: int = None
+    index: int = None
     Index: Optional[int] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.index):
-            self.MissingRequiredField("index")
-        if not isinstance(self.index, int):
-            self.index = int(self.index)
-
         if self._is_empty(self.target):
             self.MissingRequiredField("target")
         if not isinstance(self.target, int):
             self.target = int(self.target)
+
+        if self._is_empty(self.index):
+            self.MissingRequiredField("index")
+        if not isinstance(self.index, int):
+            self.index = int(self.index)
 
         if self.Index is not None and not isinstance(self.Index, int):
             self.Index = int(self.Index)
@@ -3363,21 +3363,21 @@ class OpaScanStmtBody(OpaStmtBody):
     row: int = None
     end_col: int = None
     end_row: int = None
-    key: int = None
     source: int = None
+    key: int = None
     value: int = None
     block: Optional[Union[dict, OpaBlock]] = None
 
     def __post_init__(self, *_: str, **kwargs: Any):
-        if self._is_empty(self.key):
-            self.MissingRequiredField("key")
-        if not isinstance(self.key, int):
-            self.key = int(self.key)
-
         if self._is_empty(self.source):
             self.MissingRequiredField("source")
         if not isinstance(self.source, int):
             self.source = int(self.source)
+
+        if self._is_empty(self.key):
+            self.MissingRequiredField("key")
+        if not isinstance(self.key, int):
+            self.key = int(self.key)
 
         if self._is_empty(self.value):
             self.MissingRequiredField("value")
@@ -3674,6 +3674,24 @@ class OpaFeature(EnumDefinitionImpl):
 class slots:
     pass
 
+slots.body = Slot(uri=OPENPOLICYAGENT.body, name="body", curie=OPENPOLICYAGENT.curie('body'),
+                   model_uri=OPENPOLICYAGENT.body, domain=None, range=Optional[str])
+
+slots.revision = Slot(uri=OPENPOLICYAGENT.revision, name="revision", curie=OPENPOLICYAGENT.curie('revision'),
+                   model_uri=OPENPOLICYAGENT.revision, domain=None, range=Optional[str])
+
+slots.source = Slot(uri=OPENPOLICYAGENT.source, name="source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.source, domain=None, range=Optional[str])
+
+slots.target = Slot(uri=OPENPOLICYAGENT.target, name="target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.target, domain=None, range=Optional[str])
+
+slots.type = Slot(uri=OPENPOLICYAGENT.type, name="type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.type, domain=None, range=Optional[str])
+
+slots.version = Slot(uri=OPENPOLICYAGENT.version, name="version", curie=OPENPOLICYAGENT.curie('version'),
+                   model_uri=OPENPOLICYAGENT.version, domain=None, range=Optional[str])
+
 slots.file = Slot(uri=OPENPOLICYAGENT.file, name="file", curie=OPENPOLICYAGENT.curie('file'),
                    model_uri=OPENPOLICYAGENT.file, domain=None, range=Optional[int])
 
@@ -3695,26 +3713,14 @@ slots.opaType__name = Slot(uri=SCHEMA.name, name="opaType__name", curie=SCHEMA.c
 slots.opaType__description = Slot(uri=SCHEMA.description, name="opaType__description", curie=SCHEMA.curie('description'),
                    model_uri=OPENPOLICYAGENT.opaType__description, domain=None, range=Optional[str])
 
-slots.opaAnyType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaAnyType__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaAnyType__type, domain=None, range=str)
-
 slots.opaAnyType__of = Slot(uri=OPENPOLICYAGENT.of, name="opaAnyType__of", curie=OPENPOLICYAGENT.curie('of'),
                    model_uri=OPENPOLICYAGENT.opaAnyType__of, domain=None, range=Optional[Union[Union[dict, OpaType], list[Union[dict, OpaType]]]])
-
-slots.opaArrayType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaArrayType__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaArrayType__type, domain=None, range=str)
 
 slots.opaArrayType__static = Slot(uri=OPENPOLICYAGENT.static, name="opaArrayType__static", curie=OPENPOLICYAGENT.curie('static'),
                    model_uri=OPENPOLICYAGENT.opaArrayType__static, domain=None, range=Optional[Union[Union[dict, OpaType], list[Union[dict, OpaType]]]])
 
 slots.opaArrayType__dynamic = Slot(uri=OPENPOLICYAGENT.dynamic, name="opaArrayType__dynamic", curie=OPENPOLICYAGENT.curie('dynamic'),
                    model_uri=OPENPOLICYAGENT.opaArrayType__dynamic, domain=None, range=Optional[Union[dict, OpaType]])
-
-slots.opaBooleanType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBooleanType__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaBooleanType__type, domain=None, range=str)
-
-slots.opaFunctionType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaFunctionType__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaFunctionType__type, domain=None, range=str)
 
 slots.opaFunctionType__args = Slot(uri=OPENPOLICYAGENT.args, name="opaFunctionType__args", curie=OPENPOLICYAGENT.curie('args'),
                    model_uri=OPENPOLICYAGENT.opaFunctionType__args, domain=None, range=Optional[Union[Union[dict, OpaType], list[Union[dict, OpaType]]]])
@@ -3725,29 +3731,14 @@ slots.opaFunctionType__result = Slot(uri=OPENPOLICYAGENT.result, name="opaFuncti
 slots.opaFunctionType__variadic = Slot(uri=OPENPOLICYAGENT.variadic, name="opaFunctionType__variadic", curie=OPENPOLICYAGENT.curie('variadic'),
                    model_uri=OPENPOLICYAGENT.opaFunctionType__variadic, domain=None, range=Optional[Union[dict, OpaType]])
 
-slots.opaNullType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaNullType__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaNullType__type, domain=None, range=str)
-
-slots.opaNumberType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaNumberType__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaNumberType__type, domain=None, range=str)
-
-slots.opaObjectType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaObjectType__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaObjectType__type, domain=None, range=str)
-
 slots.opaObjectType__static = Slot(uri=OPENPOLICYAGENT.static, name="opaObjectType__static", curie=OPENPOLICYAGENT.curie('static'),
                    model_uri=OPENPOLICYAGENT.opaObjectType__static, domain=None, range=Optional[Union[Union[dict, OpaStaticProperty], list[Union[dict, OpaStaticProperty]]]])
 
 slots.opaObjectType__dynamic = Slot(uri=OPENPOLICYAGENT.dynamic, name="opaObjectType__dynamic", curie=OPENPOLICYAGENT.curie('dynamic'),
                    model_uri=OPENPOLICYAGENT.opaObjectType__dynamic, domain=None, range=Optional[Union[dict, OpaDynamicProperty]])
 
-slots.opaSetType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaSetType__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaSetType__type, domain=None, range=str)
-
 slots.opaSetType__of = Slot(uri=OPENPOLICYAGENT.of, name="opaSetType__of", curie=OPENPOLICYAGENT.curie('of'),
                    model_uri=OPENPOLICYAGENT.opaSetType__of, domain=None, range=Optional[Union[dict, OpaType]])
-
-slots.opaStringType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaStringType__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaStringType__type, domain=None, range=str)
 
 slots.opaStaticProperty__key = Slot(uri=OPENPOLICYAGENT.key, name="opaStaticProperty__key", curie=OPENPOLICYAGENT.curie('key'),
                    model_uri=OPENPOLICYAGENT.opaStaticProperty__key, domain=None, range=Union[dict, OpaValue])
@@ -3800,9 +3791,6 @@ slots.opaBuiltin__deprecated = Slot(uri=OPENPOLICYAGENT.deprecated, name="opaBui
 slots.opaBuiltin__nondeterministic = Slot(uri=OPENPOLICYAGENT.nondeterministic, name="opaBuiltin__nondeterministic", curie=OPENPOLICYAGENT.curie('nondeterministic'),
                    model_uri=OPENPOLICYAGENT.opaBuiltin__nondeterministic, domain=None, range=Optional[Union[bool, Bool]])
 
-slots.opaWasmAbiVersion__version = Slot(uri=OPENPOLICYAGENT.version, name="opaWasmAbiVersion__version", curie=OPENPOLICYAGENT.curie('version'),
-                   model_uri=OPENPOLICYAGENT.opaWasmAbiVersion__version, domain=None, range=int)
-
 slots.opaWasmAbiVersion__minor_version = Slot(uri=OPENPOLICYAGENT.minor_version, name="opaWasmAbiVersion__minor_version", curie=OPENPOLICYAGENT.curie('minor_version'),
                    model_uri=OPENPOLICYAGENT.opaWasmAbiVersion__minor_version, domain=None, range=int)
 
@@ -3826,9 +3814,6 @@ slots.opaImplementation__label = Slot(uri=OPENPOLICYAGENT.label, name="opaImplem
 
 slots.opaImplementation__repo = Slot(uri=OPENPOLICYAGENT.repo, name="opaImplementation__repo", curie=OPENPOLICYAGENT.curie('repo'),
                    model_uri=OPENPOLICYAGENT.opaImplementation__repo, domain=None, range=str)
-
-slots.opaImplementation__version = Slot(uri=SCHEMA.version, name="opaImplementation__version", curie=SCHEMA.curie('version'),
-                   model_uri=OPENPOLICYAGENT.opaImplementation__version, domain=None, range=str)
 
 slots.opaBuiltinMetadata__description = Slot(uri=SCHEMA.description, name="opaBuiltinMetadata__description", curie=SCHEMA.curie('description'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinMetadata__description, domain=None, range=Optional[str])
@@ -3866,23 +3851,14 @@ slots.opaBuiltinArgument__name = Slot(uri=SCHEMA.name, name="opaBuiltinArgument_
 slots.opaBuiltinArgument__description = Slot(uri=SCHEMA.description, name="opaBuiltinArgument__description", curie=SCHEMA.curie('description'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinArgument__description, domain=None, range=Optional[str])
 
-slots.opaBuiltinArgument__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBuiltinArgument__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaBuiltinArgument__type, domain=None, range=str)
-
 slots.opaBuiltinResult__name = Slot(uri=SCHEMA.name, name="opaBuiltinResult__name", curie=SCHEMA.curie('name'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinResult__name, domain=None, range=Optional[str])
 
 slots.opaBuiltinResult__description = Slot(uri=SCHEMA.description, name="opaBuiltinResult__description", curie=SCHEMA.curie('description'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinResult__description, domain=None, range=Optional[str])
 
-slots.opaBuiltinResult__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBuiltinResult__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaBuiltinResult__type, domain=None, range=Optional[str])
-
 slots.opaImplementationSupport__implementation = Slot(uri=OPENPOLICYAGENT.implementation, name="opaImplementationSupport__implementation", curie=OPENPOLICYAGENT.curie('implementation'),
                    model_uri=OPENPOLICYAGENT.opaImplementationSupport__implementation, domain=None, range=URIRef)
-
-slots.opaImplementationSupport__version = Slot(uri=SCHEMA.version, name="opaImplementationSupport__version", curie=SCHEMA.curie('version'),
-                   model_uri=OPENPOLICYAGENT.opaImplementationSupport__version, domain=None, range=str)
 
 slots.opaVersionIndex__builtins = Slot(uri=OPENPOLICYAGENT.builtins, name="opaVersionIndex__builtins", curie=OPENPOLICYAGENT.curie('builtins'),
                    model_uri=OPENPOLICYAGENT.opaVersionIndex__builtins, domain=None, range=Union[dict[Union[str, OpaVersionEntryName], Union[dict, OpaVersionEntry]], list[Union[dict, OpaVersionEntry]]])
@@ -3926,9 +3902,6 @@ slots.opaAuthorizationInput__params = Slot(uri=OPENPOLICYAGENT.params, name="opa
 slots.opaAuthorizationInput__headers = Slot(uri=OPENPOLICYAGENT.headers, name="opaAuthorizationInput__headers", curie=OPENPOLICYAGENT.curie('headers'),
                    model_uri=OPENPOLICYAGENT.opaAuthorizationInput__headers, domain=None, range=Union[dict, OpaObject])
 
-slots.opaAuthorizationInput__body = Slot(uri=OPENPOLICYAGENT.body, name="opaAuthorizationInput__body", curie=OPENPOLICYAGENT.curie('body'),
-                   model_uri=OPENPOLICYAGENT.opaAuthorizationInput__body, domain=None, range=Union[dict, OpaObject])
-
 slots.opaManifest__file_rego_versions = Slot(uri=OPENPOLICYAGENT.file_rego_versions, name="opaManifest__file_rego_versions", curie=OPENPOLICYAGENT.curie('file_rego_versions'),
                    model_uri=OPENPOLICYAGENT.opaManifest__file_rego_versions, domain=None, range=Optional[Union[dict[Union[str, OpaFileRegoVersionPath], Union[dict, OpaFileRegoVersion]], list[Union[dict, OpaFileRegoVersion]]]])
 
@@ -3937,9 +3910,6 @@ slots.opaManifest__metadata = Slot(uri=OPENPOLICYAGENT.metadata, name="opaManife
 
 slots.opaManifest__rego_version = Slot(uri=OPENPOLICYAGENT.rego_version, name="opaManifest__rego_version", curie=OPENPOLICYAGENT.curie('rego_version'),
                    model_uri=OPENPOLICYAGENT.opaManifest__rego_version, domain=None, range=Optional[int])
-
-slots.opaManifest__revision = Slot(uri=OPENPOLICYAGENT.revision, name="opaManifest__revision", curie=OPENPOLICYAGENT.curie('revision'),
-                   model_uri=OPENPOLICYAGENT.opaManifest__revision, domain=None, range=str)
 
 slots.opaManifest__roots = Slot(uri=OPENPOLICYAGENT.roots, name="opaManifest__roots", curie=OPENPOLICYAGENT.curie('roots'),
                    model_uri=OPENPOLICYAGENT.opaManifest__roots, domain=None, range=Optional[Union[str, list[str]]])
@@ -3958,9 +3928,6 @@ slots.opaWasmResolver__module = Slot(uri=OPENPOLICYAGENT.module, name="opaWasmRe
 
 slots.opaFileRegoVersion__path = Slot(uri=OPENPOLICYAGENT.path, name="opaFileRegoVersion__path", curie=OPENPOLICYAGENT.curie('path'),
                    model_uri=OPENPOLICYAGENT.opaFileRegoVersion__path, domain=None, range=URIRef)
-
-slots.opaFileRegoVersion__version = Slot(uri=OPENPOLICYAGENT.version, name="opaFileRegoVersion__version", curie=OPENPOLICYAGENT.curie('version'),
-                   model_uri=OPENPOLICYAGENT.opaFileRegoVersion__version, domain=None, range=int)
 
 slots.opaPolicy__funcs = Slot(uri=OPENPOLICYAGENT.funcs, name="opaPolicy__funcs", curie=OPENPOLICYAGENT.curie('funcs'),
                    model_uri=OPENPOLICYAGENT.opaPolicy__funcs, domain=None, range=Optional[Union[dict, OpaFuncs]])
@@ -4028,9 +3995,6 @@ slots.opaUnplannedRule__location = Slot(uri=OPENPOLICYAGENT.location, name="opaU
 slots.opaUnplannedRule__path = Slot(uri=OPENPOLICYAGENT.path, name="opaUnplannedRule__path", curie=OPENPOLICYAGENT.curie('path'),
                    model_uri=OPENPOLICYAGENT.opaUnplannedRule__path, domain=None, range=str)
 
-slots.opaArrayAppendStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaArrayAppendStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaArrayAppendStmt__type, domain=None, range=str)
-
 slots.opaArrayAppendStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaArrayAppendStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaArrayAppendStmt__stmt, domain=None, range=Union[dict, OpaArrayAppendStmtBody])
 
@@ -4040,44 +4004,17 @@ slots.opaArrayAppendStmtBody__array = Slot(uri=OPENPOLICYAGENT.array, name="opaA
 slots.opaArrayAppendStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaArrayAppendStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
                    model_uri=OPENPOLICYAGENT.opaArrayAppendStmtBody__value, domain=None, range=Union[dict, OpaOperand])
 
-slots.opaAssignIntStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaAssignIntStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaAssignIntStmt__type, domain=None, range=str)
-
 slots.opaAssignIntStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaAssignIntStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaAssignIntStmt__stmt, domain=None, range=Union[dict, OpaAssignIntStmtBody])
-
-slots.opaAssignIntStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaAssignIntStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.opaAssignIntStmtBody__target, domain=None, range=int)
 
 slots.opaAssignIntStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaAssignIntStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
                    model_uri=OPENPOLICYAGENT.opaAssignIntStmtBody__value, domain=None, range=int)
 
-slots.opaAssignVarOnceStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaAssignVarOnceStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaAssignVarOnceStmt__type, domain=None, range=str)
-
 slots.opaAssignVarOnceStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaAssignVarOnceStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaAssignVarOnceStmt__stmt, domain=None, range=Union[dict, OpaAssignVarOnceStmtBody])
 
-slots.opaAssignVarOnceStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaAssignVarOnceStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.opaAssignVarOnceStmtBody__source, domain=None, range=Union[dict, OpaOperand])
-
-slots.opaAssignVarOnceStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaAssignVarOnceStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.opaAssignVarOnceStmtBody__target, domain=None, range=int)
-
-slots.opaAssignVarStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaAssignVarStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaAssignVarStmt__type, domain=None, range=str)
-
 slots.opaAssignVarStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaAssignVarStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaAssignVarStmt__stmt, domain=None, range=Union[dict, OpaAssignVarStmtBody])
-
-slots.opaAssignVarStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaAssignVarStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.opaAssignVarStmtBody__source, domain=None, range=Union[dict, OpaOperand])
-
-slots.opaAssignVarStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaAssignVarStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.opaAssignVarStmtBody__target, domain=None, range=int)
-
-slots.opaBlockStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBlockStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaBlockStmt__type, domain=None, range=str)
 
 slots.opaBlockStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaBlockStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaBlockStmt__stmt, domain=None, range=Union[dict, OpaBlockStmtBody])
@@ -4085,17 +4022,11 @@ slots.opaBlockStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaBlockStmt__st
 slots.opaBlockStmtBody__blocks = Slot(uri=OPENPOLICYAGENT.blocks, name="opaBlockStmtBody__blocks", curie=OPENPOLICYAGENT.curie('blocks'),
                    model_uri=OPENPOLICYAGENT.opaBlockStmtBody__blocks, domain=None, range=Optional[Union[Union[dict, OpaBlock], list[Union[dict, OpaBlock]]]])
 
-slots.opaBreakStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBreakStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaBreakStmt__type, domain=None, range=str)
-
 slots.opaBreakStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaBreakStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaBreakStmt__stmt, domain=None, range=Union[dict, OpaBreakStmtBody])
 
 slots.opaBreakStmtBody__index = Slot(uri=OPENPOLICYAGENT.index, name="opaBreakStmtBody__index", curie=OPENPOLICYAGENT.curie('index'),
                    model_uri=OPENPOLICYAGENT.opaBreakStmtBody__index, domain=None, range=int)
-
-slots.opaCallDynamicStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaCallDynamicStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaCallDynamicStmt__type, domain=None, range=str)
 
 slots.opaCallDynamicStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaCallDynamicStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaCallDynamicStmt__stmt, domain=None, range=Union[dict, OpaCallDynamicStmtBody])
@@ -4109,9 +4040,6 @@ slots.opaCallDynamicStmtBody__path = Slot(uri=OPENPOLICYAGENT.path, name="opaCal
 slots.opaCallDynamicStmtBody__result = Slot(uri=OPENPOLICYAGENT.result, name="opaCallDynamicStmtBody__result", curie=OPENPOLICYAGENT.curie('result'),
                    model_uri=OPENPOLICYAGENT.opaCallDynamicStmtBody__result, domain=None, range=int)
 
-slots.opaCallStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaCallStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaCallStmt__type, domain=None, range=str)
-
 slots.opaCallStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaCallStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaCallStmt__stmt, domain=None, range=Union[dict, OpaCallStmtBody])
 
@@ -4124,23 +4052,11 @@ slots.opaCallStmtBody__func = Slot(uri=OPENPOLICYAGENT.func, name="opaCallStmtBo
 slots.opaCallStmtBody__result = Slot(uri=OPENPOLICYAGENT.result, name="opaCallStmtBody__result", curie=OPENPOLICYAGENT.curie('result'),
                    model_uri=OPENPOLICYAGENT.opaCallStmtBody__result, domain=None, range=int)
 
-slots.opaDotStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaDotStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaDotStmt__type, domain=None, range=str)
-
 slots.opaDotStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaDotStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaDotStmt__stmt, domain=None, range=Union[dict, OpaDotStmtBody])
 
 slots.opaDotStmtBody__key = Slot(uri=OPENPOLICYAGENT.key, name="opaDotStmtBody__key", curie=OPENPOLICYAGENT.curie('key'),
                    model_uri=OPENPOLICYAGENT.opaDotStmtBody__key, domain=None, range=Union[dict, OpaOperand])
-
-slots.opaDotStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaDotStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.opaDotStmtBody__source, domain=None, range=Union[dict, OpaOperand])
-
-slots.opaDotStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaDotStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.opaDotStmtBody__target, domain=None, range=int)
-
-slots.opaEqualStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaEqualStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaEqualStmt__type, domain=None, range=str)
 
 slots.opaEqualStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaEqualStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaEqualStmt__stmt, domain=None, range=Union[dict, OpaEqualStmtBody])
@@ -4151,65 +4067,23 @@ slots.opaEqualStmtBody__operand_a = Slot(uri=OPENPOLICYAGENT.a, name="opaEqualSt
 slots.opaEqualStmtBody__operand_b = Slot(uri=OPENPOLICYAGENT.b, name="opaEqualStmtBody__operand_b", curie=OPENPOLICYAGENT.curie('b'),
                    model_uri=OPENPOLICYAGENT.opaEqualStmtBody__operand_b, domain=None, range=Union[dict, OpaOperand])
 
-slots.opaIsArrayStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaIsArrayStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaIsArrayStmt__type, domain=None, range=str)
-
 slots.opaIsArrayStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaIsArrayStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaIsArrayStmt__stmt, domain=None, range=Union[dict, OpaIsArrayStmtBody])
-
-slots.opaIsArrayStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaIsArrayStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.opaIsArrayStmtBody__source, domain=None, range=Union[dict, OpaOperand])
-
-slots.opaIsDefinedStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaIsDefinedStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaIsDefinedStmt__type, domain=None, range=str)
 
 slots.opaIsDefinedStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaIsDefinedStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaIsDefinedStmt__stmt, domain=None, range=Union[dict, OpaIsDefinedStmtBody])
 
-slots.opaIsDefinedStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaIsDefinedStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.opaIsDefinedStmtBody__source, domain=None, range=int)
-
-slots.opaIsObjectStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaIsObjectStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaIsObjectStmt__type, domain=None, range=str)
-
 slots.opaIsObjectStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaIsObjectStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaIsObjectStmt__stmt, domain=None, range=Union[dict, OpaIsObjectStmtBody])
-
-slots.opaIsObjectStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaIsObjectStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.opaIsObjectStmtBody__source, domain=None, range=Union[dict, OpaOperand])
-
-slots.opaIsSetStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaIsSetStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaIsSetStmt__type, domain=None, range=str)
 
 slots.opaIsSetStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaIsSetStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaIsSetStmt__stmt, domain=None, range=Union[dict, OpaIsSetStmtBody])
 
-slots.opaIsSetStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaIsSetStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.opaIsSetStmtBody__source, domain=None, range=Union[dict, OpaOperand])
-
-slots.opaIsUndefinedStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaIsUndefinedStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaIsUndefinedStmt__type, domain=None, range=str)
-
 slots.opaIsUndefinedStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaIsUndefinedStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaIsUndefinedStmt__stmt, domain=None, range=Union[dict, OpaIsUndefinedStmtBody])
 
-slots.opaIsUndefinedStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaIsUndefinedStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.opaIsUndefinedStmtBody__source, domain=None, range=int)
-
-slots.opaLenStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaLenStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaLenStmt__type, domain=None, range=str)
-
 slots.opaLenStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaLenStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaLenStmt__stmt, domain=None, range=Union[dict, OpaLenStmtBody])
-
-slots.opaLenStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaLenStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.opaLenStmtBody__source, domain=None, range=Union[dict, OpaOperand])
-
-slots.opaLenStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaLenStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.opaLenStmtBody__target, domain=None, range=int)
-
-slots.opaMakeArrayStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaMakeArrayStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaMakeArrayStmt__type, domain=None, range=str)
 
 slots.opaMakeArrayStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeArrayStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaMakeArrayStmt__stmt, domain=None, range=Union[dict, OpaMakeArrayStmtBody])
@@ -4217,32 +4091,14 @@ slots.opaMakeArrayStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeArray
 slots.opaMakeArrayStmtBody__capacity = Slot(uri=OPENPOLICYAGENT.capacity, name="opaMakeArrayStmtBody__capacity", curie=OPENPOLICYAGENT.curie('capacity'),
                    model_uri=OPENPOLICYAGENT.opaMakeArrayStmtBody__capacity, domain=None, range=int)
 
-slots.opaMakeArrayStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaMakeArrayStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.opaMakeArrayStmtBody__target, domain=None, range=int)
-
-slots.opaMakeNullStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaMakeNullStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaMakeNullStmt__type, domain=None, range=str)
-
 slots.opaMakeNullStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeNullStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaMakeNullStmt__stmt, domain=None, range=Union[dict, OpaMakeNullStmtBody])
-
-slots.opaMakeNullStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaMakeNullStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.opaMakeNullStmtBody__target, domain=None, range=int)
-
-slots.opaMakeNumberIntStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaMakeNumberIntStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaMakeNumberIntStmt__type, domain=None, range=str)
 
 slots.opaMakeNumberIntStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeNumberIntStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaMakeNumberIntStmt__stmt, domain=None, range=Union[dict, OpaMakeNumberIntStmtBody])
 
-slots.opaMakeNumberIntStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaMakeNumberIntStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.opaMakeNumberIntStmtBody__target, domain=None, range=int)
-
 slots.opaMakeNumberIntStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaMakeNumberIntStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
                    model_uri=OPENPOLICYAGENT.opaMakeNumberIntStmtBody__value, domain=None, range=int)
-
-slots.opaMakeNumberRefStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaMakeNumberRefStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaMakeNumberRefStmt__type, domain=None, range=str)
 
 slots.opaMakeNumberRefStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeNumberRefStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaMakeNumberRefStmt__stmt, domain=None, range=Union[dict, OpaMakeNumberRefStmtBody])
@@ -4250,38 +4106,17 @@ slots.opaMakeNumberRefStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeN
 slots.opaMakeNumberRefStmtBody__index = Slot(uri=OPENPOLICYAGENT.index, name="opaMakeNumberRefStmtBody__index", curie=OPENPOLICYAGENT.curie('index'),
                    model_uri=OPENPOLICYAGENT.opaMakeNumberRefStmtBody__index, domain=None, range=int)
 
-slots.opaMakeNumberRefStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaMakeNumberRefStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.opaMakeNumberRefStmtBody__target, domain=None, range=int)
-
 slots.opaMakeNumberRefStmtBody__index_legacy = Slot(uri=OPENPOLICYAGENT.Index, name="opaMakeNumberRefStmtBody__index_legacy", curie=OPENPOLICYAGENT.curie('Index'),
                    model_uri=OPENPOLICYAGENT.opaMakeNumberRefStmtBody__index_legacy, domain=None, range=Optional[int])
-
-slots.opaMakeObjectStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaMakeObjectStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaMakeObjectStmt__type, domain=None, range=str)
 
 slots.opaMakeObjectStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeObjectStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaMakeObjectStmt__stmt, domain=None, range=Union[dict, OpaMakeObjectStmtBody])
 
-slots.opaMakeObjectStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaMakeObjectStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.opaMakeObjectStmtBody__target, domain=None, range=int)
-
-slots.opaMakeSetStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaMakeSetStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaMakeSetStmt__type, domain=None, range=str)
-
 slots.opaMakeSetStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaMakeSetStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaMakeSetStmt__stmt, domain=None, range=Union[dict, OpaMakeSetStmtBody])
 
-slots.opaMakeSetStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaMakeSetStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.opaMakeSetStmtBody__target, domain=None, range=int)
-
-slots.opaNopStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaNopStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaNopStmt__type, domain=None, range=str)
-
 slots.opaNopStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaNopStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaNopStmt__stmt, domain=None, range=Union[dict, OpaNopStmtBody])
-
-slots.opaNotEqualStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaNotEqualStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaNotEqualStmt__type, domain=None, range=str)
 
 slots.opaNotEqualStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaNotEqualStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaNotEqualStmt__stmt, domain=None, range=Union[dict, OpaNotEqualStmtBody])
@@ -4292,17 +4127,11 @@ slots.opaNotEqualStmtBody__operand_a = Slot(uri=OPENPOLICYAGENT.a, name="opaNotE
 slots.opaNotEqualStmtBody__operand_b = Slot(uri=OPENPOLICYAGENT.b, name="opaNotEqualStmtBody__operand_b", curie=OPENPOLICYAGENT.curie('b'),
                    model_uri=OPENPOLICYAGENT.opaNotEqualStmtBody__operand_b, domain=None, range=Union[dict, OpaOperand])
 
-slots.opaNotStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaNotStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaNotStmt__type, domain=None, range=str)
-
 slots.opaNotStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaNotStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaNotStmt__stmt, domain=None, range=Union[dict, OpaNotStmtBody])
 
 slots.opaNotStmtBody__block = Slot(uri=OPENPOLICYAGENT.block, name="opaNotStmtBody__block", curie=OPENPOLICYAGENT.curie('block'),
                    model_uri=OPENPOLICYAGENT.opaNotStmtBody__block, domain=None, range=Optional[Union[dict, OpaBlock]])
-
-slots.opaObjectInsertOnceStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaObjectInsertOnceStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaObjectInsertOnceStmt__type, domain=None, range=str)
 
 slots.opaObjectInsertOnceStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaObjectInsertOnceStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaObjectInsertOnceStmt__stmt, domain=None, range=Union[dict, OpaObjectInsertOnceStmtBody])
@@ -4316,9 +4145,6 @@ slots.opaObjectInsertOnceStmtBody__object = Slot(uri=OPENPOLICYAGENT.object, nam
 slots.opaObjectInsertOnceStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaObjectInsertOnceStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
                    model_uri=OPENPOLICYAGENT.opaObjectInsertOnceStmtBody__value, domain=None, range=Union[dict, OpaOperand])
 
-slots.opaObjectInsertStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaObjectInsertStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaObjectInsertStmt__type, domain=None, range=str)
-
 slots.opaObjectInsertStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaObjectInsertStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaObjectInsertStmt__stmt, domain=None, range=Union[dict, OpaObjectInsertStmtBody])
 
@@ -4331,14 +4157,8 @@ slots.opaObjectInsertStmtBody__object = Slot(uri=OPENPOLICYAGENT.object, name="o
 slots.opaObjectInsertStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaObjectInsertStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
                    model_uri=OPENPOLICYAGENT.opaObjectInsertStmtBody__value, domain=None, range=Union[dict, OpaOperand])
 
-slots.opaObjectMergeStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaObjectMergeStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaObjectMergeStmt__type, domain=None, range=str)
-
 slots.opaObjectMergeStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaObjectMergeStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaObjectMergeStmt__stmt, domain=None, range=Union[dict, OpaObjectMergeStmtBody])
-
-slots.opaObjectMergeStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaObjectMergeStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.opaObjectMergeStmtBody__target, domain=None, range=int)
 
 slots.opaObjectMergeStmtBody__operand_a = Slot(uri=OPENPOLICYAGENT.a, name="opaObjectMergeStmtBody__operand_a", curie=OPENPOLICYAGENT.curie('a'),
                    model_uri=OPENPOLICYAGENT.opaObjectMergeStmtBody__operand_a, domain=None, range=int)
@@ -4346,17 +4166,8 @@ slots.opaObjectMergeStmtBody__operand_a = Slot(uri=OPENPOLICYAGENT.a, name="opaO
 slots.opaObjectMergeStmtBody__operand_b = Slot(uri=OPENPOLICYAGENT.b, name="opaObjectMergeStmtBody__operand_b", curie=OPENPOLICYAGENT.curie('b'),
                    model_uri=OPENPOLICYAGENT.opaObjectMergeStmtBody__operand_b, domain=None, range=int)
 
-slots.opaResetLocalStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaResetLocalStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaResetLocalStmt__type, domain=None, range=str)
-
 slots.opaResetLocalStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaResetLocalStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaResetLocalStmt__stmt, domain=None, range=Union[dict, OpaResetLocalStmtBody])
-
-slots.opaResetLocalStmtBody__target = Slot(uri=OPENPOLICYAGENT.target, name="opaResetLocalStmtBody__target", curie=OPENPOLICYAGENT.curie('target'),
-                   model_uri=OPENPOLICYAGENT.opaResetLocalStmtBody__target, domain=None, range=int)
-
-slots.opaResultSetAddStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaResultSetAddStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaResultSetAddStmt__type, domain=None, range=str)
 
 slots.opaResultSetAddStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaResultSetAddStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaResultSetAddStmt__stmt, domain=None, range=Union[dict, OpaResultSetAddStmtBody])
@@ -4364,17 +4175,8 @@ slots.opaResultSetAddStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaResult
 slots.opaResultSetAddStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaResultSetAddStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
                    model_uri=OPENPOLICYAGENT.opaResultSetAddStmtBody__value, domain=None, range=int)
 
-slots.opaReturnLocalStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaReturnLocalStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaReturnLocalStmt__type, domain=None, range=str)
-
 slots.opaReturnLocalStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaReturnLocalStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaReturnLocalStmt__stmt, domain=None, range=Union[dict, OpaReturnLocalStmtBody])
-
-slots.opaReturnLocalStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaReturnLocalStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.opaReturnLocalStmtBody__source, domain=None, range=int)
-
-slots.opaScanStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaScanStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaScanStmt__type, domain=None, range=str)
 
 slots.opaScanStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaScanStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaScanStmt__stmt, domain=None, range=Union[dict, OpaScanStmtBody])
@@ -4385,14 +4187,8 @@ slots.opaScanStmtBody__block = Slot(uri=OPENPOLICYAGENT.block, name="opaScanStmt
 slots.opaScanStmtBody__key = Slot(uri=OPENPOLICYAGENT.key, name="opaScanStmtBody__key", curie=OPENPOLICYAGENT.curie('key'),
                    model_uri=OPENPOLICYAGENT.opaScanStmtBody__key, domain=None, range=int)
 
-slots.opaScanStmtBody__source = Slot(uri=OPENPOLICYAGENT.source, name="opaScanStmtBody__source", curie=OPENPOLICYAGENT.curie('source'),
-                   model_uri=OPENPOLICYAGENT.opaScanStmtBody__source, domain=None, range=int)
-
 slots.opaScanStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaScanStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
                    model_uri=OPENPOLICYAGENT.opaScanStmtBody__value, domain=None, range=int)
-
-slots.opaSetAddStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaSetAddStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaSetAddStmt__type, domain=None, range=str)
 
 slots.opaSetAddStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaSetAddStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaSetAddStmt__stmt, domain=None, range=Union[dict, OpaSetAddStmtBody])
@@ -4402,9 +4198,6 @@ slots.opaSetAddStmtBody__set = Slot(uri=OPENPOLICYAGENT.set, name="opaSetAddStmt
 
 slots.opaSetAddStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaSetAddStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
                    model_uri=OPENPOLICYAGENT.opaSetAddStmtBody__value, domain=None, range=Union[dict, OpaOperand])
-
-slots.opaWithStmt__type = Slot(uri=OPENPOLICYAGENT.type, name="opaWithStmt__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaWithStmt__type, domain=None, range=str)
 
 slots.opaWithStmt__stmt = Slot(uri=OPENPOLICYAGENT.stmt, name="opaWithStmt__stmt", curie=OPENPOLICYAGENT.curie('stmt'),
                    model_uri=OPENPOLICYAGENT.opaWithStmt__stmt, domain=None, range=Union[dict, OpaWithStmtBody])
@@ -4421,23 +4214,65 @@ slots.opaWithStmtBody__path = Slot(uri=OPENPOLICYAGENT.path, name="opaWithStmtBo
 slots.opaWithStmtBody__value = Slot(uri=OPENPOLICYAGENT.value, name="opaWithStmtBody__value", curie=OPENPOLICYAGENT.curie('value'),
                    model_uri=OPENPOLICYAGENT.opaWithStmtBody__value, domain=None, range=Union[dict, OpaOperand])
 
-slots.opaBoolOperand__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBoolOperand__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaBoolOperand__type, domain=None, range=str)
-
 slots.opaBoolOperand__value = Slot(uri=OPENPOLICYAGENT.value, name="opaBoolOperand__value", curie=OPENPOLICYAGENT.curie('value'),
                    model_uri=OPENPOLICYAGENT.opaBoolOperand__value, domain=None, range=Union[bool, Bool])
-
-slots.opaLocalOperand__type = Slot(uri=OPENPOLICYAGENT.type, name="opaLocalOperand__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaLocalOperand__type, domain=None, range=str)
 
 slots.opaLocalOperand__value = Slot(uri=OPENPOLICYAGENT.value, name="opaLocalOperand__value", curie=OPENPOLICYAGENT.curie('value'),
                    model_uri=OPENPOLICYAGENT.opaLocalOperand__value, domain=None, range=int)
 
-slots.opaStringIndexOperand__type = Slot(uri=OPENPOLICYAGENT.type, name="opaStringIndexOperand__type", curie=OPENPOLICYAGENT.curie('type'),
-                   model_uri=OPENPOLICYAGENT.opaStringIndexOperand__type, domain=None, range=str)
-
 slots.opaStringIndexOperand__value = Slot(uri=OPENPOLICYAGENT.value, name="opaStringIndexOperand__value", curie=OPENPOLICYAGENT.curie('value'),
                    model_uri=OPENPOLICYAGENT.opaStringIndexOperand__value, domain=None, range=int)
+
+slots.OpaAnyType_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaAnyType_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaAnyType_type, domain=OpaAnyType, range=str)
+
+slots.OpaArrayType_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaArrayType_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaArrayType_type, domain=OpaArrayType, range=str)
+
+slots.OpaBooleanType_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaBooleanType_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaBooleanType_type, domain=OpaBooleanType, range=str)
+
+slots.OpaFunctionType_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaFunctionType_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaFunctionType_type, domain=OpaFunctionType, range=str)
+
+slots.OpaNullType_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaNullType_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaNullType_type, domain=OpaNullType, range=str)
+
+slots.OpaNumberType_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaNumberType_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaNumberType_type, domain=OpaNumberType, range=str)
+
+slots.OpaObjectType_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaObjectType_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaObjectType_type, domain=OpaObjectType, range=str)
+
+slots.OpaSetType_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaSetType_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaSetType_type, domain=OpaSetType, range=str)
+
+slots.OpaStringType_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaStringType_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaStringType_type, domain=OpaStringType, range=str)
+
+slots.OpaWasmAbiVersion_version = Slot(uri=OPENPOLICYAGENT.version, name="OpaWasmAbiVersion_version", curie=OPENPOLICYAGENT.curie('version'),
+                   model_uri=OPENPOLICYAGENT.OpaWasmAbiVersion_version, domain=OpaWasmAbiVersion, range=int)
+
+slots.OpaImplementation_version = Slot(uri=OPENPOLICYAGENT.version, name="OpaImplementation_version", curie=OPENPOLICYAGENT.curie('version'),
+                   model_uri=OPENPOLICYAGENT.OpaImplementation_version, domain=OpaImplementation, range=str)
+
+slots.OpaBuiltinArgument_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaBuiltinArgument_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaBuiltinArgument_type, domain=OpaBuiltinArgument, range=str)
+
+slots.OpaBuiltinResult_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaBuiltinResult_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaBuiltinResult_type, domain=OpaBuiltinResult, range=Optional[str])
+
+slots.OpaImplementationSupport_version = Slot(uri=OPENPOLICYAGENT.version, name="OpaImplementationSupport_version", curie=OPENPOLICYAGENT.curie('version'),
+                   model_uri=OPENPOLICYAGENT.OpaImplementationSupport_version, domain=OpaImplementationSupport, range=str)
+
+slots.OpaAuthorizationInput_body = Slot(uri=OPENPOLICYAGENT.body, name="OpaAuthorizationInput_body", curie=OPENPOLICYAGENT.curie('body'),
+                   model_uri=OPENPOLICYAGENT.OpaAuthorizationInput_body, domain=OpaAuthorizationInput, range=Union[dict, OpaObject])
+
+slots.OpaManifest_revision = Slot(uri=OPENPOLICYAGENT.revision, name="OpaManifest_revision", curie=OPENPOLICYAGENT.curie('revision'),
+                   model_uri=OPENPOLICYAGENT.OpaManifest_revision, domain=OpaManifest, range=str)
+
+slots.OpaFileRegoVersion_version = Slot(uri=OPENPOLICYAGENT.version, name="OpaFileRegoVersion_version", curie=OPENPOLICYAGENT.curie('version'),
+                   model_uri=OPENPOLICYAGENT.OpaFileRegoVersion_version, domain=OpaFileRegoVersion, range=int)
 
 slots.OpaLocation_file = Slot(uri=OPENPOLICYAGENT.file, name="OpaLocation_file", curie=OPENPOLICYAGENT.curie('file'),
                    model_uri=OPENPOLICYAGENT.OpaLocation_file, domain=OpaLocation, range=int)
@@ -4468,3 +4303,186 @@ slots.OpaStmtBody_end_col = Slot(uri=OPENPOLICYAGENT.end_col, name="OpaStmtBody_
 
 slots.OpaStmtBody_end_row = Slot(uri=OPENPOLICYAGENT.end_row, name="OpaStmtBody_end_row", curie=OPENPOLICYAGENT.curie('end_row'),
                    model_uri=OPENPOLICYAGENT.OpaStmtBody_end_row, domain=OpaStmtBody, range=int)
+
+slots.OpaArrayAppendStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaArrayAppendStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaArrayAppendStmt_type, domain=OpaArrayAppendStmt, range=str)
+
+slots.OpaAssignIntStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaAssignIntStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaAssignIntStmt_type, domain=OpaAssignIntStmt, range=str)
+
+slots.OpaAssignIntStmtBody_target = Slot(uri=OPENPOLICYAGENT.target, name="OpaAssignIntStmtBody_target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.OpaAssignIntStmtBody_target, domain=OpaAssignIntStmtBody, range=int)
+
+slots.OpaAssignVarOnceStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaAssignVarOnceStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaAssignVarOnceStmt_type, domain=OpaAssignVarOnceStmt, range=str)
+
+slots.OpaAssignVarOnceStmtBody_source = Slot(uri=OPENPOLICYAGENT.source, name="OpaAssignVarOnceStmtBody_source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.OpaAssignVarOnceStmtBody_source, domain=OpaAssignVarOnceStmtBody, range=Union[dict, "OpaOperand"])
+
+slots.OpaAssignVarOnceStmtBody_target = Slot(uri=OPENPOLICYAGENT.target, name="OpaAssignVarOnceStmtBody_target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.OpaAssignVarOnceStmtBody_target, domain=OpaAssignVarOnceStmtBody, range=int)
+
+slots.OpaAssignVarStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaAssignVarStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaAssignVarStmt_type, domain=OpaAssignVarStmt, range=str)
+
+slots.OpaAssignVarStmtBody_source = Slot(uri=OPENPOLICYAGENT.source, name="OpaAssignVarStmtBody_source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.OpaAssignVarStmtBody_source, domain=OpaAssignVarStmtBody, range=Union[dict, "OpaOperand"])
+
+slots.OpaAssignVarStmtBody_target = Slot(uri=OPENPOLICYAGENT.target, name="OpaAssignVarStmtBody_target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.OpaAssignVarStmtBody_target, domain=OpaAssignVarStmtBody, range=int)
+
+slots.OpaBlockStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaBlockStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaBlockStmt_type, domain=OpaBlockStmt, range=str)
+
+slots.OpaBreakStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaBreakStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaBreakStmt_type, domain=OpaBreakStmt, range=str)
+
+slots.OpaCallDynamicStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaCallDynamicStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaCallDynamicStmt_type, domain=OpaCallDynamicStmt, range=str)
+
+slots.OpaCallStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaCallStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaCallStmt_type, domain=OpaCallStmt, range=str)
+
+slots.OpaDotStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaDotStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaDotStmt_type, domain=OpaDotStmt, range=str)
+
+slots.OpaDotStmtBody_source = Slot(uri=OPENPOLICYAGENT.source, name="OpaDotStmtBody_source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.OpaDotStmtBody_source, domain=OpaDotStmtBody, range=Union[dict, "OpaOperand"])
+
+slots.OpaDotStmtBody_target = Slot(uri=OPENPOLICYAGENT.target, name="OpaDotStmtBody_target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.OpaDotStmtBody_target, domain=OpaDotStmtBody, range=int)
+
+slots.OpaEqualStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaEqualStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaEqualStmt_type, domain=OpaEqualStmt, range=str)
+
+slots.OpaIsArrayStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaIsArrayStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaIsArrayStmt_type, domain=OpaIsArrayStmt, range=str)
+
+slots.OpaIsArrayStmtBody_source = Slot(uri=OPENPOLICYAGENT.source, name="OpaIsArrayStmtBody_source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.OpaIsArrayStmtBody_source, domain=OpaIsArrayStmtBody, range=Union[dict, "OpaOperand"])
+
+slots.OpaIsDefinedStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaIsDefinedStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaIsDefinedStmt_type, domain=OpaIsDefinedStmt, range=str)
+
+slots.OpaIsDefinedStmtBody_source = Slot(uri=OPENPOLICYAGENT.source, name="OpaIsDefinedStmtBody_source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.OpaIsDefinedStmtBody_source, domain=OpaIsDefinedStmtBody, range=int)
+
+slots.OpaIsObjectStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaIsObjectStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaIsObjectStmt_type, domain=OpaIsObjectStmt, range=str)
+
+slots.OpaIsObjectStmtBody_source = Slot(uri=OPENPOLICYAGENT.source, name="OpaIsObjectStmtBody_source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.OpaIsObjectStmtBody_source, domain=OpaIsObjectStmtBody, range=Union[dict, "OpaOperand"])
+
+slots.OpaIsSetStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaIsSetStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaIsSetStmt_type, domain=OpaIsSetStmt, range=str)
+
+slots.OpaIsSetStmtBody_source = Slot(uri=OPENPOLICYAGENT.source, name="OpaIsSetStmtBody_source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.OpaIsSetStmtBody_source, domain=OpaIsSetStmtBody, range=Union[dict, "OpaOperand"])
+
+slots.OpaIsUndefinedStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaIsUndefinedStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaIsUndefinedStmt_type, domain=OpaIsUndefinedStmt, range=str)
+
+slots.OpaIsUndefinedStmtBody_source = Slot(uri=OPENPOLICYAGENT.source, name="OpaIsUndefinedStmtBody_source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.OpaIsUndefinedStmtBody_source, domain=OpaIsUndefinedStmtBody, range=int)
+
+slots.OpaLenStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaLenStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaLenStmt_type, domain=OpaLenStmt, range=str)
+
+slots.OpaLenStmtBody_source = Slot(uri=OPENPOLICYAGENT.source, name="OpaLenStmtBody_source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.OpaLenStmtBody_source, domain=OpaLenStmtBody, range=Union[dict, "OpaOperand"])
+
+slots.OpaLenStmtBody_target = Slot(uri=OPENPOLICYAGENT.target, name="OpaLenStmtBody_target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.OpaLenStmtBody_target, domain=OpaLenStmtBody, range=int)
+
+slots.OpaMakeArrayStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaMakeArrayStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaMakeArrayStmt_type, domain=OpaMakeArrayStmt, range=str)
+
+slots.OpaMakeArrayStmtBody_target = Slot(uri=OPENPOLICYAGENT.target, name="OpaMakeArrayStmtBody_target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.OpaMakeArrayStmtBody_target, domain=OpaMakeArrayStmtBody, range=int)
+
+slots.OpaMakeNullStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaMakeNullStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaMakeNullStmt_type, domain=OpaMakeNullStmt, range=str)
+
+slots.OpaMakeNullStmtBody_target = Slot(uri=OPENPOLICYAGENT.target, name="OpaMakeNullStmtBody_target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.OpaMakeNullStmtBody_target, domain=OpaMakeNullStmtBody, range=int)
+
+slots.OpaMakeNumberIntStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaMakeNumberIntStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaMakeNumberIntStmt_type, domain=OpaMakeNumberIntStmt, range=str)
+
+slots.OpaMakeNumberIntStmtBody_target = Slot(uri=OPENPOLICYAGENT.target, name="OpaMakeNumberIntStmtBody_target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.OpaMakeNumberIntStmtBody_target, domain=OpaMakeNumberIntStmtBody, range=int)
+
+slots.OpaMakeNumberRefStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaMakeNumberRefStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaMakeNumberRefStmt_type, domain=OpaMakeNumberRefStmt, range=str)
+
+slots.OpaMakeNumberRefStmtBody_target = Slot(uri=OPENPOLICYAGENT.target, name="OpaMakeNumberRefStmtBody_target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.OpaMakeNumberRefStmtBody_target, domain=OpaMakeNumberRefStmtBody, range=int)
+
+slots.OpaMakeObjectStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaMakeObjectStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaMakeObjectStmt_type, domain=OpaMakeObjectStmt, range=str)
+
+slots.OpaMakeObjectStmtBody_target = Slot(uri=OPENPOLICYAGENT.target, name="OpaMakeObjectStmtBody_target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.OpaMakeObjectStmtBody_target, domain=OpaMakeObjectStmtBody, range=int)
+
+slots.OpaMakeSetStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaMakeSetStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaMakeSetStmt_type, domain=OpaMakeSetStmt, range=str)
+
+slots.OpaMakeSetStmtBody_target = Slot(uri=OPENPOLICYAGENT.target, name="OpaMakeSetStmtBody_target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.OpaMakeSetStmtBody_target, domain=OpaMakeSetStmtBody, range=int)
+
+slots.OpaNopStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaNopStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaNopStmt_type, domain=OpaNopStmt, range=str)
+
+slots.OpaNotEqualStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaNotEqualStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaNotEqualStmt_type, domain=OpaNotEqualStmt, range=str)
+
+slots.OpaNotStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaNotStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaNotStmt_type, domain=OpaNotStmt, range=str)
+
+slots.OpaObjectInsertOnceStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaObjectInsertOnceStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaObjectInsertOnceStmt_type, domain=OpaObjectInsertOnceStmt, range=str)
+
+slots.OpaObjectInsertStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaObjectInsertStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaObjectInsertStmt_type, domain=OpaObjectInsertStmt, range=str)
+
+slots.OpaObjectMergeStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaObjectMergeStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaObjectMergeStmt_type, domain=OpaObjectMergeStmt, range=str)
+
+slots.OpaObjectMergeStmtBody_target = Slot(uri=OPENPOLICYAGENT.target, name="OpaObjectMergeStmtBody_target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.OpaObjectMergeStmtBody_target, domain=OpaObjectMergeStmtBody, range=int)
+
+slots.OpaResetLocalStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaResetLocalStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaResetLocalStmt_type, domain=OpaResetLocalStmt, range=str)
+
+slots.OpaResetLocalStmtBody_target = Slot(uri=OPENPOLICYAGENT.target, name="OpaResetLocalStmtBody_target", curie=OPENPOLICYAGENT.curie('target'),
+                   model_uri=OPENPOLICYAGENT.OpaResetLocalStmtBody_target, domain=OpaResetLocalStmtBody, range=int)
+
+slots.OpaResultSetAddStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaResultSetAddStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaResultSetAddStmt_type, domain=OpaResultSetAddStmt, range=str)
+
+slots.OpaReturnLocalStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaReturnLocalStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaReturnLocalStmt_type, domain=OpaReturnLocalStmt, range=str)
+
+slots.OpaReturnLocalStmtBody_source = Slot(uri=OPENPOLICYAGENT.source, name="OpaReturnLocalStmtBody_source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.OpaReturnLocalStmtBody_source, domain=OpaReturnLocalStmtBody, range=int)
+
+slots.OpaScanStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaScanStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaScanStmt_type, domain=OpaScanStmt, range=str)
+
+slots.OpaScanStmtBody_source = Slot(uri=OPENPOLICYAGENT.source, name="OpaScanStmtBody_source", curie=OPENPOLICYAGENT.curie('source'),
+                   model_uri=OPENPOLICYAGENT.OpaScanStmtBody_source, domain=OpaScanStmtBody, range=int)
+
+slots.OpaSetAddStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaSetAddStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaSetAddStmt_type, domain=OpaSetAddStmt, range=str)
+
+slots.OpaWithStmt_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaWithStmt_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaWithStmt_type, domain=OpaWithStmt, range=str)
+
+slots.OpaBoolOperand_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaBoolOperand_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaBoolOperand_type, domain=OpaBoolOperand, range=str)
+
+slots.OpaLocalOperand_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaLocalOperand_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaLocalOperand_type, domain=OpaLocalOperand, range=str)
+
+slots.OpaStringIndexOperand_type = Slot(uri=OPENPOLICYAGENT.type, name="OpaStringIndexOperand_type", curie=OPENPOLICYAGENT.curie('type'),
+                   model_uri=OPENPOLICYAGENT.OpaStringIndexOperand_type, domain=OpaStringIndexOperand, range=str)

@@ -720,10 +720,10 @@ openpolicyagent:available a owl:DatatypeProperty ;
 	skos:inScheme openpolicyagent:builtin_metadata .
 openpolicyagent:block a owl:ObjectProperty .
 openpolicyagent:blocks a owl:ObjectProperty .
-openpolicyagent:body a owl:ObjectProperty ;
+openpolicyagent:body a owl:DatatypeProperty ;
 	rdfs:label "body" ;
-	skos:definition "The request body." ;
-	skos:inScheme openpolicyagent:authorization_input .
+	skos:definition "The body of an HTTP request." ;
+	skos:inScheme openpolicyagent:common .
 openpolicyagent:builtin_funcs a owl:ObjectProperty ;
 	rdfs:label "builtin_funcs" ;
 	skos:definition "The built-in functions the plan calls." ;
@@ -900,8 +900,8 @@ openpolicyagent:return_local a owl:DatatypeProperty ;
 	skos:prefLabel "return" .
 openpolicyagent:revision a owl:DatatypeProperty ;
 	rdfs:label "revision" ;
-	skos:definition "The bundle's revision, a string the bundle's author chooses." ;
-	skos:inScheme openpolicyagent:bundle_manifest .
+	skos:definition "A bundle's revision, a string the bundle's author chooses." ;
+	skos:inScheme openpolicyagent:common .
 openpolicyagent:roots a owl:DatatypeProperty ;
 	rdfs:label "roots" ;
 	skos:definition "The paths in the data tree the bundle owns. A bundle without the key owns the whole tree." ;
@@ -915,7 +915,10 @@ openpolicyagent:set a owl:DatatypeProperty ;
 	rdfs:label "set" ;
 	skos:definition "The local that holds the set." ;
 	skos:inScheme openpolicyagent:ir_plan .
-openpolicyagent:source a owl:DatatypeProperty , owl:ObjectProperty .
+openpolicyagent:source a owl:DatatypeProperty ;
+	rdfs:label "source" ;
+	skos:definition "What a plan statement reads: a local, or an operand." ;
+	skos:inScheme openpolicyagent:common .
 openpolicyagent:static a owl:ObjectProperty .
 openpolicyagent:stmt a owl:ObjectProperty .
 openpolicyagent:stmts a owl:ObjectProperty ;
@@ -926,8 +929,14 @@ openpolicyagent:strings a owl:ObjectProperty ;
 	rdfs:label "strings" ;
 	skos:definition "The string constants, which a string index refers to by position." ;
 	skos:inScheme openpolicyagent:ir_plan .
-openpolicyagent:target a owl:DatatypeProperty .
-openpolicyagent:type a owl:DatatypeProperty .
+openpolicyagent:target a owl:DatatypeProperty ;
+	rdfs:label "target" ;
+	skos:definition "The local a plan statement writes its result to." ;
+	skos:inScheme openpolicyagent:common .
+openpolicyagent:type a owl:DatatypeProperty ;
+	rdfs:label "type" ;
+	skos:definition "The kind of an object: of a Rego type, a plan statement or an operand, or a type written as OPA prints types." ;
+	skos:inScheme openpolicyagent:common .
 openpolicyagent:unplanned_rules a owl:ObjectProperty ;
 	rdfs:label "unplanned_rules" ;
 	skos:definition "The rules left out because no entrypoint reaches them." ;
@@ -937,7 +946,10 @@ openpolicyagent:variadic a owl:ObjectProperty ;
 	rdfs:label "variadic" ;
 	skos:definition "The type of any further arguments." ;
 	skos:inScheme openpolicyagent:common .
-openpolicyagent:version a owl:DatatypeProperty .
+openpolicyagent:version a owl:DatatypeProperty ;
+	rdfs:label "version" ;
+	skos:definition "A version: an implementation's, a Wasm ABI's major number or a file's Rego version." ;
+	skos:inScheme openpolicyagent:common .
 openpolicyagent:wasm a owl:DatatypeProperty , owl:ObjectProperty .
 openpolicyagent:wasm_abi_versions a owl:ObjectProperty ;
 	rdfs:label "wasm_abi_versions" ;

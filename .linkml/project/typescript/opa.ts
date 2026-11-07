@@ -254,14 +254,14 @@ export interface OpaBuiltinCategory {
  * An implementation of Rego besides OPA.
  */
 export interface OpaImplementation {
+    /** The implementation's version the catalogue reflects. */
+    version: string,
     /** The implementation's key in each function's `implementations`. */
     id: string,
     /** The implementation's display name. */
     label: string,
     /** The implementation's GitHub repository, as owner/name. */
     repo: string,
-    /** The implementation's version the catalogue reflects. */
-    version: string,
 }
 
 
@@ -296,12 +296,12 @@ export interface OpaBuiltinMetadata {
  * An argument of a built-in function.
  */
 export interface OpaBuiltinArgument {
+    /** The argument's type, written as OPA prints types, such as `array[string]`. */
+    type: string,
     /** The argument's name. */
     name?: string,
     /** What the argument holds. */
     description?: string,
-    /** The argument's type, written as OPA prints types, such as `array[string]`. */
-    type: string,
 }
 
 
@@ -309,12 +309,12 @@ export interface OpaBuiltinArgument {
  * The result of a built-in function. Some functions declare none.
  */
 export interface OpaBuiltinResult {
+    /** The result's type, written as OPA prints types. */
+    type?: string,
     /** The result's name. */
     name?: string,
     /** What the result holds. */
     description?: string,
-    /** The result's type, written as OPA prints types. */
-    type?: string,
 }
 
 
@@ -322,10 +322,10 @@ export interface OpaBuiltinResult {
  * An implementation that supports a function, and the version that added it.
  */
 export interface OpaImplementationSupport {
-    /** The implementation's id. */
-    implementation: string,
     /** The implementation's version that added the function. */
     version: string,
+    /** The implementation's id. */
+    implementation: string,
 }
 
 
@@ -363,6 +363,8 @@ export interface OpaVersionEntry {
  * The OPA Authorization Policy Input document.
  */
 export interface OpaAuthorizationInput {
+    /** The request body. */
+    body: OpaObject,
     /** The bearer token or client certificate subject that identifies the caller. */
     identity: string,
     /** The client's TLS certificates. */
@@ -375,8 +377,6 @@ export interface OpaAuthorizationInput {
     params: OpaObject,
     /** The request headers. */
     headers: OpaObject,
-    /** The request body. */
-    body: OpaObject,
 }
 
 
@@ -384,14 +384,14 @@ export interface OpaAuthorizationInput {
  * A bundle manifest. OPA's schema leaves the manifest open to other keys.
  */
 export interface OpaManifest {
+    /** The bundle's revision, a string the bundle's author chooses. */
+    revision: string,
     /** Rego versions for single files, which override `rego_version`. */
     file_rego_versions?: {[index: OpaFileRegoVersionPath]: OpaFileRegoVersion },
     /** Metadata the bundle's author adds. */
     metadata?: OpaObject,
     /** The Rego version of the bundle's files: 0 for v0, 1 for v1. */
     rego_version?: number,
-    /** The bundle's revision, a string the bundle's author chooses. */
-    revision: string,
     /** The paths in the data tree the bundle owns. A bundle without the key owns the whole tree. */
     roots?: string[],
     /** The Wasm modules the bundle holds, and the entrypoints they resolve. */
@@ -416,10 +416,10 @@ export interface OpaWasmResolver {
  * The Rego version of one file in the bundle.
  */
 export interface OpaFileRegoVersion {
-    /** The file's path in the bundle. */
-    path: string,
     /** The file's Rego version. */
     version: number,
+    /** The file's path in the bundle. */
+    path: string,
 }
 
 
@@ -769,12 +769,12 @@ export interface OpaDotStmt extends OpaStmt {
  * DotStmt represents a lookup operation on a value (e.g., array, object, etc.) The source of a DotStmt may be a scalar value in which case the statement will be undefined.
  */
 export interface OpaDotStmtBody extends OpaStmtBody {
-    /** The key. */
-    key: OpaOperand,
     /** What the statement reads. */
     source: OpaOperand,
     /** The local that receives the result. */
     target: number,
+    /** The key. */
+    key: OpaOperand,
 }
 
 
@@ -937,10 +937,10 @@ export interface OpaMakeArrayStmt extends OpaStmt {
  * MakeArrayStmt constructs a local variable that refers to an array value.
  */
 export interface OpaMakeArrayStmtBody extends OpaStmtBody {
-    /** The capacity to allocate. */
-    capacity: number,
     /** The local that receives the result. */
     target: number,
+    /** The capacity to allocate. */
+    capacity: number,
 }
 
 
@@ -1001,10 +1001,10 @@ export interface OpaMakeNumberRefStmt extends OpaStmt {
  * MakeNumberRefStmt constructs a local variable that refers to a number stored as a string.
  */
 export interface OpaMakeNumberRefStmtBody extends OpaStmtBody {
-    /** Index, in the plan's static strings, of the number written as a string. */
-    index: number,
     /** The local that receives the result. */
     target: number,
+    /** Index, in the plan's static strings, of the number written as a string. */
+    index: number,
     /** Deprecated alias for `index`. Both keys are emitted by current OPA versions for backwards compatibility; will be removed in a future major release. Read `index` instead. */
     Index?: number,
 }
@@ -1257,12 +1257,12 @@ export interface OpaScanStmt extends OpaStmt {
  * ScanStmt represents a linear scan over a composite value. The source may be a scalar in which case the block will never execute.
  */
 export interface OpaScanStmtBody extends OpaStmtBody {
+    /** The local whose value is scanned. */
+    source: number,
     /** The block run for each key and value. */
     block?: OpaBlock,
     /** The local that receives each key. */
     key: number,
-    /** The local whose value is scanned. */
-    source: number,
     /** The local that receives each value. */
     value: number,
 }

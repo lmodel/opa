@@ -96,15 +96,6 @@ NEIGHBOURS = {
 NEIGHBOUR_DIR = ROOT / "tests" / "neighbours"
 ELEMENT_KINDS = ("classes", "enums", "types", "subsets")
 
-# Keys the copy shares with LOKF under another IRI, because OPA's key means
-# something else: a request's `body`, a bundle's `revision`, a statement's
-# `source` and `target` locals, the `type` that names a statement's, an operand's
-# or a Rego type's kind, and the integer `version` of a Wasm ABI or a file's Rego.
-# The schema keeps OPA's keys, so that a document OPA writes validates unchanged.
-# In a composite, the JSON-LD context reads each of these keys with LOKF's IRI,
-# so a concept that nests an OPA object projects these keys as LOKF's.
-OTHER_MEANING_THAN_LOKF = {"body", "revision", "source", "target", "type", "version"}
-
 # Keys the copy shares with a neighbour. LinkML keeps one namespace, and the
 # JSON-LD context gives each key one IRI across a composite, whether it is a
 # slot or an attribute on either side, so a shared key projects under one
@@ -214,17 +205,17 @@ def test_neighbours_are_the_released_assets():
 
 def test_names_apart_from_lokf():
     """No class, enum, type or subset name of the copy is LOKF's, and a slot
-    name the two share carries LOKF's IRI, but the listed keys of OPA's."""
+    name the two share carries LOKF's IRI. OPA's keys that LOKF defines with
+    another meaning (body, revision, source, target, type and version) are
+    top-level slots in the source, which the copy renames with the prefix."""
     elements, slots = _names(COPY)
     their_elements, their_slots = _names(LOKF)
     for kind in ELEMENT_KINDS:
         assert not elements[kind] & their_elements[kind], kind
-    differing = {
-        name
-        for name in slots.keys() & their_slots.keys()
-        if slots[name] != their_slots[name]
-    }
-    assert differing == OTHER_MEANING_THAN_LOKF
+    for name in slots.keys() & their_slots.keys():
+        assert slots[name] == their_slots[name], name
+    for key in ("body", "revision", "source", "target", "type", "version"):
+        assert f"openpolicyagent_{key}" in slots, key
 
 
 def test_names_apart_from_neighbours():

@@ -64,9 +64,12 @@ classes:
         inlined: true
         required: true
         description: The request headers.
+    tree_root: true
+    slots:
+      - body
+    slot_usage:
       body:
         range: OpaObject
         inlined: true
         required: true
         description: The request body.
-    tree_root: true

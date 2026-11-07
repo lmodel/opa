@@ -16,8 +16,8 @@ import lombok.*;
 @EqualsAndHashCode(callSuper=false)
 public class OpaImplementationSupport  {
 
-  private String implementation;
   private String version;
+  private String implementation;
 
 
 }

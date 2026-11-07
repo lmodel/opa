@@ -91,12 +91,15 @@ classes:
   OpaWasmAbiVersion:
     description: A Wasm ABI version, as a major and a minor number.
     attributes:
-      version:
-        description: The major version.
-        range: integer
-        required: true
       minor_version:
         description: The minor version.
+        range: integer
+        required: true
+    slots:
+      - version
+    slot_usage:
+      version:
+        description: The major version.
         range: integer
         required: true
 enums:

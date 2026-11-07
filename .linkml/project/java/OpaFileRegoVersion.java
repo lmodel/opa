@@ -16,8 +16,8 @@ import lombok.*;
 @EqualsAndHashCode(callSuper=false)
 public class OpaFileRegoVersion  {
 
-  private String path;
   private int version;
+  private String path;
 
 
 }

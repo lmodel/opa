@@ -94,10 +94,10 @@
 --     * Slot: OpaBuiltinMetadataCatalog_id Description: Autocreated FK slot
 -- # Class: OpaImplementation Description: An implementation of Rego besides OPA.
 --     * Slot: uid
+--     * Slot: version Description: The implementation's version the catalogue reflects.
 --     * Slot: id Description: The implementation's key in each function's `implementations`.
 --     * Slot: label Description: The implementation's display name.
 --     * Slot: repo Description: The implementation's GitHub repository, as owner/name.
---     * Slot: version Description: The implementation's version the catalogue reflects.
 --     * Slot: OpaBuiltinMetadataCatalog_id Description: Autocreated FK slot
 -- # Class: OpaBuiltinMetadata Description: What the catalogue says about one built-in function.
 --     * Slot: id
@@ -110,18 +110,18 @@
 --     * Slot: result_id Description: The result.
 -- # Class: OpaBuiltinArgument Description: An argument of a built-in function.
 --     * Slot: id
+--     * Slot: type Description: The argument's type, written as OPA prints types, such as `array[string]`.
 --     * Slot: name Description: The argument's name.
 --     * Slot: description Description: What the argument holds.
---     * Slot: type Description: The argument's type, written as OPA prints types, such as `array[string]`.
 --     * Slot: OpaBuiltinMetadata_id Description: Autocreated FK slot
 -- # Class: OpaBuiltinResult Description: The result of a built-in function. Some functions declare none.
 --     * Slot: id
+--     * Slot: type Description: The result's type, written as OPA prints types.
 --     * Slot: name Description: The result's name.
 --     * Slot: description Description: What the result holds.
---     * Slot: type Description: The result's type, written as OPA prints types.
 -- # Class: OpaImplementationSupport Description: An implementation that supports a function, and the version that added it.
---     * Slot: implementation Description: The implementation's id.
 --     * Slot: version Description: The implementation's version that added the function.
+--     * Slot: implementation Description: The implementation's id.
 --     * Slot: OpaBuiltinMetadata_id Description: Autocreated FK slot
 -- # Class: OpaVersionIndex Description: The version index.
 --     * Slot: id
@@ -136,13 +136,13 @@
 --     * Slot: id
 --     * Slot: identity Description: The bearer token or client certificate subject that identifies the caller.
 --     * Slot: method Description: The HTTP method of the request.
+--     * Slot: body_id Description: The request body.
 --     * Slot: params_id Description: The query parameters.
 --     * Slot: headers_id Description: The request headers.
---     * Slot: body_id Description: The request body.
 -- # Class: OpaManifest Description: A bundle manifest. OPA's schema leaves the manifest open to other keys.
 --     * Slot: id
---     * Slot: rego_version Description: The Rego version of the bundle's files: 0 for v0, 1 for v1.
 --     * Slot: revision Description: The bundle's revision, a string the bundle's author chooses.
+--     * Slot: rego_version Description: The Rego version of the bundle's files: 0 for v0, 1 for v1.
 --     * Slot: metadata_id Description: Metadata the bundle's author adds.
 -- # Class: OpaWasmResolver Description: A Wasm module in a bundle, and the entrypoint it resolves.
 --     * Slot: id
@@ -150,8 +150,8 @@
 --     * Slot: module Description: The module's path in the bundle.
 --     * Slot: OpaManifest_id Description: Autocreated FK slot
 -- # Class: OpaFileRegoVersion Description: The Rego version of one file in the bundle.
---     * Slot: path Description: The file's path in the bundle.
 --     * Slot: version Description: The file's Rego version.
+--     * Slot: path Description: The file's path in the bundle.
 --     * Slot: OpaManifest_id Description: Autocreated FK slot
 -- # Class: OpaPolicy Description: Policy represents a planned policy query.
 --     * Slot: id
@@ -321,8 +321,8 @@
 --     * Slot: row Description: Line where the statement's source text starts.
 --     * Slot: end_col Description: Column where the statement's source text ends.
 --     * Slot: end_row Description: Line where the statement's source text ends.
---     * Slot: key_id Description: The key.
 --     * Slot: source_id Description: What the statement reads.
+--     * Slot: key_id Description: The key.
 -- # Class: OpaEqualStmt Description: A statement of kind EqualStmt, with its fields in `stmt`.
 --     * Slot: id
 --     * Slot: type Description: The kind of statement.
@@ -415,8 +415,8 @@
 --     * Slot: stmt_id Description: The statement's fields.
 -- # Class: OpaMakeArrayStmtBody Description: MakeArrayStmt constructs a local variable that refers to an array value.
 --     * Slot: id
---     * Slot: capacity Description: The capacity to allocate.
 --     * Slot: target Description: The local that receives the result.
+--     * Slot: capacity Description: The capacity to allocate.
 --     * Slot: file Description: Index, in the plan's static files, of the policy file the statement comes from.
 --     * Slot: col Description: Column where the statement's source text starts.
 --     * Slot: row Description: Line where the statement's source text starts.
@@ -453,8 +453,8 @@
 --     * Slot: stmt_id Description: The statement's fields.
 -- # Class: OpaMakeNumberRefStmtBody Description: MakeNumberRefStmt constructs a local variable that refers to a number stored as a string.
 --     * Slot: id
---     * Slot: index Description: Index, in the plan's static strings, of the number written as a string.
 --     * Slot: target Description: The local that receives the result.
+--     * Slot: index Description: Index, in the plan's static strings, of the number written as a string.
 --     * Slot: Index Description: Deprecated alias for `index`. Both keys are emitted by current OPA versions for backwards compatibility; will be removed in a future major release. Read `index` instead.
 --     * Slot: file Description: Index, in the plan's static files, of the policy file the statement comes from.
 --     * Slot: col Description: Column where the statement's source text starts.
@@ -605,8 +605,8 @@
 --     * Slot: stmt_id Description: The statement's fields.
 -- # Class: OpaScanStmtBody Description: ScanStmt represents a linear scan over a composite value. The source may be a scalar in which case the block will never execute.
 --     * Slot: id
---     * Slot: key Description: The local that receives each key.
 --     * Slot: source Description: The local whose value is scanned.
+--     * Slot: key Description: The local that receives each key.
 --     * Slot: value Description: The local that receives each value.
 --     * Slot: file Description: Index, in the plan's static files, of the policy file the statement comes from.
 --     * Slot: col Description: Column where the statement's source text starts.
@@ -807,9 +807,9 @@ CREATE INDEX "ix_OpaBuiltinMetadataCatalog_id" ON "OpaBuiltinMetadataCatalog" (i
 
 CREATE TABLE "OpaBuiltinResult" (
 	id INTEGER NOT NULL,
+	type TEXT,
 	name TEXT,
 	description TEXT,
-	type TEXT,
 	PRIMARY KEY (id)
 );
 CREATE INDEX "ix_OpaBuiltinResult_id" ON "OpaBuiltinResult" (id);
@@ -824,20 +824,20 @@ CREATE TABLE "OpaAuthorizationInput" (
 	id INTEGER NOT NULL,
 	identity TEXT NOT NULL,
 	method TEXT NOT NULL,
+	body_id INTEGER NOT NULL,
 	params_id INTEGER NOT NULL,
 	headers_id INTEGER NOT NULL,
-	body_id INTEGER NOT NULL,
 	PRIMARY KEY (id),
+	FOREIGN KEY(body_id) REFERENCES "OpaObject" (id),
 	FOREIGN KEY(params_id) REFERENCES "OpaObject" (id),
-	FOREIGN KEY(headers_id) REFERENCES "OpaObject" (id),
-	FOREIGN KEY(body_id) REFERENCES "OpaObject" (id)
+	FOREIGN KEY(headers_id) REFERENCES "OpaObject" (id)
 );
 CREATE INDEX "ix_OpaAuthorizationInput_id" ON "OpaAuthorizationInput" (id);
 
 CREATE TABLE "OpaManifest" (
 	id INTEGER NOT NULL,
-	rego_version INTEGER,
 	revision TEXT NOT NULL,
+	rego_version INTEGER,
 	metadata_id INTEGER,
 	PRIMARY KEY (id),
 	FOREIGN KEY(metadata_id) REFERENCES "OpaObject" (id)
@@ -981,8 +981,8 @@ CREATE INDEX "ix_OpaIsUndefinedStmtBody_id" ON "OpaIsUndefinedStmtBody" (id);
 
 CREATE TABLE "OpaMakeArrayStmtBody" (
 	id INTEGER NOT NULL,
-	capacity INTEGER NOT NULL,
 	target INTEGER NOT NULL,
+	capacity INTEGER NOT NULL,
 	file INTEGER NOT NULL,
 	col INTEGER NOT NULL,
 	"row" INTEGER NOT NULL,
@@ -1019,8 +1019,8 @@ CREATE INDEX "ix_OpaMakeNumberIntStmtBody_id" ON "OpaMakeNumberIntStmtBody" (id)
 
 CREATE TABLE "OpaMakeNumberRefStmtBody" (
 	id INTEGER NOT NULL,
-	"index" INTEGER NOT NULL,
 	target INTEGER NOT NULL,
+	"index" INTEGER NOT NULL,
 	"Index" INTEGER,
 	file INTEGER NOT NULL,
 	col INTEGER NOT NULL,
@@ -1195,15 +1195,15 @@ CREATE TABLE "OpaBuiltinCategory" (
 	FOREIGN KEY("OpaBuiltinMetadataCatalog_id") REFERENCES "OpaBuiltinMetadataCatalog" (id)
 );
 CREATE INDEX "OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id_name_idx" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id", name);
-CREATE INDEX "ix_OpaBuiltinCategory_name" ON "OpaBuiltinCategory" (name);
 CREATE INDEX "ix_OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id");
+CREATE INDEX "ix_OpaBuiltinCategory_name" ON "OpaBuiltinCategory" (name);
 
 CREATE TABLE "OpaImplementation" (
 	uid INTEGER NOT NULL,
+	version TEXT NOT NULL,
 	id TEXT NOT NULL,
 	label TEXT NOT NULL,
 	repo TEXT NOT NULL,
-	version TEXT NOT NULL,
 	"OpaBuiltinMetadataCatalog_id" INTEGER,
 	PRIMARY KEY (uid),
 	FOREIGN KEY("OpaBuiltinMetadataCatalog_id") REFERENCES "OpaBuiltinMetadataCatalog" (id)
@@ -1235,19 +1235,19 @@ CREATE TABLE "OpaVersionEntry" (
 	UNIQUE ("OpaVersionIndex_id", name),
 	FOREIGN KEY("OpaVersionIndex_id") REFERENCES "OpaVersionIndex" (id)
 );
-CREATE INDEX "ix_OpaVersionEntry_OpaVersionIndex_id" ON "OpaVersionEntry" ("OpaVersionIndex_id");
 CREATE INDEX "OpaVersionEntry_OpaVersionIndex_id_name_idx" ON "OpaVersionEntry" ("OpaVersionIndex_id", name);
-CREATE INDEX "ix_OpaVersionEntry_Patch" ON "OpaVersionEntry" ("Patch");
-CREATE INDEX "ix_OpaVersionEntry_name" ON "OpaVersionEntry" (name);
 CREATE INDEX "ix_OpaVersionEntry_Major" ON "OpaVersionEntry" ("Major");
-CREATE INDEX "ix_OpaVersionEntry_PreRelease" ON "OpaVersionEntry" ("PreRelease");
 CREATE INDEX "ix_OpaVersionEntry_Minor" ON "OpaVersionEntry" ("Minor");
+CREATE INDEX "ix_OpaVersionEntry_OpaVersionIndex_id" ON "OpaVersionEntry" ("OpaVersionIndex_id");
+CREATE INDEX "ix_OpaVersionEntry_Patch" ON "OpaVersionEntry" ("Patch");
+CREATE INDEX "ix_OpaVersionEntry_PreRelease" ON "OpaVersionEntry" ("PreRelease");
+CREATE INDEX "ix_OpaVersionEntry_name" ON "OpaVersionEntry" (name);
 
 CREATE TABLE "OpaFileRegoVersion" (
-	path TEXT NOT NULL,
 	version INTEGER NOT NULL,
+	path TEXT NOT NULL,
 	"OpaManifest_id" INTEGER,
-	PRIMARY KEY (path, version, "OpaManifest_id"),
+	PRIMARY KEY (version, path, "OpaManifest_id"),
 	FOREIGN KEY("OpaManifest_id") REFERENCES "OpaManifest" (id)
 );
 CREATE INDEX "ix_OpaFileRegoVersion_path" ON "OpaFileRegoVersion" (path);
@@ -1483,8 +1483,8 @@ CREATE TABLE "OpaCapabilities_future_keywords" (
 	PRIMARY KEY ("OpaCapabilities_id", future_keywords),
 	FOREIGN KEY("OpaCapabilities_id") REFERENCES "OpaCapabilities" (id)
 );
-CREATE INDEX "ix_OpaCapabilities_future_keywords_future_keywords" ON "OpaCapabilities_future_keywords" (future_keywords);
 CREATE INDEX "ix_OpaCapabilities_future_keywords_OpaCapabilities_id" ON "OpaCapabilities_future_keywords" ("OpaCapabilities_id");
+CREATE INDEX "ix_OpaCapabilities_future_keywords_future_keywords" ON "OpaCapabilities_future_keywords" (future_keywords);
 
 CREATE TABLE "OpaCapabilities_features" (
 	"OpaCapabilities_id" INTEGER,
@@ -1492,8 +1492,8 @@ CREATE TABLE "OpaCapabilities_features" (
 	PRIMARY KEY ("OpaCapabilities_id", features),
 	FOREIGN KEY("OpaCapabilities_id") REFERENCES "OpaCapabilities" (id)
 );
-CREATE INDEX "ix_OpaCapabilities_features_features" ON "OpaCapabilities_features" (features);
 CREATE INDEX "ix_OpaCapabilities_features_OpaCapabilities_id" ON "OpaCapabilities_features" ("OpaCapabilities_id");
+CREATE INDEX "ix_OpaCapabilities_features_features" ON "OpaCapabilities_features" (features);
 
 CREATE TABLE "OpaCapabilities_allow_net" (
 	"OpaCapabilities_id" INTEGER,
@@ -1510,8 +1510,8 @@ CREATE TABLE "OpaAuthorizationInput_path" (
 	PRIMARY KEY ("OpaAuthorizationInput_id", path),
 	FOREIGN KEY("OpaAuthorizationInput_id") REFERENCES "OpaAuthorizationInput" (id)
 );
-CREATE INDEX "ix_OpaAuthorizationInput_path_path" ON "OpaAuthorizationInput_path" (path);
 CREATE INDEX "ix_OpaAuthorizationInput_path_OpaAuthorizationInput_id" ON "OpaAuthorizationInput_path" ("OpaAuthorizationInput_id");
+CREATE INDEX "ix_OpaAuthorizationInput_path_path" ON "OpaAuthorizationInput_path" (path);
 
 CREATE TABLE "OpaManifest_roots" (
 	"OpaManifest_id" INTEGER,
@@ -1528,8 +1528,8 @@ CREATE TABLE "OpaCallDynamicStmtBody_args" (
 	PRIMARY KEY ("OpaCallDynamicStmtBody_id", args),
 	FOREIGN KEY("OpaCallDynamicStmtBody_id") REFERENCES "OpaCallDynamicStmtBody" (id)
 );
-CREATE INDEX "ix_OpaCallDynamicStmtBody_args_args" ON "OpaCallDynamicStmtBody_args" (args);
 CREATE INDEX "ix_OpaCallDynamicStmtBody_args_OpaCallDynamicStmtBody_id" ON "OpaCallDynamicStmtBody_args" ("OpaCallDynamicStmtBody_id");
+CREATE INDEX "ix_OpaCallDynamicStmtBody_args_args" ON "OpaCallDynamicStmtBody_args" (args);
 
 CREATE TABLE "OpaObjectType" (
 	id INTEGER NOT NULL,
@@ -1544,9 +1544,9 @@ CREATE INDEX "ix_OpaObjectType_id" ON "OpaObjectType" (id);
 
 CREATE TABLE "OpaBuiltinArgument" (
 	id INTEGER NOT NULL,
+	type TEXT NOT NULL,
 	name TEXT,
 	description TEXT,
-	type TEXT NOT NULL,
 	"OpaBuiltinMetadata_id" INTEGER,
 	PRIMARY KEY (id),
 	FOREIGN KEY("OpaBuiltinMetadata_id") REFERENCES "OpaBuiltinMetadata" (id)
@@ -1554,17 +1554,17 @@ CREATE TABLE "OpaBuiltinArgument" (
 CREATE INDEX "ix_OpaBuiltinArgument_id" ON "OpaBuiltinArgument" (id);
 
 CREATE TABLE "OpaImplementationSupport" (
-	implementation TEXT NOT NULL,
 	version TEXT NOT NULL,
+	implementation TEXT NOT NULL,
 	"OpaBuiltinMetadata_id" INTEGER,
-	PRIMARY KEY (implementation, version, "OpaBuiltinMetadata_id"),
+	PRIMARY KEY (version, implementation, "OpaBuiltinMetadata_id"),
 	UNIQUE ("OpaBuiltinMetadata_id", implementation),
 	FOREIGN KEY("OpaBuiltinMetadata_id") REFERENCES "OpaBuiltinMetadata" (id)
 );
-CREATE INDEX "OpaImplementationSupport_OpaBuiltinMetadata_id_implementation_idx" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id", implementation);
 CREATE INDEX "ix_OpaImplementationSupport_OpaBuiltinMetadata_id" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id");
-CREATE INDEX "ix_OpaImplementationSupport_implementation" ON "OpaImplementationSupport" (implementation);
 CREATE INDEX "ix_OpaImplementationSupport_version" ON "OpaImplementationSupport" (version);
+CREATE INDEX "ix_OpaImplementationSupport_implementation" ON "OpaImplementationSupport" (implementation);
+CREATE INDEX "OpaImplementationSupport_OpaBuiltinMetadata_id_implementation_idx" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id", implementation);
 
 CREATE TABLE "OpaBlock" (
 	id INTEGER NOT NULL,
@@ -1639,11 +1639,11 @@ CREATE TABLE "OpaDotStmtBody" (
 	"row" INTEGER NOT NULL,
 	end_col INTEGER NOT NULL,
 	end_row INTEGER NOT NULL,
-	key_id INTEGER NOT NULL,
 	source_id INTEGER NOT NULL,
+	key_id INTEGER NOT NULL,
 	PRIMARY KEY (id),
-	FOREIGN KEY(key_id) REFERENCES "OpaOperand" (id),
-	FOREIGN KEY(source_id) REFERENCES "OpaOperand" (id)
+	FOREIGN KEY(source_id) REFERENCES "OpaOperand" (id),
+	FOREIGN KEY(key_id) REFERENCES "OpaOperand" (id)
 );
 CREATE INDEX "ix_OpaDotStmtBody_id" ON "OpaDotStmtBody" (id);
 
@@ -1791,8 +1791,8 @@ CREATE TABLE "OpaBuiltinCategory_builtins" (
 	PRIMARY KEY ("OpaBuiltinCategory_name", builtins),
 	FOREIGN KEY("OpaBuiltinCategory_name") REFERENCES "OpaBuiltinCategory" (name)
 );
-CREATE INDEX "ix_OpaBuiltinCategory_builtins_builtins" ON "OpaBuiltinCategory_builtins" (builtins);
 CREATE INDEX "ix_OpaBuiltinCategory_builtins_OpaBuiltinCategory_name" ON "OpaBuiltinCategory_builtins" ("OpaBuiltinCategory_name");
+CREATE INDEX "ix_OpaBuiltinCategory_builtins_builtins" ON "OpaBuiltinCategory_builtins" (builtins);
 
 CREATE TABLE "OpaBuiltinMetadata_available" (
 	"OpaBuiltinMetadata_id" INTEGER,
@@ -1809,8 +1809,8 @@ CREATE TABLE "OpaFunc_params" (
 	PRIMARY KEY ("OpaFunc_id", params),
 	FOREIGN KEY("OpaFunc_id") REFERENCES "OpaFunc" (id)
 );
-CREATE INDEX "ix_OpaFunc_params_params" ON "OpaFunc_params" (params);
 CREATE INDEX "ix_OpaFunc_params_OpaFunc_id" ON "OpaFunc_params" ("OpaFunc_id");
+CREATE INDEX "ix_OpaFunc_params_params" ON "OpaFunc_params" (params);
 
 CREATE TABLE "OpaFunc_path" (
 	"OpaFunc_id" INTEGER,
@@ -1818,8 +1818,8 @@ CREATE TABLE "OpaFunc_path" (
 	PRIMARY KEY ("OpaFunc_id", path),
 	FOREIGN KEY("OpaFunc_id") REFERENCES "OpaFunc" (id)
 );
-CREATE INDEX "ix_OpaFunc_path_path" ON "OpaFunc_path" (path);
 CREATE INDEX "ix_OpaFunc_path_OpaFunc_id" ON "OpaFunc_path" ("OpaFunc_id");
+CREATE INDEX "ix_OpaFunc_path_path" ON "OpaFunc_path" (path);
 
 CREATE TABLE "OpaStaticProperty" (
 	id INTEGER NOT NULL,
@@ -1964,8 +1964,8 @@ CREATE INDEX "ix_OpaObjectInsertStmt_id" ON "OpaObjectInsertStmt" (id);
 
 CREATE TABLE "OpaScanStmtBody" (
 	id INTEGER NOT NULL,
-	"key" INTEGER NOT NULL,
 	source INTEGER NOT NULL,
+	"key" INTEGER NOT NULL,
 	value INTEGER NOT NULL,
 	file INTEGER NOT NULL,
 	col INTEGER NOT NULL,
@@ -2036,5 +2036,5 @@ CREATE TABLE "OpaWithStmtBody_path" (
 	PRIMARY KEY ("OpaWithStmtBody_id", path),
 	FOREIGN KEY("OpaWithStmtBody_id") REFERENCES "OpaWithStmtBody" (id)
 );
-CREATE INDEX "ix_OpaWithStmtBody_path_path" ON "OpaWithStmtBody_path" (path);
 CREATE INDEX "ix_OpaWithStmtBody_path_OpaWithStmtBody_id" ON "OpaWithStmtBody_path" ("OpaWithStmtBody_id");
+CREATE INDEX "ix_OpaWithStmtBody_path_path" ON "OpaWithStmtBody_path" (path);

@@ -8,6 +8,9 @@
       "schema": "http://schema.org/",
       "skos": "http://www.w3.org/2004/02/skos/core#",
       "@vocab": "https://w3id.org/lmodel/opa/",
+      "body": {
+         "@id": "body"
+      },
       "col": {
          "@type": "xsd:integer",
          "@id": "col"
@@ -28,9 +31,6 @@
          "@type": "@id",
          "@id": "of"
       },
-      "type": {
-         "@id": "type"
-      },
       "stmt": {
          "@type": "@id",
          "@id": "stmt"
@@ -50,18 +50,6 @@
       "static": {
          "@type": "@id",
          "@id": "static"
-      },
-      "target": {
-         "@type": "xsd:integer",
-         "@id": "target"
-      },
-      "source": {
-         "@type": "xsd:integer",
-         "@id": "source"
-      },
-      "body": {
-         "@type": "@id",
-         "@id": "body"
       },
       "client_certificates": {
          "@type": "@id",
@@ -193,10 +181,6 @@
          "@type": "xsd:integer",
          "@id": "b"
       },
-      "version": {
-         "@type": "xsd:integer",
-         "@id": "version"
-      },
       "return": {
          "@type": "xsd:integer",
          "@id": "return"
@@ -240,9 +224,6 @@
       "rego_version": {
          "@type": "xsd:integer",
          "@id": "rego_version"
-      },
-      "revision": {
-         "@id": "revision"
       },
       "roots": {
          "@id": "roots"
@@ -320,9 +301,24 @@
          "@type": "xsd:integer",
          "@id": "local"
       },
+      "revision": {
+         "@id": "revision"
+      },
       "row": {
          "@type": "xsd:integer",
          "@id": "row"
+      },
+      "source": {
+         "@id": "source"
+      },
+      "target": {
+         "@id": "target"
+      },
+      "type": {
+         "@id": "type"
+      },
+      "version": {
+         "@id": "version"
       },
       "OpaAnyType": {
          "@id": "OpaAnyType"
@@ -340,22 +336,54 @@
          "@id": "OpaAssignIntStmt"
       },
       "OpaAssignIntStmtBody": {
-         "@id": "OpaAssignIntStmtBody"
+         "@id": "OpaAssignIntStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaAssignVarOnceStmt": {
          "@id": "OpaAssignVarOnceStmt"
       },
       "OpaAssignVarOnceStmtBody": {
-         "@id": "OpaAssignVarOnceStmtBody"
+         "@id": "OpaAssignVarOnceStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            },
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaAssignVarStmt": {
          "@id": "OpaAssignVarStmt"
       },
       "OpaAssignVarStmtBody": {
-         "@id": "OpaAssignVarStmtBody"
+         "@id": "OpaAssignVarStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            },
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaAuthorizationInput": {
-         "@id": "OpaAuthorizationInput"
+         "@id": "OpaAuthorizationInput",
+         "@context": {
+            "body": {
+               "@id": "body",
+               "@type": "@id"
+            }
+         }
       },
       "OpaBlock": {
          "@id": "OpaBlock"
@@ -418,7 +446,17 @@
          "@id": "OpaDotStmt"
       },
       "OpaDotStmtBody": {
-         "@id": "OpaDotStmtBody"
+         "@id": "OpaDotStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            },
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaDynamicProperty": {
          "@id": "OpaDynamicProperty"
@@ -430,7 +468,13 @@
          "@id": "OpaEqualStmtBody"
       },
       "OpaFileRegoVersion": {
-         "@id": "OpaFileRegoVersion"
+         "@id": "OpaFileRegoVersion",
+         "@context": {
+            "version": {
+               "@id": "version",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaFunc": {
          "@id": "OpaFunc"
@@ -451,37 +495,77 @@
          "@id": "OpaIsArrayStmt"
       },
       "OpaIsArrayStmtBody": {
-         "@id": "OpaIsArrayStmtBody"
+         "@id": "OpaIsArrayStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            }
+         }
       },
       "OpaIsDefinedStmt": {
          "@id": "OpaIsDefinedStmt"
       },
       "OpaIsDefinedStmtBody": {
-         "@id": "OpaIsDefinedStmtBody"
+         "@id": "OpaIsDefinedStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaIsObjectStmt": {
          "@id": "OpaIsObjectStmt"
       },
       "OpaIsObjectStmtBody": {
-         "@id": "OpaIsObjectStmtBody"
+         "@id": "OpaIsObjectStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            }
+         }
       },
       "OpaIsSetStmt": {
          "@id": "OpaIsSetStmt"
       },
       "OpaIsSetStmtBody": {
-         "@id": "OpaIsSetStmtBody"
+         "@id": "OpaIsSetStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            }
+         }
       },
       "OpaIsUndefinedStmt": {
          "@id": "OpaIsUndefinedStmt"
       },
       "OpaIsUndefinedStmtBody": {
-         "@id": "OpaIsUndefinedStmtBody"
+         "@id": "OpaIsUndefinedStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaLenStmt": {
          "@id": "OpaLenStmt"
       },
       "OpaLenStmtBody": {
-         "@id": "OpaLenStmtBody"
+         "@id": "OpaLenStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "@id"
+            },
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaLocalOperand": {
          "@id": "OpaLocalOperand"
@@ -493,37 +577,73 @@
          "@id": "OpaMakeArrayStmt"
       },
       "OpaMakeArrayStmtBody": {
-         "@id": "OpaMakeArrayStmtBody"
+         "@id": "OpaMakeArrayStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaMakeNullStmt": {
          "@id": "OpaMakeNullStmt"
       },
       "OpaMakeNullStmtBody": {
-         "@id": "OpaMakeNullStmtBody"
+         "@id": "OpaMakeNullStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaMakeNumberIntStmt": {
          "@id": "OpaMakeNumberIntStmt"
       },
       "OpaMakeNumberIntStmtBody": {
-         "@id": "OpaMakeNumberIntStmtBody"
+         "@id": "OpaMakeNumberIntStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaMakeNumberRefStmt": {
          "@id": "OpaMakeNumberRefStmt"
       },
       "OpaMakeNumberRefStmtBody": {
-         "@id": "OpaMakeNumberRefStmtBody"
+         "@id": "OpaMakeNumberRefStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaMakeObjectStmt": {
          "@id": "OpaMakeObjectStmt"
       },
       "OpaMakeObjectStmtBody": {
-         "@id": "OpaMakeObjectStmtBody"
+         "@id": "OpaMakeObjectStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaMakeSetStmt": {
          "@id": "OpaMakeSetStmt"
       },
       "OpaMakeSetStmtBody": {
-         "@id": "OpaMakeSetStmtBody"
+         "@id": "OpaMakeSetStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaManifest": {
          "@id": "OpaManifest"
@@ -571,7 +691,13 @@
          "@id": "OpaObjectMergeStmt"
       },
       "OpaObjectMergeStmtBody": {
-         "@id": "OpaObjectMergeStmtBody"
+         "@id": "OpaObjectMergeStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaObjectType": {
          "@id": "OpaObjectType"
@@ -592,7 +718,13 @@
          "@id": "OpaResetLocalStmt"
       },
       "OpaResetLocalStmtBody": {
-         "@id": "OpaResetLocalStmtBody"
+         "@id": "OpaResetLocalStmtBody",
+         "@context": {
+            "target": {
+               "@id": "target",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaResultSetAddStmt": {
          "@id": "OpaResultSetAddStmt"
@@ -604,13 +736,25 @@
          "@id": "OpaReturnLocalStmt"
       },
       "OpaReturnLocalStmtBody": {
-         "@id": "OpaReturnLocalStmtBody"
+         "@id": "OpaReturnLocalStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaScanStmt": {
          "@id": "OpaScanStmt"
       },
       "OpaScanStmtBody": {
-         "@id": "OpaScanStmtBody"
+         "@id": "OpaScanStmtBody",
+         "@context": {
+            "source": {
+               "@id": "source",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaSetAddStmt": {
          "@id": "OpaSetAddStmt"
@@ -658,7 +802,13 @@
          "@id": "OpaVersionIndex"
       },
       "OpaWasmAbiVersion": {
-         "@id": "OpaWasmAbiVersion"
+         "@id": "OpaWasmAbiVersion",
+         "@context": {
+            "version": {
+               "@id": "version",
+               "@type": "xsd:integer"
+            }
+         }
       },
       "OpaWasmResolver": {
          "@id": "OpaWasmResolver"
