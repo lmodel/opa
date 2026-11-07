@@ -1,4 +1,3 @@
 # Services
 
-* [Example Service A](example-service-a.md) - Placeholder service; replace with a real service of opa.
-* [Example Service B](example-service-b.md) - Placeholder service; replace with a real service of opa.
+* [Documentation site](documentation-site.md) - The knowledge website on GitHub Pages, built from `website/` with a page per concept, the docs pages, the changelog and the schema's pages.
