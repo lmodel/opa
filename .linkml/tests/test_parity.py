@@ -15,7 +15,6 @@
 
 import json
 from functools import lru_cache
-from pathlib import Path
 
 import pytest
 import yaml
@@ -51,7 +50,9 @@ def _value(node, defs, full):
     if kind == "object":
         required = set(node.get("required", []))
         props = node.get("properties", {})
-        return {k: _value(v, defs, full) for k, v in props.items() if full or k in required}
+        return {
+            k: _value(v, defs, full) for k, v in props.items() if full or k in required
+        }
     if kind == "array":
         return [_value(node.get("items", {"type": "string"}), defs, full)]
     return {"string": "x", "integer": 1, "boolean": True, "number": 1.5}[kind]
@@ -121,7 +122,13 @@ def _differences():
         theirs = parity.verdict("published", target, doc)
         ours = parity.verdict("generated", cls, doc)
         if theirs != ours:
-            found.add((target.rpartition("#")[2] or target, label, "accepts" if ours else "rejects"))
+            found.add(
+                (
+                    target.rpartition("#")[2] or target,
+                    label,
+                    "accepts" if ours else "rejects",
+                )
+            )
     return found
 
 
@@ -140,7 +147,9 @@ def test_every_mapping_names_a_definition():
     for name, cls in parity.classes().items():
         for mapping in cls.get("exact_mappings") or []:
             prefix, _, definition = mapping.partition(":")
-            assert definition in parity.published(parity.PUBLISHED[prefix])["$defs"], name
+            assert definition in parity.published(parity.PUBLISHED[prefix])["$defs"], (
+                name
+            )
 
 
 def test_corpus_is_large():
@@ -183,4 +192,6 @@ def test_every_shipped_capabilities_file_validates(path):
 )
 def test_opas_data_files_validate(cls, rel):
     doc = json.loads((TREE / rel).read_text(encoding="utf-8"))
-    assert parity.verdict("generated", cls, doc), parity.errors("generated", cls, doc)[:3]
+    assert parity.verdict("generated", cls, doc), parity.errors("generated", cls, doc)[
+        :3
+    ]

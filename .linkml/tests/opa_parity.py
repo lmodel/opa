@@ -63,7 +63,9 @@ def _validator(kind: str, target: str):
         schema = {"$schema": doc["$schema"], "$defs": doc["$defs"]}
         if classes()[target].get("abstract"):
             # An abstract class admits its subclasses, as a range over it does.
-            schema["anyOf"] = [{"$ref": f"#/$defs/{name}"} for name in subclasses(target)]
+            schema["anyOf"] = [
+                {"$ref": f"#/$defs/{name}"} for name in subclasses(target)
+            ]
         else:
             schema["$ref"] = f"#/$defs/{target}"
     else:

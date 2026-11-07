@@ -56,7 +56,9 @@ def read_json(rel: str) -> Any:
 def opa_version() -> str:
     m = re.search(r'^var Version = "([^"]+)"', (OPA / VERSION_GO).read_text(), re.M)
     if not m or f"v{m.group(1)}" != TAG:
-        sys.exit(f"{VERSION_GO} says {m and m.group(1)!r}, not {TAG}: update TAG and COMMIT")
+        sys.exit(
+            f"{VERSION_GO} says {m and m.group(1)!r}, not {TAG}: update TAG and COMMIT"
+        )
     return m.group(1)
 
 
@@ -69,7 +71,9 @@ def go_doc_comments(rel: str) -> dict[str, str]:
         if text.startswith("//"):
             lines.append(text[2:].strip())
             continue
-        top = raw.startswith("type ") or (raw.startswith("\t") and not raw.startswith("\t\t"))
+        top = raw.startswith("type ") or (
+            raw.startswith("\t") and not raw.startswith("\t\t")
+        )
         m = re.match(r"^(?:type\s+)?([A-Z]\w*)\s+(struct|interface|int|bool)\b", text)
         if top and m and lines:
             words = " ".join(lines).split("TODO")[0]
@@ -79,7 +83,9 @@ def go_doc_comments(rel: str) -> dict[str, str]:
     return docs
 
 
-def header(module: str, title: str, description: str, source: str | None, imports: list[str]) -> dict:
+def header(
+    module: str, title: str, description: str, source: str | None, imports: list[str]
+) -> dict:
     head: dict[str, Any] = {
         "id": f"{NAMESPACE}{module}" if module != "opa" else NAMESPACE.rstrip("/"),
         "name": module,
@@ -90,7 +96,10 @@ def header(module: str, title: str, description: str, source: str | None, import
     if source:
         head["source"] = source
     head["license"] = "Apache-2.0"
-    head["see_also"] = ["https://lmodel.github.io/opa", "https://www.openpolicyagent.org/docs"]
+    head["see_also"] = [
+        "https://lmodel.github.io/opa",
+        "https://www.openpolicyagent.org/docs",
+    ]
     head["annotations"] = {
         "upstream_tag": TAG,
         "upstream_commit": COMMIT,
@@ -115,7 +124,12 @@ def kind_attr(kind: str, description: str) -> dict:
     The base class declares no `type`, since gen-python's loader refuses equals_string on
     an enumeration and slot_usage on an inherited attribute.
     """
-    return {"description": description, "range": "string", "required": True, "equals_string": kind}
+    return {
+        "description": description,
+        "range": "string",
+        "required": True,
+        "equals_string": kind,
+    }
 
 
 def attr(rng: str | None = None, description: str | None = None, **extra: Any) -> dict:
@@ -168,7 +182,9 @@ def build_common() -> dict:
             "an argument or result of a built-in function, with a name and a description.",
             "attributes": {
                 "name": attr(None, "The argument's or result's name, on a named type."),
-                "description": attr(None, "What the argument or result holds, on a named type."),
+                "description": attr(
+                    None, "What the argument or result holds, on a named type."
+                ),
             },
         },
     }
@@ -181,40 +197,64 @@ def build_common() -> dict:
         }
         attrs: dict[str, Any] = {"type": kind_attr(marker, "The kind of type.")}
         if marker == "any":
-            attrs["of"] = attr("OpaType", "The types the union admits.", multivalued=True, inlined=True, inlined_as_list=True)
+            attrs["of"] = attr(
+                "OpaType",
+                "The types the union admits.",
+                multivalued=True,
+                inlined=True,
+                inlined_as_list=True,
+            )
         elif marker == "set":
             attrs["of"] = attr("OpaType", of_one, inlined=True)
         elif marker in ("array", "object"):
             attrs["static"] = attr(
                 "OpaType" if marker == "array" else "OpaStaticProperty",
-                "The type of each element by position." if marker == "array" else "The known keys and the types of their values.",
+                "The type of each element by position."
+                if marker == "array"
+                else "The known keys and the types of their values.",
                 multivalued=True,
                 inlined=True,
                 inlined_as_list=True,
             )
             attrs["dynamic"] = attr(
                 "OpaType" if marker == "array" else "OpaDynamicProperty",
-                "The type of the elements after the static ones." if marker == "array" else "The key type and value type of the other keys.",
+                "The type of the elements after the static ones."
+                if marker == "array"
+                else "The key type and value type of the other keys.",
                 inlined=True,
             )
         elif marker == "function":
-            attrs["args"] = attr("OpaType", "The argument types, in order.", multivalued=True, inlined=True, inlined_as_list=True)
+            attrs["args"] = attr(
+                "OpaType",
+                "The argument types, in order.",
+                multivalued=True,
+                inlined=True,
+                inlined_as_list=True,
+            )
             attrs["result"] = attr("OpaType", "The result type.", inlined=True)
-            attrs["variadic"] = attr("OpaType", "The type of any further arguments.", inlined=True)
+            attrs["variadic"] = attr(
+                "OpaType", "The type of any further arguments.", inlined=True
+            )
         cls["attributes"] = attrs
         classes[name] = cls
     classes["OpaStaticProperty"] = {
         "description": "A known key of an object type and the type of its value.",
         "attributes": {
             "key": attr("OpaValue", "The key, as a JSON value.", required=True),
-            "value": attr("OpaType", "The type of the key's value.", required=True, inlined=True),
+            "value": attr(
+                "OpaType", "The type of the key's value.", required=True, inlined=True
+            ),
         },
     }
     classes["OpaDynamicProperty"] = {
         "description": "The key type and value type that an object type gives its other keys.",
         "attributes": {
-            "key": attr("OpaType", "The type of the keys.", required=True, inlined=True),
-            "value": attr("OpaType", "The type of the values.", required=True, inlined=True),
+            "key": attr(
+                "OpaType", "The type of the keys.", required=True, inlined=True
+            ),
+            "value": attr(
+                "OpaType", "The type of the values.", required=True, inlined=True
+            ),
         },
     }
     schema["classes"] = classes
@@ -249,10 +289,28 @@ def build_capabilities() -> dict:
             "tree_root": True,
             "description": "What an OPA version supports, which a policy can be checked against.",
             "attributes": {
-                "builtins": attr("OpaBuiltin", "The built-in functions.", multivalued=True, inlined=True, inlined_as_list=True),
-                "future_keywords": attr("OpaFutureKeyword", "The keywords a policy may import from future.keywords.", multivalued=True),
-                "wasm_abi_versions": attr("OpaWasmAbiVersion", "The Wasm ABI versions supported.", multivalued=True, inlined=True, inlined_as_list=True),
-                "features": attr("OpaFeature", "The language features supported.", multivalued=True),
+                "builtins": attr(
+                    "OpaBuiltin",
+                    "The built-in functions.",
+                    multivalued=True,
+                    inlined=True,
+                    inlined_as_list=True,
+                ),
+                "future_keywords": attr(
+                    "OpaFutureKeyword",
+                    "The keywords a policy may import from future.keywords.",
+                    multivalued=True,
+                ),
+                "wasm_abi_versions": attr(
+                    "OpaWasmAbiVersion",
+                    "The Wasm ABI versions supported.",
+                    multivalued=True,
+                    inlined=True,
+                    inlined_as_list=True,
+                ),
+                "features": attr(
+                    "OpaFeature", "The language features supported.", multivalued=True
+                ),
                 "allow_net": attr(
                     None,
                     "The hosts OPA may connect to, as host names or IP addresses. OPA reaches any "
@@ -264,14 +322,28 @@ def build_capabilities() -> dict:
         "OpaBuiltin": {
             "description": "A built-in function and its type declaration.",
             "attributes": {
-                "name": attr(None, "The function's name, such as `array.concat`.", required=True),
+                "name": attr(
+                    None, "The function's name, such as `array.concat`.", required=True
+                ),
                 "description": attr(None, "What the function does."),
-                "categories": attr(None, "The categories the function belongs to.", multivalued=True),
-                "decl": attr("OpaFunctionType", "The function's type declaration.", required=True, inlined=True),
-                "infix": attr(None, "The infix operator that calls the function, such as `+`."),
+                "categories": attr(
+                    None, "The categories the function belongs to.", multivalued=True
+                ),
+                "decl": attr(
+                    "OpaFunctionType",
+                    "The function's type declaration.",
+                    required=True,
+                    inlined=True,
+                ),
+                "infix": attr(
+                    None, "The infix operator that calls the function, such as `+`."
+                ),
                 "relation": attr("boolean", "Whether the function acts as a relation."),
                 "deprecated": attr("boolean", "Whether the function is deprecated."),
-                "nondeterministic": attr("boolean", "Whether the function may return different results for the same arguments."),
+                "nondeterministic": attr(
+                    "boolean",
+                    "Whether the function may return different results for the same arguments.",
+                ),
             },
         },
         "OpaWasmAbiVersion": {
@@ -336,27 +408,66 @@ def build_builtin_metadata() -> dict:
             "description": "A category of built-in functions.",
             "attributes": {
                 "name": attr(None, "The category's name.", key=True),
-                "builtins": attr(None, "The names of the category's functions.", multivalued=True, required=True),
+                "builtins": attr(
+                    None,
+                    "The names of the category's functions.",
+                    multivalued=True,
+                    required=True,
+                ),
             },
         },
         "OpaImplementation": {
             "description": "An implementation of Rego besides OPA.",
             "attributes": {
-                "id": attr(None, "The implementation's key in each function's `implementations`.", required=True),
-                "label": attr(None, "The implementation's display name.", required=True),
-                "repo": attr(None, "The implementation's GitHub repository, as owner/name.", required=True),
-                "version": attr(None, "The implementation's version the catalogue reflects.", required=True),
+                "id": attr(
+                    None,
+                    "The implementation's key in each function's `implementations`.",
+                    required=True,
+                ),
+                "label": attr(
+                    None, "The implementation's display name.", required=True
+                ),
+                "repo": attr(
+                    None,
+                    "The implementation's GitHub repository, as owner/name.",
+                    required=True,
+                ),
+                "version": attr(
+                    None,
+                    "The implementation's version the catalogue reflects.",
+                    required=True,
+                ),
             },
         },
         "OpaBuiltinMetadata": {
             "description": "What the catalogue says about one built-in function.",
             "attributes": {
                 "description": attr(None, "What the function does."),
-                "introduced": attr(None, "The OPA version that added the function.", required=True),
-                "available": attr(None, "The OPA versions that have the function, and `edge`.", multivalued=True, required=True),
-                "wasm": attr("boolean", "Whether OPA's Wasm target implements the function.", required=True),
-                "args": attr("OpaBuiltinArgument", "The arguments, in order.", multivalued=True, inlined=True, inlined_as_list=True, required=True),
-                "result": attr("OpaBuiltinResult", "The result.", inlined=True, required=True),
+                "introduced": attr(
+                    None, "The OPA version that added the function.", required=True
+                ),
+                "available": attr(
+                    None,
+                    "The OPA versions that have the function, and `edge`.",
+                    multivalued=True,
+                    required=True,
+                ),
+                "wasm": attr(
+                    "boolean",
+                    "Whether OPA's Wasm target implements the function.",
+                    required=True,
+                ),
+                "args": attr(
+                    "OpaBuiltinArgument",
+                    "The arguments, in order.",
+                    multivalued=True,
+                    inlined=True,
+                    inlined_as_list=True,
+                    required=True,
+                ),
+                "result": attr(
+                    "OpaBuiltinResult", "The result.", inlined=True, required=True
+                ),
                 "implementations": attr(
                     "OpaImplementationSupport",
                     "The other implementations that support the function, with the version that added it.",
@@ -374,7 +485,11 @@ def build_builtin_metadata() -> dict:
             "attributes": {
                 "name": attr(None, "The argument's name."),
                 "description": attr(None, "What the argument holds."),
-                "type": attr(None, "The argument's type, written as OPA prints types, such as `array[string]`.", required=True),
+                "type": attr(
+                    None,
+                    "The argument's type, written as OPA prints types, such as `array[string]`.",
+                    required=True,
+                ),
             },
         },
         "OpaBuiltinResult": {
@@ -389,7 +504,11 @@ def build_builtin_metadata() -> dict:
             "description": "An implementation that supports a function, and the version that added it.",
             "attributes": {
                 "implementation": attr(None, "The implementation's id.", key=True),
-                "version": attr(None, "The implementation's version that added the function.", required=True),
+                "version": attr(
+                    None,
+                    "The implementation's version that added the function.",
+                    required=True,
+                ),
             },
         },
     }
@@ -414,18 +533,34 @@ def build_version_index() -> dict:
             "tree_root": True,
             "description": "The version index.",
             "attributes": {
-                key: attr("OpaVersionEntry", f"The {key}, {entries}", multivalued=True, inlined=True, required=True)
+                key: attr(
+                    "OpaVersionEntry",
+                    f"The {key}, {entries}",
+                    multivalued=True,
+                    inlined=True,
+                    required=True,
+                )
                 for key in ("builtins", "features", "keywords")
             },
         },
         "OpaVersionEntry": {
             "description": "A built-in function, feature or keyword, and the OPA version that introduced it.",
             "attributes": {
-                "name": attr(None, "The name of the function, feature or keyword.", key=True),
-                "major": attr("integer", "The major version.", alias="Major", required=True),
-                "minor": attr("integer", "The minor version.", alias="Minor", required=True),
-                "patch": attr("integer", "The patch version.", alias="Patch", required=True),
-                "pre_release": attr(None, "The pre-release label, such as `rc2`.", alias="PreRelease"),
+                "name": attr(
+                    None, "The name of the function, feature or keyword.", key=True
+                ),
+                "major": attr(
+                    "integer", "The major version.", alias="Major", required=True
+                ),
+                "minor": attr(
+                    "integer", "The minor version.", alias="Minor", required=True
+                ),
+                "patch": attr(
+                    "integer", "The patch version.", alias="Patch", required=True
+                ),
+                "pre_release": attr(
+                    None, "The pre-release label, such as `rc2`.", alias="PreRelease"
+                ),
             },
         },
     }
@@ -460,11 +595,22 @@ def range_of(spec: dict, names: dict[str, str]) -> tuple[dict, bool]:
         if isinstance(extra, dict):
             return {"range": "__map__", "value": extra}, nullable
         return {"range": "OpaObject", "inlined": True}, nullable
-    return {"range": {"string": "string", "integer": "integer", "boolean": "boolean", "number": "float"}[types]}, nullable
+    return {
+        "range": {
+            "string": "string",
+            "integer": "integer",
+            "boolean": "boolean",
+            "number": "float",
+        }[types]
+    }, nullable
 
 
 def object_class(
-    defn: dict, names: dict[str, str], description: str, mapping: str | None, shared: tuple[str, ...] = ()
+    defn: dict,
+    names: dict[str, str],
+    description: str,
+    mapping: str | None,
+    shared: tuple[str, ...] = (),
 ) -> dict:
     cls: dict[str, Any] = {"description": description}
     if mapping:
@@ -501,19 +647,34 @@ FIELD_TEXT = {
     ("Policy", "static"): "The constants the plan indexes into.",
     ("Policy", "plans"): "The query plans the policy exposes.",
     ("Policy", "funcs"): "The functions the plans call.",
-    ("Policy", "unplanned_rules"): "The rules left out because no entrypoint reaches them.",
-    ("Static", "strings"): "The string constants, which a string index refers to by position.",
+    (
+        "Policy",
+        "unplanned_rules",
+    ): "The rules left out because no entrypoint reaches them.",
+    (
+        "Static",
+        "strings",
+    ): "The string constants, which a string index refers to by position.",
     ("Static", "builtin_funcs"): "The built-in functions the plan calls.",
-    ("Static", "files"): "The names of the policy files, which a location refers to by position.",
+    (
+        "Static",
+        "files",
+    ): "The names of the policy files, which a location refers to by position.",
     ("StringConst", "value"): "The string.",
     ("BuiltinFunc", "name"): "The function's name.",
-    ("BuiltinFunc", "decl"): "The function's type declaration. OPA's schema leaves it opaque; OPA writes a function type.",
+    (
+        "BuiltinFunc",
+        "decl",
+    ): "The function's type declaration. OPA's schema leaves it opaque; OPA writes a function type.",
     ("Plans", "plans"): "The plans.",
     ("Plan", "name"): "The plan's name, which is its entrypoint.",
     ("Plan", "blocks"): "The blocks, run in order.",
     ("Funcs", "funcs"): "The functions.",
     ("Func", "name"): "The function's name.",
-    ("Func", "params"): "The locals that hold the parameters. The first two are the input and data documents.",
+    (
+        "Func",
+        "params",
+    ): "The locals that hold the parameters. The first two are the input and data documents.",
     ("Func", "return"): "The local that holds the return value.",
     ("Func", "blocks"): "The blocks, run in order.",
     ("Func", "path"): "Where the function sits in the data tree, when it has a path.",
@@ -544,16 +705,28 @@ GENERIC_TEXT = {
 }
 
 STMT_FIELD_TEXT = {
-    ("BreakStmt", "index"): "How many enclosing blocks to leave, counting the current block as zero.",
-    ("CallDynamicStmt", "path"): "The path of the function in the data tree, one operand per segment.",
+    (
+        "BreakStmt",
+        "index",
+    ): "How many enclosing blocks to leave, counting the current block as zero.",
+    (
+        "CallDynamicStmt",
+        "path",
+    ): "The path of the function in the data tree, one operand per segment.",
     ("CallDynamicStmt", "args"): "The locals passed as arguments.",
     ("ScanStmt", "source"): "The local whose value is scanned.",
     ("ScanStmt", "key"): "The local that receives each key.",
     ("ScanStmt", "value"): "The local that receives each value.",
     ("ScanStmt", "block"): "The block run for each key and value.",
-    ("MakeNumberRefStmt", "index"): "Index, in the plan's static strings, of the number written as a string.",
+    (
+        "MakeNumberRefStmt",
+        "index",
+    ): "Index, in the plan's static strings, of the number written as a string.",
     ("WithStmt", "local"): "The local whose value, or part of it, is replaced.",
-    ("WithStmt", "path"): "The path within the local's value to replace, as indices of static strings. Empty replaces the whole value.",
+    (
+        "WithStmt",
+        "path",
+    ): "The path within the local's value to replace, as indices of static strings. Empty replaces the whole value.",
     ("WithStmt", "value"): "The replacement value.",
     ("ResultSetAddStmt", "value"): "The local added to the result set.",
     ("ReturnLocalStmt", "source"): "The local returned.",
@@ -569,7 +742,6 @@ def build_ir_plan() -> dict:
     defs = doc["$defs"]
     go = go_doc_comments(IR_GO)
     stmt_kinds = [b["properties"]["type"]["const"] for b in defs["Stmt"]["oneOf"]]
-    val_kinds = [b["properties"]["type"]["const"] for b in defs["Val"]["oneOf"]]
     names = {k: f"Opa{k}" for k in defs}
     for kind in stmt_kinds:
         names[kind] = f"Opa{kind}Body"
@@ -586,11 +758,32 @@ def build_ir_plan() -> dict:
     )
     schema["prefixes"][prefix] = doc["$id"] + "#/$defs/"
     schema["see_also"].append(doc["$id"])
-    schema["slots"] = {key: {"description": text, "range": "integer"} for key, text in PLAN_TEXT.items()}
+    schema["slots"] = {
+        key: {"description": text, "range": "integer"}
+        for key, text in PLAN_TEXT.items()
+    }
 
     classes: dict[str, Any] = {}
-    for name in ("Policy", "Static", "StringConst", "BuiltinFunc", "Plans", "Plan", "Funcs", "Func", "Block", "UnplannedRule", "Location"):
-        cls = object_class(defs[name], names, go[name], f"{prefix}:{name}", LOCATION_KEYS if name == "Location" else ())
+    for name in (
+        "Policy",
+        "Static",
+        "StringConst",
+        "BuiltinFunc",
+        "Plans",
+        "Plan",
+        "Funcs",
+        "Func",
+        "Block",
+        "UnplannedRule",
+        "Location",
+    ):
+        cls = object_class(
+            defs[name],
+            names,
+            go[name],
+            f"{prefix}:{name}",
+            LOCATION_KEYS if name == "Location" else (),
+        )
         for key, slot in cls.get("attributes", {}).items():
             slot.setdefault("description", FIELD_TEXT[(name, key)])
         if name == "Location":
@@ -604,12 +797,17 @@ def build_ir_plan() -> dict:
         **classes["OpaFunc"]["attributes"].pop("return"),
         "alias": "return",
     }
-    classes["OpaFunc"]["attributes"]["return_local"]["description"] = FIELD_TEXT[("Func", "return")]
-    classes["OpaFunc"]["attributes"] = dict(sorted(classes["OpaFunc"]["attributes"].items()))
+    classes["OpaFunc"]["attributes"]["return_local"]["description"] = FIELD_TEXT[
+        ("Func", "return")
+    ]
+    classes["OpaFunc"]["attributes"] = dict(
+        sorted(classes["OpaFunc"]["attributes"].items())
+    )
 
     classes["OpaStmt"] = {
         "abstract": True,
-        "description": go["Stmt"] + " OPA writes each statement as its kind in `type` and its fields in `stmt`.",
+        "description": go["Stmt"]
+        + " OPA writes each statement as its kind in `type` and its fields in `stmt`.",
         "exact_mappings": [f"{prefix}:Stmt"],
     }
     classes["OpaStmtBody"] = {
@@ -624,18 +822,30 @@ def build_ir_plan() -> dict:
             "description": f"A statement of kind {kind}, with its fields in `stmt`.",
             "attributes": {
                 "type": kind_attr(kind, "The kind of statement."),
-                "stmt": attr(f"Opa{kind}Body", "The statement's fields.", required=True, inlined=True),
+                "stmt": attr(
+                    f"Opa{kind}Body",
+                    "The statement's fields.",
+                    required=True,
+                    inlined=True,
+                ),
             },
         }
-        body = object_class(defs[kind], names, go[kind], f"{prefix}:{kind}", LOCATION_KEYS)
+        body = object_class(
+            defs[kind], names, go[kind], f"{prefix}:{kind}", LOCATION_KEYS
+        )
         body["is_a"] = "OpaStmtBody"
         for key, slot in body.get("attributes", {}).items():
             if key == "Index":
                 continue
-            slot.setdefault("description", STMT_FIELD_TEXT.get((kind, key), GENERIC_TEXT[key]))
+            slot.setdefault(
+                "description", STMT_FIELD_TEXT.get((kind, key), GENERIC_TEXT[key])
+            )
         for short, long in (("a", "operand_a"), ("b", "operand_b")):
             if short in body.get("attributes", {}):
-                body["attributes"][long] = {**body["attributes"].pop(short), "alias": short}
+                body["attributes"][long] = {
+                    **body["attributes"].pop(short),
+                    "alias": short,
+                }
         if "Index" in body.get("attributes", {}):
             legacy = body["attributes"].pop("Index")
             legacy["alias"] = "Index"
@@ -644,13 +854,20 @@ def build_ir_plan() -> dict:
 
     classes["OpaOperand"] = {
         "abstract": True,
-        "description": go["Operand"] + " OPA writes it as its kind in `type` and the value in `value`.",
+        "description": go["Operand"]
+        + " OPA writes it as its kind in `type` and the value in `value`.",
         "exact_mappings": [f"{prefix}:Operand", f"{prefix}:Val"],
     }
-    operand_text = {"bool": go["Bool"], "local": "A local variable, by its number.", "string_index": go["StringIndex"]}
+    operand_text = {
+        "bool": go["Bool"],
+        "local": "A local variable, by its number.",
+        "string_index": go["StringIndex"],
+    }
     for branch in defs["Val"]["oneOf"]:
         kind = branch["properties"]["type"]["const"]
-        rng = {"boolean": "boolean", "integer": "integer"}[branch["properties"]["value"]["type"]]
+        rng = {"boolean": "boolean", "integer": "integer"}[
+            branch["properties"]["value"]["type"]
+        ]
         classes[f"Opa{''.join(p.capitalize() for p in kind.split('_'))}Operand"] = {
             "is_a": "OpaOperand",
             "description": operand_text[kind],
@@ -680,15 +897,33 @@ def build_bundle_manifest() -> dict:
     schema["prefixes"][prefix] = doc["$id"] + "#/$defs/"
     schema["see_also"].append(doc["$id"])
     text = {
-        ("Manifest", "revision"): "The bundle's revision, a string the bundle's author chooses.",
-        ("Manifest", "roots"): "The paths in the data tree the bundle owns. A bundle without the key owns the whole tree.",
-        ("Manifest", "wasm"): "The Wasm modules the bundle holds, and the entrypoints they resolve.",
-        ("Manifest", "rego_version"): "The Rego version of the bundle's files: 0 for v0, 1 for v1.",
-        ("Manifest", "file_rego_versions"): "Rego versions for single files, which override `rego_version`.",
+        (
+            "Manifest",
+            "revision",
+        ): "The bundle's revision, a string the bundle's author chooses.",
+        (
+            "Manifest",
+            "roots",
+        ): "The paths in the data tree the bundle owns. A bundle without the key owns the whole tree.",
+        (
+            "Manifest",
+            "wasm",
+        ): "The Wasm modules the bundle holds, and the entrypoints they resolve.",
+        (
+            "Manifest",
+            "rego_version",
+        ): "The Rego version of the bundle's files: 0 for v0, 1 for v1.",
+        (
+            "Manifest",
+            "file_rego_versions",
+        ): "Rego versions for single files, which override `rego_version`.",
         ("Manifest", "metadata"): "Metadata the bundle's author adds.",
         ("WasmResolver", "entrypoint"): "The entrypoint the module resolves.",
         ("WasmResolver", "module"): "The module's path in the bundle.",
-        ("WasmResolver", "annotations"): "The entrypoint's Rego annotations. OPA's schema leaves their shape open.",
+        (
+            "WasmResolver",
+            "annotations",
+        ): "The entrypoint's Rego annotations. OPA's schema leaves their shape open.",
     }
     classes: dict[str, Any] = {}
     for name in ("Manifest", "WasmResolver"):
@@ -734,7 +969,9 @@ def build_authorization_input() -> dict:
         "headers": "The request headers.",
         "body": "The request body.",
     }
-    cls = object_class(doc, {}, doc["description"].replace("Schema for the", "The") + ".", None)
+    cls = object_class(
+        doc, {}, doc["description"].replace("Schema for the", "The") + ".", None
+    )
     for key, slot in cls["attributes"].items():
         slot["description"] = text[key]
     cls["tree_root"] = True
@@ -797,19 +1034,27 @@ def share_lokf_iris(schema: dict) -> None:
         for key, slot in (cls.get("attributes") or {}).items():
             # An integer version, a Wasm ABI's major number or a file's Rego
             # version, is not LOKF's version string.
-            if key in SHARED_IRIS and "alias" not in slot and slot.get("range") != "integer":
+            if (
+                key in SHARED_IRIS
+                and "alias" not in slot
+                and slot.get("range") != "integer"
+            ):
                 slot["slot_uri"] = SHARED_IRIS[key]
 
 
 def render(schema: dict) -> str:
-    body = yaml.dump(schema, Dumper=_Dumper, sort_keys=False, width=88, allow_unicode=True)
+    body = yaml.dump(
+        schema, Dumper=_Dumper, sort_keys=False, width=88, allow_unicode=True
+    )
     note = "# Written by scripts/opa_to_linkml.py from OPA's files. Edit the script, not this file.\n"
     return "---\n" + note + body
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--check", action="store_true", help="exit 1 when a module differs")
+    parser.add_argument(
+        "--check", action="store_true", help="exit 1 when a module differs"
+    )
     args = parser.parse_args(argv)
     stale = []
     for module, build in MODULES.items():
@@ -823,7 +1068,9 @@ def main(argv: list[str] | None = None) -> int:
         else:
             path.write_text(text, encoding="utf-8")
     if stale:
-        print("stale: " + ", ".join(stale) + " (run `just gen-linkml`)", file=sys.stderr)
+        print(
+            "stale: " + ", ".join(stale) + " (run `just gen-linkml`)", file=sys.stderr
+        )
         return 1
     return 0
 

@@ -31,7 +31,9 @@ def _answers(watch):
     folders = {}
     for path, sha in pins.items():
         folder = path.rpartition("/")[0]
-        folders.setdefault(folder, []).append({"path": path, "sha": sha, "type": "file"})
+        folders.setdefault(folder, []).append(
+            {"path": path, "sha": sha, "type": "file"}
+        )
     answers = {
         "": {"default_branch": "main"},
         "/releases/latest": {"tag_name": edition["tag"]},
@@ -96,7 +98,9 @@ def test_an_annotated_tag_is_followed(watch, capsys):
 
 def test_a_changed_licence_fails(watch, capsys):
     answers = _answers(watch)
-    answers["/contents/?ref=main"] = [{"path": "LICENSE", "sha": "0" * 40, "type": "file"}]
+    answers["/contents/?ref=main"] = [
+        {"path": "LICENSE", "sha": "0" * 40, "type": "file"}
+    ]
     _stub(watch, answers)
     code, out = _run(watch, capsys)
     assert code == 1

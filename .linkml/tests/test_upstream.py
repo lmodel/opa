@@ -69,7 +69,12 @@ def test_nothing_but_the_sidecars_sits_beside_opas_tree():
         for path in filter(None, tracked.split("\0"))
         if path not in pinned and not path.startswith(own)
     )
-    assert set(extra) <= {"knowledge_bundle", "linkml_schema", "llms.txt", ".releaserc.json"}
+    assert set(extra) <= {
+        "knowledge_bundle",
+        "linkml_schema",
+        "llms.txt",
+        ".releaserc.json",
+    }
 
 
 def test_converter_watch_and_headers_name_one_release():
@@ -88,5 +93,7 @@ def test_converter_watch_and_headers_name_one_release():
 def test_schema_is_what_the_converter_writes():
     """src/opa/schema/ is the converter's output from OPA's files, unedited."""
     script = ROOT / "scripts" / "opa_to_linkml.py"
-    result = subprocess.run([sys.executable, str(script), "--check"], capture_output=True)
+    result = subprocess.run(
+        [sys.executable, str(script), "--check"], capture_output=True
+    )
     assert result.returncode == 0, result.stderr.decode()

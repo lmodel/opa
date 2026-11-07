@@ -33,7 +33,9 @@ def _case(path: Path):
 @pytest.mark.parametrize("path", VALID, ids=lambda p: p.stem)
 def test_valid_example(path):
     cls, data = _case(path)
-    assert parity.verdict("generated", cls, data), parity.errors("generated", cls, data)[:3]
+    assert parity.verdict("generated", cls, data), parity.errors(
+        "generated", cls, data
+    )[:3]
     if cls in OPA:
         assert parity.verdict("published", OPA[cls], data)
 

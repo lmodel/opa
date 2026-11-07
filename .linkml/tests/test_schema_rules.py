@@ -135,7 +135,16 @@ SHARED_WITH_NEIGHBOURS = {name: set() for name in NEIGHBOURS} | {
     "slsa.yaml": {"annotations", "value"},
     "spdx.yaml": {"key", "value"},
     "stix.yaml": {"key", "path", "result", "value"},
-    "uco.yaml": {"categories", "key", "location", "object", "path", "result", "strings", "value"},
+    "uco.yaml": {
+        "categories",
+        "key",
+        "location",
+        "object",
+        "path",
+        "result",
+        "strings",
+        "value",
+    },
     "void.yaml": {"label"},
 }
 
@@ -211,7 +220,9 @@ def test_names_apart_from_lokf():
     for kind in ELEMENT_KINDS:
         assert not elements[kind] & their_elements[kind], kind
     differing = {
-        name for name in slots.keys() & their_slots.keys() if slots[name] != their_slots[name]
+        name
+        for name in slots.keys() & their_slots.keys()
+        if slots[name] != their_slots[name]
     }
     assert differing == OTHER_MEANING_THAN_LOKF
 
@@ -231,7 +242,9 @@ def test_copy_roots_the_concept_classes():
     """The copy re-roots exactly the listed classes on Concept and imports nothing
     but the LinkML types and LOKF."""
     doc = yaml.safe_load(COPY.read_text())
-    rooted = {name for name, cls in doc["classes"].items() if cls.get("is_a") == "Concept"}
+    rooted = {
+        name for name, cls in doc["classes"].items() if cls.get("is_a") == "Concept"
+    }
     assert rooted == ROOTS
     assert doc["imports"] == ["linkml:types", "lokf"]
     concrete = {
