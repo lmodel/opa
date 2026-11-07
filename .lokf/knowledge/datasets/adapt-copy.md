@@ -16,13 +16,13 @@ sources:
     title: the module docstring
 generated:
   by: process:ktl-librarian
-  at: "2026-11-07T04:10:40Z"
+  at: "2026-11-07T04:22:40Z"
 status: draft
 ---
 
 # The adapt copy
 
-The copy roots `OpaManifest`, `OpaCapabilities`, `OpaBuiltin` and `OpaPolicy` on LOKF's `Concept`, and folds `description` into LOKF's.[^linkml-readme.md] Six keys mean something else in OPA than in LOKF, and the schema keeps them.[^linkml-readme.md] A test checks that the copy can sit beside LOKF and the neighbours' copies.[^test_schema_rules.py]
+The copy roots `OpaManifest`, `OpaCapabilities`, `OpaBuiltin` and `OpaPolicy` on LOKF's `Concept`, and folds `description` into LOKF's.[^linkml-readme.md] Six of OPA's keys are words LOKF defines with another meaning, and the copy renames each with the prefix, such as `type` to `openpolicyagent_type`.[^linkml-readme.md] A test checks that the copy can sit beside LOKF and the neighbours' copies.[^test_schema_rules.py]
 
 [^linkml-readme.md]: .linkml/README.md, Knowledge Trust Ladder (KTL)
 [^test_schema_rules.py]: .linkml/tests/test_schema_rules.py, the module docstring

@@ -2,6 +2,7 @@
 
 ## 2026-11-07
 
+* **Changed**: the adapt copy renames the six keys LOKF defines with another meaning.
 * **Changed**: the schema concept cites the umbrella for its imports.
 * **Bootstrap**: the first concepts, derived from the schema project, its docs, tests and workflows.
 * **Removal**: the dummy service the sidecar installs.
