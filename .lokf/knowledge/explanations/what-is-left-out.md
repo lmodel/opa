@@ -3,7 +3,7 @@ type: Explanation
 id: https://w3id.org/lmodel/opa/knowledge/explanations/what-is-left-out
 genre: explanation
 title: What the schema leaves out
-description: The first release covers the formats OPA publishes a JSON Schema for or ships as a data file; the decision log event, the status report, the discovery bundle and the configuration file can follow.
+description: The configuration file and the discovery bundle are left out, since OPA's configuration type keeps most sections as raw JSON that each plugin parses with its own types.
 resource: .linkml/docs/about.md
 about:
   - https://w3id.org/lmodel/opa/knowledge/datasets/opa-linkml-schema
@@ -13,12 +13,12 @@ sources:
     title: What it leaves out
 generated:
   by: process:ktl-librarian
-  at: "2026-11-07T04:38:00Z"
+  at: "2026-11-07T10:31:22Z"
 status: draft
 ---
 
 # What the schema leaves out
 
-OPA documents more formats in prose: the decision log event, the status report, the discovery bundle and the configuration file. Their shapes are defined by Go types in `v1/plugins/` and `v1/config/`, and OPA publishes no schema for them.[^about.md]
+The configuration file and the discovery bundle are left out. OPA's configuration type keeps most sections as raw JSON, which each plugin and service parses with its own types and defaults. A discovery bundle is an ordinary bundle whose data holds a configuration.[^about.md]
 
 [^about.md]: .linkml/docs/about.md, What it leaves out

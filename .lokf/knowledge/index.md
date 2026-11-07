@@ -30,20 +30,20 @@ A [LOKF](https://lokf.nolan-nichols.com) knowledge base for opa. Every Markdown 
 * [The OPA LinkML schema](datasets/opa-linkml-schema.md) - The LinkML model of OPA v1.22.2's JSON formats in `.linkml/src/opa/schema/`: one module per format, `Opa` classes that keep OPA's keys, and the umbrella `opa.yaml`.
 * [The adapt copy](datasets/adapt-copy.md) - `.lokf/schema/opa.yaml`, the copy `just lokf-adapt` writes from the schema for the bundle to validate against, which a release attaches as `schema-<tag>-opa.yaml`.
 * [Parity allowances](datasets/parity-allowances.md) - `.linkml/parity/structural.yaml`: each case where the schema's verdict differs from OPA's JSON Schema's, with its reason.
-* [Example data](datasets/example-data.md) - The examples under `.linkml/tests/data/problem/`: a valid document per format, and documents that each break one rule.
+* [Example data](datasets/example-data.md) - The examples under `.linkml/tests/data/`: a valid document per format, documents that each break one rule, and documents OPA's own binary wrote.
 * [The neighbours' adapt copies](datasets/neighbour-copies.md) - The adapt copies other lmodel repositories release, under `.linkml/tests/neighbours/`, each pinned by the checksum of its release asset.
 
 # Explanations
 
 * [How the schema is written](explanations/how-the-schema-is-written.md) - `.linkml/scripts/opa_to_linkml.py` writes each module from OPA's JSON Schemas, data files and Go types at the merged release, and a test fails when a module differs.
-* [Where the model differs from OPA's JSON Schemas](explanations/differences-from-opa.md) - Three reasons cover every case where the schema and OPA's JSON Schemas decide a document differently.
-* [What the schema leaves out](explanations/what-is-left-out.md) - The first release covers the formats OPA publishes a JSON Schema for or ships as a data file; the decision log event, the status report, the discovery bundle and the configuration file can follow.
+* [Where the model differs from OPA's JSON Schemas](explanations/differences-from-opa.md) - Four reasons cover every case where the schema and OPA's JSON Schemas decide a document differently.
+* [What the schema leaves out](explanations/what-is-left-out.md) - The configuration file and the discovery bundle are left out, since OPA's configuration type keeps most sections as raw JSON that each plugin parses with its own types.
 * [The fork layout](explanations/fork-layout.md) - OPA's tree sits unchanged at the repository's root, and everything this project adds is listed in `.linkml/NOTICE`.
 
 # Playbooks
 
 * [Regenerate and test](playbooks/regenerate-and-test.md) - Edit the converter, regenerate the schema and its artefacts, and run the tests from `.linkml/` before a pull request.
-* [Take a new OPA release](playbooks/take-a-new-opa-release.md) - Merge the release's tag with a merge commit, pin its tree, move the release in the converter and the watch, and regenerate.
+* [Take a new OPA release](playbooks/take-a-new-opa-release.md) - Merge the release's tag with a merge commit, pin its tree, move the release in the converter, the watch and the capture script, regenerate, and capture OPA's documents again.
 * [Release](playbooks/release.md) - A merge to `main` whose commits carry a releasing type is released by semantic-release, which promotes the changelog's Unreleased section.
 * [Knowledge sources map](playbooks/knowledge-sources.md) - Where this repository's knowledge lives: the schema project, its docs and tests, OPA's tree, the workflows and the governance files.
 

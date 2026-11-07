@@ -18,13 +18,13 @@ sources:
     resource: .linkml/src/opa/schema/opa.yaml
 generated:
   by: process:ktl-librarian
-  at: "2026-11-07T04:10:58Z"
+  at: "2026-11-07T10:31:22Z"
 status: draft
 ---
 
 # The OPA LinkML schema
 
-The umbrella `opa.yaml` imports seven modules: the IR plan, the bundle manifest, the authorization input, the capabilities document, the built-in function metadata, the version index and the types they share.[^opa.yaml] A converter writes every module from OPA's files.[^about.md] `linkml_schema` at the repository's root is a link to this folder.[^linkml-readme.md]
+The umbrella `opa.yaml` imports nine modules: the IR plan, the bundle manifest, the authorization input, the capabilities document, the built-in function metadata, the version index, the decision log event, the status report and the types they share.[^opa.yaml] A converter writes every module from OPA's files.[^about.md] `linkml_schema` at the repository's root is a link to this folder.[^linkml-readme.md]
 
 [^about.md]: .linkml/docs/about.md, Where each module comes from
 [^linkml-readme.md]: .linkml/README.md, Repository Structure

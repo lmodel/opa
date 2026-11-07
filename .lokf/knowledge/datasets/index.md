@@ -4,5 +4,5 @@
 * [The OPA LinkML schema](opa-linkml-schema.md) - The LinkML model of OPA v1.22.2's JSON formats in `.linkml/src/opa/schema/`: one module per format, `Opa` classes that keep OPA's keys, and the umbrella `opa.yaml`.
 * [The adapt copy](adapt-copy.md) - `.lokf/schema/opa.yaml`, the copy `just lokf-adapt` writes from the schema for the bundle to validate against, which a release attaches as `schema-<tag>-opa.yaml`.
 * [Parity allowances](parity-allowances.md) - `.linkml/parity/structural.yaml`: each case where the schema's verdict differs from OPA's JSON Schema's, with its reason.
-* [Example data](example-data.md) - The examples under `.linkml/tests/data/problem/`: a valid document per format, and documents that each break one rule.
+* [Example data](example-data.md) - The examples under `.linkml/tests/data/`: a valid document per format, documents that each break one rule, and documents OPA's own binary wrote.
 * [The neighbours' adapt copies](neighbour-copies.md) - The adapt copies other lmodel repositories release, under `.linkml/tests/neighbours/`, each pinned by the checksum of its release asset.
