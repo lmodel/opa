@@ -10,12 +10,11 @@ OPA_CONTAINER_CLI) and keeps what OPA writes:
   server in this script plays;
 - the input the server gives the system.authz policy, which a policy prints.
 
-Each file is one document, named `<Class>-<what it is>.json` after the class it must
-validate against, and re-indented; the values are OPA's. tests/test_data.py validates
-every file. OPA's server picks ids, ports and times, so each run writes different
-values. Run `just capture-opa-documents` after a merge of an OPA release, with IMAGE
-moved to that release. It needs the container command and the network, and nothing
-in CI runs it. Usage::
+Each file is one document, re-indented with OPA's values, named `<Class>-<what it
+is>.json` after the class tests/test_data.py validates it against. OPA picks ids, ports
+and times, so each run writes other values. Run `just capture-opa-documents` after a
+merge of an OPA release, with IMAGE moved to it; it needs the container command and the
+network, and CI never runs it. Usage::
 
     python scripts/capture_opa_documents.py
 """

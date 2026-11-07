@@ -1,12 +1,12 @@
 ---
 # https://pre-commit.com/
 # Run it from the repository's root: uvx pre-commit run -c .linkml/.pre-commit-config.yaml
-# The hooks read only what this project adds beside OPA's tree, which a test holds
-# to its pin. No hook may rewrite a file this repository does not write by hand: what
-# the LinkML generators and `lokf adapt` write, which the next run would rewrite
-# back; the neighbours' released copies, which tests hold to their checksums; npm's
-# lockfile for the release tools; the documents OPA wrote, which the capture script
-# rewrites; and the KTL sidecar's scripts, which the weekly sync replaces.
+# The hooks read only what this project adds beside OPA's tree, which a test holds to
+# its pin, and rewrite no file written other than by hand: the LinkML generators' and
+# `lokf adapt`'s output, which the next run writes again; the neighbours' released
+# copies, which tests hold to their checksums; the release tools' npm lockfile; the
+# documents OPA wrote, which the capture script writes again; and the KTL sidecar's
+# scripts, which the weekly sync replaces.
 files: >-
   (?x)^(
     \.linkml/|

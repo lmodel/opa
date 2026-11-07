@@ -143,15 +143,13 @@ jobs:
             ".lokf/**/*.md"
             ".github/SECURITY.md"
           fail: true
-      # This step does not use codespell-project/actions-codespell. That
-      # action passes its path to codespell unquoted under /bin/sh. There
-      # `**/*.md` means `*/*.md` and skips every file at the root and in
-      # dot-folders. git ls-files lists
-      # tracked files only, so the knowledge_bundle link is not read twice;
-      # [tool.codespell] in pyproject.toml supplies the ignore list. Its skip
-      # globs are relative to .linkml/, where codespell is run by hand, and
-      # match nothing when the paths start with `.linkml/` as they do here, so
-      # the pathspecs below leave out what markdownlint's config ignores too:
-      # the copier template's doc templates.
+      # Not codespell-project/actions-codespell: it passes its path unquoted
+      # under /bin/sh, where `**/*.md` means `*/*.md` and skips the root and
+      # the dot-folders. git ls-files lists tracked files only, so the
+      # knowledge_bundle link is not read twice. [tool.codespell] in
+      # pyproject.toml gives the ignore list, but its skip globs are relative
+      # to .linkml/, where codespell runs by hand, and match no path here, so
+      # the pathspecs leave out the copier template's doc templates, as
+      # markdownlint's config does.
       - name: codespell
         run: git ls-files -z '.linkml/*.md' '.lokf/*.md' '.github/SECURITY.md' ':!.linkml/docs/templates-linkml/*' | xargs -0 pipx run --spec codespell==2.4.2 codespell --toml .linkml/pyproject.toml

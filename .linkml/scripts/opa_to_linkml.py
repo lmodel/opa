@@ -1486,11 +1486,11 @@ SHARED_IRIS = {
 }
 
 
-# OPA's keys that LOKF also defines, with another meaning. Each is a top-level slot
-# in common, with an IRI in this schema's namespace, that a class uses through
-# `slots` and `slot_usage`, so OPA's documents keep the key and `lokf adapt` renames
-# the slot in its copy and keeps the IRI. As an attribute, the key would keep its
-# name in the copy, and a composite's JSON-LD context would read it as LOKF's.
+# OPA's keys that LOKF defines with another meaning. Each is a top-level slot in common
+# with an IRI of this schema's, which a class takes through `slots` and `slot_usage`:
+# OPA's documents keep the key, and `lokf adapt` renames the slot in its copy and keeps
+# the IRI. An attribute would keep its name in the copy, and a composite's JSON-LD
+# context would read it as LOKF's.
 PROMOTED = {
     "body": "The body of an HTTP request.",
     "revision": "A bundle's revision, a string the bundle's author chooses.",

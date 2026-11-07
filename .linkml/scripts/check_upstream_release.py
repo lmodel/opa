@@ -6,25 +6,23 @@
 """Check open-policy-agent/opa against the release this fork holds.
 
 The rest of this repository is OPA's tree at the release in EDITION, merged unchanged,
-and the schema renders the formats that release defines. These can change without any
-change here:
+and the schema renders the formats that release defines. Three things can change
+without any change here, and each fails the check:
 
 - OPA publishes a later release, so a merge of its tag is due;
 - the pinned tag moves to another commit;
 - the licence on OPA's default branch changes.
 
-Each of these fails the check. One more is reported for information only: a file that
-defines a format the schema renders key for key differs on OPA's default branch from the
-release's, which says what the next release may change. Those files are the JSON Schemas
-of the plan, the manifest and the authorization input, and the Go files of the decision
-log event and the status report.
+For information only, it reports which of the files that define a format the schema
+renders key for key differ on OPA's default branch: the JSON Schemas of the plan, the
+manifest and the authorization input, and the Go files of the decision log event and the
+status report. That says what the next release may change.
 
 The script reads only GitHub's API and compares git object hashes, so it downloads no
-file. It prints a Markdown report and exits 1 on any failing check, or when a check
-could not finish. Text a server chose is quoted as code on one line in the report, so
-the issue the workflow opens from it cannot mention anyone. A redirect is followed only
-to an https address on api.github.com. Set ``GITHUB_TOKEN`` to raise the API's rate
-limit. Usage::
+file. It prints a Markdown report, and exits 1 when a check fails or cannot finish. Text
+a server chose is quoted as code on one line, so the issue the workflow opens from the
+report cannot mention anyone. A redirect is followed only to an https address on
+api.github.com. ``GITHUB_TOKEN`` raises the API's rate limit. Usage::
 
     python scripts/check_upstream_release.py [--report FILE]
 """
