@@ -2878,8 +2878,8 @@ slots:
     inlined_as_list: true
   opaDecisionLogEvent__mapped_result:
     name: opaDecisionLogEvent__mapped_result
-    description: The result as the result mapper of a decision made through OPA's
-      Go SDK wrote it.
+    description: The result of a decision made through OPA's Go SDK, as its result
+      mapper wrote it.
     from_schema: https://w3id.org/lmodel/opa/decision_log
     slot_uri: openpolicyagent:mapped_result
     alias: mapped_result
@@ -3005,8 +3005,8 @@ slots:
     inlined_as_list: true
   opaDecisionLogEvent__custom:
     name: opaDecisionLogEvent__custom
-    description: Fields the server or a plugin adds, such as `request_metadata`, the
-      top-level keys of a Data API request body besides `input`.
+    description: Fields the server or a plugin adds, such as `request_metadata`, which
+      holds the top-level keys of a Data API request body other than `input`.
     from_schema: https://w3id.org/lmodel/opa/decision_log
     slot_uri: openpolicyagent:custom
     alias: custom
@@ -5818,7 +5818,7 @@ classes:
     comments:
     - OPA's schema requires every key and makes the body an object. The server leaves
       out identity, client_certificates and body when the request has none, and a
-      body can be any JSON value, so those three are optional here and the body takes
+      body can be any JSON value. So those three are optional here, and the body takes
       any value.
     from_schema: https://w3id.org/lmodel/opa/authorization_input
     slots:
@@ -8313,8 +8313,8 @@ classes:
         inlined: true
       mapped_result:
         name: mapped_result
-        description: The result as the result mapper of a decision made through OPA's
-          Go SDK wrote it.
+        description: The result of a decision made through OPA's Go SDK, as its result
+          mapper wrote it.
         range: OpaValue
         any_of:
         - range: OpaValue
@@ -8371,7 +8371,7 @@ classes:
       custom:
         name: custom
         description: Fields the server or a plugin adds, such as `request_metadata`,
-          the top-level keys of a Data API request body besides `input`.
+          which holds the top-level keys of a Data API request body other than `input`.
         range: OpaObject
         inlined: true
     class_uri: openpolicyagent:OpaDecisionLogEvent
@@ -8617,6 +8617,6 @@ classes:
     class_uri: openpolicyagent:OpaPluginStatus
 metamodel_version: 1.12.0
 source_file: opa.yaml
-source_file_date: '2026-11-07T10:48:22'
+source_file_date: '2026-11-07T10:55:38'
 source_file_size: 1470
 

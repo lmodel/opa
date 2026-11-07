@@ -680,12 +680,12 @@
 --     * Slot: input_id Description: The input of the query.
 --     * Slot: result_id Description: The result the client received.
 --     * Slot: intermediate_results_id Description: The intermediate results the evaluation recorded, when OPA runs with the environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set.
---     * Slot: mapped_result_id Description: The result as the result mapper of a decision made through OPA's Go SDK wrote it.
+--     * Slot: mapped_result_id Description: The result of a decision made through OPA's Go SDK, as its result mapper wrote it.
 --     * Slot: nd_builtin_cache_id Description: What each non-deterministic built-in function returned, by function and arguments, with `nd_builtin_cache` on.
 --     * Slot: error_id Description: The error the evaluation raised, as OPA writes it in JSON.
 --     * Slot: metrics_id Description: The query's metrics, by name.
 --     * Slot: request_context_id Description: The parts of the HTTP request the configuration asks OPA to log.
---     * Slot: custom_id Description: Fields the server or a plugin adds, such as `request_metadata`, the top-level keys of a Data API request body besides `input`.
+--     * Slot: custom_id Description: Fields the server or a plugin adds, such as `request_metadata`, which holds the top-level keys of a Data API request body other than `input`.
 -- # Class: OpaDecisionBundle Description: A bundle whose policy made a decision.
 --     * Slot: revision Description: The bundle's revision when OPA made the decision.
 --     * Slot: name Description: The bundle's name.

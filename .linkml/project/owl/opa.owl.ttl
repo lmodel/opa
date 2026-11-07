@@ -80,7 +80,7 @@ openpolicyagent:OpaAuthorizationInput a owl:Class ;
 	rdfs:subClassOf _:c14n111 , _:c14n300 , _:c14n317 , _:c14n319 , _:c14n342 , _:c14n420 , _:c14n43 , _:c14n628 , _:c14n659 , _:c14n705 , _:c14n756 , _:c14n765 , _:c14n818 , _:c14n825 , _:c14n857 , _:c14n873 , _:c14n945 , _:c14n947 , _:c14n967 ;
 	skos:definition "The OPA Authorization Policy Input document." ;
 	skos:inScheme openpolicyagent:authorization_input ;
-	skos:note "OPA's schema requires every key and makes the body an object. The server leaves out identity, client_certificates and body when the request has none, and a body can be any JSON value, so those three are optional here and the body takes any value." .
+	skos:note "OPA's schema requires every key and makes the body an object. The server leaves out identity, client_certificates and body when the request has none, and a body can be any JSON value. So those three are optional here, and the body takes any value." .
 openpolicyagent:OpaBlock a owl:Class ;
 	rdfs:label "OpaBlock" ;
 	rdfs:subClassOf _:c14n384 , _:c14n919 ;
@@ -846,7 +846,7 @@ openpolicyagent:col a owl:DatatypeProperty ;
 	skos:inScheme openpolicyagent:ir_plan .
 openpolicyagent:custom a owl:ObjectProperty ;
 	rdfs:label "custom" ;
-	skos:definition "Fields the server or a plugin adds, such as `request_metadata`, the top-level keys of a Data API request body besides `input`." ;
+	skos:definition "Fields the server or a plugin adds, such as `request_metadata`, which holds the top-level keys of a Data API request body other than `input`." ;
 	skos:inScheme openpolicyagent:decision_log .
 openpolicyagent:decision_id a owl:DatatypeProperty ;
 	rdfs:label "decision_id" ;
@@ -995,7 +995,7 @@ openpolicyagent:major a owl:DatatypeProperty ;
 	skos:prefLabel "Major" .
 openpolicyagent:mapped_result a owl:ObjectProperty ;
 	rdfs:label "mapped_result" ;
-	skos:definition "The result as the result mapper of a decision made through OPA's Go SDK wrote it." ;
+	skos:definition "The result of a decision made through OPA's Go SDK, as its result mapper wrote it." ;
 	skos:inScheme openpolicyagent:decision_log .
 openpolicyagent:masked a owl:DatatypeProperty ;
 	rdfs:label "masked" ;

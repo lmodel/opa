@@ -566,8 +566,8 @@ classes:
         description: The request headers, each with its list of values.
     comments:
     - OPA's schema requires every key and makes the body an object. The server leaves out identity, client_certificates
-      and body when the request has none, and a body can be any JSON value, so those three are optional
-      here and the body takes any value.
+      and body when the request has none, and a body can be any JSON value. So those three are optional
+      here, and the body takes any value.
     slots:
     - openpolicyagent_body
     slot_usage:
@@ -2097,7 +2097,7 @@ classes:
         range: OpaObject
         inlined: true
       mapped_result:
-        description: The result as the result mapper of a decision made through OPA's Go SDK wrote it.
+        description: The result of a decision made through OPA's Go SDK, as its result mapper wrote it.
         range: OpaValue
         any_of:
         - range: OpaValue
@@ -2142,8 +2142,8 @@ classes:
         range: OpaRequestContext
         inlined: true
       custom:
-        description: Fields the server or a plugin adds, such as `request_metadata`, the top-level keys
-          of a Data API request body besides `input`.
+        description: Fields the server or a plugin adds, such as `request_metadata`, which holds the top-level
+          keys of a Data API request body other than `input`.
         range: OpaObject
         inlined: true
     slots:

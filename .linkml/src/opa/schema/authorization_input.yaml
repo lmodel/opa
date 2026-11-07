@@ -70,7 +70,7 @@ classes:
       - >-
         OPA's schema requires every key and makes the body an object. The server leaves out
         identity, client_certificates and body when the request has none, and a body can be
-        any JSON value, so those three are optional here and the body takes any value.
+        any JSON value. So those three are optional here, and the body takes any value.
     tree_root: true
     slots:
       - body

@@ -1429,7 +1429,7 @@ export interface OpaDecisionLogEvent {
     result?: OpaValue,
     /** The intermediate results the evaluation recorded, when OPA runs with the environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set. */
     intermediate_results?: OpaObject,
-    /** The result as the result mapper of a decision made through OPA's Go SDK wrote it. */
+    /** The result of a decision made through OPA's Go SDK, as its result mapper wrote it. */
     mapped_result?: OpaValue,
     /** What each non-deterministic built-in function returned, by function and arguments, with `nd_builtin_cache` on. */
     nd_builtin_cache?: OpaObject,
@@ -1449,7 +1449,7 @@ export interface OpaDecisionLogEvent {
     rule_labels?: OpaObject[],
     /** The parts of the HTTP request the configuration asks OPA to log. */
     request_context?: OpaRequestContext,
-    /** Fields the server or a plugin adds, such as `request_metadata`, the top-level keys of a Data API request body besides `input`. */
+    /** Fields the server or a plugin adds, such as `request_metadata`, which holds the top-level keys of a Data API request body other than `input`. */
     custom?: OpaObject,
 }
 

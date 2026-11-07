@@ -1697,7 +1697,7 @@
                             "type": "null"
                         }
                     ],
-                    "description": "Fields the server or a plugin adds, such as `request_metadata`, the top-level keys of a Data API request body besides `input`."
+                    "description": "Fields the server or a plugin adds, such as `request_metadata`, which holds the top-level keys of a Data API request body other than `input`."
                 },
                 "decision_id": {
                     "description": "The decision's id, which OPA also returns to the client.",
@@ -1784,7 +1784,7 @@
                             "type": "null"
                         }
                     ],
-                    "description": "The result as the result mapper of a decision made through OPA's Go SDK wrote it."
+                    "description": "The result of a decision made through OPA's Go SDK, as its result mapper wrote it."
                 },
                 "masked": {
                     "description": "JSON pointers to the fields a mask policy replaced.",

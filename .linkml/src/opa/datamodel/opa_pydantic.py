@@ -1424,8 +1424,8 @@ class OpaAuthorizationInput(ConfiguredBaseModel):
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'comments': ["OPA's schema requires every key and makes the body an object. "
                       'The server leaves out identity, client_certificates and body '
-                      'when the request has none, and a body can be any JSON value, so '
-                      'those three are optional here and the body takes any value.'],
+                      'when the request has none, and a body can be any JSON value. So '
+                      'those three are optional here, and the body takes any value.'],
          'extra_slots': {'allowed': True},
          'from_schema': 'https://w3id.org/lmodel/opa/authorization_input',
          'slot_usage': {'body': {'any_of': [{'range': 'OpaValue'},
@@ -6481,7 +6481,7 @@ class OpaDecisionLogEvent(ConfiguredBaseModel):
                        'OpaCallStmtBody',
                        'OpaDecisionLogEvent']} })
     intermediate_results: Optional[OpaObject] = Field(default=None, description="""The intermediate results the evaluation recorded, when OPA runs with the environment variable OPA_DECISIONS_INTERMEDIATE_RESULTS set.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
-    mapped_result: Optional[Any] = Field(default=None, description="""The result as the result mapper of a decision made through OPA's Go SDK wrote it.""", json_schema_extra = { "linkml_meta": {'any_of': [{'range': 'OpaValue'}, {'multivalued': True, 'range': 'OpaValue'}],
+    mapped_result: Optional[Any] = Field(default=None, description="""The result of a decision made through OPA's Go SDK, as its result mapper wrote it.""", json_schema_extra = { "linkml_meta": {'any_of': [{'range': 'OpaValue'}, {'multivalued': True, 'range': 'OpaValue'}],
          'domain_of': ['OpaDecisionLogEvent']} })
     nd_builtin_cache: Optional[OpaObject] = Field(default=None, description="""What each non-deterministic built-in function returned, by function and arguments, with `nd_builtin_cache` on.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
     erased: Optional[list[str]] = Field(default=None, description="""JSON pointers to the fields a mask policy removed.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
@@ -6496,7 +6496,7 @@ class OpaDecisionLogEvent(ConfiguredBaseModel):
     req_id: Optional[int] = Field(default=None, description="""The number OPA gave the HTTP request, which its request and response logs also carry.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
     rule_labels: Optional[list[OpaObject]] = Field(default=None, description="""The merged `labels` annotations of each rule the evaluation used.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
     request_context: Optional[OpaRequestContext] = Field(default=None, description="""The parts of the HTTP request the configuration asks OPA to log.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
-    custom: Optional[OpaObject] = Field(default=None, description="""Fields the server or a plugin adds, such as `request_metadata`, the top-level keys of a Data API request body besides `input`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
+    custom: Optional[OpaObject] = Field(default=None, description="""Fields the server or a plugin adds, such as `request_metadata`, which holds the top-level keys of a Data API request body other than `input`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaDecisionLogEvent']} })
 
 
 class OpaDecisionBundle(ConfiguredBaseModel):

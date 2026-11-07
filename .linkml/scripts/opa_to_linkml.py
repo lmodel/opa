@@ -1108,7 +1108,7 @@ def build_authorization_input() -> dict:
     cls["comments"] = [
         "OPA's schema requires every key and makes the body an object. The server leaves "
         "out identity, client_certificates and body when the request has none, and a body "
-        "can be any JSON value, so those three are optional here and the body takes any "
+        "can be any JSON value. So those three are optional here, and the body takes any "
         "value."
     ]
     cls["tree_root"] = True
@@ -1164,7 +1164,7 @@ EVENT_KEYS = {
         inlined=True,
     ),
     "mapped_result": any_json(
-        "The result as the result mapper of a decision made through OPA's Go SDK "
+        "The result of a decision made through OPA's Go SDK, as its result mapper "
         "wrote it."
     ),
     "nd_builtin_cache": attr(
@@ -1203,8 +1203,8 @@ EVENT_KEYS = {
     ),
     "custom": attr(
         "OpaObject",
-        "Fields the server or a plugin adds, such as `request_metadata`, the top-level "
-        "keys of a Data API request body besides `input`.",
+        "Fields the server or a plugin adds, such as `request_metadata`, which holds the "
+        "top-level keys of a Data API request body other than `input`.",
         inlined=True,
     ),
 }
