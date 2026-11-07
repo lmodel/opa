@@ -4,6 +4,7 @@ BASE <https://w3id.org/lmodel/opa/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX linkml: <https://w3id.org/linkml/>
+PREFIX schema1: <http://schema.org/>
 
 
 linkml:String xsd:string
@@ -222,8 +223,8 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaBuiltin> CLOSED {
-    (  $<OpaBuiltin_tes> (  <name> @linkml:String ;
-          <description> @linkml:String ? ;
+    (  $<OpaBuiltin_tes> (  schema1:name @linkml:String ;
+          schema1:description @linkml:String ? ;
           <categories> @linkml:String * ;
           <decl> @<OpaFunctionType> ;
           <infix> @linkml:String ? ;
@@ -236,8 +237,8 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaBuiltinArgument> CLOSED {
-    (  $<OpaBuiltinArgument_tes> (  <name> @linkml:String ? ;
-          <description> @linkml:String ? ;
+    (  $<OpaBuiltinArgument_tes> (  schema1:name @linkml:String ? ;
+          schema1:description @linkml:String ? ;
           <type> @linkml:String
        ) ;
        rdf:type [ <OpaBuiltinArgument> ] ?
@@ -245,21 +246,23 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaBuiltinCategory> CLOSED {
-    (  $<OpaBuiltinCategory_tes> <builtins> @linkml:String + ;
+    (  $<OpaBuiltinCategory_tes> (  schema1:name @linkml:String ;
+          <builtins> @linkml:String +
+       ) ;
        rdf:type [ <OpaBuiltinCategory> ]
     )
 }
 
 <OpaBuiltinFunc> CLOSED {
     (  $<OpaBuiltinFunc_tes> (  <decl> @<OpaFunctionType> ? ;
-          <name> @linkml:String
+          schema1:name @linkml:String
        ) ;
        rdf:type [ <OpaBuiltinFunc> ] ?
     )
 }
 
 <OpaBuiltinMetadata> CLOSED {
-    (  $<OpaBuiltinMetadata_tes> (  <description> @linkml:String ? ;
+    (  $<OpaBuiltinMetadata_tes> (  schema1:description @linkml:String ? ;
           <introduced> @linkml:String ;
           <available> @linkml:String + ;
           <wasm> @linkml:Boolean ;
@@ -283,8 +286,8 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaBuiltinResult> CLOSED {
-    (  $<OpaBuiltinResult_tes> (  <name> @linkml:String ? ;
-          <description> @linkml:String ? ;
+    (  $<OpaBuiltinResult_tes> (  schema1:name @linkml:String ? ;
+          schema1:description @linkml:String ? ;
           <type> @linkml:String ?
        ) ;
        rdf:type [ <OpaBuiltinResult> ] ?
@@ -402,14 +405,16 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaFileRegoVersion> CLOSED {
-    (  $<OpaFileRegoVersion_tes> <version> @linkml:Integer ;
+    (  $<OpaFileRegoVersion_tes> (  <path> @linkml:String ;
+          <version> @linkml:Integer
+       ) ;
        rdf:type [ <OpaFileRegoVersion> ]
     )
 }
 
 <OpaFunc> CLOSED {
     (  $<OpaFunc_tes> (  <blocks> @<OpaBlock> * ;
-          <name> @linkml:String ;
+          schema1:name @linkml:String ;
           <params> @linkml:Integer * ;
           <path> @linkml:String * ;
           <return> @linkml:Integer
@@ -437,17 +442,19 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaImplementation> CLOSED {
-    (  $<OpaImplementation_tes> (  <id> @linkml:String ;
+    (  $<OpaImplementation_tes> (  schema1:identifier @linkml:String ;
           <label> @linkml:String ;
           <repo> @linkml:String ;
-          <version> @linkml:String
+          schema1:version @linkml:String
        ) ;
        rdf:type [ <OpaImplementation> ] ?
     )
 }
 
 <OpaImplementationSupport> CLOSED {
-    (  $<OpaImplementationSupport_tes> <version> @linkml:String ;
+    (  $<OpaImplementationSupport_tes> (  <implementation> @linkml:String ;
+          schema1:version @linkml:String
+       ) ;
        rdf:type [ <OpaImplementationSupport> ]
     )
 }
@@ -885,7 +892,7 @@ linkml:Sparqlpath xsd:string
 
 <OpaPlan> CLOSED {
     (  $<OpaPlan_tes> (  <blocks> @<OpaBlock> * ;
-          <name> @linkml:String
+          schema1:name @linkml:String
        ) ;
        rdf:type [ <OpaPlan> ] ?
     )
@@ -1102,8 +1109,8 @@ linkml:Sparqlpath xsd:string
 )
 
 <OpaType_struct> {
-    (  $<OpaType_tes> (  <name> @linkml:String ? ;
-          <description> @linkml:String ?
+    (  $<OpaType_tes> (  schema1:name @linkml:String ? ;
+          schema1:description @linkml:String ?
        ) ;
        rdf:type [ <OpaType> ] ?
     )
@@ -1124,7 +1131,8 @@ linkml:Sparqlpath xsd:string
 }
 
 <OpaVersionEntry> CLOSED {
-    (  $<OpaVersionEntry_tes> (  <Major> @linkml:Integer ;
+    (  $<OpaVersionEntry_tes> (  schema1:name @linkml:String ;
+          <Major> @linkml:Integer ;
           <Minor> @linkml:Integer ;
           <Patch> @linkml:Integer ;
           <PreRelease> @linkml:String ?

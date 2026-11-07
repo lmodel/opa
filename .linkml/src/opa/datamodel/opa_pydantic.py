@@ -96,7 +96,9 @@ linkml_meta = LinkMLMeta({'annotations': {'upstream_commit': {'tag': 'upstream_c
      'prefixes': {'linkml': {'prefix_prefix': 'linkml',
                              'prefix_reference': 'https://w3id.org/linkml/'},
                   'openpolicyagent': {'prefix_prefix': 'openpolicyagent',
-                                      'prefix_reference': 'https://w3id.org/lmodel/opa/'}},
+                                      'prefix_reference': 'https://w3id.org/lmodel/opa/'},
+                  'schema': {'prefix_prefix': 'schema',
+                             'prefix_reference': 'http://schema.org/'}},
      'see_also': ['https://lmodel.github.io/opa',
                   'https://www.openpolicyagent.org/docs'],
      'source': 'https://github.com/open-policy-agent/opa/tree/482d9e368c2ddfed67ced59259fa6a247bb5f1e5',
@@ -155,12 +157,14 @@ class OpaType(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
 
 
 class OpaAnyType(OpaType):
@@ -227,12 +231,14 @@ class OpaAnyType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
 
 
 class OpaArrayType(OpaType):
@@ -300,12 +306,14 @@ class OpaArrayType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
 
 
 class OpaBooleanType(OpaType):
@@ -371,12 +379,14 @@ class OpaBooleanType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
 
 
 class OpaFunctionType(OpaType):
@@ -451,12 +461,14 @@ class OpaFunctionType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
 
 
 class OpaNullType(OpaType):
@@ -522,12 +534,14 @@ class OpaNullType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
 
 
 class OpaNumberType(OpaType):
@@ -593,12 +607,14 @@ class OpaNumberType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
 
 
 class OpaObjectType(OpaType):
@@ -666,12 +682,14 @@ class OpaObjectType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
 
 
 class OpaSetType(OpaType):
@@ -738,12 +756,14 @@ class OpaSetType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
 
 
 class OpaStringType(OpaType):
@@ -809,12 +829,14 @@ class OpaStringType(OpaType):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument or result holds, on a named type.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
 
 
 class OpaStaticProperty(ConfiguredBaseModel):
@@ -902,12 +924,14 @@ class OpaBuiltin(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the function does.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
     categories: Optional[list[str]] = Field(default=None, description="""The categories the function belongs to.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltin', 'OpaBuiltinMetadataCatalog']} })
     decl: OpaFunctionType = Field(default=..., description="""The function's type declaration.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltin', 'OpaBuiltinFunc']} })
     infix: Optional[str] = Field(default=None, description="""The infix operator that calls the function, such as `+`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltin', 'OpaBuiltinMetadata']} })
@@ -955,7 +979,8 @@ class OpaBuiltinCategory(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     builtins: list[str] = Field(default=..., description="""The names of the category's functions.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaCapabilities', 'OpaBuiltinCategory', 'OpaVersionIndex']} })
 
 
@@ -965,13 +990,14 @@ class OpaImplementation(ConfiguredBaseModel):
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/lmodel/opa/builtin_metadata'})
 
-    id: str = Field(default=..., description="""The implementation's key in each function's `implementations`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaImplementation']} })
+    id: str = Field(default=..., description="""The implementation's key in each function's `implementations`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaImplementation'], 'slot_uri': 'schema:identifier'} })
     label: str = Field(default=..., description="""The implementation's display name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaImplementation']} })
     repo: str = Field(default=..., description="""The implementation's GitHub repository, as owner/name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaImplementation']} })
     version: str = Field(default=..., description="""The implementation's version the catalogue reflects.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaWasmAbiVersion',
                        'OpaImplementation',
                        'OpaImplementationSupport',
-                       'OpaFileRegoVersion']} })
+                       'OpaFileRegoVersion'],
+         'slot_uri': 'schema:version'} })
 
 
 class OpaBuiltinMetadata(ConfiguredBaseModel):
@@ -984,7 +1010,8 @@ class OpaBuiltinMetadata(ConfiguredBaseModel):
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
     introduced: str = Field(default=..., description="""The OPA version that added the function.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltinMetadata']} })
     available: list[str] = Field(default=..., description="""The OPA versions that have the function, and `edge`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltinMetadata']} })
     wasm: bool = Field(default=..., description="""Whether OPA's Wasm target implements the function.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaBuiltinMetadata', 'OpaManifest']} })
@@ -1016,12 +1043,14 @@ class OpaBuiltinArgument(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the argument holds.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
     type: str = Field(default=..., description="""The argument's type, written as OPA prints types, such as `array[string]`.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
                        'OpaBooleanType',
@@ -1086,12 +1115,14 @@ class OpaBuiltinResult(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     description: Optional[str] = Field(default=None, description="""What the result holds.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaType',
                        'OpaBuiltin',
                        'OpaBuiltinMetadata',
                        'OpaBuiltinArgument',
-                       'OpaBuiltinResult']} })
+                       'OpaBuiltinResult'],
+         'slot_uri': 'schema:description'} })
     type: Optional[str] = Field(default=None, description="""The result's type, written as OPA prints types.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAnyType',
                        'OpaArrayType',
                        'OpaBooleanType',
@@ -1152,7 +1183,8 @@ class OpaImplementationSupport(ConfiguredBaseModel):
     version: str = Field(default=..., description="""The implementation's version that added the function.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaWasmAbiVersion',
                        'OpaImplementation',
                        'OpaImplementationSupport',
-                       'OpaFileRegoVersion']} })
+                       'OpaFileRegoVersion'],
+         'slot_uri': 'schema:version'} })
 
 
 class OpaVersionIndex(ConfiguredBaseModel):
@@ -1180,7 +1212,8 @@ class OpaVersionEntry(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     Major: int = Field(default=..., description="""The major version.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaVersionEntry']} })
     Minor: int = Field(default=..., description="""The minor version.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaVersionEntry']} })
     Patch: int = Field(default=..., description="""The patch version.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaVersionEntry']} })
@@ -1322,7 +1355,8 @@ class OpaBuiltinFunc(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
 
 
 class OpaPlans(ConfiguredBaseModel):
@@ -1351,7 +1385,8 @@ class OpaPlan(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
 
 
 class OpaFuncs(ConfiguredBaseModel):
@@ -1380,7 +1415,8 @@ class OpaFunc(ConfiguredBaseModel):
                        'OpaVersionEntry',
                        'OpaBuiltinFunc',
                        'OpaPlan',
-                       'OpaFunc']} })
+                       'OpaFunc'],
+         'slot_uri': 'schema:name'} })
     params: Optional[list[int]] = Field(default=None, description="""The locals that hold the parameters. The first two are the input and data documents.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput', 'OpaFunc']} })
     path: Optional[list[str]] = Field(default=None, description="""Where the function sits in the data tree, when it has a path.""", json_schema_extra = { "linkml_meta": {'domain_of': ['OpaAuthorizationInput',
                        'OpaFileRegoVersion',

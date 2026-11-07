@@ -23,6 +23,7 @@ annotations:
 prefixes:
   openpolicyagent: https://w3id.org/lmodel/opa/
   linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
   opa_manifest: >-
     https://openpolicyagent.org/schemas/bundle/v1/manifest.schema.json#/$defs/
 default_prefix: openpolicyagent
@@ -89,7 +90,7 @@ classes:
     attributes:
       path:
         description: The file's path in the bundle.
-        identifier: true
+        key: true
       version:
         description: The file's Rego version.
         range: integer

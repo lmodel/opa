@@ -3,6 +3,7 @@
    "opa_manifest": "https://openpolicyagent.org/schemas/bundle/v1/manifest.schema.json#/$defs/",
    "opa_plan": "https://openpolicyagent.org/schemas/ir/v1/plan.schema.json#/$defs/",
    "openpolicyagent": "https://w3id.org/lmodel/opa/",
+   "schema": "http://schema.org/",
    "OpaValue": {
       "@id": "linkml:Any"
    }

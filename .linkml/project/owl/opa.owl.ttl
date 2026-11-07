@@ -7,11 +7,12 @@
 @prefix dcterms: <http://purl.org/dc/terms/> .
 @prefix linkml: <https://w3id.org/linkml/> .
 @prefix pav: <http://purl.org/pav/> .
+@prefix schema1: <http://schema.org/> .
 <https://w3id.org/lmodel/opa.owl.ttl> dcterms:license "Apache-2.0" ;
 	dcterms:source <https://github.com/open-policy-agent/opa/tree/482d9e368c2ddfed67ced59259fa6a247bb5f1e5> ;
 	dcterms:title "Open Policy Agent (OPA)" ;
 	pav:version "1.22.2" ;
-	<http://schema.org/keywords> "CNCF" , "Open Policy Agent" , "Rego" , "policy as code" ;
+	schema1:keywords "CNCF" , "Open Policy Agent" , "Rego" , "policy as code" ;
 	a owl:Ontology ;
 	rdfs:label "opa" ;
 	rdfs:seeAlso <https://lmodel.github.io/opa> , <https://www.openpolicyagent.org/docs> ;
@@ -744,7 +745,10 @@ openpolicyagent:col a owl:DatatypeProperty ;
 	skos:inScheme openpolicyagent:ir_plan .
 openpolicyagent:decl a owl:ObjectProperty .
 openpolicyagent:deprecated a owl:DatatypeProperty .
-openpolicyagent:description a owl:DatatypeProperty .
+openpolicyagent:description a owl:DatatypeProperty ;
+	rdfs:label "description" ;
+	skos:definition "What the argument holds." , "What the argument or result holds, on a named type." , "What the function does." , "What the result holds." ;
+	skos:inScheme openpolicyagent:builtin_metadata , openpolicyagent:capabilities , openpolicyagent:common .
 openpolicyagent:dynamic a owl:ObjectProperty .
 openpolicyagent:end_col a owl:DatatypeProperty ;
 	rdfs:label "end_col" ;
@@ -854,7 +858,10 @@ openpolicyagent:module a owl:DatatypeProperty ;
 	rdfs:label "module" ;
 	skos:definition "The module's path in the bundle." ;
 	skos:inScheme openpolicyagent:bundle_manifest .
-openpolicyagent:name a owl:DatatypeProperty .
+openpolicyagent:name a owl:DatatypeProperty ;
+	rdfs:label "name" ;
+	skos:definition "The argument's name." , "The argument's or result's name, on a named type." , "The category's name." , "The function's name, such as `array.concat`." , "The function's name." , "The name of the function, feature or keyword." , "The plan's name, which is its entrypoint." , "The result's name." ;
+	skos:inScheme openpolicyagent:builtin_metadata , openpolicyagent:capabilities , openpolicyagent:common , openpolicyagent:ir_plan , openpolicyagent:version_index .
 openpolicyagent:nondeterministic a owl:DatatypeProperty ;
 	rdfs:label "nondeterministic" ;
 	skos:definition "Whether the function may return different results for the same arguments." ;

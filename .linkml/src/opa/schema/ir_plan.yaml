@@ -23,6 +23,7 @@ annotations:
 prefixes:
   openpolicyagent: https://w3id.org/lmodel/opa/
   linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
   opa_plan: https://openpolicyagent.org/schemas/ir/v1/plan.schema.json#/$defs/
 default_prefix: openpolicyagent
 default_range: string
@@ -118,6 +119,7 @@ classes:
         range: string
         required: true
         description: The function's name.
+        slot_uri: schema:name
   OpaPlans:
     description: >-
       Plans represents a collection of named query plans to expose in the policy.
@@ -147,6 +149,7 @@ classes:
         range: string
         required: true
         description: The plan's name, which is its entrypoint.
+        slot_uri: schema:name
   OpaFuncs:
     description: >-
       Funcs represents a collection of planned functions to include in the policy.
@@ -176,6 +179,7 @@ classes:
         range: string
         required: true
         description: The function's name.
+        slot_uri: schema:name
       params:
         range: integer
         multivalued: true

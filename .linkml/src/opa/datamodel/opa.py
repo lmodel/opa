@@ -66,6 +66,7 @@ LINKML = CurieNamespace('linkml', 'https://w3id.org/linkml/')
 OPA_MANIFEST = CurieNamespace('opa_manifest', 'https://openpolicyagent.org/schemas/bundle/v1/manifest.schema.json#/$defs/')
 OPA_PLAN = CurieNamespace('opa_plan', 'https://openpolicyagent.org/schemas/ir/v1/plan.schema.json#/$defs/')
 OPENPOLICYAGENT = CurieNamespace('openpolicyagent', 'https://w3id.org/lmodel/opa/')
+SCHEMA = CurieNamespace('schema', 'http://schema.org/')
 DEFAULT_ = OPENPOLICYAGENT
 
 
@@ -3688,10 +3689,10 @@ slots.end_col = Slot(uri=OPENPOLICYAGENT.end_col, name="end_col", curie=OPENPOLI
 slots.end_row = Slot(uri=OPENPOLICYAGENT.end_row, name="end_row", curie=OPENPOLICYAGENT.curie('end_row'),
                    model_uri=OPENPOLICYAGENT.end_row, domain=None, range=Optional[int])
 
-slots.opaType__name = Slot(uri=OPENPOLICYAGENT.name, name="opaType__name", curie=OPENPOLICYAGENT.curie('name'),
+slots.opaType__name = Slot(uri=SCHEMA.name, name="opaType__name", curie=SCHEMA.curie('name'),
                    model_uri=OPENPOLICYAGENT.opaType__name, domain=None, range=Optional[str])
 
-slots.opaType__description = Slot(uri=OPENPOLICYAGENT.description, name="opaType__description", curie=OPENPOLICYAGENT.curie('description'),
+slots.opaType__description = Slot(uri=SCHEMA.description, name="opaType__description", curie=SCHEMA.curie('description'),
                    model_uri=OPENPOLICYAGENT.opaType__description, domain=None, range=Optional[str])
 
 slots.opaAnyType__type = Slot(uri=OPENPOLICYAGENT.type, name="opaAnyType__type", curie=OPENPOLICYAGENT.curie('type'),
@@ -3775,10 +3776,10 @@ slots.opaCapabilities__features = Slot(uri=OPENPOLICYAGENT.features, name="opaCa
 slots.opaCapabilities__allow_net = Slot(uri=OPENPOLICYAGENT.allow_net, name="opaCapabilities__allow_net", curie=OPENPOLICYAGENT.curie('allow_net'),
                    model_uri=OPENPOLICYAGENT.opaCapabilities__allow_net, domain=None, range=Optional[Union[str, list[str]]])
 
-slots.opaBuiltin__name = Slot(uri=OPENPOLICYAGENT.name, name="opaBuiltin__name", curie=OPENPOLICYAGENT.curie('name'),
+slots.opaBuiltin__name = Slot(uri=SCHEMA.name, name="opaBuiltin__name", curie=SCHEMA.curie('name'),
                    model_uri=OPENPOLICYAGENT.opaBuiltin__name, domain=None, range=str)
 
-slots.opaBuiltin__description = Slot(uri=OPENPOLICYAGENT.description, name="opaBuiltin__description", curie=OPENPOLICYAGENT.curie('description'),
+slots.opaBuiltin__description = Slot(uri=SCHEMA.description, name="opaBuiltin__description", curie=SCHEMA.curie('description'),
                    model_uri=OPENPOLICYAGENT.opaBuiltin__description, domain=None, range=Optional[str])
 
 slots.opaBuiltin__categories = Slot(uri=OPENPOLICYAGENT.categories, name="opaBuiltin__categories", curie=OPENPOLICYAGENT.curie('categories'),
@@ -3811,13 +3812,13 @@ slots.opaBuiltinMetadataCatalog__categories = Slot(uri=OPENPOLICYAGENT._categori
 slots.opaBuiltinMetadataCatalog__implementations = Slot(uri=OPENPOLICYAGENT._implementations, name="opaBuiltinMetadataCatalog__implementations", curie=OPENPOLICYAGENT.curie('_implementations'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinMetadataCatalog__implementations, domain=None, range=Optional[Union[Union[dict, OpaImplementation], list[Union[dict, OpaImplementation]]]])
 
-slots.opaBuiltinCategory__name = Slot(uri=OPENPOLICYAGENT.name, name="opaBuiltinCategory__name", curie=OPENPOLICYAGENT.curie('name'),
+slots.opaBuiltinCategory__name = Slot(uri=SCHEMA.name, name="opaBuiltinCategory__name", curie=SCHEMA.curie('name'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinCategory__name, domain=None, range=URIRef)
 
 slots.opaBuiltinCategory__builtins = Slot(uri=OPENPOLICYAGENT.builtins, name="opaBuiltinCategory__builtins", curie=OPENPOLICYAGENT.curie('builtins'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinCategory__builtins, domain=None, range=Union[str, list[str]])
 
-slots.opaImplementation__id = Slot(uri=OPENPOLICYAGENT.id, name="opaImplementation__id", curie=OPENPOLICYAGENT.curie('id'),
+slots.opaImplementation__id = Slot(uri=SCHEMA.identifier, name="opaImplementation__id", curie=SCHEMA.curie('identifier'),
                    model_uri=OPENPOLICYAGENT.opaImplementation__id, domain=None, range=str)
 
 slots.opaImplementation__label = Slot(uri=OPENPOLICYAGENT.label, name="opaImplementation__label", curie=OPENPOLICYAGENT.curie('label'),
@@ -3826,10 +3827,10 @@ slots.opaImplementation__label = Slot(uri=OPENPOLICYAGENT.label, name="opaImplem
 slots.opaImplementation__repo = Slot(uri=OPENPOLICYAGENT.repo, name="opaImplementation__repo", curie=OPENPOLICYAGENT.curie('repo'),
                    model_uri=OPENPOLICYAGENT.opaImplementation__repo, domain=None, range=str)
 
-slots.opaImplementation__version = Slot(uri=OPENPOLICYAGENT.version, name="opaImplementation__version", curie=OPENPOLICYAGENT.curie('version'),
+slots.opaImplementation__version = Slot(uri=SCHEMA.version, name="opaImplementation__version", curie=SCHEMA.curie('version'),
                    model_uri=OPENPOLICYAGENT.opaImplementation__version, domain=None, range=str)
 
-slots.opaBuiltinMetadata__description = Slot(uri=OPENPOLICYAGENT.description, name="opaBuiltinMetadata__description", curie=OPENPOLICYAGENT.curie('description'),
+slots.opaBuiltinMetadata__description = Slot(uri=SCHEMA.description, name="opaBuiltinMetadata__description", curie=SCHEMA.curie('description'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinMetadata__description, domain=None, range=Optional[str])
 
 slots.opaBuiltinMetadata__introduced = Slot(uri=OPENPOLICYAGENT.introduced, name="opaBuiltinMetadata__introduced", curie=OPENPOLICYAGENT.curie('introduced'),
@@ -3859,19 +3860,19 @@ slots.opaBuiltinMetadata__relation = Slot(uri=OPENPOLICYAGENT.relation, name="op
 slots.opaBuiltinMetadata__deprecated = Slot(uri=OPENPOLICYAGENT.deprecated, name="opaBuiltinMetadata__deprecated", curie=OPENPOLICYAGENT.curie('deprecated'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinMetadata__deprecated, domain=None, range=Optional[Union[bool, Bool]])
 
-slots.opaBuiltinArgument__name = Slot(uri=OPENPOLICYAGENT.name, name="opaBuiltinArgument__name", curie=OPENPOLICYAGENT.curie('name'),
+slots.opaBuiltinArgument__name = Slot(uri=SCHEMA.name, name="opaBuiltinArgument__name", curie=SCHEMA.curie('name'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinArgument__name, domain=None, range=Optional[str])
 
-slots.opaBuiltinArgument__description = Slot(uri=OPENPOLICYAGENT.description, name="opaBuiltinArgument__description", curie=OPENPOLICYAGENT.curie('description'),
+slots.opaBuiltinArgument__description = Slot(uri=SCHEMA.description, name="opaBuiltinArgument__description", curie=SCHEMA.curie('description'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinArgument__description, domain=None, range=Optional[str])
 
 slots.opaBuiltinArgument__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBuiltinArgument__type", curie=OPENPOLICYAGENT.curie('type'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinArgument__type, domain=None, range=str)
 
-slots.opaBuiltinResult__name = Slot(uri=OPENPOLICYAGENT.name, name="opaBuiltinResult__name", curie=OPENPOLICYAGENT.curie('name'),
+slots.opaBuiltinResult__name = Slot(uri=SCHEMA.name, name="opaBuiltinResult__name", curie=SCHEMA.curie('name'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinResult__name, domain=None, range=Optional[str])
 
-slots.opaBuiltinResult__description = Slot(uri=OPENPOLICYAGENT.description, name="opaBuiltinResult__description", curie=OPENPOLICYAGENT.curie('description'),
+slots.opaBuiltinResult__description = Slot(uri=SCHEMA.description, name="opaBuiltinResult__description", curie=SCHEMA.curie('description'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinResult__description, domain=None, range=Optional[str])
 
 slots.opaBuiltinResult__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBuiltinResult__type", curie=OPENPOLICYAGENT.curie('type'),
@@ -3880,7 +3881,7 @@ slots.opaBuiltinResult__type = Slot(uri=OPENPOLICYAGENT.type, name="opaBuiltinRe
 slots.opaImplementationSupport__implementation = Slot(uri=OPENPOLICYAGENT.implementation, name="opaImplementationSupport__implementation", curie=OPENPOLICYAGENT.curie('implementation'),
                    model_uri=OPENPOLICYAGENT.opaImplementationSupport__implementation, domain=None, range=URIRef)
 
-slots.opaImplementationSupport__version = Slot(uri=OPENPOLICYAGENT.version, name="opaImplementationSupport__version", curie=OPENPOLICYAGENT.curie('version'),
+slots.opaImplementationSupport__version = Slot(uri=SCHEMA.version, name="opaImplementationSupport__version", curie=SCHEMA.curie('version'),
                    model_uri=OPENPOLICYAGENT.opaImplementationSupport__version, domain=None, range=str)
 
 slots.opaVersionIndex__builtins = Slot(uri=OPENPOLICYAGENT.builtins, name="opaVersionIndex__builtins", curie=OPENPOLICYAGENT.curie('builtins'),
@@ -3892,7 +3893,7 @@ slots.opaVersionIndex__features = Slot(uri=OPENPOLICYAGENT.features, name="opaVe
 slots.opaVersionIndex__keywords = Slot(uri=OPENPOLICYAGENT.keywords, name="opaVersionIndex__keywords", curie=OPENPOLICYAGENT.curie('keywords'),
                    model_uri=OPENPOLICYAGENT.opaVersionIndex__keywords, domain=None, range=Union[dict[Union[str, OpaVersionEntryName], Union[dict, OpaVersionEntry]], list[Union[dict, OpaVersionEntry]]])
 
-slots.opaVersionEntry__name = Slot(uri=OPENPOLICYAGENT.name, name="opaVersionEntry__name", curie=OPENPOLICYAGENT.curie('name'),
+slots.opaVersionEntry__name = Slot(uri=SCHEMA.name, name="opaVersionEntry__name", curie=SCHEMA.curie('name'),
                    model_uri=OPENPOLICYAGENT.opaVersionEntry__name, domain=None, range=URIRef)
 
 slots.opaVersionEntry__major = Slot(uri=OPENPOLICYAGENT.Major, name="opaVersionEntry__major", curie=OPENPOLICYAGENT.curie('Major'),
@@ -3988,7 +3989,7 @@ slots.opaStringConst__value = Slot(uri=OPENPOLICYAGENT.value, name="opaStringCon
 slots.opaBuiltinFunc__decl = Slot(uri=OPENPOLICYAGENT.decl, name="opaBuiltinFunc__decl", curie=OPENPOLICYAGENT.curie('decl'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinFunc__decl, domain=None, range=Optional[Union[dict, OpaFunctionType]])
 
-slots.opaBuiltinFunc__name = Slot(uri=OPENPOLICYAGENT.name, name="opaBuiltinFunc__name", curie=OPENPOLICYAGENT.curie('name'),
+slots.opaBuiltinFunc__name = Slot(uri=SCHEMA.name, name="opaBuiltinFunc__name", curie=SCHEMA.curie('name'),
                    model_uri=OPENPOLICYAGENT.opaBuiltinFunc__name, domain=None, range=str)
 
 slots.opaPlans__plans = Slot(uri=OPENPOLICYAGENT.plans, name="opaPlans__plans", curie=OPENPOLICYAGENT.curie('plans'),
@@ -3997,7 +3998,7 @@ slots.opaPlans__plans = Slot(uri=OPENPOLICYAGENT.plans, name="opaPlans__plans", 
 slots.opaPlan__blocks = Slot(uri=OPENPOLICYAGENT.blocks, name="opaPlan__blocks", curie=OPENPOLICYAGENT.curie('blocks'),
                    model_uri=OPENPOLICYAGENT.opaPlan__blocks, domain=None, range=Optional[Union[Union[dict, OpaBlock], list[Union[dict, OpaBlock]]]])
 
-slots.opaPlan__name = Slot(uri=OPENPOLICYAGENT.name, name="opaPlan__name", curie=OPENPOLICYAGENT.curie('name'),
+slots.opaPlan__name = Slot(uri=SCHEMA.name, name="opaPlan__name", curie=SCHEMA.curie('name'),
                    model_uri=OPENPOLICYAGENT.opaPlan__name, domain=None, range=str)
 
 slots.opaFuncs__funcs = Slot(uri=OPENPOLICYAGENT.funcs, name="opaFuncs__funcs", curie=OPENPOLICYAGENT.curie('funcs'),
@@ -4006,7 +4007,7 @@ slots.opaFuncs__funcs = Slot(uri=OPENPOLICYAGENT.funcs, name="opaFuncs__funcs", 
 slots.opaFunc__blocks = Slot(uri=OPENPOLICYAGENT.blocks, name="opaFunc__blocks", curie=OPENPOLICYAGENT.curie('blocks'),
                    model_uri=OPENPOLICYAGENT.opaFunc__blocks, domain=None, range=Optional[Union[Union[dict, OpaBlock], list[Union[dict, OpaBlock]]]])
 
-slots.opaFunc__name = Slot(uri=OPENPOLICYAGENT.name, name="opaFunc__name", curie=OPENPOLICYAGENT.curie('name'),
+slots.opaFunc__name = Slot(uri=SCHEMA.name, name="opaFunc__name", curie=SCHEMA.curie('name'),
                    model_uri=OPENPOLICYAGENT.opaFunc__name, domain=None, range=str)
 
 slots.opaFunc__params = Slot(uri=OPENPOLICYAGENT.params, name="opaFunc__params", curie=OPENPOLICYAGENT.curie('params'),

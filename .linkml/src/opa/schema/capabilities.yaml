@@ -22,6 +22,7 @@ annotations:
 prefixes:
   openpolicyagent: https://w3id.org/lmodel/opa/
   linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
 default_prefix: openpolicyagent
 default_range: string
 imports:
@@ -63,8 +64,10 @@ classes:
       name:
         description: The function's name, such as `array.concat`.
         required: true
+        slot_uri: schema:name
       description:
         description: What the function does.
+        slot_uri: schema:description
       categories:
         description: The categories the function belongs to.
         multivalued: true

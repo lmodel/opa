@@ -21,6 +21,7 @@ annotations:
 prefixes:
   openpolicyagent: https://w3id.org/lmodel/opa/
   linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
 default_prefix: openpolicyagent
 default_range: string
 imports:
@@ -54,7 +55,8 @@ classes:
     attributes:
       name:
         description: The name of the function, feature or keyword.
-        identifier: true
+        key: true
+        slot_uri: schema:name
       major:
         description: The major version.
         range: integer

@@ -52,6 +52,10 @@
     {
       "prefix_prefix": "linkml",
       "prefix_reference": "https://w3id.org/linkml/"
+    },
+    {
+      "prefix_prefix": "schema",
+      "prefix_reference": "http://schema.org/"
     }
   ],
   "default_prefix": "openpolicyagent",
@@ -504,7 +508,10 @@
       "name": "opaType__name",
       "description": "The argument's or result's name, on a named type.",
       "from_schema": "https://w3id.org/lmodel/opa/common",
-      "slot_uri": "https://w3id.org/lmodel/opa/name",
+      "mappings": [
+        "http://schema.org/name"
+      ],
+      "slot_uri": "http://schema.org/name",
       "alias": "name",
       "owner": "OpaType",
       "domain_of": [
@@ -517,7 +524,10 @@
       "name": "opaType__description",
       "description": "What the argument or result holds, on a named type.",
       "from_schema": "https://w3id.org/lmodel/opa/common",
-      "slot_uri": "https://w3id.org/lmodel/opa/description",
+      "mappings": [
+        "http://schema.org/description"
+      ],
+      "slot_uri": "http://schema.org/description",
       "alias": "description",
       "owner": "OpaType",
       "domain_of": [
@@ -942,7 +952,10 @@
       "name": "opaBuiltin__name",
       "description": "The function's name, such as `array.concat`.",
       "from_schema": "https://w3id.org/lmodel/opa/capabilities",
-      "slot_uri": "https://w3id.org/lmodel/opa/name",
+      "mappings": [
+        "http://schema.org/name"
+      ],
+      "slot_uri": "http://schema.org/name",
       "alias": "name",
       "owner": "OpaBuiltin",
       "domain_of": [
@@ -956,7 +969,10 @@
       "name": "opaBuiltin__description",
       "description": "What the function does.",
       "from_schema": "https://w3id.org/lmodel/opa/capabilities",
-      "slot_uri": "https://w3id.org/lmodel/opa/description",
+      "mappings": [
+        "http://schema.org/description"
+      ],
+      "slot_uri": "http://schema.org/description",
       "alias": "description",
       "owner": "OpaBuiltin",
       "domain_of": [
@@ -1110,8 +1126,11 @@
       "name": "opaBuiltinCategory__name",
       "description": "The category's name.",
       "from_schema": "https://w3id.org/lmodel/opa/builtin_metadata",
-      "slot_uri": "https://w3id.org/lmodel/opa/name",
-      "identifier": true,
+      "mappings": [
+        "http://schema.org/name"
+      ],
+      "slot_uri": "http://schema.org/name",
+      "key": true,
       "alias": "name",
       "owner": "OpaBuiltinCategory",
       "domain_of": [
@@ -1140,7 +1159,10 @@
       "name": "opaImplementation__id",
       "description": "The implementation's key in each function's `implementations`.",
       "from_schema": "https://w3id.org/lmodel/opa/builtin_metadata",
-      "slot_uri": "https://w3id.org/lmodel/opa/id",
+      "mappings": [
+        "http://schema.org/identifier"
+      ],
+      "slot_uri": "http://schema.org/identifier",
       "alias": "id",
       "owner": "OpaImplementation",
       "domain_of": [
@@ -1182,7 +1204,10 @@
       "name": "opaImplementation__version",
       "description": "The implementation's version the catalogue reflects.",
       "from_schema": "https://w3id.org/lmodel/opa/builtin_metadata",
-      "slot_uri": "https://w3id.org/lmodel/opa/version",
+      "mappings": [
+        "http://schema.org/version"
+      ],
+      "slot_uri": "http://schema.org/version",
       "alias": "version",
       "owner": "OpaImplementation",
       "domain_of": [
@@ -1196,7 +1221,10 @@
       "name": "opaBuiltinMetadata__description",
       "description": "What the function does.",
       "from_schema": "https://w3id.org/lmodel/opa/builtin_metadata",
-      "slot_uri": "https://w3id.org/lmodel/opa/description",
+      "mappings": [
+        "http://schema.org/description"
+      ],
+      "slot_uri": "http://schema.org/description",
       "alias": "description",
       "owner": "OpaBuiltinMetadata",
       "domain_of": [
@@ -1340,7 +1368,10 @@
       "name": "opaBuiltinArgument__name",
       "description": "The argument's name.",
       "from_schema": "https://w3id.org/lmodel/opa/builtin_metadata",
-      "slot_uri": "https://w3id.org/lmodel/opa/name",
+      "mappings": [
+        "http://schema.org/name"
+      ],
+      "slot_uri": "http://schema.org/name",
       "alias": "name",
       "owner": "OpaBuiltinArgument",
       "domain_of": [
@@ -1353,7 +1384,10 @@
       "name": "opaBuiltinArgument__description",
       "description": "What the argument holds.",
       "from_schema": "https://w3id.org/lmodel/opa/builtin_metadata",
-      "slot_uri": "https://w3id.org/lmodel/opa/description",
+      "mappings": [
+        "http://schema.org/description"
+      ],
+      "slot_uri": "http://schema.org/description",
       "alias": "description",
       "owner": "OpaBuiltinArgument",
       "domain_of": [
@@ -1380,7 +1414,10 @@
       "name": "opaBuiltinResult__name",
       "description": "The result's name.",
       "from_schema": "https://w3id.org/lmodel/opa/builtin_metadata",
-      "slot_uri": "https://w3id.org/lmodel/opa/name",
+      "mappings": [
+        "http://schema.org/name"
+      ],
+      "slot_uri": "http://schema.org/name",
       "alias": "name",
       "owner": "OpaBuiltinResult",
       "domain_of": [
@@ -1393,7 +1430,10 @@
       "name": "opaBuiltinResult__description",
       "description": "What the result holds.",
       "from_schema": "https://w3id.org/lmodel/opa/builtin_metadata",
-      "slot_uri": "https://w3id.org/lmodel/opa/description",
+      "mappings": [
+        "http://schema.org/description"
+      ],
+      "slot_uri": "http://schema.org/description",
       "alias": "description",
       "owner": "OpaBuiltinResult",
       "domain_of": [
@@ -1420,7 +1460,7 @@
       "description": "The implementation's id.",
       "from_schema": "https://w3id.org/lmodel/opa/builtin_metadata",
       "slot_uri": "https://w3id.org/lmodel/opa/implementation",
-      "identifier": true,
+      "key": true,
       "alias": "implementation",
       "owner": "OpaImplementationSupport",
       "domain_of": [
@@ -1434,7 +1474,10 @@
       "name": "opaImplementationSupport__version",
       "description": "The implementation's version that added the function.",
       "from_schema": "https://w3id.org/lmodel/opa/builtin_metadata",
-      "slot_uri": "https://w3id.org/lmodel/opa/version",
+      "mappings": [
+        "http://schema.org/version"
+      ],
+      "slot_uri": "http://schema.org/version",
       "alias": "version",
       "owner": "OpaImplementationSupport",
       "domain_of": [
@@ -1496,8 +1539,11 @@
       "name": "opaVersionEntry__name",
       "description": "The name of the function, feature or keyword.",
       "from_schema": "https://w3id.org/lmodel/opa/version_index",
-      "slot_uri": "https://w3id.org/lmodel/opa/name",
-      "identifier": true,
+      "mappings": [
+        "http://schema.org/name"
+      ],
+      "slot_uri": "http://schema.org/name",
+      "key": true,
       "alias": "name",
       "owner": "OpaVersionEntry",
       "domain_of": [
@@ -1804,7 +1850,7 @@
       "description": "The file's path in the bundle.",
       "from_schema": "https://w3id.org/lmodel/opa/bundle_manifest",
       "slot_uri": "https://w3id.org/lmodel/opa/path",
-      "identifier": true,
+      "key": true,
       "alias": "path",
       "owner": "OpaFileRegoVersion",
       "domain_of": [
@@ -1970,7 +2016,10 @@
       "name": "opaBuiltinFunc__name",
       "description": "The function's name.",
       "from_schema": "https://w3id.org/lmodel/opa/ir_plan",
-      "slot_uri": "https://w3id.org/lmodel/opa/name",
+      "mappings": [
+        "http://schema.org/name"
+      ],
+      "slot_uri": "http://schema.org/name",
       "alias": "name",
       "owner": "OpaBuiltinFunc",
       "domain_of": [
@@ -2016,7 +2065,10 @@
       "name": "opaPlan__name",
       "description": "The plan's name, which is its entrypoint.",
       "from_schema": "https://w3id.org/lmodel/opa/ir_plan",
-      "slot_uri": "https://w3id.org/lmodel/opa/name",
+      "mappings": [
+        "http://schema.org/name"
+      ],
+      "slot_uri": "http://schema.org/name",
       "alias": "name",
       "owner": "OpaPlan",
       "domain_of": [
@@ -2062,7 +2114,10 @@
       "name": "opaFunc__name",
       "description": "The function's name.",
       "from_schema": "https://w3id.org/lmodel/opa/ir_plan",
-      "slot_uri": "https://w3id.org/lmodel/opa/name",
+      "mappings": [
+        "http://schema.org/name"
+      ],
+      "slot_uri": "http://schema.org/name",
       "alias": "name",
       "owner": "OpaFunc",
       "domain_of": [
@@ -4462,11 +4517,13 @@
         {
           "name": "name",
           "description": "The argument's or result's name, on a named type.",
+          "slot_uri": "schema:name",
           "@type": "SlotDefinition"
         },
         {
           "name": "description",
           "description": "What the argument or result holds, on a named type.",
+          "slot_uri": "schema:description",
           "@type": "SlotDefinition"
         }
       ],
@@ -4916,12 +4973,14 @@
         {
           "name": "name",
           "description": "The function's name, such as `array.concat`.",
+          "slot_uri": "schema:name",
           "required": true,
           "@type": "SlotDefinition"
         },
         {
           "name": "description",
           "description": "What the function does.",
+          "slot_uri": "schema:description",
           "@type": "SlotDefinition"
         },
         {
@@ -5050,7 +5109,8 @@
         {
           "name": "name",
           "description": "The category's name.",
-          "identifier": true,
+          "slot_uri": "schema:name",
+          "key": true,
           "@type": "SlotDefinition"
         },
         {
@@ -5080,6 +5140,7 @@
         {
           "name": "id",
           "description": "The implementation's key in each function's `implementations`.",
+          "slot_uri": "schema:identifier",
           "required": true,
           "@type": "SlotDefinition"
         },
@@ -5098,6 +5159,7 @@
         {
           "name": "version",
           "description": "The implementation's version the catalogue reflects.",
+          "slot_uri": "schema:version",
           "required": true,
           "@type": "SlotDefinition"
         }
@@ -5127,6 +5189,7 @@
         {
           "name": "description",
           "description": "What the function does.",
+          "slot_uri": "schema:description",
           "@type": "SlotDefinition"
         },
         {
@@ -5212,11 +5275,13 @@
         {
           "name": "name",
           "description": "The argument's name.",
+          "slot_uri": "schema:name",
           "@type": "SlotDefinition"
         },
         {
           "name": "description",
           "description": "What the argument holds.",
+          "slot_uri": "schema:description",
           "@type": "SlotDefinition"
         },
         {
@@ -5244,11 +5309,13 @@
         {
           "name": "name",
           "description": "The result's name.",
+          "slot_uri": "schema:name",
           "@type": "SlotDefinition"
         },
         {
           "name": "description",
           "description": "What the result holds.",
+          "slot_uri": "schema:description",
           "@type": "SlotDefinition"
         },
         {
@@ -5274,12 +5341,13 @@
         {
           "name": "implementation",
           "description": "The implementation's id.",
-          "identifier": true,
+          "key": true,
           "@type": "SlotDefinition"
         },
         {
           "name": "version",
           "description": "The implementation's version that added the function.",
+          "slot_uri": "schema:version",
           "required": true,
           "@type": "SlotDefinition"
         }
@@ -5348,7 +5416,8 @@
         {
           "name": "name",
           "description": "The name of the function, feature or keyword.",
-          "identifier": true,
+          "slot_uri": "schema:name",
+          "key": true,
           "@type": "SlotDefinition"
         },
         {
@@ -5591,7 +5660,7 @@
         {
           "name": "path",
           "description": "The file's path in the bundle.",
-          "identifier": true,
+          "key": true,
           "@type": "SlotDefinition"
         },
         {
@@ -5750,6 +5819,7 @@
         {
           "name": "name",
           "description": "The function's name.",
+          "slot_uri": "schema:name",
           "range": "string",
           "required": true,
           "@type": "SlotDefinition"
@@ -5810,6 +5880,7 @@
         {
           "name": "name",
           "description": "The plan's name, which is its entrypoint.",
+          "slot_uri": "schema:name",
           "range": "string",
           "required": true,
           "@type": "SlotDefinition"
@@ -5873,6 +5944,7 @@
         {
           "name": "name",
           "description": "The function's name.",
+          "slot_uri": "schema:name",
           "range": "string",
           "required": true,
           "@type": "SlotDefinition"
@@ -8491,8 +8563,8 @@
   ],
   "metamodel_version": "1.12.0",
   "source_file": "opa.yaml",
-  "source_file_date": "2026-11-07T03:51:34",
-  "source_file_size": 1254,
+  "source_file_date": "2026-11-07T04:05:25",
+  "source_file_size": 1283,
   "@type": "SchemaDefinition",
   "@context": [
     "project/jsonld/opa.context.jsonld",

@@ -101,6 +101,7 @@ def header(module: str, title: str, description: str, source: str | None, import
     head["prefixes"] = {
         "openpolicyagent": NAMESPACE,
         "linkml": "https://w3id.org/linkml/",
+        "schema": "http://schema.org/",
     }
     head["default_prefix"] = "openpolicyagent"
     head["default_range"] = "string"
@@ -334,7 +335,7 @@ def build_builtin_metadata() -> dict:
         "OpaBuiltinCategory": {
             "description": "A category of built-in functions.",
             "attributes": {
-                "name": attr(None, "The category's name.", identifier=True),
+                "name": attr(None, "The category's name.", key=True),
                 "builtins": attr(None, "The names of the category's functions.", multivalued=True, required=True),
             },
         },
@@ -387,7 +388,7 @@ def build_builtin_metadata() -> dict:
         "OpaImplementationSupport": {
             "description": "An implementation that supports a function, and the version that added it.",
             "attributes": {
-                "implementation": attr(None, "The implementation's id.", identifier=True),
+                "implementation": attr(None, "The implementation's id.", key=True),
                 "version": attr(None, "The implementation's version that added the function.", required=True),
             },
         },
@@ -420,7 +421,7 @@ def build_version_index() -> dict:
         "OpaVersionEntry": {
             "description": "A built-in function, feature or keyword, and the OPA version that introduced it.",
             "attributes": {
-                "name": attr(None, "The name of the function, feature or keyword.", identifier=True),
+                "name": attr(None, "The name of the function, feature or keyword.", key=True),
                 "major": attr("integer", "The major version.", alias="Major", required=True),
                 "minor": attr("integer", "The minor version.", alias="Minor", required=True),
                 "patch": attr("integer", "The patch version.", alias="Patch", required=True),
@@ -706,7 +707,7 @@ def build_bundle_manifest() -> dict:
     classes["OpaFileRegoVersion"] = {
         "description": "The Rego version of one file in the bundle.",
         "attributes": {
-            "path": attr(None, "The file's path in the bundle.", identifier=True),
+            "path": attr(None, "The file's path in the bundle.", key=True),
             "version": attr("integer", "The file's Rego version.", required=True),
         },
     }
@@ -781,6 +782,25 @@ def _str(dumper: yaml.Dumper, data: str) -> Any:
 _Dumper.add_representer(str, _str)
 
 
+# Keys whose meaning is LOKF's carry LOKF's IRI, so a composite's JSON-LD context reads
+# them alike in a concept and in a copy of this schema.
+SHARED_IRIS = {
+    "description": "schema:description",
+    "name": "schema:name",
+    "version": "schema:version",
+    "id": "schema:identifier",
+}
+
+
+def share_lokf_iris(schema: dict) -> None:
+    for cls in (schema.get("classes") or {}).values():
+        for key, slot in (cls.get("attributes") or {}).items():
+            # An integer version, a Wasm ABI's major number or a file's Rego
+            # version, is not LOKF's version string.
+            if key in SHARED_IRIS and "alias" not in slot and slot.get("range") != "integer":
+                slot["slot_uri"] = SHARED_IRIS[key]
+
+
 def render(schema: dict) -> str:
     body = yaml.dump(schema, Dumper=_Dumper, sort_keys=False, width=88, allow_unicode=True)
     note = "# Written by scripts/opa_to_linkml.py from OPA's files. Edit the script, not this file.\n"
@@ -794,7 +814,9 @@ def main(argv: list[str] | None = None) -> int:
     stale = []
     for module, build in MODULES.items():
         path = SCHEMA_DIR / f"{module}.yaml"
-        text = render(build())
+        schema = build()
+        share_lokf_iris(schema)
+        text = render(schema)
         if args.check:
             if not path.exists() or path.read_text(encoding="utf-8") != text:
                 stale.append(path.name)

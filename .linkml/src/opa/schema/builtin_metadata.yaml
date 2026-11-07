@@ -22,6 +22,7 @@ annotations:
 prefixes:
   openpolicyagent: https://w3id.org/lmodel/opa/
   linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
 default_prefix: openpolicyagent
 default_range: string
 imports:
@@ -54,7 +55,8 @@ classes:
     attributes:
       name:
         description: The category's name.
-        identifier: true
+        key: true
+        slot_uri: schema:name
       builtins:
         description: The names of the category's functions.
         multivalued: true
@@ -65,6 +67,7 @@ classes:
       id:
         description: The implementation's key in each function's `implementations`.
         required: true
+        slot_uri: schema:identifier
       label:
         description: The implementation's display name.
         required: true
@@ -74,11 +77,13 @@ classes:
       version:
         description: The implementation's version the catalogue reflects.
         required: true
+        slot_uri: schema:version
   OpaBuiltinMetadata:
     description: What the catalogue says about one built-in function.
     attributes:
       description:
         description: What the function does.
+        slot_uri: schema:description
       introduced:
         description: The OPA version that added the function.
         required: true
@@ -123,8 +128,10 @@ classes:
     attributes:
       name:
         description: The argument's name.
+        slot_uri: schema:name
       description:
         description: What the argument holds.
+        slot_uri: schema:description
       type:
         description: >-
           The argument's type, written as OPA prints types, such as `array[string]`.
@@ -134,8 +141,10 @@ classes:
     attributes:
       name:
         description: The result's name.
+        slot_uri: schema:name
       description:
         description: What the result holds.
+        slot_uri: schema:description
       type:
         description: The result's type, written as OPA prints types.
   OpaImplementationSupport:
@@ -144,7 +153,8 @@ classes:
     attributes:
       implementation:
         description: The implementation's id.
-        identifier: true
+        key: true
       version:
         description: The implementation's version that added the function.
         required: true
+        slot_uri: schema:version

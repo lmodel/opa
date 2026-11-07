@@ -5,6 +5,7 @@
       "opa_manifest": "https://openpolicyagent.org/schemas/bundle/v1/manifest.schema.json#/$defs/",
       "opa_plan": "https://openpolicyagent.org/schemas/ir/v1/plan.schema.json#/$defs/",
       "openpolicyagent": "https://w3id.org/lmodel/opa/",
+      "schema": "http://schema.org/",
       "skos": "http://www.w3.org/2004/02/skos/core#",
       "@vocab": "https://w3id.org/lmodel/opa/",
       "col": {
@@ -108,12 +109,14 @@
          "@id": "deprecated"
       },
       "description": {
-         "@id": "description"
+         "@id": "schema:description"
       },
       "infix": {
          "@id": "infix"
       },
-      "name": "@id",
+      "name": {
+         "@id": "schema:name"
+      },
       "nondeterministic": {
          "@type": "xsd:boolean",
          "@id": "nondeterministic"
@@ -207,7 +210,7 @@
          "@id": "variadic"
       },
       "id": {
-         "@id": "id"
+         "@id": "schema:identifier"
       },
       "label": {
          "@id": "label"
@@ -215,7 +218,9 @@
       "repo": {
          "@id": "repo"
       },
-      "implementation": "@id",
+      "implementation": {
+         "@id": "implementation"
+      },
       "capacity": {
          "@type": "xsd:integer",
          "@id": "capacity"

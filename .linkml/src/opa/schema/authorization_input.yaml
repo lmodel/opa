@@ -21,6 +21,7 @@ annotations:
 prefixes:
   openpolicyagent: https://w3id.org/lmodel/opa/
   linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
 default_prefix: openpolicyagent
 default_range: string
 imports:

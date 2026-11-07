@@ -21,6 +21,7 @@ annotations:
 prefixes:
   openpolicyagent: https://w3id.org/lmodel/opa/
   linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
 default_prefix: openpolicyagent
 default_range: string
 imports:
@@ -41,8 +42,10 @@ classes:
     attributes:
       name:
         description: The argument's or result's name, on a named type.
+        slot_uri: schema:name
       description:
         description: What the argument or result holds, on a named type.
+        slot_uri: schema:description
   OpaAnyType:
     is_a: OpaType
     description: A union of the types it lists in `of`, or any value when it lists none.

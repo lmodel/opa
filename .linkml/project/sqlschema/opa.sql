@@ -1190,10 +1190,13 @@ CREATE INDEX "ix_OpaWasmAbiVersion_id" ON "OpaWasmAbiVersion" (id);
 CREATE TABLE "OpaBuiltinCategory" (
 	name TEXT NOT NULL,
 	"OpaBuiltinMetadataCatalog_id" INTEGER,
-	PRIMARY KEY (name),
+	PRIMARY KEY (name, "OpaBuiltinMetadataCatalog_id"),
+	UNIQUE ("OpaBuiltinMetadataCatalog_id", name),
 	FOREIGN KEY("OpaBuiltinMetadataCatalog_id") REFERENCES "OpaBuiltinMetadataCatalog" (id)
 );
+CREATE INDEX "OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id_name_idx" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id", name);
 CREATE INDEX "ix_OpaBuiltinCategory_name" ON "OpaBuiltinCategory" (name);
+CREATE INDEX "ix_OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id");
 
 CREATE TABLE "OpaImplementation" (
 	uid INTEGER NOT NULL,
@@ -1228,19 +1231,28 @@ CREATE TABLE "OpaVersionEntry" (
 	"Patch" INTEGER NOT NULL,
 	"PreRelease" TEXT,
 	"OpaVersionIndex_id" INTEGER,
-	PRIMARY KEY (name),
+	PRIMARY KEY (name, "Major", "Minor", "Patch", "PreRelease", "OpaVersionIndex_id"),
+	UNIQUE ("OpaVersionIndex_id", name),
 	FOREIGN KEY("OpaVersionIndex_id") REFERENCES "OpaVersionIndex" (id)
 );
+CREATE INDEX "ix_OpaVersionEntry_OpaVersionIndex_id" ON "OpaVersionEntry" ("OpaVersionIndex_id");
+CREATE INDEX "OpaVersionEntry_OpaVersionIndex_id_name_idx" ON "OpaVersionEntry" ("OpaVersionIndex_id", name);
+CREATE INDEX "ix_OpaVersionEntry_Patch" ON "OpaVersionEntry" ("Patch");
 CREATE INDEX "ix_OpaVersionEntry_name" ON "OpaVersionEntry" (name);
+CREATE INDEX "ix_OpaVersionEntry_Major" ON "OpaVersionEntry" ("Major");
+CREATE INDEX "ix_OpaVersionEntry_PreRelease" ON "OpaVersionEntry" ("PreRelease");
+CREATE INDEX "ix_OpaVersionEntry_Minor" ON "OpaVersionEntry" ("Minor");
 
 CREATE TABLE "OpaFileRegoVersion" (
 	path TEXT NOT NULL,
 	version INTEGER NOT NULL,
 	"OpaManifest_id" INTEGER,
-	PRIMARY KEY (path),
+	PRIMARY KEY (path, version, "OpaManifest_id"),
 	FOREIGN KEY("OpaManifest_id") REFERENCES "OpaManifest" (id)
 );
 CREATE INDEX "ix_OpaFileRegoVersion_path" ON "OpaFileRegoVersion" (path);
+CREATE INDEX "ix_OpaFileRegoVersion_OpaManifest_id" ON "OpaFileRegoVersion" ("OpaManifest_id");
+CREATE INDEX "ix_OpaFileRegoVersion_version" ON "OpaFileRegoVersion" (version);
 
 CREATE TABLE "OpaPolicy" (
 	id INTEGER NOT NULL,
@@ -1498,8 +1510,8 @@ CREATE TABLE "OpaAuthorizationInput_path" (
 	PRIMARY KEY ("OpaAuthorizationInput_id", path),
 	FOREIGN KEY("OpaAuthorizationInput_id") REFERENCES "OpaAuthorizationInput" (id)
 );
-CREATE INDEX "ix_OpaAuthorizationInput_path_OpaAuthorizationInput_id" ON "OpaAuthorizationInput_path" ("OpaAuthorizationInput_id");
 CREATE INDEX "ix_OpaAuthorizationInput_path_path" ON "OpaAuthorizationInput_path" (path);
+CREATE INDEX "ix_OpaAuthorizationInput_path_OpaAuthorizationInput_id" ON "OpaAuthorizationInput_path" ("OpaAuthorizationInput_id");
 
 CREATE TABLE "OpaManifest_roots" (
 	"OpaManifest_id" INTEGER,
@@ -1545,10 +1557,14 @@ CREATE TABLE "OpaImplementationSupport" (
 	implementation TEXT NOT NULL,
 	version TEXT NOT NULL,
 	"OpaBuiltinMetadata_id" INTEGER,
-	PRIMARY KEY (implementation),
+	PRIMARY KEY (implementation, version, "OpaBuiltinMetadata_id"),
+	UNIQUE ("OpaBuiltinMetadata_id", implementation),
 	FOREIGN KEY("OpaBuiltinMetadata_id") REFERENCES "OpaBuiltinMetadata" (id)
 );
+CREATE INDEX "OpaImplementationSupport_OpaBuiltinMetadata_id_implementation_idx" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id", implementation);
+CREATE INDEX "ix_OpaImplementationSupport_OpaBuiltinMetadata_id" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id");
 CREATE INDEX "ix_OpaImplementationSupport_implementation" ON "OpaImplementationSupport" (implementation);
+CREATE INDEX "ix_OpaImplementationSupport_version" ON "OpaImplementationSupport" (version);
 
 CREATE TABLE "OpaBlock" (
 	id INTEGER NOT NULL,
@@ -1766,8 +1782,8 @@ CREATE TABLE "OpaBuiltin_categories" (
 	PRIMARY KEY ("OpaBuiltin_id", categories),
 	FOREIGN KEY("OpaBuiltin_id") REFERENCES "OpaBuiltin" (id)
 );
-CREATE INDEX "ix_OpaBuiltin_categories_categories" ON "OpaBuiltin_categories" (categories);
 CREATE INDEX "ix_OpaBuiltin_categories_OpaBuiltin_id" ON "OpaBuiltin_categories" ("OpaBuiltin_id");
+CREATE INDEX "ix_OpaBuiltin_categories_categories" ON "OpaBuiltin_categories" (categories);
 
 CREATE TABLE "OpaBuiltinCategory_builtins" (
 	"OpaBuiltinCategory_name" TEXT,
@@ -2020,5 +2036,5 @@ CREATE TABLE "OpaWithStmtBody_path" (
 	PRIMARY KEY ("OpaWithStmtBody_id", path),
 	FOREIGN KEY("OpaWithStmtBody_id") REFERENCES "OpaWithStmtBody" (id)
 );
-CREATE INDEX "ix_OpaWithStmtBody_path_OpaWithStmtBody_id" ON "OpaWithStmtBody_path" ("OpaWithStmtBody_id");
 CREATE INDEX "ix_OpaWithStmtBody_path_path" ON "OpaWithStmtBody_path" (path);
+CREATE INDEX "ix_OpaWithStmtBody_path_OpaWithStmtBody_id" ON "OpaWithStmtBody_path" ("OpaWithStmtBody_id");
