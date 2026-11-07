@@ -19,6 +19,7 @@ exclude = [
     'blog\.openpolicyagent\.org',
     'itnext\.io',
     'stacklok\.com',
+    'linkedin\.com',
     # These domains frequently timeout, causing false positives
     # e.g. https://github.com/open-policy-agent/opa/issues/8495
     'opa-docs\.netlify\.app',
@@ -26,6 +27,9 @@ exclude = [
     'openpolicycontainers\.com',
     'permit\.io',
     'aserto\.com',
+    'web\.archive\.org',
+    # Broken historical release link referenced in builtin metadata docs, won't be fixed
+    'github\.com/open-policy-agent/opa/releases/v0\.25\.0-rc2',
 ]
 
 exclude_path = [

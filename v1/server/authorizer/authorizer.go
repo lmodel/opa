@@ -167,7 +167,7 @@ func (b *Basic) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 var emptyQuery = url.Values{}
 
 func makeInput(r *http.Request, extraPaths []func(string, []any) bool) (*http.Request, any, error) {
-	path, err := parsePath(r.URL.Path)
+	path, err := parsePath(r.URL)
 	if err != nil {
 		return r, nil, err
 	}
@@ -226,23 +226,25 @@ func makeInput(r *http.Request, extraPaths []func(string, []any) bool) (*http.Re
 	return r, input, nil
 }
 
-var dataAPIVersions = map[string]bool{
-	"v0": true,
-	"v1": true,
+// bodyAPIs are the version and API name pairs whose POST requests carry a
+// body the authorizer exposes as input.body.
+var bodyAPIs = map[[2]string]bool{
+	{"v0", "data"}:    true,
+	{"v1", "data"}:    true,
+	{"v1", "compile"}: true,
+	{"v1", "query"}:   true,
 }
 
 func expectBody(method string, path []any) bool {
-	if method == http.MethodPost {
-		if len(path) == 1 {
-			s := path[0].(string)
-			return s == ""
-		} else if len(path) >= 2 {
-			s1 := path[0].(string)
-			s2 := path[1].(string)
-			return dataAPIVersions[s1] && s2 == "data"
-		}
+	if method != http.MethodPost || len(path) == 0 {
+		return false
 	}
-	return false
+	if len(path) == 1 {
+		return path[0] == "" // POST / queries the default decision
+	}
+	version, _ := path[0].(string)
+	api, _ := path[1].(string)
+	return bodyAPIs[[2]string{version, api}]
 }
 
 func checkExtraExpectedReqBodyPaths(validators []func(string, []any) bool, method string, path []any) bool {
@@ -261,21 +263,38 @@ func expectYAML(r *http.Request) bool {
 	return strings.Contains(r.Header.Get("Content-Type"), "yaml")
 }
 
-func parsePath(path string) ([]any, error) {
-	if len(path) == 0 {
+// decodedPathPrefixes are the APIs whose handlers resolve the decoded path, so
+// "a%2Fb" and "a/b" target the same resource there.
+var decodedPathPrefixes = []string{"/v1/policies/", "/v1/compile/"}
+
+// parsePath splits the request path into input.path. It must match how the
+// server resolves the targeted resource: the Data and Health APIs split the
+// escaped path so that an encoded slash (%2F) is part of a segment rather than
+// a separator, whereas the Policies and Compile APIs use the decoded path.
+func parsePath(u *url.URL) ([]any, error) {
+	if len(u.Path) == 0 {
 		return []any{}, nil
 	}
-	parts := strings.Split(path[1:], "/")
-	for i := range parts {
-		var err error
-		parts[i], err = url.PathUnescape(parts[i])
-		if err != nil {
-			return nil, err
+	for _, prefix := range decodedPathPrefixes {
+		if strings.HasPrefix(u.Path, prefix) {
+			return splitPath(u.Path, false)
 		}
 	}
+	return splitPath(u.EscapedPath(), true)
+}
+
+func splitPath(path string, unescape bool) ([]any, error) {
+	parts := strings.Split(path[1:], "/")
 	sl := make([]any, len(parts))
-	for i := range sl {
+	for i := range parts {
 		sl[i] = parts[i]
+		if unescape {
+			p, err := url.PathUnescape(parts[i])
+			if err != nil {
+				return nil, err
+			}
+			sl[i] = p
+		}
 	}
 	return sl, nil
 }

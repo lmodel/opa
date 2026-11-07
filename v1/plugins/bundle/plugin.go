@@ -29,6 +29,7 @@ import (
 	"github.com/open-policy-agent/opa/v1/metrics"
 	"github.com/open-policy-agent/opa/v1/plugins"
 	"github.com/open-policy-agent/opa/v1/storage"
+	"github.com/open-policy-agent/opa/v1/util"
 )
 
 // maxActivationRetry represents the maximum number of attempts
@@ -330,6 +331,26 @@ func (p *Plugin) UnregisterBulkListener(name any) {
 	delete(p.bulkListeners, name)
 }
 
+// NotActivated returns the sorted names of configured bundles that are keeping
+// the plugin from becoming ready, i.e. bundles that have not been activated yet.
+func (p *Plugin) NotActivated() []string {
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+
+	var names []string
+	for name, status := range p.status {
+		if !activated(status) {
+			names = append(names, name)
+		}
+	}
+
+	return util.Sorted(names)
+}
+
+func activated(status *Status) bool {
+	return len(status.Errors) == 0 && !status.LastSuccessfulActivation.IsZero()
+}
+
 // Config returns the plugins current configuration
 func (p *Plugin) Config() *Config {
 	p.cfgMtx.RLock()
@@ -435,6 +456,12 @@ func (p *Plugin) loadAndActivateBundlesFromDisk(ctx context.Context) {
 }
 
 func (p *Plugin) newDownloader(name string, source *Source, bundles map[string]*Source) Loader {
+	if source.Signing != nil && !source.Signing.SignatureRequired() {
+		p.log(name).Warn("Keys are configured but no \"signing\" block is set for this bundle: " +
+			"a signature is verified when present, but a bundle without a .signatures.json file is accepted. " +
+			"Add a \"signing\" block to require signatures.")
+	}
+
 	if u, err := url.Parse(source.Resource); err == nil && u.Scheme == "file" {
 		return &fileLoader{
 			name:             name,
@@ -454,7 +481,7 @@ func (p *Plugin) newDownloader(name string, source *Source, bundles map[string]*
 		return p.oneShot(ctx, name, u)
 	}
 	if strings.ToLower(client.Config().Type) == "oci" {
-		ociStorePath := filepath.Join(os.TempDir(), "opa", "oci") // use temporary folder /tmp/opa/oci
+		ociStorePath := ""
 		if cfg := p.manager.GetConfig(); cfg.PersistenceDirectory != nil {
 			ociStorePath = filepath.Join(*cfg.PersistenceDirectory, "oci")
 		}
@@ -591,7 +618,7 @@ func (p *Plugin) checkPluginReadiness() {
 	if !p.ready {
 		readyNow := true // optimistically
 		for _, status := range p.status {
-			if len(status.Errors) > 0 || status.LastSuccessfulActivation.IsZero() {
+			if !activated(status) {
 				readyNow = false // Not ready yet, check again on next bundle activation.
 				break
 			}

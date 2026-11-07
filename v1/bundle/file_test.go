@@ -210,7 +210,7 @@ func TestTarballLoaderWithFilter(t *testing.T) {
 		}
 
 		loader := NewTarballLoaderWithBaseURL(f, tarballFile).WithFilter(func(abspath string, info os.FileInfo, depth int) bool {
-			return getFilter("*_test.rego", 1)(abspath, info, depth)
+			return getFilter("*_test.rego")(abspath, info, depth)
 		})
 
 		defer f.Close()
@@ -262,7 +262,7 @@ func TestTarballLoaderWithFilterDir(t *testing.T) {
 		}
 
 		loader := NewTarballLoaderWithBaseURL(f, tarballFile).WithFilter(func(abspath string, info os.FileInfo, depth int) bool {
-			return getFilter("*_test.rego", 1)(abspath, info, depth)
+			return getFilter("*_test.rego")(abspath, info, depth)
 		})
 
 		defer f.Close()
@@ -322,7 +322,7 @@ func TestDirectoryLoaderWithFilter(t *testing.T) {
 	test.WithTempFS(files, func(rootDir string) {
 
 		dl := NewDirectoryLoader(rootDir).WithFilter(func(abspath string, info os.FileInfo, depth int) bool {
-			return getFilter("*_test.rego", 1)(abspath, info, depth)
+			return getFilter("*_test.rego")(abspath, info, depth)
 		})
 
 		fileCount := 0
@@ -371,7 +371,7 @@ func TestDirectoryLoaderWithFilterDir(t *testing.T) {
 	test.WithTempFS(files, func(rootDir string) {
 
 		dl := NewDirectoryLoader(rootDir).WithFilter(func(abspath string, info os.FileInfo, depth int) bool {
-			return getFilter("a", 1)(abspath, info, depth)
+			return getFilter("a")(abspath, info, depth)
 		})
 
 		fileCount := 0
@@ -454,7 +454,7 @@ func testLoader(t *testing.T, loader DirectoryLoader, baseURL string, expectedFi
 		if err != nil && err != io.EOF {
 			t.Fatalf("Unexpected error: %s", err)
 		} else if err == nil && n >= testReadLimit {
-			t.Fatalf("Attempted to read too much data")
+			t.Fatal("Attempted to read too much data")
 		}
 
 		expectedContent, found := expectedFiles[f.Path()]
@@ -538,9 +538,53 @@ func TestNewDirectoryLoaderNormalizedRoot(t *testing.T) {
 	}
 }
 
-func getFilter(pattern string, minDepth int) filter.LoaderFilter {
+func getFilter(pattern string) filter.LoaderFilter {
 	return func(_ string, info os.FileInfo, depth int) bool {
 		match, _ := filepath.Match(pattern, info.Name())
-		return match && depth >= minDepth
+		return match && depth >= 1
+	}
+}
+
+func TestFormatPathChrootedManifests(t *testing.T) {
+	sep := string(filepath.Separator)
+	cases := []struct {
+		note     string
+		fileName string
+		root     string
+		want     string
+	}{
+		{
+			note:     "json manifest at chroot .",
+			fileName: ".manifest",
+			root:     ".",
+			want:     sep + ".manifest",
+		},
+		{
+			note:     "proto manifest at chroot .",
+			fileName: ".manifest.pb",
+			root:     ".",
+			want:     sep + ".manifest.pb",
+		},
+		{
+			note:     "json manifest at named chroot",
+			fileName: filepath.Join("a", "b", ".manifest"),
+			root:     filepath.Join("a", "b"),
+			want:     sep + ".manifest",
+		},
+		{
+			note:     "proto manifest at named chroot",
+			fileName: filepath.Join("a", "b", ".manifest.pb"),
+			root:     filepath.Join("a", "b"),
+			want:     sep + ".manifest.pb",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.note, func(t *testing.T) {
+			got := formatPath(tc.fileName, tc.root, Chrooted)
+			if got != tc.want {
+				t.Fatalf("formatPath(%q, %q, Chrooted) = %q, want %q", tc.fileName, tc.root, got, tc.want)
+			}
+		})
 	}
 }

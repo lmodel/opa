@@ -69,7 +69,7 @@ func TestLogical_ExplicitFlagsIgnoredByCompare(t *testing.T) {
 	b.ExplicitLhs = true
 	b.ExplicitRhs = true
 	if a.Compare(b) != 0 {
-		t.Fatalf("LogicalAnd.Compare should ignore Explicit flags")
+		t.Fatal("LogicalAnd.Compare should ignore Explicit flags")
 	}
 
 	c := newLogicalOr("x", "y")
@@ -77,7 +77,7 @@ func TestLogical_ExplicitFlagsIgnoredByCompare(t *testing.T) {
 	d.ExplicitLhs = true
 	d.ExplicitRhs = true
 	if c.Compare(d) != 0 {
-		t.Fatalf("LogicalOr.Compare should ignore Explicit flags")
+		t.Fatal("LogicalOr.Compare should ignore Explicit flags")
 	}
 }
 
@@ -100,7 +100,7 @@ func TestLogical_Copy_IsDeep(t *testing.T) {
 	// Mutating the copy must not affect the original.
 	cpy.Lhs[0].Terms = VarTerm("z")
 	if Compare(orig.Lhs, cpy.Lhs) == 0 {
-		t.Fatalf("mutating copy.Lhs leaked back to original")
+		t.Fatal("mutating copy.Lhs leaked back to original")
 	}
 }
 
@@ -165,6 +165,14 @@ func TestLogical_String(t *testing.T) {
 			want: "{ x } and { y }",
 		},
 		{
+			note: "and, implicit multi-expr body",
+			node: &LogicalAnd{
+				Lhs: NewBody(NewExpr(VarTerm("x")), NewExpr(VarTerm("y"))),
+				Rhs: NewBody(NewExpr(VarTerm("z"))),
+			},
+			want: "{ x; y } and z",
+		},
+		{
 			note: "or, explicit lhs",
 			node: &LogicalOr{
 				Lhs:         NewBody(NewExpr(VarTerm("x")), NewExpr(VarTerm("a"))),
@@ -192,6 +200,91 @@ func TestLogical_String(t *testing.T) {
 			},
 			want: "{ x } or { y }",
 		},
+		{
+			note: "or, implicit multi-expr body",
+			node: &LogicalOr{
+				Lhs: NewBody(NewExpr(VarTerm("x")), NewExpr(VarTerm("y"))),
+				Rhs: NewBody(NewExpr(VarTerm("z"))),
+			},
+			want: "{ x; y } or z",
+		},
+
+		// Paren emission
+		{
+			note: "or under and (rhs) gets parens",
+			node: &LogicalAnd{
+				Lhs: NewBody(NewExpr(VarTerm("x"))),
+				Rhs: NewBody(NewExpr(newLogicalOr("a", "b"))),
+			},
+			want: "x and (a or b)",
+		},
+		{
+			note: "or under and (lhs) gets parens",
+			node: &LogicalAnd{
+				Lhs: NewBody(NewExpr(newLogicalOr("a", "b"))),
+				Rhs: NewBody(NewExpr(VarTerm("x"))),
+			},
+			want: "(a or b) and x",
+		},
+		{
+			note: "and under or needs no parens",
+			node: &LogicalOr{
+				Lhs: NewBody(NewExpr(VarTerm("x"))),
+				Rhs: NewBody(NewExpr(newLogicalAnd("a", "b"))),
+			},
+			want: "x or a and b",
+		},
+		{
+			note: "same-op or rhs gets parens",
+			node: &LogicalOr{
+				Lhs: NewBody(NewExpr(VarTerm("x"))),
+				Rhs: NewBody(NewExpr(newLogicalOr("a", "b"))),
+			},
+			want: "x or (a or b)",
+		},
+		{
+			note: "same-op or lhs needs no parens",
+			node: &LogicalOr{
+				Lhs: NewBody(NewExpr(newLogicalOr("a", "b"))),
+				Rhs: NewBody(NewExpr(VarTerm("x"))),
+			},
+			want: "a or b or x",
+		},
+		{
+			note: "same-op and rhs gets parens",
+			node: &LogicalAnd{
+				Lhs: NewBody(NewExpr(VarTerm("x"))),
+				Rhs: NewBody(NewExpr(newLogicalAnd("a", "b"))),
+			},
+			want: "x and (a and b)",
+		},
+		{
+			note: "value operand gets parens",
+			node: &LogicalAnd{
+				Lhs: NewBody(NewExpr(SetTerm(VarTerm("a")))),
+				Rhs: NewBody(NewExpr(VarTerm("b"))),
+			},
+			want: "({a}) and b",
+		},
+		{
+			note: "value operand rhs gets parens",
+			node: &LogicalOr{
+				Lhs: NewBody(NewExpr(VarTerm("a"))),
+				Rhs: NewBody(NewExpr(ObjectTerm())),
+			},
+			want: "a or ({})",
+		},
+		{
+			note: "operand with modifier gets parens",
+			node: &LogicalOr{
+				Lhs: NewBody(&Expr{
+					Terms: VarTerm("a"),
+					With:  []*With{{Target: NewTerm(InputRootRef), Value: VarTerm("v")}},
+				}),
+				Rhs: NewBody(NewExpr(VarTerm("b"))),
+			},
+			want: "(a with input as v) or b",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.note, func(t *testing.T) {
@@ -217,7 +310,7 @@ func TestIsAnd(t *testing.T) {
 		t.Fatalf("IsAnd/IsOr wrong on And expr: IsAnd=%v IsOr=%v", and.IsAnd(), and.IsOr())
 	}
 	if plain.IsAnd() {
-		t.Fatalf("IsAnd should be false for plain expr")
+		t.Fatal("IsAnd should be false for plain expr")
 	}
 }
 
@@ -229,11 +322,11 @@ func TestIsOr(t *testing.T) {
 		t.Fatalf("IsAnd/IsOr wrong on Or expr: IsAnd=%v IsOr=%v", or.IsAnd(), or.IsOr())
 	}
 	if plain.IsOr() {
-		t.Fatalf("IsOr should be false for plain expr")
+		t.Fatal("IsOr should be false for plain expr")
 	}
 }
 
-func TestExpr_NewExprAcceptsLogicalAndOr(t *testing.T) {
+func TestExpr_NewExprAcceptsLogicalAndOr(*testing.T) {
 	// Must not panic
 	NewExpr(newLogicalAnd("x", "y"))
 	NewExpr(newLogicalOr("x", "y"))
@@ -243,12 +336,12 @@ func TestLogicalAnd_CompareViaExpr(t *testing.T) {
 	a := NewExpr(newLogicalAnd("x", "y"))
 	b := NewExpr(newLogicalAnd("x", "y"))
 	if a.Compare(b) != 0 {
-		t.Fatalf("equal And exprs should compare equal")
+		t.Fatal("equal And exprs should compare equal")
 	}
 
 	c := NewExpr(newLogicalOr("x", "y"))
 	if a.Compare(c) == 0 {
-		t.Fatalf("And and Or exprs should not compare equal")
+		t.Fatal("And and Or exprs should not compare equal")
 	}
 }
 
@@ -421,10 +514,8 @@ func TestLogicalAnd_MarshalJSON(t *testing.T) {
 			astJSON.SetOptions(tc.options)
 			t.Cleanup(resetJSONOptions)
 
-			got := string(util.MustMarshalJSON(tc.node))
-			if got != tc.want {
-				t.Fatalf("MarshalJSON:\nwant: %s\ngot:  %s", tc.want, got)
-			}
+			got := util.MustMarshalJSON(tc.node)
+			assertJsonEqual(t, tc.want, got)
 		})
 	}
 }
@@ -491,10 +582,8 @@ func TestLogicalOr_MarshalJSON(t *testing.T) {
 			astJSON.SetOptions(tc.options)
 			t.Cleanup(resetJSONOptions)
 
-			got := string(util.MustMarshalJSON(tc.node))
-			if got != tc.want {
-				t.Fatalf("MarshalJSON:\nwant: %s\ngot:  %s", tc.want, got)
-			}
+			got := util.MustMarshalJSON(tc.node)
+			assertJsonEqual(t, tc.want, got)
 		})
 	}
 }

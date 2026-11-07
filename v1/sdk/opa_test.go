@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -48,6 +49,72 @@ import (
 	"github.com/open-policy-agent/opa/v1/util/test"
 	"github.com/open-policy-agent/opa/v1/version"
 )
+
+func TestDecisionRegoV2(t *testing.T) {
+	// `or` without an import only parses at a v2 baseline.
+	module := `package system
+
+main if {
+	input.a or input.b
+}
+`
+
+	tests := []struct {
+		note        string
+		regoVersion ast.RegoVersion
+		files       map[string]string
+	}{
+		{
+			note:  "v2 bundle",
+			files: map[string]string{"/.manifest": `{"rego_version": 2}`, "main.rego": module},
+		},
+		{
+			note:        "v2 runtime",
+			regoVersion: ast.RegoV2,
+			files:       map[string]string{"main.rego": module},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			ctx := t.Context()
+
+			server := sdktest.MustNewServer(
+				sdktest.RawBundles(true),
+				sdktest.MockBundle("/bundles/bundle.tar.gz", tc.files),
+			)
+			defer server.Stop()
+
+			config := fmt.Sprintf(`{
+				"services": {
+					"test": {
+						"url": %q
+					}
+				},
+				"bundles": {
+					"test": {
+						"resource": "/bundles/bundle.tar.gz"
+					}
+				}
+			}`, server.URL())
+
+			opa, err := sdk.New(ctx, sdk.Options{
+				Config:      strings.NewReader(config),
+				RegoVersion: tc.regoVersion,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer opa.Stop(ctx)
+
+			if result, err := opa.Decision(ctx, sdk.DecisionOptions{Input: map[string]any{"b": true}}); err != nil {
+				t.Fatal(err)
+			} else if decision, ok := result.Result.(bool); !ok || !decision {
+				t.Fatal("expected true but got:", result.Result)
+			}
+		})
+	}
+}
 
 func TestDefaultRegoVersion(t *testing.T) {
 
@@ -881,7 +948,7 @@ main = time.now_ns()
 	}
 
 	if entries[0].Fields["decision_id"] == "" {
-		t.Fatalf("expected not empty decision_id")
+		t.Fatal("expected not empty decision_id")
 	}
 
 	if entries[1].Fields["decision_id"] != "164031de-e511-11ec-8fea-0242ac120002" {
@@ -956,11 +1023,11 @@ allow if {
 
 	// just checking for existence, since it's a complex value
 	if entries[0].Fields["mapped_result"] == nil {
-		t.Fatalf("expected not nil value for mapped_result but got nil")
+		t.Fatal("expected not nil value for mapped_result but got nil")
 	}
 
 	if entries[0].Fields["result"] == nil {
-		t.Fatalf("expected not nil value for result but got nil")
+		t.Fatal("expected not nil value for result but got nil")
 	}
 
 	if entries[0].Fields["timestamp"] != "2021-05-01T11:23:14.450288Z" {
@@ -1468,7 +1535,7 @@ allow if {
 	}
 
 	if entries[0].Fields["decision_id"] == "" {
-		t.Fatalf("expected not empty decision_id")
+		t.Fatal("expected not empty decision_id")
 	}
 
 	if entries[1].Fields["decision_id"] != "164031de-e511-11ec-8fea-0242ac120002" {
@@ -1831,16 +1898,106 @@ main = time.now_ns()
 	if cache, ok := entries[0].Fields["nd_builtin_cache"]; ok {
 		// Ensure the original cache entry for rand.intn is still there.
 		if _, ok := cache.(map[string]any)["rand.intn"]; !ok {
-			t.Fatalf("ND builtins cache was not preserved during evaluation.")
+			t.Fatal("ND builtins cache was not preserved during evaluation.")
 		}
 		// Ensure time.now_ns entry was picked up correctly.
 		if _, ok := cache.(map[string]any)["time.now_ns"]; !ok {
-			t.Fatalf("ND builtins cache did not observe time.now_ns call during evaluation.")
+			t.Fatal("ND builtins cache did not observe time.now_ns call during evaluation.")
 		}
 	} else {
-		t.Fatalf("ND builtins cache missing.")
+		t.Fatal("ND builtins cache missing.")
 	}
 
+}
+
+func TestDecisionLoggingWithNDBCacheMasking(t *testing.T) {
+
+	ctx := t.Context()
+
+	server := sdktest.MustNewServer(
+		sdktest.MockBundle("/bundles/bundle.tar.gz", map[string]string{
+			"main.rego": `
+package system
+
+main = time.now_ns()
+`,
+			"log.rego": `
+package system.log
+import rego.v1
+
+mask contains "/nd_builtin_cache/rand.intn"
+mask contains "/input/secret"
+`,
+		}),
+	)
+
+	defer server.Stop()
+
+	config := fmt.Sprintf(`{
+		"services": {
+			"test": {
+				"url": %q
+			}
+		},
+		"bundles": {
+			"test": {
+				"resource": "/bundles/bundle.tar.gz"
+			}
+		},
+		"decision_logs": {
+			"console": true,
+			"nd_builtin_cache": true
+		}
+	}`, server.URL())
+
+	testLogger := loggingtest.New()
+	opa, err := sdk.New(ctx, sdk.Options{
+		Config:        strings.NewReader(config),
+		ConsoleLogger: testLogger,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer opa.Stop(ctx)
+
+	ndbc := builtins.NDBCache{}
+	ndbc.Put("rand.intn", ast.NewArray(ast.StringTerm("z"), ast.IntNumberTerm(7)), ast.Number("3"))
+
+	if _, err := opa.Decision(ctx, sdk.DecisionOptions{
+		Now:      time.Unix(0, 1619868194450288000).UTC(),
+		Input:    map[string]any{"secret": "foo", "keep": "bar"},
+		NDBCache: ndbc,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	entries := testLogger.Entries()
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 entry but got %d", len(entries))
+	}
+
+	// Control: an identically shaped /input rule must erase, proving masking is live
+	// and the policy loaded. Without this a failure below is ambiguous.
+	erased, _ := entries[0].Fields["erased"].([]any)
+	expectedErased := []any{"/input/secret", "/nd_builtin_cache/rand.intn"}
+	stringLess := func(a, b string) bool { return a < b }
+	if !cmp.Equal(expectedErased, erased, cmpopts.SortSlices(stringLess)) {
+		t.Errorf("unexpected erased field in decision log:\n%s", cmp.Diff(expectedErased, erased, cmpopts.SortSlices(stringLess)))
+	}
+
+	cache, ok := entries[0].Fields["nd_builtin_cache"].(map[string]any)
+	if !ok {
+		t.Fatal("ND builtins cache missing.")
+	}
+	if _, ok := cache["rand.intn"]; ok {
+		t.Error(`Expected masked field "/nd_builtin_cache/rand.intn" to be removed, but it was present.`)
+	}
+	// Control: the sibling entry must survive, so this is a sub-path erase and not a
+	// whole-object erase that would pass the assertion above for the wrong reason.
+	if _, ok := cache["time.now_ns"]; !ok {
+		t.Error("Unmasked ND builtins cache entry time.now_ns was removed.")
+	}
 }
 
 func TestQueryCaching(t *testing.T) {
@@ -1960,6 +2117,54 @@ main = 7
 		t.Fatalf("expected %v but got %v", exp, result.Result)
 	}
 
+}
+
+func TestBundleRootWithSpace(t *testing.T) {
+	ctx := t.Context()
+
+	buf := archive.MustWriteTarGz([][2]string{
+		{"/.manifest", `{"revision": "abc", "roots": ["a/b/foo bar"]}`},
+		{"/a/b/foo bar/data.json", `{"hello": "world"}`},
+	})
+	bs := buf.Bytes()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/gzip")
+		_, _ = w.Write(bs)
+	}))
+
+	defer server.Close()
+
+	config := fmt.Sprintf(`{
+		"services": {
+			"test": {
+				"url": %q
+			}
+		},
+		"bundles": {
+			"test": {
+				"resource": "/bundles/bundle.tar.gz"
+			}
+		}
+	}`, server.URL)
+
+	// sdk.New blocks until the bundle has been activated.
+	opa, err := sdk.New(ctx, sdk.Options{
+		Config: strings.NewReader(config),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer opa.Stop(ctx)
+
+	exp := map[string]any{"hello": "world"}
+
+	if result, err := opa.Decision(ctx, sdk.DecisionOptions{Path: "/a/b/foo bar"}); err != nil {
+		t.Fatal(err)
+	} else if !reflect.DeepEqual(result.Result, exp) {
+		t.Fatalf("expected %v but got %v", exp, result.Result)
+	}
 }
 
 func TestDiscoveryBundleRegoV1(t *testing.T) {
@@ -2279,6 +2484,18 @@ main := 7 if {
 `,
 		},
 		{
+			note: "0.x compatible, rego.v2 imported",
+			policy: `
+package system
+
+import rego.v2
+
+main := 7 if {
+	false or not { false }
+}
+`,
+		},
+		{
 			note:         "1.0 compatible, keywords not imported",
 			v1Compatible: true,
 			policy: `
@@ -2316,6 +2533,19 @@ main := 7 if {
 `,
 		},
 		{
+			note:         "1.0 compatible, rego.v2 imported",
+			v1Compatible: true,
+			policy: `
+package system
+
+import rego.v2
+
+main := 7 if {
+	false or not { false }
+}
+`,
+		},
+		{
 			note:         "1.0 compatible, keywords not used",
 			v1Compatible: true,
 			policy: `
@@ -2331,63 +2561,62 @@ main := 7 {
 
 	for _, tc := range tests {
 		t.Run(tc.note, func(t *testing.T) {
-			test.WithTempFS(map[string]string{}, func(rootDir string) {
-				f, err := os.Create(filepath.Join(rootDir, "bundle.tar.gz"))
-				if err != nil {
-					t.Fatal(err)
-				}
-				buf := archive.MustWriteTarGz([][2]string{{"main.rego", tc.policy}})
-				_, err = f.Write(buf.Bytes())
-				if err != nil {
-					t.Fatal(err)
-				}
+			rootDir := t.TempDir()
+			f, err := os.Create(filepath.Join(rootDir, "bundle.tar.gz"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			buf := archive.MustWriteTarGz([][2]string{{"main.rego", tc.policy}})
+			_, err = f.Write(buf.Bytes())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-				c := fmt.Sprintf(`services:
+			c := fmt.Sprintf(`services:
 bundles:
   test:
     resource: "file://%s/bundle.tar.gz"`, rootDir)
 
-				var readyCh chan struct{}
-				logger := loggingtest.New()
-				logger.SetLevel(logging.Info)
-				if tc.expErr != "" {
-					readyCh = make(chan struct{})
-				}
+			var readyCh chan struct{}
+			logger := loggingtest.New()
+			logger.SetLevel(logging.Info)
+			if tc.expErr != "" {
+				readyCh = make(chan struct{})
+			}
 
-				ctx := t.Context()
-				opa, err := sdk.New(ctx, sdk.Options{
-					Logger:       logger,
-					Ready:        readyCh,
-					Config:       strings.NewReader(c),
-					RegoVersion:  ast.RegoV0,
-					V1Compatible: tc.v1Compatible,
-				})
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if tc.expErr != "" {
-					if !test.Eventually(t, 5*time.Second, func() bool {
-						entries := logger.Entries()
-						for _, e := range entries {
-							if strings.Contains(e.Message, tc.expErr) {
-								return true
-							}
-						}
-						return false
-					}) {
-						t.Fatalf("timed out waiting for logged error:\n\n%s\n\ngot\n\n%v:", tc.expErr, logger.Entries())
-					}
-				} else {
-					exp := json.Number("7")
-
-					if result, err := opa.Decision(ctx, sdk.DecisionOptions{}); err != nil {
-						t.Fatal(err)
-					} else if result.Result != exp {
-						t.Fatalf("expected %v but got %v", exp, result.Result)
-					}
-				}
+			ctx := t.Context()
+			opa, err := sdk.New(ctx, sdk.Options{
+				Logger:       logger,
+				Ready:        readyCh,
+				Config:       strings.NewReader(c),
+				RegoVersion:  ast.RegoV0,
+				V1Compatible: tc.v1Compatible,
 			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if tc.expErr != "" {
+				if !test.Eventually(t, 5*time.Second, func() bool {
+					entries := logger.Entries()
+					for _, e := range entries {
+						if strings.Contains(e.Message, tc.expErr) {
+							return true
+						}
+					}
+					return false
+				}) {
+					t.Fatalf("timed out waiting for logged error:\n\n%s\n\ngot\n\n%v:", tc.expErr, logger.Entries())
+				}
+			} else {
+				exp := json.Number("7")
+
+				if result, err := opa.Decision(ctx, sdk.DecisionOptions{}); err != nil {
+					t.Fatal(err)
+				} else if result.Result != exp {
+					t.Fatalf("expected %v but got %v", exp, result.Result)
+				}
+			}
 		})
 	}
 }
@@ -2998,8 +3227,8 @@ loopback = input
 
 	registeredMetrics := toMetricMap(m)
 
-	if registeredMetrics["opa_info"] == false {
-		t.Errorf("expected metric 'opa_info' to be registered but it was not")
+	if !registeredMetrics["opa_info"] {
+		t.Error("expected metric 'opa_info' to be registered but it was not")
 	}
 }
 
@@ -3195,4 +3424,106 @@ func TestBufferedLoggerWithoutLoggerPlugin(t *testing.T) {
 	if err != nil && !sdk.IsUndefinedErr(err) {
 		t.Fatalf("unexpected error: %v", err)
 	}
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+// TestDecisionWithHTTPRoundTripper verifies that DecisionOptions.HTTPRoundTripper
+// wraps the http.Transport used by http.send during a single Decision, and that
+// leaving it nil preserves the default behavior.
+func TestDecisionWithHTTPRoundTripper(t *testing.T) {
+	ctx := t.Context()
+
+	var upstreamHits atomic.Int32
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		upstreamHits.Add(1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer upstream.Close()
+
+	bundleServer := sdktest.MustNewServer(
+		sdktest.MockBundle("/bundles/bundle.tar.gz", map[string]string{
+			"main.rego": fmt.Sprintf(`
+package system
+import rego.v1
+
+allowed if {
+	resp := http.send({"method": "GET", "url": %q})
+	resp.status_code == 200
+}
+`, upstream.URL),
+		}),
+	)
+	defer bundleServer.Stop()
+
+	config := fmt.Sprintf(`{
+		"services": {"test": {"url": %q}},
+		"bundles": {"test": {"resource": "/bundles/bundle.tar.gz"}}
+	}`, bundleServer.URL())
+
+	opa, err := sdk.New(ctx, sdk.Options{Config: strings.NewReader(config)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer opa.Stop(ctx)
+
+	assertAllowed := func(t *testing.T, result *sdk.DecisionResult) {
+		t.Helper()
+		v, ok := result.Result.(bool)
+		if !ok || !v {
+			t.Fatalf("expected allowed=true, got %v", result.Result)
+		}
+	}
+
+	t.Run("nil HTTPRoundTripper is a no-op", func(t *testing.T) {
+		before := upstreamHits.Load()
+		result, err := opa.Decision(ctx, sdk.DecisionOptions{Path: "/system/allowed"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertAllowed(t, result)
+		if got := upstreamHits.Load() - before; got != 1 {
+			t.Fatalf("upstream hits = %d, want 1", got)
+		}
+	})
+
+	t.Run("custom HTTPRoundTripper wraps the transport", func(t *testing.T) {
+		var wraps, trips atomic.Int32
+		customize := func(base *http.Transport) http.RoundTripper {
+			wraps.Add(1)
+			// Base transport is nil for plain HTTP without TLS/unix-socket
+			// options (see topdown.createHTTPRequest); fall back to the
+			// default in that case, matching topdown/http_test.go's
+			// secretTransport.Transform.
+			if base == nil {
+				base = http.DefaultTransport.(*http.Transport)
+			}
+			return roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+				trips.Add(1)
+				return base.RoundTrip(req)
+			})
+		}
+		before := upstreamHits.Load()
+		result, err := opa.Decision(ctx, sdk.DecisionOptions{
+			Path:             "/system/allowed",
+			HTTPRoundTripper: customize,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertAllowed(t, result)
+		if got := wraps.Load(); got != 1 {
+			t.Fatalf("CustomizeRoundTripper invoked %d times, want 1", got)
+		}
+		if got := trips.Load(); got != 1 {
+			t.Fatalf("wrapped RoundTrip invoked %d times, want 1", got)
+		}
+		if got := upstreamHits.Load() - before; got != 1 {
+			t.Fatalf("upstream hits = %d, want 1", got)
+		}
+	})
 }

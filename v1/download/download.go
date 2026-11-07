@@ -53,16 +53,15 @@ type Downloader struct {
 	config             Config                              // downloader configuration for tuning polling and other downloader behaviour
 	client             rest.Client                         // HTTP client to use for bundle downloading
 	path               string                              // path to use in bundle download request
-	trigger            chan chan struct{}                  // channel to signal downloads when manual triggering is enabled
 	stop               chan chan struct{}                  // used to signal plugin to stop running
 	f                  func(context.Context, Update) error // callback function invoked when download updates occur
 	etag               string                              // HTTP Etag for caching purposes
+	superseded         []supersededETag                    // etags of replaced bundles, oldest first
 	sizeLimitBytes     *int64                              // max bundle file size in bytes (passed to reader)
 	bvc                *bundle.VerificationConfig
 	respHdrTimeoutSec  int64
 	wg                 sync.WaitGroup
 	logger             logging.Logger
-	stopped            bool
 	stopOnce           sync.Once
 	persist            bool
 	longPollingEnabled bool
@@ -70,6 +69,14 @@ type Downloader struct {
 	bundleName         string
 	bundleParserOpts   ast.ParserOptions
 }
+
+type supersededETag struct {
+	etag string
+	at   time.Time
+}
+
+// maxSupersededETags bounds the size of the If-None-Match header.
+const maxSupersededETags = 8
 
 type downloaderResponse struct {
 	b        *bundle.Bundle
@@ -85,7 +92,6 @@ func New(config Config, client rest.Client, path string) *Downloader {
 		config:             config,
 		client:             client,
 		path:               path,
-		trigger:            make(chan chan struct{}),
 		stop:               make(chan chan struct{}),
 		logger:             client.Logger(),
 		longPollingEnabled: config.Polling.LongPollingTimeoutSeconds != nil,
@@ -157,17 +163,14 @@ func (d *Downloader) SetCache(etag string) {
 // Trigger can be used to control when the downloader attempts to download
 // a new bundle in manual triggering mode.
 func (d *Downloader) Trigger(ctx context.Context) error {
-	done := make(chan error)
+	done := make(chan error, 1)
 
 	go func() {
 		err := d.oneShot(ctx)
 		if err != nil {
 			d.logger.Error("Bundle download failed: %v.", err)
-			if ctx.Err() == nil {
-				done <- err
-			}
 		}
-		close(done)
+		done <- err
 	}()
 
 	select {
@@ -195,7 +198,6 @@ func (d *Downloader) doStart(context.Context) {
 	done := <-d.stop // blocks until there's something to read
 	cancel()
 	d.wg.Wait()
-	d.stopped = true
 	close(done)
 }
 
@@ -273,6 +275,7 @@ func (d *Downloader) oneShot(ctx context.Context) error {
 		return err
 	}
 
+	prev := d.etag
 	d.etag = resp.etag
 	d.longPollingEnabled = resp.longPoll
 
@@ -281,13 +284,47 @@ func (d *Downloader) oneShot(ctx context.Context) error {
 			return err
 		}
 	}
+	if resp.b != nil {
+		d.supersede(prev, resp.etag)
+	}
 	return nil
+}
+
+// supersede records etag as replaced by current, so that it keeps being sent
+// in If-None-Match until the configured TTL has passed.
+func (d *Downloader) supersede(etag, current string) {
+	if d.config.Polling.SupersededETagTTLSeconds == nil || *d.config.Polling.SupersededETagTTLSeconds == 0 {
+		return
+	}
+	d.superseded = slices.DeleteFunc(d.superseded, func(s supersededETag) bool { return s.etag == etag || s.etag == current })
+	if etag != "" && etag != current {
+		d.superseded = append(d.superseded, supersededETag{etag: etag, at: time.Now()})
+	}
+	if n := len(d.superseded) - maxSupersededETags; n > 0 {
+		d.superseded = d.superseded[n:]
+	}
+}
+
+// ifNoneMatch returns the current etag followed by the superseded ones that
+// have not expired yet.
+func (d *Downloader) ifNoneMatch() string {
+	if d.etag == "" || len(d.superseded) == 0 {
+		return d.etag
+	}
+	ttl := time.Duration(*d.config.Polling.SupersededETagTTLSeconds) * time.Second
+	d.superseded = slices.DeleteFunc(d.superseded, func(s supersededETag) bool { return time.Since(s.at) >= ttl })
+
+	etags := []string{d.etag}
+	for _, s := range slices.Backward(d.superseded) {
+		etags = append(etags, s.etag)
+	}
+	return strings.Join(etags, ", ")
 }
 
 func (d *Downloader) download(ctx context.Context, m metrics.Metrics) (*downloaderResponse, error) {
 	d.logger.Debug("Download starting.")
 
-	d.client = d.client.WithHeader("If-None-Match", d.etag)
+	d.client = d.client.WithHeader("If-None-Match", d.ifNoneMatch())
 
 	preferences := []string{fmt.Sprintf("modes=%v,%v", defaultBundleMode, deltaBundleMode)}
 
@@ -399,7 +436,7 @@ func (d *Downloader) download(ctx context.Context, m metrics.Metrics) (*download
 		}, nil
 	case http.StatusNotModified:
 		etag := resp.Header.Get("ETag")
-		if etag == "" {
+		if etag == "" || slices.ContainsFunc(d.superseded, func(s supersededETag) bool { return s.etag == etag }) {
 			etag = d.etag
 		}
 		return &downloaderResponse{

@@ -45,6 +45,7 @@ type runCmdParams struct {
 	authorization        *util.EnumFlag
 	minTLSVersion        *util.EnumFlag
 	logLevel             *util.EnumFlag
+	logLevelRequest      *util.EnumFlag
 	logFormat            *util.EnumFlag
 	logTimestampFormat   string
 	algorithm            string
@@ -59,12 +60,13 @@ type runCmdParams struct {
 
 func newRunParams() runCmdParams {
 	return runCmdParams{
-		rt:             runtime.NewParams(),
-		authentication: util.NewEnumFlag("off", []string{"token", "tls", "off"}),
-		authorization:  util.NewEnumFlag("off", []string{"basic", "off"}),
-		minTLSVersion:  util.NewEnumFlag("1.2", []string{"1.0", "1.1", "1.2", "1.3"}),
-		logLevel:       util.NewEnumFlag("info", []string{"debug", "info", "error"}),
-		logFormat:      util.NewEnumFlag("json", []string{"text", "json", "json-pretty"}),
+		rt:              runtime.NewParams(),
+		authentication:  util.NewEnumFlag("off", []string{"token", "tls", "off"}),
+		authorization:   util.NewEnumFlag("off", []string{"basic", "off"}),
+		minTLSVersion:   util.NewEnumFlag("1.2", []string{"1.0", "1.1", "1.2", "1.3"}),
+		logLevel:        util.NewEnumFlag("info", []string{"debug", "info", "error"}),
+		logLevelRequest: util.NewEnumFlag("info", []string{"debug", "info", "error"}),
+		logFormat:       util.NewEnumFlag("json", []string{"text", "json", "json-pretty"}),
 	}
 }
 
@@ -130,6 +132,14 @@ File paths can be specified as URLs to resolve ambiguity in paths containing col
 
     $ ` + executable + ` run file:///c:/path/to/data.json
 
+On Windows, a path beginning with a drive letter is read as a path rather than a
+destination, so "C:\path\to\data.json" loads at the root of the data document. A
+single-character destination must therefore be followed by a qualified path:
+
+    $ ` + executable + ` run c:C:\path\to\data.json
+
+Which will load the "data.json" file at path "data.c".
+
 URL paths to remote public bundles (http or https) will be parsed as shorthand
 configuration equivalent of using repeated --set flags to accomplish the same:
 
@@ -181,6 +191,12 @@ The --watch flag can be used to monitor policy and data file-system changes. Whe
 and data is reloaded into OPA. Watching individual files (rather than directories) is generally not recommended as some
 updates might cause them to be dropped by OPA.
 
+The --watch-config flag watches the file given by --config-file and, when it changes, restarts the server under the
+new configuration without the process exiting. In-flight requests are drained and bundles are downloaded again unless
+"persistence_directory" is set. An invalid configuration is reported and the running one keeps serving. Changes to
+"server.metrics" and "server.logger_plugin" still need a process restart, and the file is not watched when discovery
+is enabled. Only supported with --server.
+
 OPA will automatically perform type checking based on a schema inferred from known input documents and report any errors
 resulting from the schema check. Currently this check is performed on OPA's Authorization Policy Input document and will
 be expanded in the future. To disable this, use the --skip-known-schema-check flag.
@@ -229,8 +245,9 @@ See https://godoc.org/crypto/tls#pkg-constants for more information.
 	runCommand.Flags().BoolVar(&cmdParams.rt.H2CEnabled, "h2c", false, "enable H2C for HTTP listeners")
 	runCommand.Flags().StringVarP(&cmdParams.rt.OutputFormat, "format", "f", "pretty", "set shell output format, i.e, pretty, json")
 	runCommand.Flags().BoolVarP(&cmdParams.rt.Watch, "watch", "w", false, "watch command line files for changes")
-	addV0CompatibleFlag(runCommand.Flags(), &cmdParams.rt.V0Compatible, false)
-	addV1CompatibleFlag(runCommand.Flags(), &cmdParams.rt.V1Compatible, false)
+	runCommand.Flags().BoolVar(&cmdParams.rt.WatchConfig, "watch-config", false, "watch the configuration file for changes and restart to apply them")
+	addV0CompatibleFlag(runCommand.Flags(), &cmdParams.rt.V0Compatible)
+	addV1CompatibleFlag(runCommand.Flags(), &cmdParams.rt.V1Compatible)
 	addMaxErrorsFlag(runCommand.Flags(), &cmdParams.rt.ErrorLimit)
 	runCommand.Flags().BoolVar(&cmdParams.rt.PprofEnabled, "pprof", false, "enables pprof endpoints")
 	runCommand.Flags().StringVar(&cmdParams.tlsCertFile, "tls-cert-file", "", "set path of TLS certificate file")
@@ -241,6 +258,7 @@ See https://godoc.org/crypto/tls#pkg-constants for more information.
 	runCommand.Flags().Var(cmdParams.authorization, "authorization", "set authorization scheme")
 	runCommand.Flags().Var(cmdParams.minTLSVersion, "min-tls-version", "set minimum TLS version to be used by "+brand+"'s server")
 	runCommand.Flags().VarP(cmdParams.logLevel, "log-level", "l", "set log level")
+	runCommand.Flags().Var(cmdParams.logLevelRequest, "log-level-request", "set log level for HTTP request/response access logs")
 	runCommand.Flags().Var(cmdParams.logFormat, "log-format", "set log format")
 	runCommand.Flags().StringVar(&cmdParams.logTimestampFormat, "log-timestamp-format", "", "set log timestamp format (OPA_LOG_TIMESTAMP_FORMAT environment variable)")
 	runCommand.Flags().IntVar(&cmdParams.rt.GracefulShutdownPeriod, "shutdown-grace-period", 10, "set the time (in seconds) that the server will wait to gracefully shut down")
@@ -249,7 +267,7 @@ See https://godoc.org/crypto/tls#pkg-constants for more information.
 	runCommand.Flags().StringSliceVar(&cmdParams.cipherSuites, "tls-cipher-suites", []string{}, "set list of enabled TLS 1.0–1.2 cipher suites (IANA)")
 	addConfigOverrides(runCommand.Flags(), &cmdParams.rt.ConfigOverrides)
 	addConfigOverrideFiles(runCommand.Flags(), &cmdParams.rt.ConfigOverrideFiles)
-	addBundleModeFlag(runCommand.Flags(), &cmdParams.rt.BundleMode, false)
+	addBundleModeFlag(runCommand.Flags(), &cmdParams.rt.BundleMode)
 	addReadAstValuesFromStoreFlag(runCommand.Flags(), &cmdParams.rt.ReadAstValuesFromStore, false)
 
 	runCommand.Flags().BoolVar(&cmdParams.skipVersionCheck, "skip-version-check", false, "disables version check against GitHub releases (see: https://www.openpolicyagent.org/docs/privacy)")
@@ -343,6 +361,7 @@ func initRuntime(ctx context.Context, params runCmdParams, args []string, addrSe
 	}
 	params.rt.Logging = runtime.LoggingConfig{
 		Level:           params.logLevel.String(),
+		RequestLevel:    params.logLevelRequest.String(),
 		Format:          params.logFormat.String(),
 		TimestampFormat: timestampFormat,
 	}

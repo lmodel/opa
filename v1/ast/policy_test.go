@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/url"
+	"slices"
 	"testing"
 
 	"github.com/open-policy-agent/opa/v1/ast/location"
@@ -82,12 +83,12 @@ func TestBodyEmptyJSON(t *testing.T) {
 	var body Body
 	bs := util.MustMarshalJSON(body)
 	if string(bs) != "[]" {
-		t.Fatalf("Unexpected JSON value for empty body")
+		t.Fatal("Unexpected JSON value for empty body")
 	}
 	body = Body{}
 	bs = util.MustMarshalJSON(body)
 	if string(bs) != "[]" {
-		t.Fatalf("Unexpected JSON value for empty body")
+		t.Fatal("Unexpected JSON value for empty body")
 	}
 }
 
@@ -309,7 +310,7 @@ func TestExprEquals(t *testing.T) {
 
 func TestBodyIsGround(t *testing.T) {
 	if MustParseBody(`a.b[0] = 1; a = [1, 2, x]`).IsGround() {
-		t.Errorf("Expected body to be non-ground")
+		t.Error("Expected body to be non-ground")
 	}
 }
 
@@ -454,9 +455,8 @@ func TestRuleHeadJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if exp, act := `{"body":[],"head":{"name":"allow","ref":[{"type":"var","value":"allow"}]}}`, string(bs); act != exp {
-		t.Errorf("expected %q, got %q", exp, act)
-	}
+	exp := []byte(`{"body":[],"head":{"name":"allow","ref":[{"type":"var","value":"allow"}]}}`)
+	assertJsonEqual(t, exp, bs)
 
 	var readRule Rule
 	if err := json.Unmarshal(bs, &readRule); err != nil {
@@ -469,9 +469,8 @@ func TestRuleHeadJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if exp, act := string(bs), string(bs0); exp != act {
-		t.Errorf("expected json repr to match %q, got %q", exp, act)
-	}
+
+	assertJsonEqual(t, bs, bs0)
 
 	var readAgainRule Rule
 	if err := json.Unmarshal(bs, &readAgainRule); err != nil {
@@ -527,6 +526,27 @@ func TestRuleBodyEquals(t *testing.T) {
 	assigned := ruleTrue1.Copy()
 	assigned.Head.Assign = true
 	assertRulesNotEqual(t, ruleTrue1, assigned)
+}
+
+func TestRuleSetAdd(t *testing.T) {
+	r1 := MustParseRule(`p { true }`)
+	r2 := MustParseRule(`p { false }`)
+
+	rs := NewRuleSet(r1, r2)
+	if len(rs) != 2 {
+		t.Fatalf("got %d rules, want 2: %v", len(rs), rs)
+	}
+
+	rs.Add(r1.Copy())
+	if len(rs) != 2 {
+		t.Fatalf("got %d rules after dup Add, want 2: %v", len(rs), rs)
+	}
+
+	r3 := MustParseRule(`q { true }`)
+	rs.Add(r3)
+	if len(rs) != 3 {
+		t.Fatalf("got %d rules after new Add, want 3: %v", len(rs), rs)
+	}
 }
 
 func TestRuleString(t *testing.T) {
@@ -672,6 +692,39 @@ func TestRuleString(t *testing.T) {
 	}
 }
 
+func TestKeywordsForRegoVersion(t *testing.T) {
+	versions := []RegoVersion{RegoV0, RegoV0CompatV1, RegoV1, RegoV2}
+
+	tests := []struct {
+		keyword string
+		exp     []RegoVersion // versions where keyword is a keyword
+	}{
+		{keyword: "package", exp: versions},
+		{keyword: "not", exp: versions},
+		{keyword: "if", exp: []RegoVersion{RegoV0CompatV1, RegoV1, RegoV2}},
+		{keyword: "contains", exp: []RegoVersion{RegoV0CompatV1, RegoV1, RegoV2}},
+		{keyword: "in", exp: []RegoVersion{RegoV0CompatV1, RegoV1, RegoV2}},
+		{keyword: "every", exp: []RegoVersion{RegoV0CompatV1, RegoV1, RegoV2}},
+		{keyword: "and", exp: []RegoVersion{RegoV2}},
+		{keyword: "or", exp: []RegoVersion{RegoV2}},
+		{keyword: "foo"},
+	}
+
+	for _, tc := range tests {
+		for _, v := range append(versions, RegoUndefined) {
+			t.Run(tc.keyword+"/"+v.String(), func(t *testing.T) {
+				exp := slices.Contains(tc.exp, v)
+				if act := IsKeywordInRegoVersion(tc.keyword, v); act != exp {
+					t.Errorf("IsKeywordInRegoVersion: expected %v, got %v", exp, act)
+				}
+				if act := slices.Contains(KeywordsForRegoVersion(v), tc.keyword); act != exp {
+					t.Errorf("KeywordsForRegoVersion: expected %v, got %v", exp, act)
+				}
+			})
+		}
+	}
+}
+
 func TestRuleString_DefaultRegoVersion(t *testing.T) {
 	// ast.Rule.String() will respect the rego-version of the ast.Module it is part of.
 
@@ -703,6 +756,24 @@ p contains x if { x = "a" }`,
 
 p contains x if { x = "a" }`,
 			exp: `p contains x if { x = "a" }`,
+		},
+		{
+			note:        "v2",
+			regoVersion: RegoV2,
+			module: `package a.b.c
+
+p contains x if { x = "a"; x == "a" or x == "b" }`,
+			exp: `p contains x if { x = "a"; equal(x, "a") or equal(x, "b") }`,
+		},
+		{
+			note:        "v0, rego.v2 import",
+			regoVersion: RegoV0,
+			module: `package a.b.c
+
+import rego.v2
+
+p contains x if { x = "a"; x == "a" or x == "b" }`,
+			exp: `p contains x if { x = "a"; equal(x, "a") or equal(x, "b") }`,
 		},
 	}
 
@@ -928,10 +999,7 @@ func TestAnnotationsString(t *testing.T) {
 	// NOTE(tsandall): for now, annotations are represented as JSON objects
 	// which are a subset of YAML. We could improve this in the future.
 	exp := `{"authors":[{"name":"John Doe","email":"john@example.com"},{"name":"Jane Doe"}],"custom":{"flag":true,"list":[1,2,3],"map":{"one":1,"two":{"3":"three"}}},"description":"baz","organizations":["mi","fa"],"related_resources":[{"ref":"https://example.com"},{"description":"Some resource","ref":"https://example.com/2"}],"schemas":[{"path":[{"type":"var","value":"data"},{"type":"string","value":"bar"}],"schema":[{"type":"var","value":"schema"},{"type":"string","value":"baz"}]}],"scope":"foo","title":"bar"}`
-
-	if got := a.String(); exp != got {
-		t.Fatalf("expected\n%s\nbut got\n%s", exp, got)
-	}
+	assertJsonEqual(t, exp, a.String())
 }
 
 func mustParseURL(str string) url.URL {
@@ -1057,6 +1125,110 @@ d.e.f := 3 if { true }
 e.f.g contains 1 if { true }
 f.g.h[1] := 4 if { true }
 g := 5 if { false } else = 6 if { false } else = 7 if { true }`,
+		},
+		{
+			note:        "v2, basic",
+			regoVersion: RegoV2,
+			module: `package test
+
+a := 1
+b contains 1
+c[1] := 2
+d.e.f := 3
+e.f.g contains 1
+f.g.h[1] := 4
+
+g := 5 if {
+	false
+} else := 6 if {
+	false
+} else := 7
+
+h if {
+	input.a or input.b
+}`,
+			exp: `package test
+
+a := 1 if { true }
+b contains 1 if { true }
+c[1] := 2 if { true }
+d.e.f := 3 if { true }
+e.f.g contains 1 if { true }
+f.g.h[1] := 4 if { true }
+g := 5 if { false } else = 6 if { false } else = 7 if { true }
+h = true if { input.a or input.b }`,
+		},
+		{
+			note:        "v0, rego.v2 import",
+			regoVersion: RegoV0,
+			module: `package test
+
+import rego.v2
+
+a := 1
+b contains 1
+c[1] := 2
+d.e.f := 3
+e.f.g contains 1
+f.g.h[1] := 4
+
+g := 5 if {
+	false
+} else := 6 if {
+	false
+} else := 7
+
+h if {
+	input.a or input.b
+}`,
+			exp: `package test
+
+import rego.v2
+
+a := 1 if { true }
+b contains 1 if { true }
+c[1] := 2 if { true }
+d.e.f := 3 if { true }
+e.f.g contains 1 if { true }
+f.g.h[1] := 4 if { true }
+g := 5 if { false } else = 6 if { false } else = 7 if { true }
+h = true if { input.a or input.b }`,
+		},
+		{
+			note:        "v1, rego.v2 import",
+			regoVersion: RegoV1,
+			module: `package test
+
+import rego.v2
+
+a := 1
+b contains 1
+c[1] := 2
+d.e.f := 3
+e.f.g contains 1
+f.g.h[1] := 4
+
+g := 5 if {
+	false
+} else := 6 if {
+	false
+} else := 7
+
+h if {
+	input.a or input.b
+}`,
+			exp: `package test
+
+import rego.v2
+
+a := 1 if { true }
+b contains 1 if { true }
+c[1] := 2 if { true }
+d.e.f := 3 if { true }
+e.f.g contains 1 if { true }
+f.g.h[1] := 4 if { true }
+g := 5 if { false } else = 6 if { false } else = 7 if { true }
+h = true if { input.a or input.b }`,
 		},
 	}
 

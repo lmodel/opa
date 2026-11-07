@@ -10,7 +10,6 @@ import (
 	"maps"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -147,30 +146,20 @@ func TestCheckInference(t *testing.T) {
 		{"empty-composites", `
 				obj = {};
 				arr = [];
-				set = set();
-				obj[i] = v1;
-				arr[j] = v2;
-				set[v3];
-				obj = {"foo": "bar"};
-				arr = [1];
-				set = {1,2,3}
+				set = set()
 				`, map[Var]types.Type{
-			Var("obj"): types.NewObject(nil, types.NewDynamicProperty(types.A, types.A)),
-			Var("i"):   types.A,
-			Var("v1"):  types.A,
-			Var("arr"): types.NewArray(nil, types.A),
-			Var("j"):   types.N,
-			Var("v2"):  types.A,
-			Var("set"): types.NewSet(types.A),
-			Var("v3"):  types.A,
+			Var("obj"): types.NewObject(nil, nil),
+			Var("arr"): types.NewArray(nil, nil),
+			Var("set"): types.NewSet(nil),
 		}},
-		{"empty-composite-property", `
-			obj = {};
-			obj.foo = x;
-			obj[i].foo = y
+		{"dynamic-composite-property", `
+			k = "foo";
+			obj = {k: {"deadbeef": true}};
+			obj.bar = x;
+			obj[i].deadbeef = y
 		`, map[Var]types.Type{
-			Var("x"): types.A,
-			Var("y"): types.A,
+			Var("x"): types.NewObject([]*types.StaticProperty{types.NewStaticProperty("deadbeef", types.B)}, nil),
+			Var("y"): types.B,
 		}},
 		{"local-reference", `
 			a = [
@@ -220,11 +209,13 @@ func TestCheckInference(t *testing.T) {
 			Var("k"): types.NewAny(types.S, types.N, types.B),
 			Var("x"): types.NewAny(types.S, types.N, types.B),
 		}},
-		{"local-reference-var-any", `
+		{"local-reference-var-empty-composites", `
 			a = [[], {}];
 			a[_][i]
 		`, map[Var]types.Type{
-			Var("i"): types.A,
+			// Neither [] nor {} has keys to enumerate, so the only key type
+			// left to infer is the array's.
+			Var("i"): types.N,
 		}},
 		{"local-reference-nested", `
 			a = [["foo"], 0, {"bar": "baz"}, 2];
@@ -591,7 +582,7 @@ func TestCheckInferenceRules(t *testing.T) {
 			types.NewObject(
 				nil,
 				types.NewDynamicProperty(types.NewArray([]types.Type{types.NewArray(types.NewAny(), types.A), types.A}, nil),
-					types.NewObject(nil, types.NewDynamicProperty(types.A, types.A))),
+					types.NewObject(nil, nil)),
 			)},
 		{
 			note:     "ref-rules single value, full ref to known leaf",
@@ -941,6 +932,15 @@ func TestCheckMatchErrors(t *testing.T) {
 		{"object-nested-2", `{"a": 1} = {"a": 1, "b": "2"}`},
 		{"set", "{1,2,3} = null"},
 		{"any", `x = ["str", 1]; x[_] = null`},
+		{"member-array", `"a" in [1, 2]`},
+		{"member-array-nested", `[1, "a"] in [[1, 2]]`},
+		{"member-set", `"a" in {1, 2}`},
+		{"member-object", `"a" in {"x": 1}`},
+		{"member-call", `"a" in numbers.range(1, 5)`},
+		{"member-result-captured", `x = "a" in [1, 2]; x`},
+		{"member-with-key-key", `"a", 1 in [1, 2]`},
+		{"member-with-key-value", `0, "a" in [1, 2]`},
+		{"member-with-key-object-key", `1, 1 in {"x": 1}`},
 	}
 	for _, tc := range tests {
 		t.Run(tc.note, func(t *testing.T) {
@@ -1127,7 +1127,6 @@ func TestCheckRefErrUnsupported(t *testing.T) {
 }
 
 func TestCheckRefErrInvalid(t *testing.T) {
-
 	env := newTestEnv([]string{
 		`p { true }`,
 		`q = {"foo": 1, "bar": 2} { true }`,
@@ -1269,8 +1268,38 @@ func TestCheckRefErrInvalid(t *testing.T) {
 			query: `a = [1,2,3]; a[{}] = b`,
 			ref:   `a[{}]`,
 			pos:   1,
-			have:  types.NewObject(nil, types.NewDynamicProperty(types.A, types.A)),
+			have:  types.NewObject(nil, nil),
 			want:  types.N,
+		},
+		{
+			note:  "missing key of empty object",
+			query: `obj = {}; obj.bar`,
+			ref:   `obj.bar`,
+			pos:   1,
+		},
+		{
+			note:  "missing key of empty object, null operand",
+			query: `obj = {}; obj[null]`,
+			ref:   `obj[null]`,
+			pos:   1,
+		},
+		{
+			note:  "missing key of empty object, boolean operand",
+			query: `obj = {}; obj[true]`,
+			ref:   `obj[true]`,
+			pos:   1,
+		},
+		{
+			note:  "out of range index of empty array",
+			query: `arr = []; arr[0]`,
+			ref:   `arr[0]`,
+			pos:   1,
+		},
+		{
+			note:  "member of empty set",
+			query: `s = set(); s.foo`,
+			ref:   `s.foo`,
+			pos:   1,
 		},
 	}
 
@@ -1293,7 +1322,7 @@ func TestCheckRefErrInvalid(t *testing.T) {
 				!details.Ref.Equal(wantRef) ||
 				types.Compare(details.Want, tc.want) != 0 ||
 				types.Compare(details.Have, tc.have) != 0 ||
-				!reflect.DeepEqual(details.OneOf, tc.oneOf) {
+				!slices.EqualFunc(details.OneOf, tc.oneOf, ValueEqual) {
 				t.Fatalf("Expected (%v, %v, %v, %v, %v) but got: (%v, %v, %v, %v, %v)", wantRef, tc.pos, tc.have, tc.want, tc.oneOf, details.Ref, details.Pos, details.Have, details.Want, details.OneOf)
 			}
 		})
@@ -1386,7 +1415,7 @@ func TestFunctionsTypeInference(t *testing.T) {
 			c := NewCompiler()
 			c.Compile(map[string]*Module{"base": MustParseModuleWithOpts(base, popts), "mod": mod})
 			if test.wantErr && !c.Failed() {
-				t.Errorf("Expected error but got success")
+				t.Error("Expected error but got success")
 			} else if !test.wantErr && c.Failed() {
 				t.Errorf("Expected success but got error: %v", c.Errors)
 			}
@@ -1490,7 +1519,7 @@ func TestCheckValidErrors(t *testing.T) {
 			c.Compile(map[string]*Module{"test": tc.module})
 
 			if !c.Failed() {
-				t.Errorf("Expected error but got success")
+				t.Error("Expected error but got success")
 			}
 
 			if len(c.Errors) != tc.numErr {
@@ -1556,6 +1585,18 @@ func TestCheckErrorDetails(t *testing.T) {
 				"         ^",
 				"         have: 100",
 				`         want (one of): ["a" "b"]`,
+			},
+		},
+		{
+			detail: &RefErrInvalidDetail{
+				Ref: MustParseRef("obj.foo"),
+				Pos: 1,
+			},
+			expected: []string{
+				"obj.foo",
+				"    ^",
+				`    have: "foo"`,
+				"    want (one of): []",
 			},
 		},
 		{
@@ -2423,7 +2464,7 @@ p { input = "foo" }`}},
 			}
 
 			if oldTypeEnv.tree.children != nil && typeenv.next.tree.children != nil && (typeenv.next.tree.children.Len() != oldTypeEnv.tree.children.Len()) {
-				t.Fatalf("Unexpected type env")
+				t.Fatal("Unexpected type env")
 			}
 
 		})
@@ -2749,6 +2790,203 @@ test_obj2 if {
 	{"a":"1"} == obj with input as {"a": "1"}
 }`,
 		},
+		// this policy verifies this issue: https://github.com/open-policy-agent/opa/issues/7275
+		{
+			name: "missing key of empty object literal",
+			policy: `package p
+
+p if {
+	obj := {}
+	obj.bar
+}`,
+			expectedError: "policy.rego:5: rego_type_error: undefined ref: obj.bar",
+		},
+		{
+			name: "missing key of non-empty object literal",
+			policy: `package p
+
+p if {
+	obj := {"foo": "bar"}
+	obj.bar
+}`,
+			expectedError: "policy.rego:5: rego_type_error: undefined ref: obj.bar",
+		},
+		{
+			name: "out of range index of empty array literal",
+			policy: `package p
+
+p if {
+	arr := []
+	arr[0]
+}`,
+			expectedError: "policy.rego:5: rego_type_error: undefined ref: arr[0]",
+		},
+		{
+			name: "member of empty set literal",
+			policy: `package p
+
+p if {
+	s := set()
+	s.foo
+}`,
+			expectedError: "policy.rego:5: rego_type_error: undefined ref: s.foo",
+		},
+		{
+			name: "member of non-empty set literal",
+			policy: `package p
+
+p if {
+	s := {"foo"}
+	s.foo
+}`,
+		},
+		{
+			name: "empty set literal passed to a builtin expecting a set",
+			policy: `package p
+
+p if {
+	s := set()
+	count(s | {1}) == 1
+}`,
+		},
+		{
+			name: "iterating an empty object literal",
+			policy: `package p
+
+p contains v if {
+	some v in {}
+}`,
+		},
+		{
+			name: "iterating an empty array literal",
+			policy: `package p
+
+p contains v if {
+	some v in []
+}`,
+		},
+		{
+			name: "iterating an empty set literal",
+			policy: `package p
+
+p contains v if {
+	some v in set()
+}`,
+		},
+		{
+			name: "iterating an empty array bound to a variable",
+			policy: `package p
+
+f := out if {
+	responses := []
+	out := [x | some x in responses; x.required]
+}`,
+		},
+		{
+			name: "iterating an empty object bound to a variable",
+			policy: `package p
+
+g := out if {
+	m := {}
+	out := [v | some v in m]
+}`,
+		},
+		{
+			name: "iterating an empty array with a bound variable key",
+			policy: `package p
+
+p if {
+	arr := []
+	i := 0
+	arr[i]
+}`,
+		},
+		{
+			name: "iterating an empty array with a string variable key",
+			policy: `package p
+
+p if {
+	arr := []
+	i := "a"
+	arr[i]
+}`,
+			expectedError: "policy.rego:6: rego_type_error: undefined ref: arr[i]",
+		},
+		{
+			name: "iterating an empty object with a number variable key",
+			policy: `package p
+
+p if {
+	obj := {}
+	i := 1
+	obj[i]
+}`,
+		},
+		{
+			name: "comparing an element of an empty array to a constant",
+			policy: `package p
+
+p if {
+	roles := []
+	roles[_] == "admin"
+}`,
+		},
+		{
+			name: "unifying a constant with an element of an empty array",
+			policy: `package p
+
+p if {
+	roles := []
+	"admin" = roles[_]
+}`,
+		},
+		{
+			name: "comparing an element of an empty object to a constant",
+			policy: `package p
+
+p if {
+	m := {}
+	m[_] == "admin"
+}`,
+		},
+		{
+			name: "comparing an element of an empty set to a constant",
+			policy: `package p
+
+p if {
+	s := set()
+	s[_] == 1
+}`,
+		},
+		{
+			name: "comparing a member of an empty array to a constant",
+			policy: `package p
+
+p if {
+	roles := []
+	some x in roles
+	x == "admin"
+}`,
+		},
+		{
+			name: "selecting a field of an element of an empty array",
+			policy: `package p
+
+p if {
+	roles := []
+	roles[_].name == "admin"
+}`,
+		},
+		{
+			name: "key of object literal with dynamic properties",
+			policy: `package p
+
+p if {
+	k := "foo"
+	obj := {k: 1}
+	obj.bar == 1
+}`,
+		},
 		// this policy verifies this issue: https://github.com/open-policy-agent/opa/issues/6751
 		{
 			name: "compare two partial objects",
@@ -2937,6 +3175,180 @@ object1[key] = value if {
 			if !strings.Contains(compiler.Errors.Error(), tc.expectedError) {
 				t.Fatalf("expected error:\n\n%s\n\ngot:\n\n%s",
 					tc.expectedError, compiler.Errors.Error())
+			}
+		})
+	}
+}
+
+// Verify fix for https://github.com/open-policy-agent/opa/issues/8692
+func TestCheckObjectCategoryReturnType(t *testing.T) {
+	policy := `package p
+
+	r if {
+		%s == 1
+	}
+	`
+	builtins := []string{
+		"json.filter({}, [])",
+		"json.remove({}, [])",
+		"object.union({}, {})",
+		"object.union_n([{}, {}])",
+		"object.remove({}, [])",
+		"object.filter({}, [])",
+	}
+
+	for _, b := range builtins {
+		t.Run(b, func(t *testing.T) {
+			module, err := ParseModule("policy.rego", fmt.Sprintf(policy, b))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			compiler := NewCompiler().WithCapabilities(CapabilitiesForThisVersion())
+			compiler.Compile(map[string]*Module{"policy.rego": module})
+
+			if !compiler.Failed() || !strings.Contains(compiler.Errors.Error(), "rego_type_error: match error") {
+				t.Fatal("expected type error, got none")
+			}
+		})
+	}
+}
+
+func TestCheckWithModifiers(t *testing.T) {
+	tests := []struct {
+		note    string
+		modules []string
+		err     string
+	}{
+		{
+			note: "rule depending on replaced package",
+			modules: []string{
+				`package root.a
+				import data.root
+				rule_a := x if { x = {"b": root.b} }`,
+				`package root.b
+				rule_b if { true }`,
+				`package root.a
+				test_rule_a if { rule_a == {"b": "1"} with data.root.b as "1" }`,
+			},
+		},
+		{
+			note: "replaced document referred to directly",
+			modules: []string{
+				`package p
+				b := true
+				q if { data.p.b == "foo" with data.p.b as "foo" }`,
+			},
+		},
+		{
+			note: "rule depending on replaced document passed to built-in function",
+			modules: []string{
+				`package p
+				b := true
+				a := x if { x = data.p.b }
+				q if { lower(data.p.a) == "foo" with data.p.b as "foo" }`,
+			},
+		},
+		{
+			note: "rule depending transitively on replaced document",
+			modules: []string{
+				`package p
+				b := true
+				a := data.p.b
+				c := data.p.a
+				q if { lower(data.p.c) == "foo" with data.p.b as "foo" }`,
+			},
+		},
+		{
+			note: "rule depending on replaced document inside comprehension",
+			modules: []string{
+				`package p
+				b := true
+				a := x if { x = data.p.b }
+				q if { [y | y := lower(data.p.a)] == ["foo"] with data.p.b as "foo" }`,
+			},
+		},
+		{
+			note: "rule depending on replaced function",
+			modules: []string{
+				`package p
+				f(_) := true
+				a := f(1)
+				q if { lower(data.p.a) == "foo" with data.p.f as "foo" }`,
+			},
+		},
+		{
+			note: "function replacement arity is still checked",
+			modules: []string{
+				`package p
+				f(_) := true
+				mock(_, _) := "foo"
+				q if { f(1) with data.p.f as mock }`,
+			},
+			err: "rego_type_error: data.p.f: arity mismatch",
+		},
+		{
+			note: "variable assigned the replacement value",
+			modules: []string{
+				`package p
+				b := true
+				q if { x := data.p.b with data.p.b as "foo"; lower(x) == "foo" }`,
+			},
+		},
+		{
+			note: "variable assigned neither the replaced nor the replacement type",
+			modules: []string{
+				`package p
+				b := true
+				q if { x := data.p.b with data.p.b as 1; lower(x) == "foo" }`,
+			},
+			err: "rego_type_error: lower: invalid argument(s)",
+		},
+		{
+			note: "rule not depending on replaced document is still checked",
+			modules: []string{
+				`package p
+				b := true
+				a := x if { x = data.p.b }
+				other := 1
+				q if { lower(data.p.a) == "foo" with data.p.other as "foo" }`,
+			},
+			err: "rego_type_error: lower: invalid argument(s)",
+		},
+		{
+			note: "expression unrelated to replaced document is still checked",
+			modules: []string{
+				`package p
+				b := true
+				q if { x := "foo"; sum([1, x]) == 1 with data.p.b as "foo" }`,
+			},
+			err: "rego_type_error: sum: invalid argument(s)",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			modules := map[string]*Module{}
+			for i, module := range tc.modules {
+				name := fmt.Sprintf("mod%d.rego", i)
+				modules[name] = MustParseModule(module)
+			}
+
+			c := NewCompiler()
+			c.Compile(modules)
+
+			if tc.err == "" {
+				if c.Failed() {
+					t.Fatalf("expected no error, got %v", c.Errors)
+				}
+				return
+			}
+
+			if !c.Failed() {
+				t.Fatal("expected error, got none")
+			}
+			if !strings.Contains(c.Errors.Error(), tc.err) {
+				t.Fatalf("expected error:\n\n%s\n\ngot:\n\n%s", tc.err, c.Errors.Error())
 			}
 		})
 	}

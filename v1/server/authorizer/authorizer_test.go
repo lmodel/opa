@@ -6,7 +6,6 @@ package authorizer
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -257,33 +256,51 @@ func TestBasic(t *testing.T) {
 	}
 }
 
-func TestBasicEscapeError(t *testing.T) {
-
-	recorder := httptest.NewRecorder()
-	req, err := http.NewRequest(http.MethodGet, "http://localhost:8181", nil)
-	if err != nil {
-		t.Fatal(err)
+func TestMakeInputPath(t *testing.T) {
+	tests := []struct {
+		path string
+		exp  []any
+	}{
+		{path: "", exp: []any{}},
+		{path: "/", exp: []any{""}},
+		{path: "/v1/data/a/b", exp: []any{"v1", "data", "a", "b"}},
+		{path: "/v1/data/a%2Fb", exp: []any{"v1", "data", "a/b"}},
+		{path: "/v1/data/a%2fb", exp: []any{"v1", "data", "a/b"}},
+		{path: "/v1/data/a%252Fb", exp: []any{"v1", "data", "a%2Fb"}},
+		{path: "/v1/data/a%20b", exp: []any{"v1", "data", "a b"}},
+		{path: "/v1/data/a%25", exp: []any{"v1", "data", "a%"}},
+		{path: "/v0/data/a%2Fb", exp: []any{"v0", "data", "a/b"}},
+		{path: "/v1/compile/a/b", exp: []any{"v1", "compile", "a", "b"}},
+		{path: "/v1/compile/a%2Fb", exp: []any{"v1", "compile", "a", "b"}},
+		{path: "/health/a%2Fb", exp: []any{"health", "a/b"}},
+		{path: "/v1/policies/a/b", exp: []any{"v1", "policies", "a", "b"}},
+		{path: "/v1/policies/a%2Fb", exp: []any{"v1", "policies", "a", "b"}},
+		{path: "/v1/policies/a%25", exp: []any{"v1", "policies", "a%"}},
+		{path: "/v1/policies/a%252Fb", exp: []any{"v1", "policies", "a%2Fb"}},
 	}
 
-	req.URL.Path = `/invalid/path/foo%LALALA`
+	for _, tc := range tests {
+		t.Run(tc.path, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodGet, "http://localhost:8181"+tc.path, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	store := inmem.New()
+			_, input, err := makeInput(req, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	NewBasic(&mockHandler{}, ast.NewCompiler, store).ServeHTTP(recorder, req)
-
-	if recorder.Code != http.StatusBadRequest {
-		t.Fatalf("Expected bad request but got: %v", recorder)
+			if act := input.(map[string]any)["path"]; !reflect.DeepEqual(act, tc.exp) {
+				t.Fatalf("expected path %q but got %q", tc.exp, act)
+			}
+		})
 	}
+}
 
-	var response types.ErrorV1
-
-	if err := json.NewDecoder(recorder.Body).Decode(&response); err != nil {
-		t.Fatalf("Expected error response but got: %v", recorder)
-	}
-
-	if response.Code != types.CodeInvalidParameter ||
-		!strings.Contains(response.Message, "invalid URL") {
-		t.Fatalf("Expected invalid parameter and URL parse error but got: %v", recorder)
+func TestSplitPathEscapeError(t *testing.T) {
+	if _, err := splitPath("/invalid/path/foo%LALALA", true); err == nil || !strings.Contains(err.Error(), "invalid URL escape") {
+		t.Fatalf("expected invalid URL escape error but got: %v", err)
 	}
 }
 
@@ -369,6 +386,29 @@ func TestMakeInputWithBody(t *testing.T) {
 			assertBodyExists: true,
 		},
 		{
+			method:           "POST",
+			path:             "/v1/compile",
+			body:             `{"query": "data.x.allow"}`,
+			assertBodyExists: true,
+		},
+		{
+			method:           "POST",
+			path:             "/v1/compile/x/allow",
+			body:             `{"input": {"foo": "bar"}}`,
+			assertBodyExists: true,
+		},
+		{
+			method:           "POST",
+			path:             "/v1/query",
+			body:             `{"query": "data.foo"}`,
+			assertBodyExists: true,
+		},
+		{
+			method:                 "GET",
+			path:                   "/v1/compile/x/allow",
+			assertBodyDoesNotExist: true,
+		},
+		{
 			method:                 "PUT",
 			path:                   "/v1/data",
 			body:                   `{"foo": "bar"}`,
@@ -395,10 +435,10 @@ func TestMakeInputWithBody(t *testing.T) {
 			method: "PUT",
 			path:   "/v1/example-plugin",
 			body:   `{"example": "body must still be yaml or json"}`,
-			extraPaths: []func(string, []any) bool{func(method string, path []any) bool {
+			extraPaths: []func(string, []any) bool{func(_ string, path []any) bool {
 				s1 := path[0].(string)
 				s2 := path[1].(string)
-				return dataAPIVersions[s1] && s2 == "example-plugin"
+				return s1 == "v1" && s2 == "example-plugin"
 			}},
 		},
 	}

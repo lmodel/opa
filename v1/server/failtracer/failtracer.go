@@ -55,7 +55,7 @@ func (*failTracer) Config() topdown.TraceConfig {
 }
 
 func (b *failTracer) Hints(unknowns []ast.Ref) []Hint {
-	var hints []Hint //nolint:prealloc
+	var hints []Hint
 	seenRefs := map[string]struct{}{}
 	candidates := make([]string, 0, len(unknowns))
 	for _, ref := range unknowns {
@@ -67,8 +67,7 @@ func (b *failTracer) Hints(unknowns []ast.Ref) []Hint {
 
 	for _, expr := range b.exprs {
 		var ref ast.Ref // when this is processed, only one input.X.Y ref is in the expression (SSA)
-		switch {
-		case expr.IsCall():
+		if expr.IsCall() {
 			for _, op := range expr.Operands() {
 				if r, ok := op.Value.(ast.Ref); ok && r.HasPrefix(ast.InputRootRef) {
 					ref = r
@@ -85,6 +84,13 @@ func (b *failTracer) Hints(unknowns []ast.Ref) []Hint {
 			continue
 		}
 		miss := string(tblPart)
+		if slices.Contains(candidates, miss) {
+			// The top-level segment is already a declared unknown, so the
+			// failure comes from something deeper in the ref that this
+			// fuzzy match can't see. Suggesting the ref itself as a "fix"
+			// would be a no-op, so skip it.
+			continue
+		}
 		rs := ref[1:].String()
 		if _, ok := seenRefs[rs]; ok {
 			continue

@@ -2,12 +2,10 @@
 // Use of this source code is governed by an Apache2
 // license that can be found in the LICENSE file.
 
-// nolint: goconst // string duplication is for test readability.
 package profiler
 
 import (
 	_ "encoding/json"
-	"reflect"
 	"testing"
 	"time"
 
@@ -282,7 +280,7 @@ baz if {
 
 	for i := range len(stats) - 1 {
 		if stats[i].ExprTimeNs < stats[i+1].ExprTimeNs {
-			t.Fatalf("Results not sorted in decreasing order of evaluation times")
+			t.Fatal("Results not sorted in decreasing order of evaluation times")
 		}
 	}
 }
@@ -344,12 +342,12 @@ baz if {
 	var i int
 	for i = range len(stats) - 1 {
 		if stats[i].NumEval < stats[i+1].NumEval {
-			t.Fatalf("Results not sorted in decreasing order of number of evaluations")
+			t.Fatal("Results not sorted in decreasing order of number of evaluations")
 		}
 
 		if stats[i].NumEval == stats[i+1].NumEval {
 			if stats[i].ExprTimeNs < stats[i+1].ExprTimeNs {
-				t.Fatalf("Results not sorted in decreasing order of evaluation times")
+				t.Fatal("Results not sorted in decreasing order of evaluation times")
 			}
 		}
 	}
@@ -412,18 +410,18 @@ baz if {
 	var i int
 	for i = range len(stats) - 1 {
 		if stats[i].NumEval < stats[i+1].NumEval {
-			t.Fatalf("Results not sorted in decreasing order of number of evaluations")
+			t.Fatal("Results not sorted in decreasing order of number of evaluations")
 		}
 
 		if stats[i].NumEval == stats[i+1].NumEval {
 
 			if stats[i].NumRedo < stats[i+1].NumRedo {
-				t.Fatalf("Results not sorted in decreasing order of number of redos")
+				t.Fatal("Results not sorted in decreasing order of number of redos")
 			}
 
 			if stats[i].NumRedo == stats[i+1].NumRedo {
 				if stats[i].ExprTimeNs < stats[i+1].ExprTimeNs {
-					t.Fatalf("Results not sorted in decreasing order of evaluation times")
+					t.Fatal("Results not sorted in decreasing order of evaluation times")
 				}
 			}
 		}
@@ -507,12 +505,9 @@ allowed_operations = [
 func TestProfilerTraceConfig(t *testing.T) {
 	ct := topdown.QueryTracer(New())
 	conf := ct.Config()
+	expected := topdown.TraceConfig{PlugLocalVars: false}
 
-	expected := topdown.TraceConfig{
-		PlugLocalVars: false,
-	}
-
-	if !reflect.DeepEqual(expected, conf) {
+	if expected != conf {
 		t.Fatalf("Expected config: %+v, got %+v", expected, conf)
 	}
 }

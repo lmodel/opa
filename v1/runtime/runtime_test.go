@@ -36,6 +36,7 @@ import (
 	"github.com/open-policy-agent/opa/v1/plugins"
 	"github.com/open-policy-agent/opa/v1/plugins/discovery"
 	"github.com/open-policy-agent/opa/v1/server/authorizer"
+	"github.com/open-policy-agent/opa/v1/storage/disk"
 	"github.com/open-policy-agent/opa/v1/storage/inmem"
 	"github.com/open-policy-agent/opa/v1/tracing"
 
@@ -283,63 +284,84 @@ func testRuntimeProcessWatchEventPolicyError(t *testing.T, asBundle bool) {
 	})
 }
 
+func startREPLForTest(t *testing.T, ctx context.Context, params *Params) *Runtime {
+	t.Helper()
+
+	pr, pw := io.Pipe()
+	params.ConsoleInput = pr
+
+	rt, err := NewRuntime(ctx, *params)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_ = rt.StartREPL(ctx)
+	}()
+
+	t.Cleanup(func() {
+		_ = pw.Close() // signal EOF so the REPL loop returns
+		select {
+		case <-done:
+		case <-time.After(5 * time.Second):
+			t.Error("timed out waiting for REPL goroutine to exit after closing input")
+		}
+	})
+
+	return rt
+}
+
 func TestRuntimeReplWithBundleBuiltWithV1Compatibility(t *testing.T) {
 	ctx := t.Context()
 
-	test.WithTempFS(nil, func(rootDir string) {
-		p := filepath.Join(rootDir, "bundle.tar.gz")
-
-		mod := `package test
+	p := filepath.Join(t.TempDir(), "bundle.tar.gz")
+	mod := `package test
 			p := 7 if 3 < 4
 		`
 
-		files := [][2]string{
-			{"/.manifest", `{"revision": "foo", "rego_version": 1}`},
-			{"/x.rego", mod},
-		}
+	files := [][2]string{
+		{"/.manifest", `{"revision": "foo", "rego_version": 1}`},
+		{"/x.rego", mod},
+	}
 
-		buf := archive.MustWriteTarGz(files)
-		bf, err := os.Create(p)
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
-		_, err = bf.Write(buf.Bytes())
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
+	buf := archive.MustWriteTarGz(files)
+	bf, err := os.Create(p)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	_, err = bf.Write(buf.Bytes())
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
 
-		output := test.BlockingWriter{}
+	output := test.BlockingWriter{}
 
-		params := NewParams()
-		params.Output = &output
-		params.Paths = []string{p}
-		params.BundleMode = true
+	params := NewParams()
+	params.Output = &output
+	params.Paths = []string{p}
+	params.BundleMode = true
 
-		rt, err := NewRuntime(ctx, params)
-		if err != nil {
-			t.Fatal(err)
-		}
+	rt := startREPLForTest(t, ctx, &params)
 
-		go func() { _ = rt.StartREPL(ctx) }()
+	if !test.Eventually(t, 5*time.Second, func() bool {
+		return strings.Contains(output.String(), "Run 'help' to see a list of commands and check for updates.")
+	}) {
+		t.Fatal("Timed out waiting for REPL to start")
+	}
+	output.Reset()
 
-		if !test.Eventually(t, 5*time.Second, func() bool {
-			return strings.Contains(output.String(), "Run 'help' to see a list of commands and check for updates.")
-		}) {
-			t.Fatal("Timed out waiting for REPL to start")
-		}
-		output.Reset()
+	if err := rt.repl.OneShot(ctx, "data.test.p"); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
 
-		if err := rt.repl.OneShot(ctx, "data.test.p"); err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
+	actual := strings.TrimSpace(output.String())
+	expected := "7"
 
-		actual := strings.TrimSpace(output.String())
-		expected := "7"
-
-		if actual != expected {
-			t.Fatalf("expected data.test.p to be %v, got %v", expected, actual)
-		}
-	})
+	if actual != expected {
+		t.Fatalf("expected data.test.p to be %v, got %v", expected, actual)
+	}
 }
 
 func TestRuntimeReplProcessWatchV1Compatible(t *testing.T) {
@@ -454,12 +476,7 @@ p contains 1 if {
 				params.V0Compatible = tc.v0Compatible
 				params.V1Compatible = tc.v1Compatible
 
-				rt, err := NewRuntime(ctx, params)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				go func() { _ = rt.StartREPL(ctx) }()
+				_ = startREPLForTest(t, ctx, &params)
 
 				if !test.Eventually(t, 5*time.Second, func() bool {
 					return strings.Contains(output.String(), "Run 'help' to see a list of commands and check for updates.")
@@ -614,7 +631,7 @@ p contains 1 if {
 					t.Fatal(err)
 				}
 
-				go rt.StartServer(ctx)
+				serve(ctx, t, rt)
 
 				if !test.Eventually(t, 5*time.Second, func() bool {
 					return rt.ServerStatus() == ServerInitialized && len(rt.Addrs()) > 0
@@ -680,7 +697,7 @@ func TestCheckOPAUpdateWithNewUpdate(t *testing.T) {
 	}
 
 	// test server
-	baseURL, teardown := getTestServer(resp, http.StatusOK)
+	baseURL, teardown := getTestServer(resp)
 	defer teardown()
 
 	exp := &versioncheck.DataResponse{Latest: versioncheck.ReleaseDetails{
@@ -718,7 +735,7 @@ func TestCheckOPAUpdateLoopNoUpdate(t *testing.T) {
 	}
 
 	// test server
-	baseURL, teardown := getTestServer(srvResp, http.StatusOK)
+	baseURL, teardown := getTestServer(srvResp)
 	defer teardown()
 
 	testCheckOPAUpdateLoop(t, baseURL, "OPA is up to date.")
@@ -730,7 +747,7 @@ func TestCheckOPAUpdateLoopLaterRequests(t *testing.T) {
 	}
 
 	// test server
-	baseURL, teardown := getTestServer(resp, http.StatusOK)
+	baseURL, teardown := getTestServer(resp)
 	defer teardown()
 
 	t.Setenv("OPA_VERSION_CHECK_SERVICE_URL", baseURL)
@@ -777,7 +794,7 @@ func TestCheckOPAUpdateLoopWithNewUpdate(t *testing.T) {
 	}
 
 	// test server
-	baseURL, teardown := getTestServer(resp, http.StatusOK)
+	baseURL, teardown := getTestServer(resp)
 	defer teardown()
 
 	testCheckOPAUpdateLoop(t, baseURL, "OPA is out of date.")
@@ -905,12 +922,9 @@ func TestCheckAuthIneffective(t *testing.T) {
 		t.Fatalf("Unexpected error %v", err)
 	}
 
-	done := make(chan struct{})
-	go func() {
-		rt.StartServer(ctx)
-		close(done)
-	}()
-	<-done
+	if err := rt.Serve(ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	expected := "Token authentication enabled without authorization. Authentication will be ineffective. See https://www.openpolicyagent.org/docs/latest/security/#authentication-and-authorization for more information."
 	if !strings.Contains(stdout.String(), expected) {
@@ -935,12 +949,9 @@ func TestServerInitialized(t *testing.T) {
 	}
 
 	initChannel := rt.Manager.ServerInitializedChannel()
-	done := make(chan struct{})
-	go func() {
-		rt.StartServer(ctx)
-		close(done)
-	}()
-	<-done
+	if err := rt.Serve(ctx); err != nil {
+		t.Fatal(err)
+	}
 	select {
 	case <-initChannel:
 		return
@@ -1088,12 +1099,9 @@ func TestServerInitializedWithRegoV1(t *testing.T) {
 						}
 
 						initChannel := rt.Manager.ServerInitializedChannel()
-						done := make(chan struct{})
-						go func() {
-							rt.StartServer(ctx)
-							close(done)
-						}()
-						<-done
+						if err := rt.Serve(ctx); err != nil {
+							t.Fatal(err)
+						}
 						select {
 						case <-initChannel:
 							return
@@ -1406,12 +1414,9 @@ func TestServerInitializedWithBundleRegoVersion(t *testing.T) {
 						}
 
 						initChannel := rt.Manager.ServerInitializedChannel()
-						done := make(chan struct{})
-						go func() {
-							rt.StartServer(ctx)
-							close(done)
-						}()
-						<-done
+						if err := rt.Serve(ctx); err != nil {
+							t.Fatal(err)
+						}
 						select {
 						case <-initChannel:
 							return
@@ -1451,18 +1456,83 @@ func TestGracefulTracerShutdown(t *testing.T) {
 			t.Fatal("traceExporter should not be nil")
 		}
 
-		done := make(chan struct{})
-		go func() {
-			rt.StartServer(ctx)
-			close(done)
-		}()
-		<-done
+		if err := rt.Serve(ctx); err != nil {
+			t.Fatal(err)
+		}
 
 		expected := "Failed to shutdown OpenTelemetry trace exporter gracefully."
 		if strings.Contains(logger.Entries()[0].Message, expected) {
 			t.Fatalf("Expected no output containing: \"%v\"", expected)
 		}
 	})
+}
+
+// TestTracingExcludePaths asserts that distributed_tracing.exclude_paths keeps
+// the server from emitting spans for the matching endpoints, so that noisy
+// liveness probes don't drown out the interesting traces.
+func TestTracingExcludePaths(t *testing.T) {
+	ctx := t.Context()
+
+	cfg := filepath.Join(t.TempDir(), "opa.yaml")
+	config := `distributed_tracing:
+  type: grpc
+  exclude_paths:
+    - /health**
+    - /v1/data/secret/**
+`
+	if err := os.WriteFile(cfg, []byte(config), 0o644); err != nil {
+		t.Fatalf("write config %s: %v", cfg, err)
+	}
+
+	params := NewParams()
+	params.Logger = testLog.New()
+	params.Addrs = &[]string{"localhost:0"}
+	params.ConfigFile = cfg
+
+	rt, err := NewRuntime(ctx, params)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	// The config above makes the runtime build a tracer provider that exports to
+	// an (unreachable) OTLP collector. Appending a second provider here redirects
+	// the server's spans into an in-memory exporter instead: otelhttp applies its
+	// options in order, so the last one set wins.
+	spanExporter := tracetest.NewInMemoryExporter()
+	rt.Params.DistributedTracingOpts = append(rt.Params.DistributedTracingOpts,
+		otelhttp.WithTracerProvider(trace.NewTracerProvider(trace.WithSpanProcessor(trace.NewSimpleSpanProcessor(spanExporter)))))
+
+	serve(ctx, t, rt)
+	if !test.Eventually(t, 5*time.Second, func() bool {
+		return rt.ServerStatus() == ServerInitialized
+	}) {
+		t.Fatal("Timed out waiting for server to start")
+	}
+
+	for _, tc := range []struct {
+		path      string
+		spanNames []string
+	}{
+		{path: "/health", spanNames: nil},
+		{path: "/health/live", spanNames: nil},
+		{path: "/v1/data/secret/key", spanNames: nil},
+		{path: "/v1/data", spanNames: []string{"GET /v1/data"}},
+		{path: "/v1/data/other", spanNames: []string{"GET /v1/data/{path...}"}},
+	} {
+		t.Run(tc.path, func(t *testing.T) {
+			t.Cleanup(spanExporter.Reset)
+
+			rt.server.Handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, tc.path, nil))
+
+			var got []string
+			for _, s := range spanExporter.GetSpans() {
+				got = append(got, s.Name)
+			}
+			if !slices.Equal(got, tc.spanNames) {
+				t.Errorf("got spans %v, expected %v", got, tc.spanNames)
+			}
+		})
+	}
 }
 
 func TestUrlPathToConfigOverride(t *testing.T) {
@@ -1523,12 +1593,12 @@ func TestUrlPathToConfigOverride(t *testing.T) {
 	}
 }
 
-func getTestServer(update any, statusCode int) (string, func()) {
+func getTestServer(update any) (string, func()) {
 	mux := http.NewServeMux()
 	ts := httptest.NewServer(mux)
 
 	mux.HandleFunc("/repos/open-policy-agent/opa/releases/latest", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(statusCode)
+		w.WriteHeader(http.StatusOK)
 		bs, _ := json.Marshal(update)
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(bs) // ignore error
@@ -1604,7 +1674,7 @@ func TestAddrWarningMessage(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(t.Context(), 2*time.Millisecond)
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			params := NewParams()
@@ -1613,7 +1683,7 @@ func TestAddrWarningMessage(t *testing.T) {
 			logLevel := logging.Info
 
 			params.Logger = logger
-			params.Addrs = &[]string{"localhost:8181"}
+			params.Addrs = &[]string{"localhost:0"}
 			params.AddrSetByUser = tc.addrSetByUser
 			params.GracefulShutdownPeriod = 1
 			params.V0Compatible = tc.v0Compatible
@@ -1622,12 +1692,9 @@ func TestAddrWarningMessage(t *testing.T) {
 				t.Fatalf("Unexpected error %v", err)
 			}
 
-			done := make(chan struct{})
-			go func() {
-				rt.StartServer(ctx)
-				close(done)
-			}()
-			<-done
+			// Serve logs the message under test before it binds anything.
+			cancel()
+			_ = rt.Serve(ctx)
 
 			warning := " OPA is running on a public (0.0.0.0) network interface. Unless you intend to expose OPA outside of the host, binding to the localhost interface (--addr localhost:8181) is recommended. See https://www.openpolicyagent.org/docs/latest/security/#interface-binding"
 			containsWarning := strings.Contains(logger.Entries()[0].Message, warning)
@@ -1670,11 +1737,11 @@ func TestRuntimeWithExplicitBadMetricConfiguration(t *testing.T) {
 
 		_, err := NewRuntime(t.Context(), params)
 		if err == nil {
-			t.Fatalf("Expected error to be thrown on malformed metrics config")
+			t.Fatal("Expected error to be thrown on malformed metrics config")
 		}
 
 		if !strings.HasPrefix(err.Error(), "server metrics configuration parse error") {
-			t.Fatalf("Expected specific error to be thrown on malformed metrics config")
+			t.Fatal("Expected specific error to be thrown on malformed metrics config")
 		}
 	})
 }
@@ -1780,7 +1847,6 @@ func (*factory) Reconfigure(context.Context, any) {
 // in OPA run as server.
 func TestCustomHandlerFlusher(t *testing.T) {
 	fact := &factory{}
-	ctx := t.Context()
 	spanExporter := tracetest.NewInMemoryExporter()
 	options := tracing.NewOptions(
 		otelhttp.WithTracerProvider(trace.NewTracerProvider(trace.WithSpanProcessor(trace.NewSimpleSpanProcessor(spanExporter)))),
@@ -1816,11 +1882,11 @@ func TestCustomHandlerFlusher(t *testing.T) {
 			params.Addrs = &[]string{"localhost:0"}
 			params.ConfigFile = cfg
 
-			rt, err := NewRuntime(ctx, params)
+			rt, err := NewRuntime(t.Context(), params)
 			if err != nil {
 				t.Fatalf("Unexpected error %v", err)
 			}
-			go rt.StartServer(ctx)
+			serve(t.Context(), t, rt)
 			if !test.Eventually(t, 5*time.Second, func() bool {
 				return rt.ServerStatus() == ServerInitialized && len(rt.Addrs()) > 0
 			}) {
@@ -1907,12 +1973,9 @@ func TestConfigHookAndNonReplacedEnvVars(t *testing.T) {
 		t.Fatalf("Unexpected error %v", err)
 	}
 	initChannel := rt.Manager.ServerInitializedChannel()
-	done := make(chan struct{})
-	go func() {
-		rt.StartServer(ctx)
-		close(done)
-	}()
-	<-done
+	if err := rt.Serve(ctx); err != nil {
+		t.Fatal(err)
+	}
 	select {
 	case <-initChannel:
 		return
@@ -1965,12 +2028,9 @@ func TestCacheHooksOnServer(t *testing.T) {
 		t.Fatalf("Unexpected error %v", err)
 	}
 	initChannel := rt.Manager.ServerInitializedChannel()
-	done := make(chan struct{})
-	go func() {
-		rt.StartServer(ctx)
-		close(done)
-	}()
-	<-done
+	if err := rt.Serve(ctx); err != nil {
+		t.Fatal(err)
+	}
 	select {
 	case <-initChannel:
 		return
@@ -1978,10 +2038,10 @@ func TestCacheHooksOnServer(t *testing.T) {
 		t.Fatal("expected ServerInitializedChannel to be closed")
 	}
 	if h1.c == nil {
-		t.Errorf("expected non-nil inter-query cache")
+		t.Error("expected non-nil inter-query cache")
 	}
 	if h2.c == nil {
-		t.Errorf("expected non-nil inter-query value cache")
+		t.Error("expected non-nil inter-query value cache")
 	}
 
 	for _, e := range testLogger.Entries() {
@@ -2024,7 +2084,7 @@ func TestCustomStoreBuilder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
 	}
-	go rt.StartServer(ctx)
+	serve(ctx, t, rt)
 	if !test.Eventually(t, 5*time.Second, func() bool {
 		return rt.ServerStatus() == ServerInitialized && len(rt.Addrs()) > 0
 	}) {
@@ -2075,7 +2135,7 @@ func TestExtraMiddleware(t *testing.T) {
 	rt.Manager.ExtraRoute("GET /exp/foo", "exp/foo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, r.Context().Value("foo"))
 	}))
-	go rt.StartServer(ctx)
+	serve(ctx, t, rt)
 	if !test.Eventually(t, 5*time.Second, func() bool {
 		return rt.ServerStatus() == ServerInitialized && len(rt.Addrs()) > 0
 	}) {
@@ -2099,8 +2159,8 @@ func TestExtraMiddleware(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if act, exp := string(buf), "bar"; !reflect.DeepEqual(act, exp) {
-		t.Errorf("got %v (%[1]T), want %v (%[2]T)", act, exp)
+	if act, exp := string(buf), "bar"; act != exp {
+		t.Errorf("got %s, want %s", act, exp)
 	}
 }
 
@@ -2150,7 +2210,7 @@ allow if {
 		s1 := path[1].(string)
 		return method == "POST" && s0 == "exp" && s1 == "foo"
 	})
-	go rt.StartServer(ctx)
+	serve(ctx, t, rt)
 	if !test.Eventually(t, 5*time.Second, func() bool {
 		return rt.ServerStatus() == ServerInitialized && len(rt.Addrs()) > 0
 	}) {
@@ -2175,7 +2235,226 @@ allow if {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if act, exp := string(buf), `{"example":"A"}`; !reflect.DeepEqual(act, exp) {
-		t.Errorf("got %v (%[1]T), want %v (%[2]T)", act, exp)
+	if act, exp := string(buf), `{"example":"A"}`; act != exp {
+		t.Errorf("got %s, want %s", act, exp)
 	}
+}
+
+// registryConfigHook records the configs it is handed and stamps a label, so
+// tests can tell which of the two hook points fired.
+type registryConfigHook struct {
+	label      string
+	onConfig   *config.Config
+	onDiscover *config.Config
+}
+
+func (h *registryConfigHook) OnConfig(_ context.Context, c *config.Config) (*config.Config, error) {
+	c.Labels[h.label] = "on-config"
+	h.onConfig = c
+	return c, nil
+}
+
+func (h *registryConfigHook) OnConfigDiscovery(_ context.Context, c *config.Config) (*config.Config, error) {
+	c.Labels[h.label] = "on-config-discovery"
+	h.onDiscover = c
+	return c, nil
+}
+
+func TestRegisterHook(t *testing.T) {
+	// Not parallel, and not t.Cleanup-restorable in a way that would survive
+	// concurrent tests: RegisterHook mutates package-level state.
+	h := &registryConfigHook{label: "test-register-hook"}
+	RegisterHook(h)
+	t.Cleanup(func() {
+		registeredHooksMux.Lock()
+		defer registeredHooksMux.Unlock()
+		registeredHooks = slices.DeleteFunc(registeredHooks, func(x hooks.Hook) bool { return x == hooks.Hook(h) })
+	})
+
+	params := NewParams()
+	if _, err := NewRuntime(t.Context(), params); err != nil {
+		t.Fatal(err)
+	}
+
+	// A hook registered with the package must be honoured even though nothing
+	// was passed via Params.Hooks.
+	if h.onConfig == nil {
+		t.Fatal("expected OnConfig to have been called")
+	}
+	if exp, act := "on-config", h.onConfig.Labels[h.label]; exp != act {
+		t.Errorf("expected label %q, got %q", exp, act)
+	}
+}
+
+func TestRegisterHookDoesNotDropParamsHooks(t *testing.T) {
+	registered := &registryConfigHook{label: "test-registered"}
+	viaParams := &registryConfigHook{label: "test-via-params"}
+
+	RegisterHook(registered)
+	t.Cleanup(func() {
+		registeredHooksMux.Lock()
+		defer registeredHooksMux.Unlock()
+		registeredHooks = slices.DeleteFunc(registeredHooks, func(x hooks.Hook) bool { return x == hooks.Hook(registered) })
+	})
+
+	params := NewParams()
+	params.Hooks = hooks.New(viaParams)
+
+	if _, err := NewRuntime(t.Context(), params); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, h := range []*registryConfigHook{registered, viaParams} {
+		if h.onConfig == nil {
+			t.Errorf("expected OnConfig to have been called for %q", h.label)
+		}
+	}
+}
+
+func TestRegisterHookConfigDiscovery(t *testing.T) {
+	ctx := t.Context()
+	server := sdktest.MustNewServer(
+		sdktest.MockBundle("/bundles/discovery.tar.gz", map[string]string{
+			"main.rego": `
+package config
+
+decision_logs.console := true
+`,
+		}),
+	)
+	defer server.Stop()
+
+	cfgContent := fmt.Sprintf(`{
+		"services": {
+			"test": {
+				"url": %q
+			}
+		},
+		"discovery": {
+			"decision": "config",
+			"resource": "/bundles/discovery.tar.gz"
+		}
+	}`, server.URL())
+	cfg := filepath.Join(t.TempDir(), "opa.json")
+	if err := os.WriteFile(cfg, []byte(cfgContent), 0o644); err != nil {
+		t.Fatalf("write config %s: %v", cfg, err)
+	}
+
+	h := &registryConfigHook{label: "test-register-hook-discovery"}
+	RegisterHook(h)
+	t.Cleanup(func() {
+		registeredHooksMux.Lock()
+		defer registeredHooksMux.Unlock()
+		registeredHooks = slices.DeleteFunc(registeredHooks, func(x hooks.Hook) bool { return x == hooks.Hook(h) })
+	})
+
+	params := NewParams()
+	params.ConfigFile = cfg
+	params.Output = io.Discard
+	params.Addrs = &[]string{"localhost:0"}
+	params.GracefulShutdownPeriod = 1
+	testLogger := testLog.New()
+	params.Logger = testLogger
+
+	// Note that Params.Hooks is deliberately left unset: the hook reaches
+	// discovery purely by virtue of having been registered with the package.
+	rt, err := NewRuntime(ctx, params)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	disco := discovery.Lookup(rt.Manager)
+	if err := disco.Trigger(ctx); err != nil {
+		t.Errorf("trigger discovery: %v", err)
+	}
+
+	if !test.Eventually(t, 5*time.Second, func() bool {
+		return h.onDiscover != nil
+	}) {
+		t.Fatal("expected OnConfigDiscovery to have been called")
+	}
+
+	// The hook sees the merged, post-discovery config, so decision_logs from the
+	// discovery bundle is visible to it -- that is what makes it a usable place to
+	// amend discovered plugin config.
+	if h.onDiscover.DecisionLogs == nil {
+		t.Error("expected discovered decision_logs config to be visible to the hook")
+	}
+}
+
+func TestInitDiskStoreLargeBundle(t *testing.T) {
+	if testing.Short() {
+		t.Skip("too slow for testing.Short")
+	}
+
+	ctx := t.Context()
+
+	const users = 5000
+
+	data := map[string]any{}
+	for i := range users {
+		data[fmt.Sprintf("user%d", i)] = map[string]string{
+			"role": fmt.Sprintf("role%d", i%7),
+		}
+	}
+
+	bs, err := json.Marshal(map[string]any{"users": data})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	buf := archive.MustWriteTarGz([][2]string{
+		{"/data.json", string(bs)},
+		{"/policy.rego", "package example\n\nroles := object.keys(data.users)\n"},
+	})
+
+	test.WithTempFS(nil, func(rootDir string) {
+		bundlePath := filepath.Join(rootDir, "bundle.tar.gz")
+		if err := os.WriteFile(bundlePath, buf.Bytes(), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		params := NewParams()
+		params.Paths = []string{bundlePath}
+		params.BundleMode = true
+		params.BundleLazyLoadingMode = true
+		params.DiskStorage = &disk.Options{
+			Dir:        filepath.Join(rootDir, "disk"),
+			Partitions: []storage.Path{storage.MustParsePath("/users/*")},
+			Badger:     "memtablesize=100000;valuethreshold=600",
+		}
+
+		rt, err := NewRuntime(ctx, params)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		txn := storage.NewTransactionOrDie(ctx, rt.Store)
+		defer rt.Store.Abort(ctx, txn)
+
+		for _, i := range []int{0, users / 2, users - 1} {
+			path := storage.MustParsePath(fmt.Sprintf("/users/user%d/role", i))
+			act, err := rt.Store.Read(ctx, txn, path)
+			if err != nil {
+				t.Fatalf("read %v: %v", path, err)
+			}
+			if exp := fmt.Sprintf("role%d", i%7); act != exp {
+				t.Fatalf("read %v: expected %v, got %v", path, exp, act)
+			}
+		}
+	})
+}
+
+// serve runs the server until the test's context is canceled. StartServer
+// would os.Exit on error, killing the test binary without a trace.
+func serve(ctx context.Context, t *testing.T, rt *Runtime) {
+	t.Helper()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		if err := rt.Serve(ctx); err != nil {
+			t.Errorf("Serve: %v", err)
+		}
+	}()
+	t.Cleanup(func() { <-done })
 }

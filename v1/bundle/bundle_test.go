@@ -2,7 +2,6 @@
 // Use of this source code is governed by an Apache2
 // license that can be found in the LICENSE file.
 
-// nolint: goconst // string duplication is for test readability.
 package bundle
 
 import (
@@ -85,13 +84,13 @@ func TestManifestEqual(t *testing.T) {
 
 	// rego-version
 
-	n.RegoVersion = pointTo(1)
+	n.RegoVersion = new(1)
 	assertNotEqual()
 
-	m.RegoVersion = pointTo(0)
+	m.RegoVersion = new(0)
 	assertNotEqual()
 
-	m.RegoVersion = pointTo(1)
+	m.RegoVersion = new(1)
 	assertEqual()
 
 	n.FileRegoVersions = map[string]int{
@@ -158,6 +157,180 @@ func TestBundleRegoVersion(t *testing.T) {
 	if b.RegoVersion(ast.RegoV1) != ast.RegoV0 {
 		t.Fatal("expected v0")
 	}
+
+	// Set rego-version to v2
+	b.SetRegoVersion(ast.RegoV2)
+
+	if b.Manifest.RegoVersion == nil || *b.Manifest.RegoVersion != 2 {
+		t.Fatal("expected v2")
+	}
+
+	if b.RegoVersion(ast.RegoV1) != ast.RegoV2 {
+		t.Fatal("expected v2")
+	}
+
+	// An unknown rego-version falls back to the default
+	unknown := 3
+	b.Manifest.RegoVersion = &unknown
+
+	if b.RegoVersion(ast.RegoV1) != ast.RegoV1 {
+		t.Fatal("expected v1")
+	}
+}
+
+func TestManifestRegoVersionForFile(t *testing.T) {
+	tests := []struct {
+		note             string
+		regoVersion      *int
+		fileRegoVersions map[string]int
+		exp              ast.RegoVersion
+		expErr           string
+	}{
+		{note: "undefined", exp: ast.RegoUndefined},
+		{note: "v0", regoVersion: new(0), exp: ast.RegoV0},
+		{note: "v1", regoVersion: new(1), exp: ast.RegoV1},
+		{note: "v2", regoVersion: new(2), exp: ast.RegoV2},
+		{note: "per-file v2", regoVersion: new(1), fileRegoVersions: map[string]int{"/test.rego": 2}, exp: ast.RegoV2},
+		{note: "unknown", regoVersion: new(3), exp: ast.RegoUndefined, expErr: "unknown bundle rego-version 3 for file '/test.rego'"},
+		{note: "per-file unknown", fileRegoVersions: map[string]int{"/test.rego": -1}, exp: ast.RegoUndefined, expErr: "unknown bundle rego-version -1 for file '/test.rego'"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			m := Manifest{RegoVersion: tc.regoVersion, FileRegoVersions: tc.fileRegoVersions}
+
+			v, err := m.RegoVersionForFile("/test.rego")
+			if v != tc.exp {
+				t.Errorf("expected %v, got %v", tc.exp, v)
+			}
+			if tc.expErr == "" && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if tc.expErr != "" && (err == nil || err.Error() != tc.expErr) {
+				t.Errorf("expected error %q, got %v", tc.expErr, err)
+			}
+		})
+	}
+}
+
+func TestRead_UnknownRegoVersion(t *testing.T) {
+	tests := []struct {
+		note     string
+		manifest string
+		module   bool
+		expErr   string
+	}{
+		{
+			note:     "rego_version",
+			manifest: `{"roots": [""], "rego_version": 3}`,
+			expErr:   "manifest has unknown rego-version 3",
+		},
+		{
+			note:     "rego_version, with module",
+			manifest: `{"roots": [""], "rego_version": 3}`,
+			module:   true,
+			expErr:   "unknown bundle rego-version 3 for file '/test.rego'",
+		},
+		{
+			note:     "file_rego_versions",
+			manifest: `{"roots": [""], "file_rego_versions": {"/other.rego": 3}}`,
+			expErr:   "manifest has unknown rego-version 3 for file '/other.rego'",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			files := [][2]string{{"/.manifest", tc.manifest}}
+			if tc.module {
+				files = append(files, [2]string{"test.rego", "package example"})
+			}
+
+			_, err := NewCustomReader(NewTarballLoaderWithBaseURL(archive.MustWriteTarGz(files), "")).Read()
+			if err == nil || !strings.Contains(err.Error(), tc.expErr) {
+				t.Fatalf("expected error containing %q, got %v", tc.expErr, err)
+			}
+		})
+	}
+}
+
+// TestManifestNumericRegoVersionForFileGlobSemantics pins how the
+// file_rego_versions patterns are matched against module paths. The patterns
+// are compiled without separators, so '*' crosses '/' -- but a wildcard still
+// never stands in for a literal of the pattern, so a pattern with a '/*/'
+// segment requires both slashes to be present in the path.
+func TestManifestNumericRegoVersionForFileGlobSemantics(t *testing.T) {
+	tests := []struct {
+		note    string
+		pattern string
+		path    string
+		want    bool
+	}{
+		{
+			note:    "wildcard crosses the separator",
+			pattern: "/example/*.rego",
+			path:    "/example/authz/policy.rego",
+			want:    true,
+		},
+		{
+			note:    "wildcard does not stand in for a literal of the pattern",
+			pattern: "/example/*/policy.rego",
+			path:    "/example/policy.rego",
+			want:    false,
+		},
+		{
+			note:    "wildcard between literals",
+			pattern: "/example/*/policy.rego",
+			path:    "/example/authz/policy.rego",
+			want:    true,
+		},
+		{
+			note:    "super wildcard does not stand in for a literal either",
+			pattern: "/example/**/policy.rego",
+			path:    "/example/policy.rego",
+			want:    false,
+		},
+		{
+			note:    "leading wildcard matches the empty string",
+			pattern: "*/policy.rego",
+			path:    "/policy.rego",
+			want:    true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			m := Manifest{FileRegoVersions: map[string]int{tc.pattern: 0}}
+
+			got, err := m.numericRegoVersionForFile(tc.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// A nil version means no pattern matched: RegoVersion is unset, so
+			// the resolver has nothing to fall back to.
+			if matched := got != nil; matched != tc.want {
+				t.Errorf("pattern %q against %q: expected match=%v, got %v",
+					tc.pattern, tc.path, tc.want, matched)
+			}
+		})
+	}
+}
+
+// TestManifestNumericRegoVersionForFileInvalidPattern ensures a malformed
+// pattern is reported rather than silently ignored. Note that gobwas/glob
+// v0.2.3 accepted "{a,b" and "a\\"; v1.0.0 rejects both.
+func TestManifestNumericRegoVersionForFileInvalidPattern(t *testing.T) {
+	for _, pattern := range []string{"{a,b", `a\`, "[]"} {
+		t.Run(pattern, func(t *testing.T) {
+			m := Manifest{FileRegoVersions: map[string]int{pattern: 0}}
+
+			if _, err := m.numericRegoVersionForFile("/example/policy.rego"); err == nil {
+				t.Fatalf("expected error for pattern %q", pattern)
+			} else if exp := "failed to compile glob pattern " + pattern; !strings.HasPrefix(err.Error(), exp) {
+				t.Errorf("expected error starting with %q, got %q", exp, err.Error())
+			}
+		})
+	}
 }
 
 // TestManifestNumericRegoVersionForFileDeterministic is a regression test
@@ -221,6 +394,144 @@ func TestRead(t *testing.T) {
 func TestReadWithBaseDir(t *testing.T) {
 	for _, useMemoryFS := range []bool{false, true} {
 		testReadBundle(t, "/foo/bar", useMemoryFS)
+	}
+}
+
+func TestReadWithBaseDirUnqualifiedWasmResolver(t *testing.T) {
+	files := [][2]string{
+		{"/authz/allow/policy.wasm", "wasm-module"},
+		{"/.manifest", `{"wasm":[{"entrypoint": "authz/allow", "module": "/authz/allow/policy.wasm"}]}`},
+	}
+
+	loader := NewTarballLoaderWithBaseURL(archive.MustWriteTarGz(files), "/foo/bar")
+	b, err := NewCustomReader(loader).WithBaseDir("/foo/bar").Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	exp := "/foo/bar/authz/allow/policy.wasm"
+	if len(b.WasmModules) != 1 || b.WasmModules[0].Path != exp {
+		t.Fatalf("expected wasm module at %q, got %+v", exp, b.WasmModules)
+	}
+	if got := b.Manifest.WasmResolvers[0].Module; got != exp {
+		t.Fatalf("expected resolver module %q, got %q", exp, got)
+	}
+	if len(b.WasmModules[0].Entrypoints) != 1 {
+		t.Fatalf("expected entrypoint injected, got %v", b.WasmModules[0].Entrypoints)
+	}
+}
+
+func TestFormatModulesWithOptions(t *testing.T) {
+	tests := []struct {
+		note        string
+		regoVersion ast.RegoVersion
+		module      string
+		preserve    bool
+		exp         string
+	}{
+		{
+			note:        "v0, preserved",
+			regoVersion: ast.RegoV0,
+			module: `package a
+				p[x] { x := 1 }`,
+			preserve: true,
+			exp: `package a
+
+p[x] {
+	x := 1
+}
+`,
+		},
+		{
+			note:        "v0 with rego.v1, preserved",
+			regoVersion: ast.RegoV0,
+			module: `package a
+				import rego.v1
+				p contains x if { x := 1 }`,
+			preserve: true,
+			exp: `package a
+
+import rego.v1
+
+p contains x if x := 1
+`,
+		},
+		{
+			// Parsed as v0v1 without an import; preserving the version adds it.
+			note:        "v0v1 parser option, preserved",
+			regoVersion: ast.RegoV0CompatV1,
+			module: `package a
+				p := 1`,
+			preserve: true,
+			exp: `package a
+
+import rego.v1
+
+p := 1
+`,
+		},
+		{
+			note:        "v1, preserved",
+			regoVersion: ast.RegoV1,
+			module: `package a
+				p contains x if { x := 1 }`,
+			preserve: true,
+			exp: `package a
+
+p contains x if x := 1
+`,
+		},
+		{
+			note:        "v1 with rego.v2, preserved",
+			regoVersion: ast.RegoV1,
+			module: `package a
+				import rego.v2
+				p if { input.a or input.b }`,
+			preserve: true,
+			exp: `package a
+
+import rego.v2
+
+p if input.a or input.b
+`,
+		},
+		{
+			note:        "v2, preserved",
+			regoVersion: ast.RegoV2,
+			module: `package a
+				p if { input.a or input.b }`,
+			preserve: true,
+			exp: `package a
+
+p if input.a or input.b
+`,
+		},
+		{
+			note:        "v2, formatted for v1",
+			regoVersion: ast.RegoV2,
+			module: `package a
+				p if { input.a or input.b }`,
+			exp: `package a
+
+import future.keywords.or
+
+p if input.a or input.b
+`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			parsed := ast.MustParseModuleWithOpts(tc.module, ast.ParserOptions{RegoVersion: tc.regoVersion})
+			b := Bundle{Modules: []ModuleFile{{URL: "a.rego", Path: "a.rego", Raw: []byte(tc.module), Parsed: parsed}}}
+
+			if err := b.FormatModulesWithOptions(BundleFormatOptions{RegoVersion: ast.RegoV1, PreserveModuleRegoVersion: tc.preserve}); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if act := string(b.Modules[0].Raw); act != tc.exp {
+				t.Fatalf("expected:\n\n%s\n\ngot:\n\n%s", tc.exp, act)
+			}
+		})
 	}
 }
 
@@ -292,6 +603,346 @@ p contains x if {
 				if len(bundle.Modules) != 1 {
 					t.Fatalf("expected 1 module but got %d", len(bundle.Modules))
 				}
+			}
+		})
+	}
+}
+
+func TestRead_LogicalKeywords(t *testing.T) {
+	v1Module := `package example
+		import future.keywords.and
+		import future.keywords.or
+
+		allow if {
+			input.user == "alice" or (input.role == "admin" and input.verified)
+		}`
+
+	v0Module := `package example
+		import future.keywords.and
+		import future.keywords.or
+
+		allow {
+			input.user == "alice" or (input.role == "admin" and input.verified)
+		}`
+
+	v2Module := `package example
+
+		allow if {
+			input.user == "alice" or (input.role == "admin" and input.verified)
+		}`
+
+	v2ImportModule := `package example
+		import rego.v2
+
+		allow if {
+			input.user == "alice" or (input.role == "admin" and input.verified)
+		}`
+
+	tests := []struct {
+		note         string
+		files        [][2]string
+		regoVersion  ast.RegoVersion
+		capabilities *ast.Capabilities
+		expErrs      []string
+	}{
+		{
+			note:  "per-keyword imports",
+			files: [][2]string{{"test.rego", v1Module}},
+		},
+		{
+			note: "wildcard future.keywords import",
+			files: [][2]string{{"test.rego", `package example
+				import future.keywords
+
+				allow if {
+					input.user == "alice" or (input.role == "admin" and input.verified)
+				}`},
+			},
+		},
+		{
+			note: "no import",
+			files: [][2]string{{"test.rego", `package example
+
+				allow if {
+					input.user == "alice" or input.role == "admin"
+				}`},
+			},
+			expErrs: []string{"test.rego:4: rego_parse_error: unexpected identifier token"},
+		},
+		{
+			note: "v0 bundle manifest",
+			files: [][2]string{
+				{"/.manifest", `{"roots": [""], "rego_version": 0}`},
+				{"test.rego", v0Module},
+			},
+		},
+		{
+			note: "v0 bundle manifest, rego.v1 import",
+			files: [][2]string{
+				{"/.manifest", `{"roots": [""], "rego_version": 0}`},
+				{"test.rego", `package example
+					import future.keywords.and
+					import future.keywords.or
+					import rego.v1
+
+					allow if {
+						input.user == "alice" or (input.role == "admin" and input.verified)
+					}`,
+				},
+			},
+		},
+		{
+			note: "per-file rego version",
+			files: [][2]string{
+				{"/.manifest", `{"roots": [""], "rego_version": 1, "file_rego_versions": {"/test.rego": 0}}`},
+				{"test.rego", v0Module},
+			},
+		},
+		{
+			note:        "v0 reader rego-version",
+			files:       [][2]string{{"test.rego", v0Module}},
+			regoVersion: ast.RegoV0,
+		},
+		{
+			note: "v2 bundle manifest",
+			files: [][2]string{
+				{"/.manifest", `{"roots": [""], "rego_version": 2}`},
+				{"test.rego", v2Module},
+			},
+		},
+		{
+			note: "v2 bundle manifest, rego.v2 import",
+			files: [][2]string{
+				{"/.manifest", `{"roots": [""], "rego_version": 2}`},
+				{"test.rego", v2ImportModule},
+			},
+		},
+		{
+			note: "per-file rego version 2",
+			files: [][2]string{
+				{"/.manifest", `{"roots": [""], "rego_version": 1, "file_rego_versions": {"/test.rego": 2}}`},
+				{"test.rego", v2Module},
+			},
+		},
+		{
+			note:        "v2 reader rego-version",
+			files:       [][2]string{{"test.rego", v2Module}},
+			regoVersion: ast.RegoV2,
+		},
+		{
+			note:         "capabilities without and/or",
+			files:        [][2]string{{"test.rego", v1Module}},
+			capabilities: capabilitiesWithoutFutureKeywords(t, "and", "or"),
+			expErrs:      []string{"rego_parse_error: unexpected keyword, must be one of [contains every if in not]"},
+		},
+		{
+			note:  "rego.v2 import",
+			files: [][2]string{{"test.rego", v2ImportModule}},
+		},
+		{
+			note: "v0 bundle manifest, rego.v2 import",
+			files: [][2]string{
+				{"/.manifest", `{"roots": [""], "rego_version": 0}`},
+				{"test.rego", v2ImportModule},
+			},
+		},
+		{
+			note:        "v0 reader rego-version, rego.v2 import",
+			files:       [][2]string{{"test.rego", v2ImportModule}},
+			regoVersion: ast.RegoV0,
+		},
+		{
+			// rego.v2 activates its keywords whatever the capabilities advertise.
+			note:         "capabilities without and/or, rego.v2 import",
+			files:        [][2]string{{"test.rego", v2ImportModule}},
+			capabilities: capabilitiesWithoutFutureKeywords(t, "and", "or"),
+		},
+		{
+			note:         "capabilities without rego_v2_import",
+			files:        [][2]string{{"test.rego", v2ImportModule}},
+			capabilities: capabilitiesWithoutFeatures(t, ast.FeatureRegoV2Import, ast.FeatureRegoV2),
+			expErrs:      []string{"test.rego:2: rego_parse_error: invalid import, `rego.v2` is not supported by current capabilities"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			buf := archive.MustWriteTarGz(tc.files)
+			br := NewCustomReader(NewTarballLoaderWithBaseURL(buf, ""))
+
+			if tc.regoVersion != ast.RegoUndefined {
+				br = br.WithRegoVersion(tc.regoVersion)
+			}
+			if tc.capabilities != nil {
+				br = br.WithCapabilities(tc.capabilities)
+			}
+
+			bundle, err := br.Read()
+
+			if len(tc.expErrs) > 0 {
+				if err == nil {
+					t.Fatalf("Expected error(s):\n\n%v\n\nbut got nil", tc.expErrs)
+				}
+				for _, expErr := range tc.expErrs {
+					if !strings.Contains(err.Error(), expErr) {
+						t.Fatalf("Expected error:\n\n%s\n\nbut got:\n\n%s", expErr, err)
+					}
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+			if len(bundle.Modules) != 1 {
+				t.Fatalf("expected 1 module but got %d", len(bundle.Modules))
+			}
+
+			// The keywords must survive as logical nodes, not be parsed as
+			// something else that happens to be valid.
+			var ands, ors int
+			ast.WalkExprs(bundle.Modules[0].Parsed, func(e *ast.Expr) bool {
+				switch {
+				case e.IsAnd():
+					ands++
+				case e.IsOr():
+					ors++
+				}
+				return false
+			})
+			if ands != 1 || ors != 1 {
+				t.Fatalf("expected 1 and-expression and 1 or-expression, got %d and %d in:\n\n%v",
+					ands, ors, bundle.Modules[0].Parsed)
+			}
+		})
+	}
+}
+
+func capabilitiesWithoutFeatures(tb testing.TB, features ...string) *ast.Capabilities {
+	tb.Helper()
+
+	caps := ast.CapabilitiesForThisVersion()
+	caps.Features = slices.DeleteFunc(caps.Features, func(f string) bool {
+		return slices.Contains(features, f)
+	})
+
+	return caps
+}
+
+func capabilitiesWithoutFutureKeywords(tb testing.TB, kws ...string) *ast.Capabilities {
+	tb.Helper()
+
+	caps := ast.CapabilitiesForThisVersion()
+	caps.FutureKeywords = slices.DeleteFunc(caps.FutureKeywords, func(kw string) bool {
+		return slices.Contains(kws, kw)
+	})
+
+	return caps
+}
+
+type templateStringCapabilityCase struct {
+	note        string
+	module      string
+	regoVersion ast.RegoVersion
+	caps        *ast.Capabilities
+	expErr      string
+}
+
+// templateStringCapabilityCases are shared by the reader and activation tests.
+// The rego_v2 feature implies template_strings for v2 modules only.
+func templateStringCapabilityCases() []templateStringCapabilityCase {
+	const (
+		module = `package test
+						p := $"foo {input.x}"`
+		importMod = `package test
+						import rego.v2
+						p := $"foo {input.x}"`
+		errMessage = "template strings are not supported by current capabilities"
+	)
+
+	caps := func(v ast.RegoVersion, without ...string) *ast.Capabilities {
+		c := ast.CapabilitiesForThisVersion(ast.CapabilitiesRegoVersion(v))
+		c.Features = slices.DeleteFunc(c.Features, func(f string) bool {
+			return slices.Contains(without, f)
+		})
+		return c
+	}
+
+	return []templateStringCapabilityCase{
+		{
+			note:        "v1 module, v1 capabilities",
+			module:      module,
+			regoVersion: ast.RegoV1,
+			caps:        caps(ast.RegoV1),
+		},
+		{
+			note:        "v1 module, v1 capabilities without template_strings",
+			module:      module,
+			regoVersion: ast.RegoV1,
+			caps:        caps(ast.RegoV1, ast.FeatureTemplateStrings),
+			expErr:      errMessage,
+		},
+		{
+			note:        "v1 module, v0 capabilities",
+			module:      module,
+			regoVersion: ast.RegoV1,
+			caps:        caps(ast.RegoV0),
+			expErr:      errMessage,
+		},
+		{
+			note:        "v2 module, v2 capabilities",
+			module:      module,
+			regoVersion: ast.RegoV2,
+			caps:        caps(ast.RegoV2),
+		},
+		{
+			note:        "v2 module, v1 capabilities without template_strings",
+			module:      module,
+			regoVersion: ast.RegoV2,
+			caps:        caps(ast.RegoV1, ast.FeatureTemplateStrings),
+		},
+		{
+			note:        "v2 module, v0 capabilities",
+			module:      module,
+			regoVersion: ast.RegoV2,
+			caps:        caps(ast.RegoV0),
+		},
+		{
+			note:        "v2 module, v0 capabilities without rego_v2",
+			module:      module,
+			regoVersion: ast.RegoV2,
+			caps:        caps(ast.RegoV0, ast.FeatureRegoV2),
+			expErr:      "rego_v2 feature required",
+		},
+		{
+			note:        "v0 module, rego.v2 import, v0 capabilities",
+			module:      importMod,
+			regoVersion: ast.RegoV0,
+			caps:        caps(ast.RegoV0),
+			expErr:      errMessage,
+		},
+	}
+}
+
+// TestReaderTemplateStringCapabilities asserts that the reader parses template
+// strings only where the capabilities, or the rego_v2 feature for v2 modules, allow it.
+func TestReaderTemplateStringCapabilities(t *testing.T) {
+	for _, tc := range templateStringCapabilityCases() {
+		t.Run(tc.note, func(t *testing.T) {
+			buf := archive.MustWriteTarGz([][2]string{{"test.rego", tc.module}})
+			_, err := NewCustomReader(NewTarballLoaderWithBaseURL(buf, "")).
+				WithRegoVersion(tc.regoVersion).
+				WithCapabilities(tc.caps).
+				Read()
+
+			if tc.expErr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %s", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tc.expErr) {
+				t.Fatalf("expected error containing %q, got: %v", tc.expErr, err)
 			}
 		})
 	}
@@ -492,6 +1143,46 @@ func TestReadWithManifest(t *testing.T) {
 	}
 }
 
+func TestReadRejectsDuplicateManifests(t *testing.T) {
+	pbBytes, err := marshalManifestProto(&Manifest{Revision: "from-proto"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		note  string
+		files [][2]string
+	}{
+		{
+			note: "json + proto manifest",
+			files: [][2]string{
+				{"/.manifest", `{"revision": "from-json"}`},
+				{"/.manifest.pb", string(pbBytes)},
+			},
+		},
+		{
+			note: "two json manifests at different paths (HasSuffix shadowing)",
+			files: [][2]string{
+				{"/.manifest", `{"revision": "from-root"}`},
+				{"/sub/release.manifest", `{"revision": "from-sub"}`},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.note, func(t *testing.T) {
+			buf := archive.MustWriteTarGz(tc.files)
+			_, err := NewReader(buf).Read()
+			if err == nil {
+				t.Fatal("expected error for duplicate manifests, got nil")
+			}
+			if !strings.Contains(err.Error(), "multiple manifest files") {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
 func TestManifestMetadata(t *testing.T) {
 	files := [][2]string{
 		{"/.manifest", `{
@@ -587,6 +1278,26 @@ func TestReadWithSignatures(t *testing.T) {
 		"no_signatures_file_no_keyid": {
 			[][2]string{{"/.manifest", `{"revision": "quickbrownfaux"}`}},
 			NewVerificationConfig(map[string]*KeyConfig{}, "", "", nil),
+			true, errors.New("bundle missing .signatures.json file"),
+		},
+		"no_signatures_file_no_keyid_with_keys": {
+			[][2]string{{"/.manifest", `{"revision": "quickbrownfaux"}`}},
+			NewVerificationConfig(map[string]*KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}, "", "", nil),
+			true, errors.New("bundle missing .signatures.json file"),
+		},
+		"no_signatures_file_scope_only": {
+			[][2]string{{"/.manifest", `{"revision": "quickbrownfaux"}`}},
+			NewVerificationConfig(map[string]*KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}, "", "write", nil),
+			true, errors.New("bundle missing .signatures.json file"),
+		},
+		"no_signatures_file_exclude_only": {
+			[][2]string{{"/.manifest", `{"revision": "quickbrownfaux"}`}},
+			NewVerificationConfig(map[string]*KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}, "", "", []string{"data.json"}),
+			true, errors.New("bundle missing .signatures.json file"),
+		},
+		"no_signatures_file_optional_signature": {
+			[][2]string{{"/.manifest", `{"revision": "quickbrownfaux"}`}},
+			NewVerificationConfig(map[string]*KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}, "", "", nil).WithOptionalSignature(),
 			false, nil,
 		},
 		"no_signatures_file": {
@@ -607,6 +1318,15 @@ func TestReadWithSignatures(t *testing.T) {
 			},
 			NewVerificationConfig(map[string]*KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}, "", "write", nil),
 			true, errors.New("a/b/c/data.json: digest mismatch (want: 42cfe6768b57bb5f7503c165c28dd07ac5b813554ebc850f2cc35843e7137b1d, got: a615eeaee21de5179de080de8c3052c8da901138406ba71c38c032845f7d54f4)"),
+		},
+		"signature_with_unknown_keyid": {
+			// Only reachable via a directly-supplied, unvalidated config
+			[][2]string{
+				{"/.signatures.json", fmt.Sprintf(`{"signatures": ["%v"]}`, signedTokenHS256)},
+				{"/.manifest", `{"revision": "quickbrownfaux"}`},
+			},
+			NewVerificationConfig(map[string]*KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}, "bar", "write", nil),
+			true, errors.New("verification key corresponding to ID bar not found"),
 		},
 		"no_hashing_alg": {
 			[][2]string{
@@ -679,6 +1399,378 @@ func TestReadWithSignaturesWithBaseDir(t *testing.T) {
 	_, err := reader.Read()
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
+	}
+}
+
+func TestIsSignaturesFile(t *testing.T) {
+	cases := []struct {
+		path string
+		want bool
+	}{
+		{"/.signatures.json", true},
+		{".signatures.json", true},
+		{"./.signatures.json", true},
+		{"sub/.signatures.json", true},
+		{"/a/b/.signatures.json", true},
+		{"mybundle/.signatures.json", true},
+		{"foosignatures.json", false},
+		{"data.signatures.json", false},
+		{"/foo/data.signatures.json", false},
+		{"signatures.json", false},
+		{"/signatures.json", false},
+	}
+	for _, tc := range cases {
+		if got := IsSignaturesFile(tc.path); got != tc.want {
+			t.Errorf("IsSignaturesFile(%q) = %v, want %v", tc.path, got, tc.want)
+		}
+	}
+}
+
+func TestIsStructuredDoc(t *testing.T) {
+	// Structured docs are canonicalized before hashing. Everything else is hashed
+	// as raw bytes.
+	cases := []struct {
+		name string
+		want bool
+	}{
+		{"data.json", true},
+		{"data.yaml", true},
+		{"data.yml", true},
+		{".manifest", true},
+		{"/a/b/data.yml", true}, // matched by base name, at any depth
+		{"/a/b/data.yaml", true},
+		{".manifest.pb", false}, // proto manifest is hashed as raw wire bytes
+		{"example.rego", false},
+		{"policy.wasm", false},
+		{"data.signatures.json", false},
+		{"foo.yml", false}, // only data.yml, not arbitrary YAML files
+		{"foo.yaml", false},
+	}
+	for _, tc := range cases {
+		if got := IsStructuredDoc(tc.name); got != tc.want {
+			t.Errorf("IsStructuredDoc(%q) = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestPreProcessBundleSignaturesFileClassification(t *testing.T) {
+	// The signatures file is matched by basename (".signatures.json"), like the
+	// manifest, so it is found under any prefix. Similarly named files are
+	// content, and a second signatures file is rejected when verifying.
+	descriptorHasPath := func(descs []*Descriptor, want string) bool {
+		for _, d := range descs {
+			if d.Path() == want {
+				return true
+			}
+		}
+		return false
+	}
+
+	t.Run("misnamed files are content, signatures file is metadata", func(t *testing.T) {
+		files := [][2]string{
+			{"/.signatures.json", `{"plugin":"real"}`},
+			{"/foosignatures.json", `{"x":1}`},
+			{"/data.signatures.json", `{"x":2}`},
+			{"/signatures.json", `{"x":3}`},
+			{"/data.json", `{"x":4}`},
+		}
+		loader := NewTarballLoaderWithBaseURL(archive.MustWriteTarGz(files), "")
+		b, descs, err := preProcessBundle(loader, false, DefaultSizeLimitBytes)
+		if err != nil {
+			t.Fatalf("preProcessBundle: %v", err)
+		}
+		if b.Signatures.Plugin != "real" {
+			t.Fatalf("expected /.signatures.json decoded into Signatures, got %+v", b.Signatures)
+		}
+		for _, want := range []string{"/foosignatures.json", "/data.signatures.json", "/signatures.json", "/data.json"} {
+			if !descriptorHasPath(descs, want) {
+				t.Errorf("expected %q to be treated as content (present in descriptors)", want)
+			}
+		}
+		if descriptorHasPath(descs, "/.signatures.json") {
+			t.Error("/.signatures.json must not be a content descriptor")
+		}
+	})
+
+	t.Run("signatures file is found under a wrapping directory", func(t *testing.T) {
+		files := [][2]string{
+			{"/mybundle/.signatures.json", `{"plugin":"real"}`},
+			{"/mybundle/data.json", `{"x":1}`},
+		}
+		loader := NewTarballLoaderWithBaseURL(archive.MustWriteTarGz(files), "")
+		b, descs, err := preProcessBundle(loader, false, DefaultSizeLimitBytes)
+		if err != nil {
+			t.Fatalf("preProcessBundle: %v", err)
+		}
+		if b.Signatures.Plugin != "real" {
+			t.Fatalf("expected wrapped .signatures.json decoded into Signatures, got %+v", b.Signatures)
+		}
+		if !descriptorHasPath(descs, "/mybundle/data.json") {
+			t.Error("expected /mybundle/data.json to be content")
+		}
+		if descriptorHasPath(descs, "/mybundle/.signatures.json") {
+			t.Error("wrapped .signatures.json must not be a content descriptor")
+		}
+	})
+
+	t.Run("multiple signatures files are rejected when verifying", func(t *testing.T) {
+		files := [][2]string{
+			{"/.signatures.json", `{"plugin":"real"}`},
+			{"/sub/.signatures.json", `{"plugin":"other"}`},
+			{"/data.json", `{"x":1}`},
+		}
+		loader := NewTarballLoaderWithBaseURL(archive.MustWriteTarGz(files), "")
+		if _, _, err := preProcessBundle(loader, false, DefaultSizeLimitBytes); err == nil || !strings.Contains(err.Error(), "multiple signatures files") {
+			t.Fatalf("expected multiple signatures files error, got %v", err)
+		}
+	})
+
+	t.Run("multiple signatures files are tolerated under skip-verify", func(t *testing.T) {
+		files := [][2]string{
+			{"/.signatures.json", `{"plugin":"real"}`},
+			{"/sub/.signatures.json", `{"plugin":"other"}`},
+			{"/data.json", `{"x":1}`},
+		}
+		loader := NewTarballLoaderWithBaseURL(archive.MustWriteTarGz(files), "")
+		b, descs, err := preProcessBundle(loader, true, DefaultSizeLimitBytes)
+		if err != nil {
+			t.Fatalf("skipVerify should tolerate multiple signatures files, got %v", err)
+		}
+		if !b.Signatures.isEmpty() {
+			t.Errorf("with skipVerify, Signatures must not be decoded, got %+v", b.Signatures)
+		}
+		for _, sig := range []string{"/.signatures.json", "/sub/.signatures.json"} {
+			if descriptorHasPath(descs, sig) {
+				t.Errorf("%q must not be a content descriptor under skipVerify", sig)
+			}
+		}
+		if !descriptorHasPath(descs, "/data.json") {
+			t.Error("/data.json must be content")
+		}
+	})
+
+	t.Run("skip-verify keeps misnamed files as content", func(t *testing.T) {
+		files := [][2]string{
+			{"/.signatures.json", `{"plugin":"real"}`},
+			{"/data.signatures.json", `{"x":1}`},
+			{"/data.json", `{"x":2}`},
+		}
+		loader := NewTarballLoaderWithBaseURL(archive.MustWriteTarGz(files), "")
+		b, descs, err := preProcessBundle(loader, true, DefaultSizeLimitBytes)
+		if err != nil {
+			t.Fatalf("preProcessBundle: %v", err)
+		}
+		if !b.Signatures.isEmpty() {
+			t.Errorf("with skipVerify, Signatures must not be decoded, got %+v", b.Signatures)
+		}
+		if !descriptorHasPath(descs, "/data.signatures.json") {
+			t.Error("/data.signatures.json must remain content even with skipVerify")
+		}
+		if descriptorHasPath(descs, "/.signatures.json") {
+			t.Error("/.signatures.json must not be a content descriptor")
+		}
+	})
+}
+
+// signedTestBundle returns a bundle signed with HS256/"secret" under key id "foo".
+func signedTestBundle(t *testing.T) Bundle {
+	t.Helper()
+
+	module := `package example
+
+p := 1`
+
+	b := Bundle{
+		Manifest: Manifest{Revision: "quickbrownfaux"},
+		Data:     map[string]any{"a": json.Number("1")},
+		Modules: []ModuleFile{
+			{
+				Path:   "/example.rego",
+				URL:    "/example.rego",
+				Parsed: ast.MustParseModule(module),
+				Raw:    []byte(module),
+			},
+		},
+	}
+	b.Manifest.Init()
+
+	if err := b.GenerateSignature(NewSigningConfig("secret", "HS256", ""), "foo", true); err != nil {
+		t.Fatal("Unexpected error:", err)
+	}
+
+	return b
+}
+
+func writeTestBundle(t *testing.T, b Bundle) *bytes.Buffer {
+	t.Helper()
+
+	var buf bytes.Buffer
+	if err := NewWriter(&buf).UseModulePath(true).Write(b); err != nil {
+		t.Fatal("Unexpected error:", err)
+	}
+
+	return &buf
+}
+
+// TestReadWithOptionalSignature covers the keys-only config shape: a signature that is present is
+// still fully verified, but a bundle without one is accepted.
+func TestReadWithOptionalSignature(t *testing.T) {
+	keyConfigs := map[string]*KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}
+
+	tests := map[string]struct {
+		update func(*Bundle)
+		expErr string
+	}{
+		"signed_bundle_verified_via_kid": {
+			update: func(*Bundle) {},
+		},
+		"unsigned_bundle_accepted": {
+			update: func(b *Bundle) { b.Signatures = SignaturesConfig{} },
+		},
+		"signed_and_tampered_bundle_rejected": {
+			update: func(b *Bundle) { b.Data = map[string]any{"a": json.Number("2")} },
+			expErr: "data.json: digest mismatch",
+		},
+		"unsigned_and_tampered_bundle_accepted": {
+			update: func(b *Bundle) {
+				b.Signatures = SignaturesConfig{}
+				b.Data = map[string]any{"a": json.Number("2")}
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			b := signedTestBundle(t)
+			tc.update(&b)
+
+			vc := NewVerificationConfig(keyConfigs, "", "", nil).WithOptionalSignature()
+			_, err := NewReader(writeTestBundle(t, b)).WithBundleVerificationConfig(vc).Read()
+
+			if tc.expErr == "" {
+				if err != nil {
+					t.Fatalf("Unexpected error %v", err)
+				}
+				return
+			}
+
+			if err == nil {
+				t.Fatal("Expected error but got nil")
+			}
+			if !strings.Contains(err.Error(), tc.expErr) {
+				t.Fatalf("Expected error to contain %q but got %v", tc.expErr, err)
+			}
+		})
+	}
+}
+
+func TestReadStrippedBundleSkipVerify(t *testing.T) {
+	b := signedTestBundle(t)
+	b.Signatures = SignaturesConfig{}
+
+	vc := NewVerificationConfig(map[string]*KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}, "foo", "", nil)
+
+	_, err := NewReader(writeTestBundle(t, b)).
+		WithBundleVerificationConfig(vc).
+		WithSkipBundleVerification(true).
+		Read()
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+}
+
+func TestReadDeltaBundleWithVerificationConfig(t *testing.T) {
+	keyConfigs := map[string]*KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}
+
+	deltaFiles := [][2]string{
+		{"/.manifest", `{"revision": "quickbrownfaux", "roots": ["a"]}`},
+		{"/patch.json", `{"data": [{"op": "upsert", "path": "/a/b", "value": "attacker"}]}`},
+	}
+
+	// An empty op list is a snapshot, not a delta (Type() keys off len(Patch.Data)),
+	// so it must still hit the missing-signature guard rather than the delta branch.
+	emptyPatchFiles := [][2]string{
+		{"/.manifest", `{"revision": "quickbrownfaux", "roots": ["a"]}`},
+		{"/patch.json", `{"data": []}`},
+	}
+
+	tests := map[string]struct {
+		files      [][2]string
+		vc         *VerificationConfig
+		skipVerify bool
+		err        string
+	}{
+		"strict_config_rejects_delta": {
+			files: deltaFiles,
+			vc:    NewVerificationConfig(keyConfigs, "foo", "", nil),
+			err:   "delta bundles do not support signature verification",
+		},
+		"strict_config_no_keyid_rejects_delta": {
+			files: deltaFiles,
+			vc:    NewVerificationConfig(keyConfigs, "", "", nil),
+			err:   "delta bundles do not support signature verification",
+		},
+		"strict_config_allowing_unsigned_delta_bundles_accepts_delta": {
+			files: deltaFiles,
+			vc:    allowUnsignedDeltaBundles(NewVerificationConfig(keyConfigs, "foo", "", nil)),
+		},
+		"strict_config_not_allowing_unsigned_delta_bundles_rejects_delta": {
+			files: deltaFiles,
+			vc:    unmarshalVerificationConfig(t, `{"keyid": "foo", "allow_unsigned_delta_bundles": false}`, keyConfigs),
+			err:   "delta bundles do not support signature verification",
+		},
+		"config_allowing_unsigned_delta_bundles_still_requires_snapshot_signature": {
+			// The opt-out is delta-only: a stripped snapshot bundle is still rejected
+			files: [][2]string{{"/.manifest", `{"revision": "quickbrownfaux", "roots": ["a"]}`}},
+			vc:    allowUnsignedDeltaBundles(NewVerificationConfig(keyConfigs, "foo", "", nil)),
+			err:   "bundle missing .signatures.json file",
+		},
+		"optional_signature_config_accepts_delta": {
+			files: deltaFiles,
+			vc:    NewVerificationConfig(keyConfigs, "", "", nil).WithOptionalSignature(),
+		},
+		"no_config_accepts_delta": {
+			files: deltaFiles,
+		},
+		"skip_verify_accepts_delta": {
+			files:      deltaFiles,
+			vc:         NewVerificationConfig(keyConfigs, "foo", "", nil),
+			skipVerify: true,
+		},
+		"empty_patch_is_snapshot": {
+			files: emptyPatchFiles,
+			vc:    NewVerificationConfig(keyConfigs, "foo", "", nil),
+			err:   "bundle missing .signatures.json file",
+		},
+		"empty_patch_is_snapshot_when_unsigned_delta_bundles_allowed": {
+			files: emptyPatchFiles,
+			vc:    allowUnsignedDeltaBundles(NewVerificationConfig(keyConfigs, "foo", "", nil)),
+			err:   "bundle missing .signatures.json file",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			reader := NewReader(archive.MustWriteTarGz(tc.files)).
+				WithBundleVerificationConfig(tc.vc).
+				WithSkipBundleVerification(tc.skipVerify)
+
+			_, err := reader.Read()
+
+			if tc.err == "" {
+				if err != nil {
+					t.Fatalf("Unexpected error %v", err)
+				}
+				return
+			}
+
+			if err == nil {
+				t.Fatal("Expected error but got nil")
+			}
+			if err.Error() != tc.err {
+				t.Fatalf("Expected error %q but got %v", tc.err, err)
+			}
+		})
 	}
 }
 
@@ -1297,6 +2389,294 @@ func TestRoundtrip(t *testing.T) {
 	}
 }
 
+func TestRoundtrip_RegoV2Import(t *testing.T) {
+	v0, v1, v2 := 0, 1, 2
+	tests := []struct {
+		note        string
+		regoVersion ast.RegoVersion
+		manifest    Manifest
+	}{
+		{
+			note:        "v1",
+			regoVersion: ast.RegoV1,
+			manifest:    Manifest{Roots: &[]string{""}, Revision: "r"},
+		},
+		{
+			note:        "v0 manifest",
+			regoVersion: ast.RegoV0,
+			manifest:    Manifest{Roots: &[]string{""}, Revision: "r", RegoVersion: &v0},
+		},
+		{
+			note:        "v2 manifest",
+			regoVersion: ast.RegoV2,
+			manifest:    Manifest{Roots: &[]string{""}, Revision: "r", RegoVersion: &v2},
+		},
+		{
+			note:        "v1 manifest, v2 per-file override",
+			regoVersion: ast.RegoV2,
+			manifest: Manifest{Roots: &[]string{""}, Revision: "r", RegoVersion: &v1,
+				FileRegoVersions: map[string]int{"/foo/policy.rego": 2}},
+		},
+	}
+
+	module := `package foo
+		import rego.v2
+		
+		allow if input.a or not { input.b; input.c }`
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			bundle := Bundle{
+				Data: map[string]any{},
+				Modules: []ModuleFile{
+					{
+						URL:    "/foo/policy.rego",
+						Path:   "/foo/policy.rego",
+						Parsed: ast.MustParseModuleWithOpts(module, ast.ParserOptions{RegoVersion: tc.regoVersion}),
+						Raw:    []byte(module),
+					},
+				},
+				Manifest: tc.manifest,
+			}
+
+			if err := bundle.GenerateSignature(NewSigningConfig("secret", "HS256", ""), "foo", false); err != nil {
+				t.Fatal("Unexpected error:", err)
+			}
+
+			var buf bytes.Buffer
+			if err := NewWriter(&buf).Write(bundle); err != nil {
+				t.Fatal("Unexpected error:", err)
+			}
+
+			vc := NewVerificationConfig(map[string]*KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}, "foo", "", nil)
+
+			bundle2, err := NewReader(&buf).WithBundleVerificationConfig(vc).Read()
+			if err != nil {
+				t.Fatal("Unexpected error:", err)
+			}
+
+			if !bundle2.Equal(bundle) {
+				t.Fatal("Exp:", bundle, "\n\nGot:", bundle2)
+			}
+			if !bundle2.Manifest.Equal(tc.manifest) {
+				t.Fatal("Exp manifest:", tc.manifest, "\n\nGot:", bundle2.Manifest)
+			}
+		})
+	}
+}
+
+func TestWriterRejectsMixedPlanManifestFormats(t *testing.T) {
+	manifest := Manifest{Roots: &[]string{""}, Revision: "r"}
+
+	t.Run("proto manifest with JSON plan", func(t *testing.T) {
+		b := Bundle{
+			Manifest: manifest,
+			PlanModules: []PlanModuleFile{{
+				Path: PlanFile, URL: PlanFile, Raw: []byte("{}"),
+			}},
+		}
+		b.SetManifestProto(true)
+		err := NewWriter(io.Discard).Write(b)
+		if err == nil || !strings.Contains(err.Error(), "proto manifest but JSON plan") {
+			t.Fatalf("expected mixed-format error, got: %v", err)
+		}
+	})
+
+	t.Run("JSON manifest with proto plan", func(t *testing.T) {
+		b := Bundle{
+			Manifest: manifest,
+			PlanModules: []PlanModuleFile{{
+				Path: PlanProtoFile, URL: PlanProtoFile, Raw: []byte{0x00},
+			}},
+		}
+		err := NewWriter(io.Discard).Write(b)
+		if err == nil || !strings.Contains(err.Error(), "JSON manifest but proto plan") {
+			t.Fatalf("expected mixed-format error, got: %v", err)
+		}
+	})
+
+	t.Run("empty manifest exempts proto plan", func(t *testing.T) {
+		b := Bundle{
+			Manifest: Manifest{},
+			PlanModules: []PlanModuleFile{{
+				Path: PlanProtoFile, URL: PlanProtoFile, Raw: []byte{0x00},
+			}},
+		}
+		if err := NewWriter(io.Discard).Write(b); err != nil {
+			t.Fatalf("expected empty-manifest write to succeed, got: %v", err)
+		}
+	})
+
+	t.Run("uniform proto succeeds", func(t *testing.T) {
+		b := Bundle{
+			Manifest: manifest,
+			PlanModules: []PlanModuleFile{{
+				Path: PlanProtoFile, URL: PlanProtoFile, Raw: []byte{0x00},
+			}},
+		}
+		b.SetManifestProto(true)
+		if err := NewWriter(io.Discard).Write(b); err != nil {
+			t.Fatalf("expected uniform-proto write to succeed, got: %v", err)
+		}
+	})
+}
+
+func TestRoundtripWithProtoManifestSigned(t *testing.T) {
+
+	bundle := Bundle{
+		Data: map[string]any{
+			"foo": map[string]any{
+				"bar": []any{json.Number("1"), json.Number("2"), json.Number("3")},
+			},
+		},
+		PlanModules: []PlanModuleFile{
+			{
+				Path: PlanProtoFile,
+				URL:  PlanProtoFile,
+				Raw:  []byte("plan-proto-bytes"),
+			},
+		},
+		Manifest: Manifest{
+			Roots:    &[]string{""},
+			Revision: "quickbrownfaux",
+			Metadata: map[string]any{"version": "v1", "hello": "world"},
+		},
+	}
+	bundle.SetManifestProto(true)
+
+	if err := bundle.GenerateSignature(NewSigningConfig("secret", "HS256", ""), "foo", false); err != nil {
+		t.Fatal("Unexpected error:", err)
+	}
+
+	var buf bytes.Buffer
+	if err := NewWriter(&buf).Write(bundle); err != nil {
+		t.Fatal("Unexpected error:", err)
+	}
+
+	vc := NewVerificationConfig(map[string]*KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}, "foo", "", nil)
+	bundle2, err := NewReader(&buf).WithBundleVerificationConfig(vc).Read()
+	if err != nil {
+		t.Fatalf("verify failed for proto-manifest bundle: %v", err)
+	}
+
+	if bundle2.Manifest.Revision != bundle.Manifest.Revision {
+		t.Fatalf("manifest not preserved through proto round-trip: got revision %q", bundle2.Manifest.Revision)
+	}
+	if !reflect.DeepEqual(bundle2.Signatures, bundle.Signatures) {
+		t.Fatal("expected signatures to be same after read")
+	}
+}
+
+func TestReadProtoManifestPreservesFormatIntent(t *testing.T) {
+	src := Bundle{
+		Data: map[string]any{},
+		Manifest: Manifest{
+			Roots:    &[]string{""},
+			Revision: "abc",
+		},
+	}
+	src.SetManifestProto(true)
+
+	var buf bytes.Buffer
+	if err := NewWriter(&buf).Write(src); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, err := NewReader(&buf).Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !loaded.manifestProto {
+		t.Fatal("Reader did not propagate manifestProto onto the loaded bundle")
+	}
+
+	var out bytes.Buffer
+	if err := NewWriter(&out).Write(loaded); err != nil {
+		t.Fatal(err)
+	}
+	gr, err := gzip.NewReader(&out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tr := tar.NewReader(gr)
+	var sawProto, sawJSON bool
+	for {
+		h, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		switch h.Name {
+		case "/.manifest.pb":
+			sawProto = true
+		case "/.manifest":
+			sawJSON = true
+		}
+	}
+	if !sawProto {
+		t.Error("re-written bundle missing /.manifest.pb")
+	}
+	if sawJSON {
+		t.Error("re-written bundle silently downgraded to /.manifest")
+	}
+}
+
+func TestRoundtripSigned_RegoVersionIsVerified(t *testing.T) {
+	for _, proto := range []bool{false, true} {
+		t.Run(fmt.Sprintf("proto manifest: %v", proto), func(t *testing.T) {
+			module := `package foo
+
+allow if input.a or not { input.b; input.c }`
+
+			v2 := 2
+			bundle := Bundle{
+				Data: map[string]any{},
+				Modules: []ModuleFile{
+					{
+						URL:    "/foo/policy.rego",
+						Path:   "/foo/policy.rego",
+						Parsed: ast.MustParseModuleWithOpts(module, ast.ParserOptions{RegoVersion: ast.RegoV2}),
+						Raw:    []byte(module),
+					},
+				},
+				Manifest: Manifest{Roots: &[]string{""}, Revision: "r", RegoVersion: &v2},
+			}
+			bundle.SetManifestProto(proto)
+
+			if err := bundle.GenerateSignature(NewSigningConfig("secret", "HS256", ""), "foo", false); err != nil {
+				t.Fatal("Unexpected error:", err)
+			}
+			vc := NewVerificationConfig(map[string]*KeyConfig{"foo": {Key: "secret", Algorithm: "HS256"}}, "foo", "", nil)
+
+			var buf bytes.Buffer
+			if err := NewWriter(&buf).Write(bundle); err != nil {
+				t.Fatal("Unexpected error:", err)
+			}
+			read, err := NewReader(&buf).WithBundleVerificationConfig(vc).Read()
+			if err != nil {
+				t.Fatal("Unexpected error:", err)
+			}
+			if v := read.RegoVersion(ast.RegoV1); v != ast.RegoV2 {
+				t.Fatalf("expected rego version %v, got %v", ast.RegoV2, v)
+			}
+
+			// The rego-version is part of the signed manifest: changing it after signing fails verification.
+			v1 := 1
+			bundle.Manifest.RegoVersion = &v1
+			buf.Reset()
+			if err := NewWriter(&buf).Write(bundle); err != nil {
+				t.Fatal("Unexpected error:", err)
+			}
+			_, err = NewReader(&buf).WithBundleVerificationConfig(vc).Read()
+			if err == nil || !strings.Contains(err.Error(), "digest mismatch") {
+				t.Fatalf("expected digest mismatch for a rego-version changed after signing, got %v", err)
+			}
+		})
+	}
+}
+
 func TestRoundtripWithPlanModules(t *testing.T) {
 
 	b := Bundle{
@@ -1787,7 +3167,7 @@ func TestParsedModules(t *testing.T) {
 					t.Fatalf("Missing expected module %s, got: %+v", exp, parsedMods)
 				}
 				if mod == nil {
-					t.Fatalf("Expected module to be non-nil")
+					t.Fatal("Expected module to be non-nil")
 				}
 			}
 		})
@@ -1802,6 +3182,75 @@ func TestMergeCorruptManifest(t *testing.T) {
 	if err == nil || err.Error() != "bundle manifest not initialized" {
 		t.Fatal("unexpected error:", err)
 	}
+}
+
+func TestMergeRejectsMixedFormats(t *testing.T) {
+	rootEmpty := &[]string{""}
+
+	t.Run("mixed plan formats", func(t *testing.T) {
+		jsonBundle := &Bundle{
+			Manifest: Manifest{Roots: rootEmpty},
+			PlanModules: []PlanModuleFile{{
+				Path: PlanFile, URL: PlanFile, Raw: []byte("{}"),
+			}},
+		}
+		protoBundle := &Bundle{
+			Manifest: Manifest{Roots: rootEmpty},
+			PlanModules: []PlanModuleFile{{
+				Path: PlanProtoFile, URL: PlanProtoFile, Raw: []byte{0x00},
+			}},
+		}
+		_, err := Merge([]*Bundle{jsonBundle, protoBundle})
+		if err == nil {
+			t.Fatal("expected error for mixed plan formats, got nil")
+		}
+		if !strings.Contains(err.Error(), "mixed plan formats") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("mixed manifest formats", func(t *testing.T) {
+		jsonManifestBundle := &Bundle{
+			Manifest: Manifest{Roots: rootEmpty, Revision: "j"},
+		}
+		protoManifestBundle := &Bundle{
+			Manifest: Manifest{Roots: rootEmpty, Revision: "p"},
+		}
+		protoManifestBundle.SetManifestProto(true)
+
+		_, err := Merge([]*Bundle{jsonManifestBundle, protoManifestBundle})
+		if err == nil {
+			t.Fatal("expected error for mixed manifest formats, got nil")
+		}
+		if !strings.Contains(err.Error(), "mixed manifest formats") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("uniform proto inputs propagate flag", func(t *testing.T) {
+		a := &Bundle{
+			Manifest: Manifest{Roots: &[]string{"a"}, Revision: "a"},
+			PlanModules: []PlanModuleFile{{
+				Path: PlanProtoFile, URL: PlanProtoFile, Raw: []byte{0x00},
+			}},
+		}
+		a.SetManifestProto(true)
+		b := &Bundle{
+			Manifest: Manifest{Roots: &[]string{"b"}, Revision: "b"},
+			PlanModules: []PlanModuleFile{{
+				Path: PlanProtoFile, URL: PlanProtoFile, Raw: []byte{0x01},
+			}},
+		}
+		b.SetManifestProto(true)
+
+		merged, err := Merge([]*Bundle{a, b})
+		if err != nil {
+			t.Fatalf("expected uniform-format merge to succeed, got %v", err)
+		}
+		if !merged.manifestProto {
+			t.Fatal("merged bundle should carry manifestProto=true forward from inputs")
+		}
+	})
 }
 
 func TestMerge(t *testing.T) {
@@ -2141,7 +3590,7 @@ func TestMerge(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.note, func(t *testing.T) {
 			for i := range tc.bundles {
-				if err := tc.bundles[i].Manifest.validateAndInjectDefaults(*tc.bundles[i]); err != nil {
+				if err := tc.bundles[i].Manifest.validateAndInjectDefaults(tc.bundles[i]); err != nil {
 					panic(err)
 				}
 			}
@@ -2161,8 +3610,4 @@ func TestMerge(t *testing.T) {
 			}
 		})
 	}
-}
-
-func pointTo[T any](x T) *T {
-	return &x
 }

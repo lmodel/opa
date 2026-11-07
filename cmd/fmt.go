@@ -6,10 +6,12 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/spf13/cobra"
@@ -59,6 +61,49 @@ func (p *fmtCommandParams) regoVersion() ast.RegoVersion {
 		return ast.RegoV1
 	}
 	return ast.DefaultRegoVersion
+}
+
+// parserOptions returns the options for parsing the source to format.
+func (p *fmtCommandParams) parserOptions() *ast.ParserOptions {
+	popts := ast.ParserOptions{
+		RegoVersion:  ast.DefaultRegoVersion,
+		Capabilities: p.parserCapabilities(),
+	}
+
+	switch {
+	case p.v0Compatible:
+		popts.RegoVersion = ast.RegoV0
+	case p.v1Compatible:
+		popts.RegoVersion = ast.RegoV1
+	case p.regoV1:
+		// '--rego-v1' formats a v0 module for v1 compatibility, so it is read as v0.
+		popts.RegoVersion = ast.RegoV0
+	}
+
+	return &popts
+}
+
+func (p *fmtCommandParams) parserCapabilities() *ast.Capabilities {
+	caps := *p.capabilities()
+	current := ast.CapabilitiesForThisVersion(ast.CapabilitiesRegoVersion(p.regoVersion()))
+
+	// parsing caps must span current version and target
+	caps.FutureKeywords = union(caps.FutureKeywords, current.FutureKeywords)
+	caps.Features = union(caps.Features, current.Features)
+
+	return &caps
+}
+
+func union(a, b []string) []string {
+	out := slices.Clone(a)
+	for _, s := range b {
+		if !slices.Contains(out, s) {
+			out = append(out, s)
+		}
+	}
+	slices.Sort(out)
+
+	return out
 }
 
 func opaFmt(args []string, fmtParams *fmtCommandParams) int {
@@ -114,30 +159,29 @@ func formatFile(params *fmtCommandParams, out io.Writer, filename string, info o
 		return newError("failed to open file: %v", err)
 	}
 
+	failOnChange := params.fail && !params.list && !params.diff
+
 	opts := format.Opts{
-		RegoVersion:   params.regoVersion(),
-		DropV0Imports: params.dropV0Imports,
-		Capabilities:  params.capabilities(),
-	}
-
-	if params.regoV1 {
-		opts.ParserOptions = &ast.ParserOptions{RegoVersion: ast.RegoV0}
-	}
-
-	if params.v0Compatible {
-		// v0 takes precedence over v1
-		opts.ParserOptions = &ast.ParserOptions{RegoVersion: ast.RegoV0}
-	} else if params.v1Compatible {
-		opts.ParserOptions = &ast.ParserOptions{RegoVersion: ast.RegoV1}
+		RegoVersion:                   params.regoVersion(),
+		DropRedundantDirectiveImports: params.dropV0Imports,
+		Capabilities:                  params.capabilities(),
+		ParserOptions:                 params.parserOptions(),
+		FailFast:                      failOnChange,
 	}
 
 	formatted, err := format.SourceWithOpts(filename, contents, opts)
 	if err != nil {
+		if _, ok := errors.AsType[format.UnformattedError](err); ok {
+			return newError("unexpected diff")
+		}
 		return newError("failed to format Rego source file: %v", err)
 	}
 
 	if params.checkResult {
-		popts := ast.ParserOptions{RegoVersion: params.regoVersion()}
+		popts := ast.ParserOptions{
+			RegoVersion:  params.regoVersion(),
+			Capabilities: params.parserCapabilities(),
+		}
 		_, err := ast.ParseModuleWithOpts("formatted", string(formatted), popts)
 		if err != nil {
 			return newError("%s was successfully formatted, but the result is invalid: %v\n\nTo inspect the formatted Rego, you can turn off this check with --check-result=false.", filename, err)
@@ -146,7 +190,7 @@ func formatFile(params *fmtCommandParams, out io.Writer, filename string, info o
 
 	changed := !bytes.Equal(contents, formatted)
 
-	if params.fail && !params.list && !params.diff {
+	if failOnChange {
 		if changed {
 			return newError("unexpected diff")
 		}
@@ -203,19 +247,9 @@ func formatStdin(params *fmtCommandParams, r io.Reader, w io.Writer) error {
 	}
 
 	opts := format.Opts{
-		RegoVersion:  params.regoVersion(),
-		Capabilities: params.capabilities(),
-	}
-
-	if params.regoV1 {
-		opts.ParserOptions = &ast.ParserOptions{RegoVersion: ast.RegoV0}
-	}
-
-	if params.v0Compatible {
-		// v0 takes precedence over v1
-		opts.ParserOptions = &ast.ParserOptions{RegoVersion: ast.RegoV0}
-	} else if params.v1Compatible {
-		opts.ParserOptions = &ast.ParserOptions{RegoVersion: ast.RegoV1}
+		RegoVersion:   params.regoVersion(),
+		Capabilities:  params.capabilities(),
+		ParserOptions: params.parserOptions(),
 	}
 
 	formatted, err := format.SourceWithOpts("stdin", contents, opts)
@@ -312,8 +346,8 @@ different Rego versions:
 	formatCommand.Flags().BoolVarP(&fmtParams.diff, "diff", "d", false, "only display a diff of the changes")
 	formatCommand.Flags().BoolVar(&fmtParams.fail, "fail", false, "non zero exit code on reformat")
 	addRegoV0V1FlagWithDescription(formatCommand.Flags(), &fmtParams.regoV1, false, "format module(s) to be compatible with both Rego v0 and v1")
-	addV0CompatibleFlag(formatCommand.Flags(), &fmtParams.v0Compatible, false)
-	addV1CompatibleFlag(formatCommand.Flags(), &fmtParams.v1Compatible, false)
+	addV0CompatibleFlag(formatCommand.Flags(), &fmtParams.v0Compatible)
+	addV1CompatibleFlag(formatCommand.Flags(), &fmtParams.v1Compatible)
 	formatCommand.Flags().BoolVar(&fmtParams.checkResult, "check-result", true, "assert that the formatted code is valid and can be successfully parsed")
 	formatCommand.Flags().BoolVar(&fmtParams.dropV0Imports, "drop-v0-imports", false, "drop v0 imports from the formatted code, such as 'rego.v1' and 'future.keywords'")
 	addCapabilitiesFlag(formatCommand.Flags(), fmtParams.capabilitiesFlag)

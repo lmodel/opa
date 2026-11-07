@@ -1,13 +1,15 @@
+//go:build !go1.27
+
 // Copyright 2018 The OPA Authors.  All rights reserved.
 // Use of this source code is governed by an Apache2
 // license that can be found in the LICENSE file.
 
-// nolint: goconst // string duplication is for test readability.
 package cmd
 
 import (
 	"bufio"
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"maps"
@@ -106,6 +108,79 @@ func TestEvalExitCode(t *testing.T) {
 				t.Fatal("wanted success but got error:", err)
 			} else if (tc.wantDefined && !defined) || (!tc.wantDefined && defined) {
 				t.Fatalf("wanted defined %v but got defined %v", tc.wantDefined, defined)
+			}
+		})
+	}
+}
+
+func TestEvalWithLogicalKeywordImports(t *testing.T) {
+	tests := []struct {
+		note        string
+		imports     []string
+		query       string
+		wantDefined bool
+		wantErr     bool
+	}{
+		{
+			note:    "and, no import",
+			query:   "true and true",
+			wantErr: true,
+		},
+		{
+			note:        "and",
+			imports:     []string{"future.keywords.and"},
+			query:       "true and true",
+			wantDefined: true,
+		},
+		{
+			note:    "and, undefined",
+			imports: []string{"future.keywords.and"},
+			query:   "true and false",
+		},
+		{
+			note:        "or",
+			imports:     []string{"future.keywords.or"},
+			query:       "true or false",
+			wantDefined: true,
+		},
+		{
+			note:    "or, only and imported",
+			imports: []string{"future.keywords.and"},
+			query:   "true or false",
+			wantErr: true,
+		},
+		{
+			note:        "wildcard import covers both",
+			imports:     []string{"future.keywords"},
+			query:       "false and true or true",
+			wantDefined: true,
+		},
+	}
+
+	var b bytes.Buffer
+	writer := bufio.NewWriter(&b)
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			params := newEvalCommandParams()
+			params.fail = true
+			for _, imp := range tc.imports {
+				if err := params.imports.Set(imp); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			defined, err := eval([]string{tc.query}, params, writer, nil)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("wanted error but got success")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal("wanted success but got error:", err)
+			}
+			if defined != tc.wantDefined {
+				t.Fatalf("wanted defined %v but got %v", tc.wantDefined, defined)
 			}
 		})
 	}
@@ -272,6 +347,171 @@ p = 1`,
 			t.Fatalf("Expected coverage in output but got: %v", buf.String())
 		}
 	})
+}
+
+// TestEvalWithCoverageNonDeterministicBuiltin checks that nondeterministic
+// builtins don't change the supplementary coverage diff: the shared cache
+// makes the index/early-exit passes replay the baseline results.
+func TestEvalWithCoverageNonDeterministicBuiltin(t *testing.T) {
+	// rand.intn is pinned to 0, so p's gate is always false and dispatched is
+	// never run. The shared non-deterministic builtin cache makes the
+	// supplementary (index/early-exit) coverage passes agree; without it they
+	// would draw a fresh rand value, run dispatched, and record coverage for a
+	// rule that never actually runs.
+	seed := seedBytes(0, 1, 1)
+
+	// dispatched sits on the last line; assert it is never covered.
+	const dispatchedLine = 9
+
+	files := map[string]string{
+		"x.rego": `package x
+
+p if {
+	rand.intn("k", 2) == 1
+	dispatched
+}
+
+# never run: p's rand.intn gate above is pinned false.
+dispatched if true`,
+	}
+
+	test.WithTempFS(files, func(path string) {
+		params := newEvalCommandParams()
+		params.coverage = true
+		params.dataPaths = newrepeatedStringFlag([]string{path})
+		params.seed = bytes.NewReader(seed)
+
+		var buf bytes.Buffer
+		if _, err := eval([]string{"data.x.p"}, params, &buf, nil); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var output presentation.Output
+		if err := util.NewJSONDecoder(&buf).Decode(&output); err != nil {
+			t.Fatal(err)
+		}
+		if output.Coverage == nil {
+			t.Fatalf("expected coverage in output but got: %v", buf.String())
+		}
+
+		for _, fr := range output.Coverage.Files {
+			if fr.IsCovered(dispatchedLine) {
+				t.Errorf("dispatched rule (line %d) was covered, but it should never run", dispatchedLine)
+			}
+			for _, rng := range fr.NotCovered {
+				if rng.Start.Row == dispatchedLine && len(rng.Kinds) > 0 {
+					t.Errorf("dispatched rule (line %d) was recorded as covered by a supplementary pass (%v), but it should never run", dispatchedLine, rng.Kinds)
+				}
+			}
+		}
+	})
+}
+
+// TestEvalWithCoverageRuns checks that --coverage-runs selects which
+// supplementary coverage passes run (and therefore which kinds are reported).
+func TestEvalWithCoverageRuns(t *testing.T) {
+	files := map[string]string{
+		// early_exit's second definition is skipped once the first matches;
+		// index_excluded's definitions are both index-excluded for input
+		// {"a": "z"}.
+		"x.rego": `package x
+
+early_exit if { true }
+early_exit if { early_exit_dep }
+
+early_exit_dep if { true }
+
+index_excluded if { input.a == "read" }
+index_excluded if { input.a == "admin" }`,
+		"input.json": `{"a": "z"}`,
+	}
+
+	kindsFor := func(t *testing.T, path string, runs []string) map[string]int {
+		t.Helper()
+		params := newEvalCommandParams()
+		params.coverage = true
+		params.coverageRuns = runs
+		params.dataPaths = newrepeatedStringFlag([]string{path})
+		params.inputPath = filepath.Join(path, "input.json")
+
+		var buf bytes.Buffer
+		if _, err := eval([]string{"data.x"}, params, &buf, nil); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		var output presentation.Output
+		if err := util.NewJSONDecoder(&buf).Decode(&output); err != nil {
+			t.Fatal(err)
+		}
+		if output.Coverage == nil {
+			t.Fatalf("expected coverage in output but got: %v", buf.String())
+		}
+		counts := map[string]int{}
+		for _, fr := range output.Coverage.Files {
+			for _, rng := range fr.NotCovered {
+				for _, k := range rng.Kinds {
+					counts[string(k)]++
+				}
+			}
+		}
+		return counts
+	}
+
+	cases := map[string]struct {
+		runs      []string
+		wantIndex bool
+		wantEarly bool
+	}{
+		"default runs both": {
+			runs:      []string{"index_excluded", "early_exit"},
+			wantIndex: true,
+			wantEarly: true,
+		},
+		"index only": {
+			runs:      []string{"index_excluded"},
+			wantIndex: true,
+			wantEarly: false,
+		},
+		"early exit only": {
+			runs:      []string{"early_exit"},
+			wantIndex: false,
+			wantEarly: true,
+		},
+		"empty disables": {
+			runs:      []string{},
+			wantIndex: false,
+			wantEarly: false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			test.WithTempFS(files, func(path string) {
+				counts := kindsFor(t, path, tc.runs)
+				if got := counts["index_excluded"] > 0; got != tc.wantIndex {
+					t.Errorf("index_excluded present = %v, want %v (counts: %v)", got, tc.wantIndex, counts)
+				}
+				if got := counts["early_exit"] > 0; got != tc.wantEarly {
+					t.Errorf("early_exit present = %v, want %v (counts: %v)", got, tc.wantEarly, counts)
+				}
+			})
+		})
+	}
+}
+
+func TestEvalCoverageRunsValidation(t *testing.T) {
+	params := newEvalCommandParams()
+	params.coverageRuns = []string{"bogus"}
+	if err := validateEvalParams(&params, []string{"data"}); err == nil {
+		t.Fatal("expected error for invalid --coverage-runs value")
+	}
+}
+
+func seedBytes(seeds ...int64) []byte {
+	buf := make([]byte, 8*len(seeds))
+	for i, s := range seeds {
+		binary.BigEndian.PutUint64(buf[i*8:], uint64(s))
+	}
+	return buf
 }
 
 func TestEvalWithOptimizeErrors(t *testing.T) {
@@ -455,7 +695,7 @@ func TestEvalWithInvalidInputFile(t *testing.T) {
 	query := "input.b[0].a == 1"
 	err := testEvalWithInputFile(t, input, query, newEvalCommandParams())
 	if err == nil {
-		t.Fatalf("expected error but err == nil")
+		t.Fatal("expected error but err == nil")
 	}
 }
 
@@ -1069,12 +1309,12 @@ func TestEvalWithInvalidSchemaFile(t *testing.T) {
 	query := "input.b[0].a == 1"
 	err := testEvalWithSchemaFile(t, input, query, schema, "", false)
 	if err == nil {
-		t.Fatalf("expected error but err == nil")
+		t.Fatal("expected error but err == nil")
 	}
 
 	err = testEvalWithInvalidSchemaFile(input, query, schema)
 	if err == nil {
-		t.Fatalf("expected error but err == nil")
+		t.Fatal("expected error but err == nil")
 	}
 }
 
@@ -1475,6 +1715,47 @@ func TestEvalWithStrictBuiltinErrors(t *testing.T) {
 	}
 }
 
+func TestEvalWithStackTrace(t *testing.T) {
+	files := map[string]string{
+		"test.rego": `package test
+
+p if {
+	q
+}
+
+q if {
+	1 / 0
+}
+`,
+	}
+
+	test.WithTempFS(files, func(path string) {
+		params := newEvalCommandParams()
+		params.dataPaths = newrepeatedStringFlag([]string{path})
+		params.strictBuiltinErrors = true
+		if err := params.outputFormat.Set(formats.Pretty); err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+
+		var buf, errBuf bytes.Buffer
+		if _, err := eval([]string{"data.test.p"}, params, &buf, &errBuf); err == nil {
+			t.Fatal("expected error")
+		}
+
+		out := errBuf.String()
+		for _, expected := range []string{
+			"Traceback:",
+			filepath.Join(path, "test.rego") + ":8: 1 / 0",
+			filepath.Join(path, "test.rego") + ":4: q",
+			"1:1: data.test.p",
+		} {
+			if !strings.Contains(out, expected) {
+				t.Fatalf("expected output to contain %q, got:\n%s", expected, out)
+			}
+		}
+	})
+}
+
 func assertResultSet(t *testing.T, rs rego.ResultSet, expected string) {
 	t.Helper()
 	result := make([]any, 0, len(rs))
@@ -1504,7 +1785,7 @@ func TestEvalErrorJSONOutput(t *testing.T) {
 
 	defined, err := eval([]string{"{1,2,3} == {1,x,3}"}, params, &buf, nil)
 	if defined && err == nil {
-		t.Fatalf("Expected an error")
+		t.Fatal("Expected an error")
 	}
 
 	// Only check that it *can* be loaded as valid JSON, and that the errors
@@ -1516,7 +1797,7 @@ func TestEvalErrorJSONOutput(t *testing.T) {
 	}
 
 	if output["errors"] == nil {
-		t.Fatalf("Expected error to be non-nil")
+		t.Fatal("Expected error to be non-nil")
 	}
 }
 
@@ -1587,7 +1868,7 @@ func TestEvalDebugTraceJSONOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(output.Explanation) == 0 {
-		t.Fatalf("Expected explanations to be non-nil")
+		t.Fatal("Expected explanations to be non-nil")
 	}
 
 	type locationAndVars struct {
@@ -2465,7 +2746,17 @@ func TestEvalDiscardOutput(t *testing.T) {
         "file": "",
         "row": 1
       },
-      "message": "div: divide by zero"
+      "message": "div: divide by zero",
+      "stack_trace": [
+        {
+          "location": {
+            "col": 1,
+            "file": "",
+            "row": 1
+          },
+          "query_id": 0
+        }
+      ]
     }
   ]
 }
@@ -2989,7 +3280,7 @@ func TestUnexpectedElseIfElseErr(t *testing.T) {
 
 		// Check if there was an error
 		if err == nil {
-			t.Fatalf("expected an error, but got nil")
+			t.Fatal("expected an error, but got nil")
 		}
 
 		// Check the error message
@@ -3023,7 +3314,7 @@ func TestUnexpectedElseIfErr(t *testing.T) {
 
 		// Check if there was an error
 		if err == nil {
-			t.Fatalf("expected an error, but got nil")
+			t.Fatal("expected an error, but got nil")
 		}
 
 		// Check the error message
@@ -3765,6 +4056,52 @@ p contains 2 if {
 			query:       "data.test.p",
 			expectedErr: "rego_parse_error",
 		},
+		{
+			note: "v2 bundle, logical keywords used",
+			files: map[string]string{
+				".manifest": `{"rego_version": 2}`,
+				"policy.rego": `package test
+allow if {
+	1 < 2 or 2 < 1
+}`,
+			},
+			query: "data.test.allow",
+		},
+		{
+			note: "v1 bundle, v2 per-file override",
+			files: map[string]string{
+				".manifest": `{
+	"rego_version": 1,
+	"file_rego_versions": {
+		"/policy2.rego": 2
+	}
+}`,
+				"policy1.rego": `package test
+p contains 1 if {
+	1 < 2
+}
+`,
+				"policy2.rego": `package test
+p contains 2 if {
+	1 < 2 or 2 < 1
+}
+`,
+			},
+			query: "data.test.p",
+		},
+		{
+			note: "v2 bundle, logical keyword as variable",
+			files: map[string]string{
+				".manifest": `{"rego_version": 2}`,
+				"policy.rego": `package test
+allow if {
+	and := 1
+	and == 1
+}`,
+			},
+			query:       "data.test.allow",
+			expectedErr: "rego_parse_error",
+		},
 	}
 
 	bundleTypeCases := []struct {
@@ -3855,6 +4192,81 @@ p contains 2 if {
 	}
 }
 
+func TestEvalBundleTemplateStrings(t *testing.T) {
+	const errMessage = "template strings are not supported by current capabilities"
+
+	tests := []struct {
+		note         string
+		regoVersion  int
+		v0Compatible bool
+		expectedErr  string
+	}{
+		{
+			note:        "v1 bundle",
+			regoVersion: 1,
+		},
+		{
+			note:         "v1 bundle, --v0-compatible",
+			regoVersion:  1,
+			v0Compatible: true,
+			expectedErr:  errMessage,
+		},
+		{
+			note:        "v2 bundle",
+			regoVersion: 2,
+		},
+		{
+			// Capabilities of a v0-compatible OPA lack template_strings, but list rego_v2.
+			note:         "v2 bundle, --v0-compatible",
+			regoVersion:  2,
+			v0Compatible: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			files := map[string]string{
+				".manifest": fmt.Sprintf(`{"rego_version": %d}`, tc.regoVersion),
+				"policy.rego": `package test
+p := $"foo {1 + 1}"
+`,
+			}
+
+			test.WithTempFS(files, func(root string) {
+				params := newEvalCommandParams()
+				params.v0Compatible = tc.v0Compatible
+				params.stdin = false
+				if err := params.bundlePaths.Set(root); err != nil {
+					t.Fatal(err)
+				}
+
+				var buf bytes.Buffer
+
+				defined, err := eval([]string{"data.test.p"}, params, &buf, nil)
+
+				if tc.expectedErr != "" {
+					if err == nil {
+						t.Fatal("expected error, got none")
+					}
+					if !strings.Contains(buf.String(), tc.expectedErr) && !strings.Contains(err.Error(), tc.expectedErr) {
+						t.Fatalf("expected error:\n\n%v\n\ngot\n\n%v\n%v", tc.expectedErr, buf.String(), err)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatalf("unexpected error: %v, buf: %s", err, buf.String())
+				}
+				if !defined {
+					t.Fatal("expected result to be defined")
+				}
+				if !strings.Contains(buf.String(), `"foo 2"`) {
+					t.Fatalf("unexpected output: %s", buf.String())
+				}
+			})
+		})
+	}
+}
+
 func TestWithQueryImports(t *testing.T) {
 	tests := []struct {
 		note         string
@@ -3883,12 +4295,25 @@ func TestWithQueryImports(t *testing.T) {
 			exp:     "true\n",
 		},
 		{
-			note:         "future keyword used, invalid rego.v2 imported",
+			note:         "future keyword used, rego.v2 imported (v0)",
 			v0Compatible: true,
 			query:        `"b" in ["a", "b", "c"]`,
 			imports:      []string{"rego.v2"},
+			exp:          "true\n",
+		},
+		{
+			note:    "logical keyword used, rego.v2 imported",
+			query:   `true or false`,
+			imports: []string{"rego.v2"},
+			exp:     "true\n",
+		},
+		{
+			note:         "future keyword used, invalid rego.v3 imported",
+			v0Compatible: true,
+			query:        `"b" in ["a", "b", "c"]`,
+			imports:      []string{"rego.v3"},
 			expErrs: []string{
-				"1:8: rego_parse_error: invalid import `rego.v2`, must be `rego.v1`",
+				"1:8: rego_parse_error: invalid import `rego.v3`, must be one of: `rego.v1`, `rego.v2`",
 			},
 		},
 		{
@@ -3944,5 +4369,40 @@ func TestWithQueryImports(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestEvalJSONOutputBytes(t *testing.T) {
+	params := newEvalCommandParams()
+
+	var buf bytes.Buffer
+
+	defined, err := eval([]string{"1 == 1"}, params, &buf, nil)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if !defined {
+		t.Fatal("expected result to be defined")
+	}
+
+	expected := `{
+  "result": [
+    {
+      "expressions": [
+        {
+          "value": true,
+          "text": "1 == 1",
+          "location": {
+            "row": 1,
+            "col": 1
+          }
+        }
+      ]
+    }
+  ]
+}
+`
+	if diff := cmp.Diff(expected, buf.String()); diff != "" {
+		t.Fatalf("unexpected JSON output (-want +got):\n%s", diff)
 	}
 }

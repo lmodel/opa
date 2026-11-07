@@ -47,7 +47,22 @@ const baseUrl = "/";
             breadcrumbs: false,
             sidebarPath: require.resolve("./src/lib/sidebars.js"),
           },
-          blog: false,
+          blog: {
+            path: "blog",
+            routeBasePath: "blog",
+            blogTitle: "OPA Blog",
+            blogDescription: "News, releases, and community updates from the Open Policy Agent project.",
+            postsPerPage: 10,
+            blogSidebarTitle: "OPA Blog Posts",
+            blogSidebarCount: "ALL",
+            showReadingTime: false,
+            feedOptions: {
+              type: ["rss", "atom"],
+              title: "Open Policy Agent Blog",
+            },
+            onInlineTags: "ignore",
+            onUntruncatedBlogPosts: "ignore",
+          },
           theme: {
             customCss: require.resolve("./src/css/custom.css"),
           },
@@ -66,6 +81,14 @@ const baseUrl = "/";
     themes: ["@docusaurus/theme-mermaid"],
 
     themeConfig: {
+      announcementBar: {
+        id: "survey-2026",
+        content:
+          "<strong>The 2026 OPA Community Survey is open - <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://opa-survey.cncf.io/\">We need your input</a></strong>",
+        isCloseable: true,
+        backgroundColor: "#ff8c00",
+        textColor: "#ffffff",
+      },
       colorMode: {
         defaultMode: "light",
         disableSwitch: false,
@@ -146,7 +169,7 @@ const baseUrl = "/";
               { to: "/support", label: "Support" },
               { to: "/community", label: "Community" },
               { to: "/survey", label: "Survey" },
-              { href: "https://blog.openpolicyagent.org/", label: "Blog" },
+              { to: "/blog", label: "Blog" },
             ],
           },
           {
@@ -166,40 +189,6 @@ const baseUrl = "/";
           },
           { to: "/ecosystem/", label: "Ecosystem", position: "right" },
           { href: "https://play.openpolicyagent.org/", label: "Play", position: "right" },
-          {
-            type: "html",
-            position: "right",
-            value: `
-        <a href="https://github.com/open-policy-agent"
-           target="_blank"
-           rel="noopener noreferrer"
-           aria-label="GitHub repository">
-          <img src="${
-              path.join(baseUrl, "img/nav/github-light.svg")
-            }" class="light-only" alt="GitHub" style="width: 24px; height: auto; margin-left: 8px;" />
-          <img src="${
-              path.join(baseUrl, "img/nav/github-dark.svg")
-            }" class="dark-only" alt="GitHub" style="width: 24px; height: auto; margin-left: 8px;" />
-        </a>
-      `,
-          },
-          {
-            type: "html",
-            position: "right",
-            value: `
-        <a href="https://slack.openpolicyagent.org/"
-           target="_blank"
-           rel="noopener noreferrer"
-           aria-label="Slack community">
-          <img src="${
-              path.join(baseUrl, "img/nav/slack-light.svg")
-            }" class="light-only" alt="Slack" style="width: 24px; height: auto; margin-left: 8px;" />
-          <img src="${
-              path.join(baseUrl, "img/nav/slack-dark.svg")
-            }" class="dark-only" alt="Slack" style="width: 24px; height: auto; margin-left: 8px;" />
-        </a>
-      `,
-          },
         ],
       },
       footer: {
@@ -461,6 +450,10 @@ The Linux Foundation has registered trademarks and uses trademarks. For a list o
         return {
           name: "events-data",
 
+          getPathsToWatch() {
+            return [path.join(context.siteDir, "src/data/events/*.json")];
+          },
+
           async loadContent() {
             const events = await loadEvents(path.join(context.siteDir, "src/data/events/*.json"));
             return { events };
@@ -478,6 +471,11 @@ The Linux Foundation has registered trademarks and uses trademarks. For a list o
       async function eventsPagesGen(context, _options) {
         return {
           name: "events-pages-gen",
+
+          getPathsToWatch() {
+            return [path.join(context.siteDir, "src/data/events/*.json")];
+          },
+
           async loadContent() {
             const events = await loadEvents(path.join(context.siteDir, "src/data/events/*.json"));
             return { events };
@@ -679,8 +677,8 @@ The Linux Foundation has registered trademarks and uses trademarks. For a list o
       markdownExportPlugin,
     ],
     clientModules: [
+      require.resolve("./src/lib/gtagFallback.js"),
       require.resolve("./src/lib/playground.js"),
-      require.resolve("./src/lib/kapa.js"),
     ],
     stylesheets: [
       {
@@ -697,12 +695,7 @@ The Linux Foundation has registered trademarks and uses trademarks. For a list o
         "data-website-id": "5c4af137-a024-4ba2-9488-826f1055852c",
         "data-project-name": "Open Policy Agent",
         "data-project-logo": "https://openpolicyagent.org/img/nav/logo.png",
-        "data-search-mode-enabled": "true",
-        // Source UUIDs come from https://app.kapa.ai/422cffb8-2750-48c9-9659-7e8d40b9d5d2/sources
-        "data-search-source-ids-include":
-          "f9c26922-8a4c-4a3c-913d-08c2a53a1011,e9daf266-5a9f-410f-8069-18a57dcfb6ee,723b2ac1-807a-43c1-a2aa-bcf8311d2354,fff41a96-7ebe-4fc5-bb60-359e5d830a87,799aac5c-a157-4734-9785-9c754c7c40a0",
-        "data-modal-open-on-command-k": "true",
-        "data-modal-command-k-search-mode-default": "true",
+        "data-search-mode-enabled": "false",
         "data-deep-thinking-button-hover-background-color": "#f1f8f1",
         "data-deep-thinking-button-hover-color": "#2e7d32",
         "data-deep-thinking-button-enabled-background-color": "#e8f5e9",
@@ -715,8 +708,9 @@ The Linux Foundation has registered trademarks and uses trademarks. For a list o
         "data-deep-thinking-button-enabled-color-dark": "#a5d6a7",
         "data-deep-thinking-button-enabled-hover-background-color-dark": "#245427",
         "data-deep-thinking-button-enabled-hover-color-dark": "#c8e6c9",
-        "data-modal-title": "OPA Chat and Search",
+        "data-modal-title": "OPA Documentation Chat",
         "data-color-scheme-selector": "[data-theme='dark']",
+        "data-launcher-button-hidden": "true",
 
         async: true,
       },

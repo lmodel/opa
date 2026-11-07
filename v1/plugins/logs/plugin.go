@@ -110,6 +110,14 @@ func (e *EventV1) AST() (ast.Value, error) {
 		event.Insert(ast.InternedTerm("batch_decision_id"), ast.StringTerm(e.BatchDecisionID))
 	}
 
+	if e.TraceID != "" {
+		event.Insert(ast.InternedTerm("trace_id"), ast.StringTerm(e.TraceID))
+	}
+
+	if e.SpanID != "" {
+		event.Insert(ast.InternedTerm("span_id"), ast.StringTerm(e.SpanID))
+	}
+
 	if e.Labels != nil {
 		labelsObj := ast.NewObject()
 		for k, v := range e.Labels {
@@ -237,6 +245,32 @@ func (e *EventV1) AST() (ast.Value, error) {
 		event.Insert(ast.InternedTerm("req_id"), ast.UIntNumberTerm(e.RequestID))
 	}
 
+	// The nesting mirrors the `omitempty` tags on RequestContext, so that a
+	// mask policy sees the same shape as the uploaded event.
+	if e.RequestContext != nil {
+		requestContext := ast.NewObject()
+
+		if httpRequest := e.RequestContext.HTTPRequest; httpRequest != nil {
+			httpObj := ast.NewObject()
+
+			if len(httpRequest.Headers) > 0 {
+				headers := ast.NewObject()
+				for name, values := range httpRequest.Headers {
+					terms := make([]*ast.Term, len(values))
+					for i, v := range values {
+						terms[i] = ast.StringTerm(v)
+					}
+					headers.Insert(ast.StringTerm(name), ast.ArrayTerm(terms...))
+				}
+				httpObj.Insert(ast.InternedTerm("headers"), ast.NewTerm(headers))
+			}
+
+			requestContext.Insert(ast.InternedTerm("http"), ast.NewTerm(httpObj))
+		}
+
+		event.Insert(ast.InternedTerm("request_context"), ast.NewTerm(requestContext))
+	}
+
 	if len(e.Custom) > 0 {
 		custom, err := roundtripJSONToAST(e.Custom)
 		if err != nil {
@@ -252,7 +286,7 @@ func roundtripJSONToAST(x any) (ast.Value, error) {
 	rawPtr := util.Reference(x)
 	// roundtrip through json: this turns slices (e.g. []string, []bool) into
 	// []any, the only array type ast.InterfaceToValue can work with
-	if err := util.RoundTrip(rawPtr); err != nil {
+	if err := util.RoundTripFast(rawPtr); err != nil {
 		return nil, err
 	}
 
@@ -275,6 +309,8 @@ const (
 	logBufferEventDropCounterName       = "decision_logs_dropped_buffer_size_limit_exceeded"
 	logBufferSizeLimitExDropCounterName = "decision_logs_dropped_buffer_size_limit_bytes_exceeded"
 	logEncodingFailureCounterName       = "decision_logs_encoding_failure"
+	logChunkUploadedCounterName         = "decision_logs_chunks_uploaded"
+	logChunkUploadFailedCounterName     = "decision_logs_chunks_upload_failed"
 	defaultResourcePath                 = "/logs"
 	sizeBufferType                      = "size"
 	eventBufferType                     = "event"
@@ -470,6 +506,9 @@ type buffer interface {
 	WithMetrics(metrics.Metrics)
 	Stop(context.Context)
 	Flush() []*EventV1
+	// Size returns how much is waiting in the buffer, in the unit its limit is
+	// configured in: items for the event buffer, bytes for the size buffer.
+	Size() int64
 }
 
 // Plugin implements decision log buffering and uploading.
@@ -481,8 +520,8 @@ type Plugin struct {
 	statusMtx     sync.Mutex
 	stop          chan chan struct{}
 	reconfig      chan reconfigure
-	preparedMask  prepareOnce
-	preparedDrop  prepareOnce
+	preparedMask  preparedQueryCache
+	preparedDrop  preparedQueryCache
 	metrics       metrics.Metrics
 	logger        logging.Logger
 	status        *lstat.Status
@@ -490,27 +529,51 @@ type Plugin struct {
 	sloggerMtx    sync.RWMutex
 }
 
-type prepareOnce struct {
-	once          *sync.Once
+// preparedQueryCache caches the prepared mask or drop query. The prepared query
+// is tied to the compiler and plugin config it was built from, so it is dropped
+// whenever either of those change.
+type preparedQueryCache struct {
+	// mtx guards the fields below. It is held across preparation so that a
+	// concurrent drop() is ordered after it and invalidates the query that was
+	// just cached, rather than being lost.
+	mtx           sync.RWMutex
+	prepared      bool
 	preparedQuery *rego.PreparedEvalQuery
 	err           error
 }
 
-func newPrepareOnce() *prepareOnce {
-	return &prepareOnce{
-		once: new(sync.Once),
+// drop invalidates the cached query, so that the next caller prepares a new one.
+func (pc *preparedQueryCache) drop() {
+	pc.mtx.Lock()
+	pc.prepared = false
+	pc.preparedQuery = nil
+	pc.err = nil
+	pc.mtx.Unlock()
+}
+
+// prepare returns the cached query, preparing it with f if it isn't cached yet.
+func (pc *preparedQueryCache) prepare(f func() (*rego.PreparedEvalQuery, error)) (*rego.PreparedEvalQuery, error) {
+	pc.mtx.RLock()
+	if pc.prepared {
+		preparedQuery, err := pc.preparedQuery, pc.err
+		pc.mtx.RUnlock()
+		return preparedQuery, err
 	}
-}
+	pc.mtx.RUnlock()
 
-func (po *prepareOnce) drop() {
-	po.once = new(sync.Once)
-}
+	pc.mtx.Lock()
+	defer pc.mtx.Unlock()
 
-func (po *prepareOnce) prepareOnce(f func() (*rego.PreparedEvalQuery, error)) (*rego.PreparedEvalQuery, error) {
-	po.once.Do(func() {
-		po.preparedQuery, po.err = f()
-	})
-	return po.preparedQuery, po.err
+	// another caller may have prepared the query while the write lock was
+	// being acquired
+	if pc.prepared {
+		return pc.preparedQuery, pc.err
+	}
+
+	pc.preparedQuery, pc.err = f()
+	pc.prepared = true
+
+	return pc.preparedQuery, pc.err
 }
 
 type reconfigure struct {
@@ -599,14 +662,12 @@ func (b *ConfigBuilder) Parse() (*Config, error) {
 // New returns a new Plugin with the given config.
 func New(parsedConfig *Config, manager *plugins.Manager) *Plugin {
 	plugin := &Plugin{
-		manager:      manager,
-		config:       *parsedConfig,
-		stop:         make(chan chan struct{}),
-		reconfig:     make(chan reconfigure),
-		logger:       manager.Logger().WithFields(map[string]any{"plugin": Name}),
-		status:       &lstat.Status{},
-		preparedDrop: *newPrepareOnce(),
-		preparedMask: *newPrepareOnce(),
+		manager:  manager,
+		config:   *parsedConfig,
+		stop:     make(chan chan struct{}),
+		reconfig: make(chan reconfigure),
+		logger:   manager.Logger().WithFields(map[string]any{"plugin": Name}),
+		status:   &lstat.Status{},
 	}
 
 	switch parsedConfig.Reporting.BufferType {
@@ -683,6 +744,15 @@ func (p *Plugin) Config() *Config {
 	return &p.config
 }
 
+// BufferSize returns the configured buffer type and how much is waiting in the
+// buffer to be uploaded: items for the event buffer, bytes for the size buffer.
+func (p *Plugin) BufferSize() (bufferType string, size int64) {
+	p.reconfigMtx.RLock()
+	b := p.b
+	p.reconfigMtx.RUnlock()
+	return b.Name(), b.Size()
+}
+
 func (p *Plugin) flushDecisions(ctx context.Context) {
 	p.logger.Info("Flushing decision logs.")
 
@@ -690,7 +760,7 @@ func (p *Plugin) flushDecisions(ctx context.Context) {
 
 	go func(ctx context.Context, done chan bool) {
 		for ctx.Err() == nil {
-			if err := p.b.Upload(ctx); err != nil && !errors.Is(err, &bufferEmpty{}) {
+			if err := p.b.Upload(ctx); err != nil && !util.ErrorIs[*bufferEmpty](err) {
 				p.logger.Error("Error flushing decisions: %s", err)
 				// Wait some before retrying, but skip incrementing interval since we are shutting down
 				time.Sleep(1 * time.Second)
@@ -758,6 +828,16 @@ func (p *Plugin) Log(ctx context.Context, decision *server.Info) error {
 		event.RequestContext = &RequestContext{HTTPRequest: &HTTPRequestContext{Headers: headers}}
 	}
 
+	// Metrics and Error must be attached before the policy input is built, otherwise
+	// the mask and drop policies cannot observe them. EventV1.AST() serializes both.
+	if decision.Metrics != nil {
+		event.Metrics = decision.Metrics.All()
+	}
+
+	if decision.Error != nil {
+		event.Error = decision.Error
+	}
+
 	input, err := event.AST()
 	if err != nil {
 		return err
@@ -774,23 +854,13 @@ func (p *Plugin) Log(ctx context.Context, decision *server.Info) error {
 		return nil
 	}
 
-	if decision.Metrics != nil {
-		event.Metrics = decision.Metrics.All()
-	}
-
-	if decision.Error != nil {
-		event.Error = decision.Error
-	}
-
 	if err := p.maskEvent(ctx, decision.Txn, input, &event); err != nil {
 		p.logger.Error("Log event masking failed: %v.", err)
 		return nil
 	}
 
 	if p.config.ConsoleLogs {
-		if err := p.logEvent(event); err != nil {
-			p.logger.Error("Failed to log to console: %v.", err)
-		}
+		p.logEvent(event)
 	}
 
 	if p.config.Service != "" {
@@ -857,12 +927,15 @@ func (p *Plugin) Reconfigure(_ context.Context, config any) {
 
 	done := make(chan struct{})
 	p.reconfig <- reconfigure{config: config, done: done}
+	<-done
 
+	// Drop the cached queries only once the new config is installed. Dropping
+	// them earlier lets a concurrent Log() re-prepare against the old config and
+	// cache it, leaving the new mask/drop decision paths without effect.
 	p.preparedMask.drop()
 	p.preparedDrop.drop()
 	p.clearSlogCache()
 
-	<-done
 	go p.loop()
 }
 
@@ -972,13 +1045,12 @@ func (*uploadCancelled) Error() string {
 	return "cancelled upload"
 }
 
-func (p *Plugin) doOneShot(ctx context.Context) error {
-	err := p.b.Upload(ctx)
-	if err != nil {
-		if errors.Is(err, &bufferEmpty{}) {
+func (p *Plugin) doOneShot(ctx context.Context) (err error) {
+	if err = p.b.Upload(ctx); err != nil {
+		if util.ErrorIs[*bufferEmpty](err) {
 			p.logger.Debug("Log upload queue was empty.")
 			err = nil
-		} else if errors.Is(err, &uploadCancelled{}) {
+		} else if util.ErrorIs[*uploadCancelled](err) {
 			err = nil
 		} else {
 			p.logger.Error("%v.", err)
@@ -1006,7 +1078,7 @@ func (p *Plugin) reconfigure(ctx context.Context, config any) {
 	p.config = *newConfig
 
 	// upload all events in the current buffer type
-	if err := p.b.Upload(ctx); err != nil && !errors.Is(err, &bufferEmpty{}) {
+	if err := p.b.Upload(ctx); err != nil && !util.ErrorIs[*bufferEmpty](err) {
 		p.setStatus(err)
 	}
 	p.b.Stop(ctx)
@@ -1046,7 +1118,7 @@ func (p *Plugin) push(event EventV1) {
 }
 
 func (p *Plugin) maskEvent(ctx context.Context, txn storage.Transaction, input ast.Value, event *EventV1) error {
-	pq, err := p.preparedMask.prepareOnce(func() (*rego.PreparedEvalQuery, error) {
+	pq, err := p.preparedMask.prepare(func() (*rego.PreparedEvalQuery, error) {
 		var pq rego.PreparedEvalQuery
 
 		query := ast.NewBody(ast.NewExpr(ast.NewTerm(p.config.maskDecisionRef)))
@@ -1102,7 +1174,7 @@ func (p *Plugin) maskEvent(ctx context.Context, txn storage.Transaction, input a
 func (p *Plugin) dropEvent(ctx context.Context, txn storage.Transaction, input ast.Value) (bool, error) {
 	var err error
 
-	pq, err := p.preparedDrop.prepareOnce(func() (*rego.PreparedEvalQuery, error) {
+	pq, err := p.preparedDrop.prepare(func() (*rego.PreparedEvalQuery, error) {
 		var pq rego.PreparedEvalQuery
 
 		query := ast.NewBody(ast.NewExpr(ast.NewTerm(p.config.dropDecisionRef)))
@@ -1140,7 +1212,20 @@ func (p *Plugin) dropEvent(ctx context.Context, txn storage.Transaction, input a
 	return rs.Allowed(), nil
 }
 
-func uploadChunk(ctx context.Context, client rest.Client, uploadPath string, data []byte) error {
+// uploadChunk uploads a single chunk and counts the outcome on m, if set.
+func uploadChunk(ctx context.Context, client rest.Client, uploadPath string, data []byte, m metrics.Metrics) error {
+	err := doUploadChunk(ctx, client, uploadPath, data)
+	if m != nil {
+		if err != nil {
+			m.Counter(logChunkUploadFailedCounterName).Incr()
+		} else {
+			m.Counter(logChunkUploadedCounterName).Incr()
+		}
+	}
+	return err
+}
+
+func doUploadChunk(ctx context.Context, client rest.Client, uploadPath string, data []byte) error {
 
 	resp, err := client.
 		WithHeader("Content-Type", "application/json").
@@ -1161,10 +1246,9 @@ func uploadChunk(ctx context.Context, client rest.Client, uploadPath string, dat
 	return nil
 }
 
-func (p *Plugin) logEvent(event EventV1) error {
+func (p *Plugin) logEvent(event EventV1) {
 	fields := eventToFields(event)
 	p.manager.ConsoleLogger().WithFields(fields).Info("Decision Log")
-	return nil
 }
 
 func addAttrIfNonZeroString(attrs *[]slog.Attr, key string, value string) {
@@ -1261,27 +1345,15 @@ func addIfSliceNotEmpty[T any](fields map[string]any, key string, value []T) {
 // ensuring that struct types are converted to map[string]any etc.
 // Unlike util.RoundTrip, this always unmarshals into a nil any target,
 // which prevents json.Decoder from reusing the existing concrete type.
-func roundTripAny(x any) (any, error) {
+func roundTripAny(x any) (v any, err error) {
 	if !util.NeedsRoundTrip(x) {
 		return x, nil
 	}
-	bs, err := json.Marshal(x)
-	if err != nil {
-		return nil, err
+	var bs []byte
+	if bs, err = json.Marshal(x); err == nil {
+		err = util.UnmarshalJSON(bs, &v)
 	}
-	var v any
-	if err := util.UnmarshalJSON(bs, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-func stringsToAny(ss []string) []any {
-	result := make([]any, len(ss))
-	for i, s := range ss {
-		result[i] = s
-	}
-	return result
+	return v, err
 }
 
 func stringsMapToAny(m map[string]string) map[string]any {
@@ -1329,12 +1401,12 @@ func eventToFields(event EventV1) map[string]any {
 	}
 	if event.NDBuiltinCache != nil {
 		v := *event.NDBuiltinCache
-		if err := util.RoundTrip(&v); err == nil {
+		if err := util.RoundTripFast(&v); err == nil {
 			fields["nd_builtin_cache"] = v
 		}
 	}
-	addIfSliceNotEmpty(fields, "erased", stringsToAny(event.Erased))
-	addIfSliceNotEmpty(fields, "masked", stringsToAny(event.Masked))
+	addIfSliceNotEmpty(fields, "erased", util.ToSliceOf[any](event.Erased))
+	addIfSliceNotEmpty(fields, "masked", util.ToSliceOf[any](event.Masked))
 
 	if event.Error != nil {
 		fields["error"] = event.Error.Error()
@@ -1344,7 +1416,7 @@ func eventToFields(event EventV1) map[string]any {
 	addIfHasLen(fields, "metrics", event.Metrics)
 	if event.RequestID != 0 {
 		var v any = event.RequestID
-		if err := util.RoundTrip(&v); err == nil {
+		if err := util.RoundTripFast(&v); err == nil {
 			fields["req_id"] = v
 		}
 	}
@@ -1355,14 +1427,14 @@ func eventToFields(event EventV1) map[string]any {
 
 	if len(event.RuleLabels) > 0 {
 		var v any = event.RuleLabels
-		if err := util.RoundTrip(&v); err == nil {
+		if err := util.RoundTripFast(&v); err == nil {
 			fields["rule_labels"] = v
 		}
 	}
 
 	if len(event.Custom) > 0 {
 		var v any = event.Custom
-		if err := util.RoundTrip(&v); err == nil {
+		if err := util.RoundTripFast(&v); err == nil {
 			fields["custom"] = v
 		}
 	}

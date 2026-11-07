@@ -123,6 +123,50 @@ func TestOutputJSONErrorStructuredASTErr(t *testing.T) {
 	validateJSONOutput(t, err, expected)
 }
 
+func TestOutputJSONErrorWrapped(t *testing.T) {
+	tests := map[string]struct {
+		err      error
+		expected string
+	}{
+		"structured errors are unwrapped and listed individually": {
+			err: fmt.Errorf("bundle /some/path: %w", ast.Errors{
+				&ast.Error{Code: "rego_parse_error", Message: "first"},
+				&ast.Error{Code: "rego_parse_error", Message: "second"},
+			}),
+			expected: `{
+  "errors": [
+    {
+      "message": "first",
+      "code": "rego_parse_error"
+    },
+    {
+      "message": "second",
+      "code": "rego_parse_error"
+    }
+  ]
+}
+`,
+		},
+		"plain error keeps the wrapper's message": {
+			err: fmt.Errorf("failed to load config: %w", errors.New("file not found")),
+			expected: `{
+  "errors": [
+    {
+      "message": "failed to load config: file not found"
+    }
+  ]
+}
+`,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			validateJSONOutput(t, tc.err, tc.expected)
+		})
+	}
+}
+
 func TestOutputJSONErrorStructuredStorageErr(t *testing.T) {
 	store := inmem.New()
 	txn := storage.NewTransactionOrDie(t.Context(), store)
@@ -160,7 +204,7 @@ func TestOutputJSONErrorStructuredTopdownErr(t *testing.T) {
 	expected := `{
   "errors": [
     {
-      "message": "functions must not produce multiple outputs for same inputs",
+      "message": "function data.test.p produced conflicting values for the same inputs:\n  1 at test.rego:5\n  2 at test.rego:5",
       "code": "eval_conflict_error",
       "location": {
         "file": "test.rego",
@@ -173,6 +217,68 @@ func TestOutputJSONErrorStructuredTopdownErr(t *testing.T) {
 `
 
 	validateJSONOutput(t, err, expected)
+}
+
+func TestOutputErrorsStructuredTopdownErrWithStackTrace(t *testing.T) {
+	mod := `package test
+
+p if {
+	q
+}
+
+q if {
+	1 / 0
+}
+`
+
+	_, err := rego.New(
+		rego.Module("test.rego", mod),
+		rego.Query("data.test.p"),
+		rego.StrictBuiltinErrors(true),
+		rego.StackTraces(true),
+	).Eval(t.Context())
+
+	expected := `{
+  "errors": [
+    {
+      "message": "div: divide by zero",
+      "code": "eval_builtin_error",
+      "location": {
+        "file": "test.rego",
+        "row": 8,
+        "col": 2
+      },
+      "stack_trace": [
+        {
+          "query_id": 2,
+          "location": {"file": "test.rego", "row": 8, "col": 2}
+        },
+        {
+          "query_id": 1,
+          "location": {"file": "test.rego", "row": 4, "col": 2}
+        },
+        {
+          "query_id": 0,
+          "location": {"file": "", "row": 1, "col": 1}
+        }
+      ]
+    }
+  ]
+}
+`
+
+	validateJSONOutput(t, err, expected)
+
+	expectedPretty := `1 error occurred: test.rego:8: eval_builtin_error: div: divide by zero
+
+Traceback:
+  test.rego:8: 1 / 0
+  test.rego:4: q
+  1:1: data.test.p`
+
+	if actual := OutputErrors(NewOutputErrors(err)).Error(); actual != expectedPretty {
+		t.Fatalf("expected\n%s\n\ngot\n%s", expectedPretty, actual)
+	}
 }
 
 func TestOutputJSONErrorStructuredAstErr(t *testing.T) {

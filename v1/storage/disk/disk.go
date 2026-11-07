@@ -97,7 +97,7 @@ type Options struct {
 // Store provides a disk-based implementation of the storage.Store interface.
 type Store struct {
 	db         *badger.DB           // underlying key-value store
-	xid        uint64               // next transaction id
+	xid        atomic.Uint64        // next transaction id
 	rmu        sync.RWMutex         // reader-writer lock
 	wmu        sync.Mutex           // writer lock
 	pm         *pathMapper          // maps logical storage paths to underlying store keys
@@ -109,9 +109,6 @@ type Store struct {
 }
 
 const (
-	// metadataKey is a special value in the store for tracking schema versions.
-	metadataKey = "metadata"
-
 	// supportedSchemaVersion represents the version of the store supported by
 	// this OPA.
 	supportedSchemaVersion int64 = 1
@@ -122,6 +119,11 @@ const (
 
 	// symlink to directory path where badger write its files to
 	symlinkKey = "active"
+)
+
+var (
+	// metadataKey is a special value in the store for tracking schema versions.
+	metadataKey = [...]byte{'m', 'e', 't', 'a', 'd', 'a', 't', 'a'}
 )
 
 type metadata struct {
@@ -239,7 +241,7 @@ func (db *Store) NewTransaction(_ context.Context, params ...storage.Transaction
 		context = params[0].Context
 	}
 
-	xid := atomic.AddUint64(&db.xid, uint64(1))
+	xid := db.xid.Add(1)
 	if write {
 		db.wmu.Lock() // only one concurrent write txn
 	} else {
@@ -267,6 +269,15 @@ func (db *Store) Truncate(ctx context.Context, txn storage.Transaction, params s
 		return err
 	}
 
+	// The caller still owns txn and will commit or abort it once we return;
+	// both panic on a stale transaction, so always hand back a fresh one.
+	// Registered before the commit below, which marks txn stale even if it
+	// then fails.
+	defer func() {
+		uTxn.stale = false
+		uTxn.underlying = db.db.NewTransaction(true)
+	}()
+
 	_, err = uTxn.Commit(ctx)
 	if err != nil {
 		return wrapError(err)
@@ -274,18 +285,29 @@ func (db *Store) Truncate(ctx context.Context, txn storage.Transaction, params s
 
 	// write new bundle policy and data into the existing DB
 	underlying := db.db.NewTransaction(true)
-	xid := atomic.AddUint64(&db.xid, uint64(1))
+	xid := db.xid.Add(uint64(1))
 	underlyingTxn := newTransaction(xid, true, underlying, params.Context, db.pm, db.partitions, db)
+
+	// Discard is a no-op on a transaction that was already committed.
+	committed := false
+	defer func() {
+		if !committed {
+			underlyingTxn.underlying.Discard()
+		}
+	}()
+
+	truncateData := func(path storage.Path, value any) error {
+		sTxn, err := db.doTruncateData(ctx, underlyingTxn, db.db, params, path, value)
+		if sTxn != nil {
+			underlyingTxn = sTxn
+		}
+		return err
+	}
 
 	// For backwards compatibility, check if `RootOverwrite` was configured.
 	if params.RootOverwrite || overwriteRoot(params.BasePaths) {
-		sTxn, err := db.doTruncateData(ctx, underlyingTxn, db.db, params, storage.RootPath, map[string]any{})
-		if err != nil {
+		if err := truncateData(storage.RootPath, map[string]any{}); err != nil {
 			return wrapError(err)
-		}
-
-		if sTxn != nil {
-			underlyingTxn = sTxn
 		}
 	}
 
@@ -302,9 +324,9 @@ func (db *Store) Truncate(ctx context.Context, txn storage.Transaction, params s
 		}
 
 		if update.IsPolicy {
-			err = underlyingTxn.UpsertPolicy(ctx, strings.TrimLeft(update.Path.String(), "/"), update.Value)
+			err = underlyingTxn.upsertPolicy(update.Path.PolicyID(), update.Value)
 			if err != nil {
-				if err != badger.ErrTxnTooBig {
+				if !errors.Is(err, badger.ErrTxnTooBig) {
 					return wrapError(err)
 				}
 
@@ -314,22 +336,17 @@ func (db *Store) Truncate(ctx context.Context, txn storage.Transaction, params s
 				}
 
 				underlying = db.db.NewTransaction(true)
-				xid = atomic.AddUint64(&db.xid, uint64(1))
+				xid = db.xid.Add(uint64(1))
 				underlyingTxn = newTransaction(xid, true, underlying, params.Context, db.pm, db.partitions, db)
 
-				if err = underlyingTxn.UpsertPolicy(ctx, strings.TrimLeft(update.Path.String(), "/"), update.Value); err != nil {
+				if err = underlyingTxn.upsertPolicy(update.Path.PolicyID(), update.Value); err != nil {
 					return wrapError(err)
 				}
 			}
 		} else {
 			if len(update.Path) > 0 {
-				sTxn, err := db.doTruncateData(ctx, underlyingTxn, db.db, params, update.Path, update.Value)
-				if err != nil {
+				if err := truncateData(update.Path, update.Value); err != nil {
 					return wrapError(err)
-				}
-
-				if sTxn != nil {
-					underlyingTxn = sTxn
 				}
 			} else {
 				for _, root := range params.BasePaths {
@@ -350,13 +367,8 @@ func (db *Store) Truncate(ctx context.Context, txn storage.Transaction, params s
 							}
 						}
 
-						sTxn, err := db.doTruncateData(ctx, underlyingTxn, db.db, params, newPath, value)
-						if err != nil {
+						if err := truncateData(newPath, value); err != nil {
 							return wrapError(err)
-						}
-
-						if sTxn != nil {
-							underlyingTxn = sTxn
 						}
 					}
 				}
@@ -373,41 +385,55 @@ func (db *Store) Truncate(ctx context.Context, txn storage.Transaction, params s
 	if err != nil {
 		return wrapError(err)
 	}
-
-	// Open write txn on the existing store in-case there are more write operations.
-	// The caller will either commit or abort this transaction
-	uTxn.stale = false
-	uTxn.underlying = db.db.NewTransaction(true)
+	committed = true
 
 	return nil
 }
 
+// doTruncateData writes value at path, committing and opening a new
+// transaction whenever badger reports that the current one is full. It returns
+// the transaction the caller should keep using; nil means underlying is still
+// current.
 func (db *Store) doTruncateData(ctx context.Context, underlying *transaction, badgerdb *badger.DB,
 	params storage.TransactionParams, path storage.Path, value any) (*transaction, error) {
 
-	err := underlying.Write(ctx, storage.AddOp, path, value)
+	updates, err := underlying.partitionWrite(storage.AddOp, path, value)
 	if err != nil {
-		if err != badger.ErrTxnTooBig {
-			return nil, wrapError(err)
-		}
-
-		_, err = underlying.Commit(ctx)
-		if err != nil {
-			return nil, wrapError(err)
-		}
-
-		txn := badgerdb.NewTransaction(true)
-		xid := atomic.AddUint64(&db.xid, uint64(1))
-		sTxn := newTransaction(xid, true, txn, params.Context, db.pm, db.partitions, db)
-
-		if err = sTxn.Write(ctx, storage.AddOp, path, value); err != nil {
-			return nil, wrapError(err)
-		}
-
-		return sTxn, nil
+		return nil, wrapError(err)
 	}
 
-	return nil, nil
+	m := underlying.metrics
+	m.Timer(writeTimer).Start()
+	defer m.Timer(writeTimer).Stop()
+
+	var replacement *transaction
+
+	for {
+		n, err := underlying.applyUpdates(path, updates)
+		if err == nil {
+			return replacement, nil
+		}
+		if !errors.Is(err, badger.ErrTxnTooBig) {
+			return replacement, wrapError(err)
+		}
+		if n == 0 && replacement != nil {
+			// Nothing fit into a transaction we had just opened: this pair is
+			// too large for badger, and cannot be split any further.
+			return replacement, &storage.Error{
+				Code: storage.InternalErr,
+				Message: fmt.Sprintf("value at %s is too large to store: %s",
+					db.keyPath(updates[0].key), err.Error()),
+			}
+		}
+		updates = updates[n:]
+
+		if _, err := underlying.Commit(ctx); err != nil {
+			return replacement, wrapError(err)
+		}
+
+		underlying = newTransaction(db.xid.Add(1), true, badgerdb.NewTransaction(true), params.Context, db.pm, db.partitions, db)
+		replacement = underlying
+	}
 }
 
 func (db *Store) backupAndLoadDB() (*badger.DB, error) {
@@ -480,8 +506,7 @@ func (db *Store) Commit(ctx context.Context, txn storage.Transaction) error {
 		}
 		write := false // read only txn
 		readOnly := db.db.NewTransaction(write)
-		xid := atomic.AddUint64(&db.xid, uint64(1))
-		readTxn := newTransaction(xid, write, readOnly, nil, db.pm, db.partitions, db)
+		readTxn := newTransaction(db.xid.Add(1), write, readOnly, nil, db.pm, db.partitions, db)
 		for h := range db.triggers {
 			h.cb(ctx, readTxn, event)
 		}
@@ -530,6 +555,7 @@ func (db *Store) Abort(ctx context.Context, txn storage.Transaction) {
 			// swap db
 			oldDb := db.db
 			db.db = db.backupDB
+			db.backupDB = nil
 
 			// cleanup existing db
 			if err := db.cleanup(oldDb); err != nil {
@@ -617,7 +643,7 @@ func (db *Store) Write(ctx context.Context, txn storage.Transaction, op storage.
 		return err
 	}
 	val := util.Reference(value)
-	if err := util.RoundTrip(val); err != nil {
+	if err := util.RoundTripFast(val); err != nil {
 		return wrapError(err)
 	}
 	return underlying.Write(ctx, op, path, *val)
@@ -667,7 +693,7 @@ func (h *handle) Unregister(_ context.Context, txn storage.Transaction) {
 
 func (*Store) loadMetadata(txn *badger.Txn, m *metadata) (bool, error) {
 
-	item, err := txn.Get([]byte(metadataKey))
+	item, err := txn.Get(metadataKey[:])
 	if err != nil {
 		if err != badger.ErrKeyNotFound {
 			return false, wrapError(err)
@@ -689,13 +715,12 @@ func (*Store) loadMetadata(txn *badger.Txn, m *metadata) (bool, error) {
 }
 
 func (*Store) setMetadata(txn *badger.Txn, m metadata) error {
-
 	bs, err := json.Marshal(m)
 	if err != nil {
 		return wrapError(err)
 	}
 
-	return wrapError(txn.Set([]byte(metadataKey), bs))
+	return wrapError(txn.Set(metadataKey[:], bs))
 }
 
 func (db *Store) init(ctx context.Context, txn *badger.Txn, partitions []storage.Path) error {
@@ -876,6 +901,15 @@ func (db *Store) logPrefixStatistics(ctx context.Context, partition storage.Path
 	return nil
 }
 
+// keyPath maps a store key back to its logical data path, for error messages.
+func (db *Store) keyPath(key []byte) string {
+	path, err := db.pm.DataKey2Path(key)
+	if err != nil {
+		return string(key)
+	}
+	return toString(path)
+}
+
 func hasWildcard(path storage.Path) (storage.Path, bool) {
 	for i := range path {
 		if path[i] == pathWildcard {
@@ -979,11 +1013,7 @@ func createSymlink(target, symlink string) error {
 			return err
 		}
 	} else if errors.Is(lerr, os.ErrNotExist) {
-		if err := os.Symlink(target, symlink); err != nil {
-			return err
-		}
-
-		return nil
+		return os.Symlink(target, symlink)
 	}
 
 	return lerr

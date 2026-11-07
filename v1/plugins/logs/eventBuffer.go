@@ -5,6 +5,7 @@
 package logs
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"math"
@@ -14,7 +15,7 @@ import (
 	"github.com/open-policy-agent/opa/v1/metrics"
 	"github.com/open-policy-agent/opa/v1/plugins"
 	"github.com/open-policy-agent/opa/v1/plugins/rest"
-	"github.com/open-policy-agent/opa/v1/util"
+	"github.com/open-policy-agent/opa/v1/util/channel"
 	"golang.org/x/time/rate"
 )
 
@@ -70,6 +71,12 @@ func (b *eventBuffer) WithMetrics(m metrics.Metrics) {
 
 func (*eventBuffer) Name() string {
 	return eventBufferType
+}
+
+// Size returns the number of items waiting to be uploaded. Requeued chunks
+// count as one item, as they do against buffer_size_limit_events.
+func (b *eventBuffer) Size() int64 {
+	return int64(len(b.buffer))
 }
 
 func (b *eventBuffer) WithLogger(l logging.Logger) *eventBuffer {
@@ -167,7 +174,7 @@ func (b *eventBuffer) push(event *bufferItem) {
 		return
 	}
 
-	util.PushFIFO(b.buffer, event, b.metrics, logBufferEventDropCounterName)
+	channel.PushFIFO(b.buffer, event, b.metrics, logBufferEventDropCounterName)
 }
 
 func (b *eventBuffer) processBufferItem(item *bufferItem) [][]byte {
@@ -237,6 +244,7 @@ func (b *eventBuffer) read() {
 // Upload reads events from the buffer and uploads them to the configured client.
 // All the events currently in the buffer are read and written to a gzip compressed JSON array to create a chunk of data.
 // Each chunk is limited by the uploadSizeLimitBytes.
+// Chunks that fail to upload are requeued onto the buffer and the first failure is returned.
 func (b *eventBuffer) Upload(ctx context.Context) error {
 	b.uploadLock.Lock()
 	defer b.uploadLock.Unlock()
@@ -248,20 +256,20 @@ func (b *eventBuffer) Upload(ctx context.Context) error {
 
 	eventLen := len(b.buffer)
 
+	// uploadErr holds the first upload failure so that the rest of the buffer is
+	// still drained before returning. Failed chunks are requeued by uploadChunks,
+	// so the caller has to see the error to report the plugin status and back off
+	// before the next attempt.
+	var uploadErr error
+
 	for range eventLen {
 		item := b.readBufItem()
 		if item == nil {
 			break
 		}
 
-		result := b.processBufferItem(item)
-		if result != nil {
-			if err := b.uploadChunks(ctx, result, b.client, b.uploadPath); err != nil {
-				if b.logger != nil {
-					b.logger.Error("Failed to upload decision logs, events have been buffered an will be retried. Error: %v", err)
-				}
-			}
-		}
+		chunks := b.processBufferItem(item)
+		uploadErr = cmp.Or(uploadErr, b.uploadChunks(ctx, chunks, b.client, b.uploadPath))
 	}
 
 	// flush any chunks that didn't hit the upload limit
@@ -271,18 +279,10 @@ func (b *eventBuffer) Upload(ctx context.Context) error {
 		if b.logger != nil {
 			b.logger.Error("Failed to upload decision logs, events have been buffered an will be retried.")
 		}
-		return nil
+		return uploadErr
 	}
 
-	if result == nil {
-		return nil
-	}
-
-	if err := b.uploadChunks(ctx, result, b.client, b.uploadPath); err != nil {
-		return err
-	}
-
-	return nil
+	return cmp.Or(uploadErr, b.uploadChunks(ctx, result, b.client, b.uploadPath))
 }
 
 // uploadChunks attempts to upload multiple chunks to the configured client.
@@ -290,7 +290,7 @@ func (b *eventBuffer) Upload(ctx context.Context) error {
 func (b *eventBuffer) uploadChunks(ctx context.Context, result [][]byte, client rest.Client, uploadPath string) error {
 	var finalErr error
 	for _, chunk := range result {
-		err := uploadChunk(ctx, client, uploadPath, chunk)
+		err := uploadChunk(ctx, client, uploadPath, chunk, b.metrics)
 
 		// if an upload failed, requeue the chunk
 		if err != nil {

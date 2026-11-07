@@ -1,3 +1,5 @@
+//go:build !go1.27
+
 // Copyright 2022 The OPA Authors.  All rights reserved.
 // Use of this source code is governed by an Apache2
 // license that can be found in the LICENSE file.
@@ -8,9 +10,9 @@ import (
 	"bytes"
 	"path"
 	"slices"
-	"sort"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/util/test"
 )
@@ -79,6 +81,72 @@ func TestCapabilitiesFile(t *testing.T) {
 	})
 }
 
+func TestCapabilitiesJSONOutputBytes(t *testing.T) {
+	files := map[string]string{
+		"test-capabilities.json": `
+		{
+			"builtins": [
+				{
+					"name": "plus",
+					"infix": "+",
+					"decl": {
+						"type": "function",
+						"args": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "number"
+							}
+						],
+						"result": {
+							"type": "number"
+						}
+					}
+				}
+			]
+		}
+		`,
+	}
+
+	test.WithTempFS(files, func(root string) {
+		params := capabilitiesParams{
+			file: path.Join(root, "test-capabilities.json"),
+		}
+		got, err := doCapabilities(params)
+		if err != nil {
+			t.Fatal("expected success", err)
+		}
+
+		expected := `{
+  "builtins": [
+    {
+      "name": "plus",
+      "decl": {
+        "args": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "number"
+          }
+        ],
+        "result": {
+          "type": "number"
+        },
+        "type": "function"
+      },
+      "infix": "+"
+    }
+  ]
+}`
+
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Errorf("unexpected result (-want, +got):\n%s", diff)
+		}
+	})
+}
+
 func TestCapabilitiesCurrent(t *testing.T) {
 	tests := []struct {
 		note              string
@@ -90,11 +158,15 @@ func TestCapabilitiesCurrent(t *testing.T) {
 			note: "current",
 			expFeatures: []string{
 				ast.FeatureRegoV1,
+				ast.FeatureRegoV2,
+				ast.FeatureRegoV2Import,
 				ast.FeatureKeywordsInRefs,
 				ast.FeatureTemplateStrings,
 			},
 			expFutureKeywords: []string{
 				"not",
+				"and",
+				"or",
 			},
 		},
 		{
@@ -104,7 +176,9 @@ func TestCapabilitiesCurrent(t *testing.T) {
 				ast.FeatureRefHeadStringPrefixes,
 				ast.FeatureRefHeads,
 				ast.FeatureRegoV1Import,
+				ast.FeatureRegoV2Import,
 				ast.FeatureRegoV1,
+				ast.FeatureRegoV2,
 				ast.FeatureKeywordsInRefs,
 			},
 			expFutureKeywords: []string{
@@ -113,6 +187,8 @@ func TestCapabilitiesCurrent(t *testing.T) {
 				"contains",
 				"if",
 				"not",
+				"and",
+				"or",
 			},
 		},
 	}
@@ -120,8 +196,8 @@ func TestCapabilitiesCurrent(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.note, func(t *testing.T) {
 			// These are sorted in the output
-			sort.Strings(tc.expFutureKeywords)
-			sort.Strings(tc.expFeatures)
+			slices.Sort(tc.expFutureKeywords)
+			slices.Sort(tc.expFeatures)
 
 			params := capabilitiesParams{
 				showCurrent:  true,

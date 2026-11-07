@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"math"
 
+	"github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/logging"
 	"github.com/open-policy-agent/opa/v1/metrics"
 )
@@ -53,6 +54,10 @@ type chunkEncoder struct {
 	uncompressedLimit                  int64
 	uncompressedLimitScaleUpExponent   float64
 	uncompressedLimitScaleDownExponent float64
+
+	// scalingDown records that a scaleDown is already in progress further up the
+	// stack, so a nested one that cannot lower the limit knows it would cycle
+	scalingDown bool
 }
 
 func newChunkEncoder(limit int64) *chunkEncoder {
@@ -286,6 +291,8 @@ func (enc *chunkEncoder) Encode(event EventV1, eventBytes []byte) ([][]byte, err
 }
 
 func (enc *chunkEncoder) scaleDown(events []EventV1) ([][]byte, error) {
+	reduced := false
+
 	if enc.uncompressedLimit > enc.limit {
 		enc.incrMetric(encUncompressedLimitScaleDownCounterName)
 		enc.incrMetric(encSoftLimitScaleDownCounterName)
@@ -300,10 +307,22 @@ func (enc *chunkEncoder) scaleDown(events []EventV1) ([][]byte, error) {
 		if enc.uncompressedLimitScaleUpExponent > 0 {
 			enc.uncompressedLimitScaleUpExponent -= uncompressedLimitExponentScaleFactor
 		}
+
+		reduced = true
 	}
 
 	// The uncompressed limit has grown too large the events need to be split up into multiple chunks
 	enc.initialize()
+
+	// A nested call that can't lower the limit further would re-encode the same
+	// events into the same branch, recursing until the stack is exhausted.
+	// Closing the chunk per event avoids it, as Encode never then reaches that
+	// branch. Surfaced by Go 1.27's compress/flate sizes, but not specific to it.
+	oneChunkPerEvent := enc.scalingDown && !reduced
+
+	wasScalingDown := enc.scalingDown
+	enc.scalingDown = true
+	defer func() { enc.scalingDown = wasScalingDown }()
 
 	// split the events into multiple chunks
 	var result [][]byte
@@ -321,6 +340,16 @@ func (enc *chunkEncoder) scaleDown(events []EventV1) ([][]byte, error) {
 
 		if chunks != nil {
 			result = append(result, chunks...)
+		}
+
+		if oneChunkPerEvent {
+			chunk, err := enc.reset()
+			if err != nil {
+				return nil, err
+			}
+			if chunk != nil {
+				result = append(result, chunk)
+			}
 		}
 	}
 
@@ -445,7 +474,12 @@ func newChunkDecoder(raw []byte) *chunkDecoder {
 }
 
 func (dec *chunkDecoder) decode() ([]EventV1, error) {
-	gr, err := gzip.NewReader(bytes.NewReader(dec.raw))
+	buf := ast.BytesReaderPool.Get()
+	defer ast.BytesReaderPool.Put(buf)
+
+	buf.Reset(dec.raw)
+
+	gr, err := gzip.NewReader(buf)
 	if err != nil {
 		return nil, err
 	}

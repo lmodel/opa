@@ -6,6 +6,7 @@ package cover
 
 import (
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/open-policy-agent/opa/v1/ast"
@@ -81,7 +82,7 @@ func TestRangeOf(t *testing.T) {
 		Start: Position{Row: 3, Col: 10},
 		End:   Position{Row: 3, Col: 15},
 	}
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Expected %+v but got %+v", want, got)
 	}
 }
@@ -185,8 +186,7 @@ func TestRowSpans(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := rowSpans(tc.rs)
-			if !reflect.DeepEqual(got, tc.exp) {
+			if got := rowSpans(tc.rs); !slices.Equal(got, tc.exp) {
 				t.Fatalf("Expected %v but got %v", tc.exp, got)
 			}
 		})

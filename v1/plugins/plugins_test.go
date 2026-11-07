@@ -7,6 +7,7 @@ package plugins
 import (
 	"context"
 	"errors"
+	"maps"
 	"net/http"
 	"reflect"
 	"testing"
@@ -47,7 +48,7 @@ func TestManagerCacheTriggers(t *testing.T) {
 		t.Fatal("Second listener failed to register")
 	}
 
-	if l1Called == true || l2Called == true {
+	if l1Called || l2Called {
 		t.Fatal("Listeners should not be called yet")
 	}
 
@@ -56,8 +57,8 @@ func TestManagerCacheTriggers(t *testing.T) {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 
-	if l1Called == false || l2Called == false {
-		t.Fatal("Listeners should hav been called")
+	if !l1Called || !l2Called {
+		t.Fatal("Listeners should have been called")
 	}
 }
 
@@ -85,7 +86,7 @@ func TestManagerNDCacheTriggers(t *testing.T) {
 		t.Fatal("Second listener failed to register")
 	}
 
-	if l1Called == true || l2Called == true {
+	if l1Called || l2Called {
 		t.Fatal("Listeners should not be called yet")
 	}
 
@@ -94,7 +95,7 @@ func TestManagerNDCacheTriggers(t *testing.T) {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 
-	if l1Called == false || l2Called == false {
+	if !l1Called || !l2Called {
 		t.Fatal("Listeners should hav been called")
 	}
 }
@@ -104,7 +105,7 @@ func TestManagerPluginStatusListener(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
-	defer m.Stop(context.Background())
+	defer m.Stop(t.Context())
 
 	// Register two listeners
 	var l1Status map[string]*Status
@@ -130,7 +131,7 @@ func TestManagerPluginStatusListener(t *testing.T) {
 	if len(currentStatus) != 1 || currentStatus["p1"].State != StateOK || currentStatus["p1"].Message != message {
 		t.Fatalf("Expected 1 statuses in current plugin status map with state OK and message 'foo', got: %+v", currentStatus)
 	}
-	if !reflect.DeepEqual(currentStatus, l1Status) || !reflect.DeepEqual(l1Status, l2Status) {
+	if !maps.EqualFunc(currentStatus, l1Status, (*Status).Equal) || !maps.EqualFunc(l1Status, l2Status, (*Status).Equal) {
 		t.Fatalf("Unexpected status in updates:\n\n\texpecting: %+v\n\n\tgot: l1: %+v  l2: %+v\n", currentStatus, l1Status, l2Status)
 	}
 
@@ -144,7 +145,7 @@ func TestManagerPluginStatusListener(t *testing.T) {
 	if len(currentStatus) != 2 || currentStatus["p1"].State != StateOK || currentStatus["p1"].Message != message || currentStatus["p2"].State != StateErr {
 		t.Fatalf("Unexpected current plugin status, got: %+v", currentStatus)
 	}
-	if !reflect.DeepEqual(currentStatus, l2Status) {
+	if !maps.EqualFunc(currentStatus, l2Status, (*Status).Equal) {
 		t.Fatalf("Unexpected status in updates:\n\n\texpecting: %+v\n\n\tgot: %+v\n", currentStatus, l2Status)
 	}
 	if l1Status != nil {
@@ -263,6 +264,35 @@ func TestPluginManagerInitIdempotence(t *testing.T) {
 
 	if len(mockStore.Transactions) != exp {
 		t.Fatal("expected num txns to be:", exp, "but got:", len(mockStore.Transactions))
+	}
+}
+
+func TestPluginManagerStopIdempotence(t *testing.T) {
+	m, err := New([]byte{}, "test", inmem.New())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := t.Context()
+
+	if err := m.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// The second pass used to block forever on goroutines the first one had
+	// already shut down, wedging any caller that stops a manager on more than
+	// one path -- as a restart falling back to the previous configuration does.
+	stopped := make(chan struct{})
+	go func() {
+		defer close(stopped)
+		m.Stop(ctx)
+		m.Stop(ctx)
+	}()
+
+	select {
+	case <-stopped:
+	case <-time.After(10 * time.Second):
+		t.Fatal("second Stop blocked")
 	}
 }
 
@@ -408,13 +438,13 @@ func TestPluginManagerPrometheusRegister(t *testing.T) {
 	if err := mgr.PrometheusRegister().Register(counter); err != nil {
 		t.Fatal(err)
 	}
-	if register.Collectors[counter] != true {
-		t.Fatalf("Counter metric was not registered on prometheus")
+	if !register.Collectors[counter] {
+		t.Fatal("Counter metric was not registered on prometheus")
 	}
 }
 
 func TestPluginManagerTracerProvider(t *testing.T) {
-	_, tracerProvider, _, err := internal_tracing.Init(t.Context(), []byte(`{ "distributed_tracing": { "type": "grpc" } }`), "test")
+	_, tracerProvider, _, _, err := internal_tracing.Init(t.Context(), []byte(`{ "distributed_tracing": { "type": "grpc" } }`), "test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -660,7 +690,7 @@ func (*testExternalSourcePlugin) Reconfigure(context.Context, any) {}
 // TestExternalSourceIntegration verifies external source behavior during plugin lifecycle
 func TestExternalSourceIntegration(t *testing.T) {
 	t.Run("sources wired after plugin start", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		m, err := New([]byte(`{}`), "test", inmem.New())
 		if err != nil {
 			t.Fatalf("Failed to create manager: %v", err)
@@ -741,7 +771,7 @@ test_rule := true`)
 	})
 
 	t.Run("no recompilation when no sources registered", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		m, err := New([]byte(`{}`), "test", inmem.New())
 		if err != nil {
 			t.Fatalf("Failed to create manager: %v", err)

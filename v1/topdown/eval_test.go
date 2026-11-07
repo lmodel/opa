@@ -17,6 +17,7 @@ import (
 	"github.com/open-policy-agent/opa/v1/metrics"
 	"github.com/open-policy-agent/opa/v1/storage"
 	inmem "github.com/open-policy-agent/opa/v1/storage/inmem/test"
+	"github.com/open-policy-agent/opa/v1/types"
 )
 
 func TestQueryIDFactory(t *testing.T) {
@@ -187,7 +188,7 @@ func TestRefContainsNonScalar(t *testing.T) {
 
 }
 
-func TestContainsNestedRefOrCall(t *testing.T) {
+func TestCannotBeTriviallyNegated(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -250,6 +251,21 @@ func TestContainsNestedRefOrCall(t *testing.T) {
 			input: "f(x) = g(h(y))",
 			want:  true,
 		},
+		{
+			note:  "every - no refs or calls",
+			input: "every x in xs { x }",
+			want:  true,
+		},
+		{
+			note:  "every - refs in body",
+			input: "every x in xs { p[x] }",
+			want:  true,
+		},
+		{
+			note:  "every - ref in domain",
+			input: "every x in p[xs] { x }",
+			want:  true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -258,7 +274,7 @@ func TestContainsNestedRefOrCall(t *testing.T) {
 
 			vis := newNestedCheckVisitor()
 			expr := ast.MustParseExpr(tc.input)
-			result := containsNestedRefOrCall(vis, expr)
+			result := cannotBeTriviallyNegated(vis, expr)
 			if result != tc.want {
 				t.Fatal("Expected", tc.want, "but got", result)
 			}
@@ -1531,6 +1547,33 @@ func TestPartialRule(t *testing.T) {
 			query:  `data = x`,
 			expErr: "eval_conflict_error: object keys must be unique",
 		},
+		{
+			note: "partial object (general ref head) negating a sibling leaf",
+			module: `package test
+				p[x].foo.bar if {
+					x := "a"
+					not p[x].foo.baz
+				}
+
+				p[x].foo.baz if {
+					x := "a"
+					false
+				}`,
+			query: `data.test.p = x`,
+			exp:   `[{"x": {"a": {"foo": {"bar": true}}}}]`,
+		},
+		{
+			note: "partial object (general ref head) reading a sibling subtree",
+			module: `package test
+				p[x].foo.bar := 1 if { x := "a" }
+
+				p[x].qux := y if {
+					x := "b"
+					y := p.a.foo.bar + 1
+				}`,
+			query: `data.test.p = x`,
+			exp:   `[{"x": {"a": {"foo": {"bar": 1}}, "b": {"qux": 2}}}]`,
+		},
 	}
 
 	for _, tc := range tests {
@@ -1668,6 +1711,147 @@ func TestContextErrorHandling(t *testing.T) {
 	}
 }
 
+func TestEvalBuiltinUnevaluatedOperand(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		note   string
+		body   string
+		expErr string
+	}{
+		{
+			note:   "unbound var",
+			body:   "count(x, y)",
+			expErr: "built-in function count called with operand 1 that requires evaluation: x",
+		},
+		{
+			note:   "ref",
+			body:   "count(data.foo, y)",
+			expErr: "built-in function count called with operand 1 that requires evaluation: data.foo",
+		},
+		{
+			note:   "var nested in composite",
+			body:   "count([x], y)",
+			expErr: "built-in function count called with operand 1 that requires evaluation: [x]",
+		},
+		{
+			note:   "comprehension",
+			body:   "count([i | i = 1], y)",
+			expErr: "built-in function count called with operand 1 that requires evaluation: [i | i = 1]",
+		},
+		{
+			note:   "comprehension nested in composite",
+			body:   "count([[i | i = 1]], y)",
+			expErr: "built-in function count called with operand 1 that requires evaluation: [[i | i = 1]]",
+		},
+		{
+			note:   "unbound var, no captured output",
+			body:   `startswith("foo", x)`,
+			expErr: "built-in function startswith called with operand 2 that requires evaluation: x",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			t.Parallel()
+
+			qrs, err := NewQuery(ast.MustParseBody(tc.body)).Run(t.Context())
+			if err == nil {
+				t.Fatalf("expected error but got results: %v", qrs)
+			}
+
+			topdownErr, ok := errors.AsType[*Error](err)
+			if !ok {
+				t.Fatalf("expected *topdown.Error but got %#v", err)
+			}
+
+			if topdownErr.Code != InternalErr {
+				t.Errorf("expected code %v but got %v", InternalErr, topdownErr.Code)
+			}
+
+			if !strings.Contains(topdownErr.Message, tc.expErr) {
+				t.Errorf("expected message %q but got %q", tc.expErr, topdownErr.Message)
+			}
+		})
+	}
+}
+
+func TestEvalBuiltinNonGroundOutputOperand(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		note string
+		body string
+		exp  map[string]string
+	}{
+		{
+			note: "composite output operand",
+			body: `walk({"a": 1}, [["a"], v])`,
+			exp:  map[string]string{"v": "1"},
+		},
+		{
+			note: "wildcard in composite output operand",
+			body: `walk({"a": 1}, [_, v])`,
+			exp:  map[string]string{"v": `{"a": 1}`},
+		},
+		{
+			note: "captured output var",
+			body: "count([1, 2], y)",
+			exp:  map[string]string{"y": "2"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			t.Parallel()
+
+			qrs, err := NewQuery(ast.MustParseBody(tc.body)).Run(t.Context())
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if len(qrs) == 0 {
+				t.Fatal("expected results but got none")
+			}
+
+			for k, v := range tc.exp {
+				if exp, act := ast.MustParseTerm(v), qrs[0][ast.Var(k)]; !exp.Equal(act) {
+					t.Errorf("expected %v to be %v but got %v", k, exp, act)
+				}
+			}
+		})
+	}
+}
+
+func TestEvalBuiltinUnevaluatedVariadicOperand(t *testing.T) {
+	t.Parallel()
+
+	query := NewQuery(ast.MustParseBody(`test("a", x)`)).WithBuiltins(map[string]*Builtin{
+		"test": {
+			Decl: &ast.Builtin{
+				Name: "test",
+				Decl: types.NewVariadicFunction(types.Args(types.S), types.A, nil),
+			},
+			Func: func(_ BuiltinContext, terms []*ast.Term, _ func(*ast.Term) error) error {
+				t.Fatalf("built-in must not be called, got operands %v", terms)
+				return nil
+			},
+		},
+	})
+
+	_, err := query.Run(t.Context())
+
+	topdownErr, ok := errors.AsType[*Error](err)
+	if !ok {
+		t.Fatalf("expected *topdown.Error but got %#v", err)
+	}
+
+	exp := "built-in function test called with operand 2 that requires evaluation: x"
+	if topdownErr.Code != InternalErr || !strings.Contains(topdownErr.Message, exp) {
+		t.Errorf("expected %v %q but got %v %q", InternalErr, exp, topdownErr.Code, topdownErr.Message)
+	}
+}
+
 func TestFmtVarTerm(t *testing.T) {
 	e := &eval{
 		genvarprefix: "foobar",
@@ -1700,5 +1884,258 @@ func BenchmarkFormatVarTerm(b *testing.B) {
 
 	for b.Loop() {
 		_ = e.fmtVar()
+	}
+}
+
+func TestCanInlineNegation(t *testing.T) {
+	t.Parallel()
+
+	// A query of three negated expressions over the unknown, as partial
+	// evaluation of a policy with an unknown-dependent rule produces.
+	query := ast.MustParseBody(`not "1" = input.type; not "1" = input.subtype; not input.attribute = "0"`)
+
+	queries := func(n int) []ast.Body {
+		result := make([]ast.Body, n)
+		for i := range result {
+			result[i] = query
+		}
+		return result
+	}
+
+	tests := []struct {
+		note     string
+		queries  []ast.Body
+		expected bool
+	}{
+		{"single query", queries(1), true},
+		{"cross product within limit", queries(2), true},
+		{"cross product above limit", queries(3), false},
+		// The cross product of 100 queries of length three is 3^100, which does
+		// not fit in an int. It must still be rejected: before the size check
+		// moved into the loop, the product wrapped around to a negative value
+		// and partial evaluation went on to enumerate the cross product.
+		{"cross product overflows int", queries(100), false},
+		{"cross product overflows int, larger", queries(2500), false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			t.Parallel()
+
+			safe := ast.NewVarSet()
+
+			if actual := canInlineNegation(safe, tc.queries); actual != tc.expected {
+				t.Errorf("Expected canInlineNegation to return %v but got %v", tc.expected, actual)
+			}
+		})
+	}
+}
+
+func TestBiunifyFunctionArguments(t *testing.T) {
+	t.Parallel()
+
+	module := `package test
+
+same(x, x) := true
+scalar(1, "a", x) := x
+pair([a, b]) := a + b
+five(a, b, c, d, e) := [a, b, c, d, e]
+mixed(1, [a, 2], {"k": b}) := [a, b]
+`
+
+	tests := []struct {
+		note  string
+		query string
+		exp   string // JSON of `x`, empty if undefined
+	}{
+		{note: "repeated var equal", query: "x = data.test.same(1, 1)", exp: "true"},
+		{note: "repeated var unequal", query: "x = data.test.same(1, 2)"},
+		{note: "scalars match", query: `x = data.test.scalar(1, "a", 7)`, exp: "7"},
+		{note: "scalar mismatch first", query: `x = data.test.scalar(2, "a", 7)`},
+		{note: "scalar mismatch second", query: `x = data.test.scalar(1, "b", 7)`},
+		{note: "composite argument", query: "x = data.test.pair([1, 2])", exp: "3"},
+		{note: "more arguments than in-place undos", query: "x = data.test.five(1, 2, 3, 4, 5)", exp: "[1, 2, 3, 4, 5]"},
+		{note: "scalar, composite and object", query: `x = data.test.mixed(1, [3, 2], {"k": 4})`, exp: "[3, 4]"},
+		{note: "scalar before composite mismatch", query: `x = data.test.mixed(2, [3, 2], {"k": 4})`},
+		{note: "bound var argument", query: "y = 5; x = data.test.same(y, 5)", exp: "true"},
+	}
+
+	compiler := ast.MustCompileModules(map[string]string{"test.rego": module})
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			t.Parallel()
+
+			qc := compiler.QueryCompiler()
+			body, err := qc.Compile(ast.MustParseBody(tc.query))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var got []string
+			err = NewQuery(body).WithCompiler(compiler).WithQueryCompiler(qc).WithStore(inmem.New()).
+				Iter(t.Context(), func(qr QueryResult) error {
+					if v, ok := qr[ast.Var("x")]; ok {
+						got = append(got, v.String())
+					}
+					return nil
+				})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if tc.exp == "" {
+				if len(got) != 0 {
+					t.Fatalf("expected undefined, got %v", got)
+				}
+				return
+			}
+			if len(got) != 1 || got[0] != tc.exp {
+				t.Fatalf("expected [%s], got %v", tc.exp, got)
+			}
+		})
+	}
+}
+
+func TestBiunifyArrays(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		note string
+		body string
+		exp  string // the bound `x` of each solution, comma separated; empty if the query is undefined
+	}{
+		{note: "scalars equal", body: "[1, 2, 3] = [1, 2, 3]; x = 1", exp: "1"},
+		{note: "scalar mismatch first", body: "[1, 2, x] = [9, 2, 3]"},
+		{note: "scalar mismatch middle", body: "[1, 2, x] = [1, 9, 3]"},
+		{note: "scalar type mismatch", body: `[1, "2", x] = [1, 2, 3]`},
+		{note: "binds past scalars", body: "[1, 2, x] = [1, 2, 3]", exp: "3"},
+		{note: "binds before scalars", body: "[x, 2, 3] = [1, 2, 3]", exp: "1"},
+		{note: "bound var as scalar", body: "y = 2; [1, y, x] = [1, 2, 3]", exp: "3"},
+		{note: "bound var mismatch", body: "y = 9; [1, y, x] = [1, 2, 3]"},
+		{note: "var to var", body: "[y, x] = [2, y]", exp: "2"},
+		{note: "nested", body: "[1, [2, x]] = [1, [2, 3]]", exp: "3"},
+		{note: "nested mismatch", body: "[1, [2, x]] = [1, [9, 3]]"},
+		{note: "empty", body: "[] = []; x = 1", exp: "1"},
+		{note: "length mismatch", body: "[1, x] = [1, 2, 3]"},
+		{note: "more vars than in-place undos", body: "[a, b, c, d, e, x] = [1, 2, 3, 4, 5, 6]", exp: "6"},
+		{note: "repeated var equal", body: "[y, y, x] = [1, 1, 2]", exp: "2"},
+		{note: "repeated var unequal", body: "[y, y, x] = [1, 2, 3]"},
+		{note: "mismatch after bindings", body: "[a, b, c, d, e, 9, x] = [1, 2, 3, 4, 5, 6, 7]"},
+		{note: "undone for each solution", body: "i = input[j]; [x, i, y] = [i, i, y]", exp: "1,2,3"},
+		{note: "undone after a failed attempt", body: "i = input[j]; [x, 2] = [i, i]", exp: "2"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			t.Parallel()
+
+			var got []string
+			err := NewQuery(ast.MustParseBody(tc.body)).WithCompiler(ast.NewCompiler()).WithInput(ast.MustParseTerm("[1, 2, 3]")).
+				Iter(t.Context(), func(qr QueryResult) error {
+					if v, ok := qr[ast.Var("x")]; ok {
+						got = append(got, v.String())
+					}
+					return nil
+				})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if tc.exp == "" {
+				if len(got) != 0 {
+					t.Fatalf("expected undefined, got %v", got)
+				}
+				return
+			}
+			if r := strings.Join(got, ","); r != tc.exp {
+				t.Fatalf("expected [%s], got [%s]", tc.exp, r)
+			}
+		})
+	}
+}
+
+func TestEvalTermSetLookupOnUnresolvedRef(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		note string
+		body string
+		exp  bool
+	}{
+		{"input ref member", `data.test.acts[_] = input.action`, true},
+		{"input ref not a member", `data.test.acts[_] = input.other`, false},
+		{"input ref compared with == in rule", `data.test.r`, true},
+		{"compound with input ref", `data.test.pairs[_] = [input.action, 1]`, true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			t.Parallel()
+
+			compiler := ast.MustCompileModules(map[string]string{
+				"test.rego": `package test
+
+acts := {"a", "b"}
+pairs := {["a", 1], ["b", 2]}
+
+r if acts[_] == input.action`,
+			})
+
+			rs, err := NewQuery(ast.MustParseBody(tc.body)).WithCompiler(compiler).
+				WithInput(ast.MustParseTerm(`{"action": "a", "other": "z"}`)).
+				Run(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got := len(rs) > 0; got != tc.exp {
+				t.Fatalf("expected %v, got %v", tc.exp, got)
+			}
+		})
+	}
+}
+
+func TestEvalTermSetLookupOnGroundValue(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		note string
+		body string
+		exp  []string
+	}{
+		{"scalar member", `s = {1, 2, 3}; x = 2; x = s[_]`, []string{"2"}},
+		{"scalar bound before iteration", `s = {1, 2, 3}; v = 2; x = v; x = s[_]`, []string{"2"}},
+		{"key var is bound to value", `s = {1, 2, 3}; v = 2; v = s[x]`, []string{"2"}},
+		{"scalar not a member", `s = {1, 2, 3}; v = 4; v = s[x]`, nil},
+		{"compound member", `s = {[1, 2], [3, 4]}; v = [3, 4]; v = s[x]`, []string{"[3, 4]"}},
+		{"compound not a member", `s = {[1, 2], [3, 4]}; v = [3, 5]; v = s[x]`, nil},
+		{"equal numbers match", `s = {1, 2}; v = 2.0; v = s[x]`, []string{"2.0"}},
+		{"unbound value still enumerates", `s = {1, 2, 3}; s[x] = y; y > 1`, []string{"2", "3"}},
+		{"nested sets", `s = {"a": {1, 2}, "b": {2, 3}}; v = 2; v = s[_][x]`, []string{"2", "2"}},
+		{"nested sets via intermediate var", `s = {"a": {1, 2}, "b": {3}}; ops = s[_]; x = 3; x = ops[_]`, []string{"3"}},
+		{"non-ground set elements", `a = 1; s = {a, [a, 2]}; v = [1, 2]; v = s[x]`, []string{"[1, 2]"}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.note, func(t *testing.T) {
+			t.Parallel()
+
+			var got []string
+			err := NewQuery(ast.MustParseBody(tc.body)).WithCompiler(ast.NewCompiler()).
+				Iter(t.Context(), func(qr QueryResult) error {
+					if v, ok := qr[ast.Var("x")]; ok {
+						got = append(got, v.String())
+					}
+					return nil
+				})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if r, e := strings.Join(got, ","), strings.Join(tc.exp, ","); r != e {
+				t.Fatalf("expected [%s], got [%s]", e, r)
+			}
+		})
 	}
 }

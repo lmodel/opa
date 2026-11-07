@@ -41,7 +41,7 @@ type Response struct {
 var ignoreMetrics = cmpopts.IgnoreMapEntries(func(k string, _ any) bool { return k == "metrics" })
 
 func setup(t testing.TB, rego string, data any) *fixture {
-	ctx := context.Background()
+	ctx := t.Context()
 	store := inmem.New()
 	txn := storage.NewTransactionOrDie(ctx, store, storage.WriteParams)
 	if err := store.UpsertPolicy(ctx, txn, "filters.rego", []byte(rego)); err != nil {
@@ -152,6 +152,105 @@ func TestCompileHandlerMultiTarget(t *testing.T) {
 	req.Header.Set("Accept", target)
 	if err := f.executeRequest(req, expCode, string(expBody), ignoreMetrics); err != nil {
 		t.Error(err)
+	}
+}
+
+// A policy the target cannot render is a client error, not a server error.
+func TestCompileHandlerTranslationError(t *testing.T) {
+	t.Parallel()
+
+	payload, err := json.Marshal(map[string]any{
+		"input":    map[string]any{},
+		"unknowns": []string{"input.fruits"},
+	})
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+	expBody, err := json.Marshal(map[string]any{
+		"code":    "evaluation_error",
+		"message": "error(s) occurred while evaluating query",
+		"errors": []map[string]any{
+			{"code": "pe_fragment_error", "message": "null value can only be used with 'eq' or 'ne' operators"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal expected response: %v", err)
+	}
+
+	f := setup(t, "package filters\ninclude if input.fruits.price > null\n", nil)
+	req, err := http.NewRequest("POST", "/v1/compile/filters/include", bytes.NewBuffer(payload))
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/vnd.opa.sql.postgresql+json")
+	if err := f.executeRequest(req, http.StatusBadRequest, string(expBody)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCompileHandlerInvalidMappings(t *testing.T) {
+	t.Parallel()
+
+	rego := `package filters
+import rego.v1
+include if input.fruits.name == "apple"
+`
+
+	for _, tc := range []struct {
+		note     string
+		mappings any
+		expMsg   string
+	}{
+		{
+			note:     "non-string $self",
+			mappings: map[string]any{"fruits": map[string]any{"$self": 123}},
+			expMsg:   "mappings: invalid mappings: fruits.$self: expected string, got json.Number",
+		},
+		{
+			note:     "non-string column",
+			mappings: map[string]any{"fruits": map[string]any{"$self": "F", "name": []any{}}},
+			expMsg:   "mappings: invalid mappings: fruits.name: expected string, got []interface {}",
+		},
+		{
+			note:     "null $table",
+			mappings: map[string]any{"name": map[string]any{"$table": nil}},
+			expMsg:   "mappings: invalid mappings: name.$table: expected string, got <nil>",
+		},
+	} {
+		t.Run(tc.note, func(t *testing.T) {
+			payload := map[string]any{
+				"input":    map[string]any{},
+				"unknowns": []string{"input.fruits"},
+				"options": map[string]any{
+					"targetSQLTableMappings": map[string]any{"ucast": tc.mappings},
+				},
+			}
+			jsonData, err := json.Marshal(payload)
+			if err != nil {
+				t.Fatalf("marshal payload: %v", err)
+			}
+
+			f := setup(t, rego, nil)
+
+			req, err := http.NewRequest("POST", "/v1/compile/filters/include", bytes.NewBuffer(jsonData))
+			if err != nil {
+				t.Fatalf("create request: %v", err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Accept", "application/vnd.opa.ucast.prisma+json")
+
+			expResp, err := json.Marshal(map[string]any{
+				"code":    "invalid_parameter",
+				"message": tc.expMsg,
+			})
+			if err != nil {
+				t.Fatalf("marshal expected response: %v", err)
+			}
+			if err := f.executeRequest(req, http.StatusBadRequest, string(expResp)); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 

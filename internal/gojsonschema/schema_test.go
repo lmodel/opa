@@ -249,7 +249,7 @@ func TestRefProperty(t *testing.T) {
 		for _, err := range result.Errors() {
 			fmt.Println(err.String())
 		}
-		t.Errorf("Got invalid validation result.")
+		t.Error("Got invalid validation result.")
 	}
 }
 
@@ -277,7 +277,7 @@ func TestFragmentLoader(t *testing.T) {
 		t.Errorf("Unexpected error while validating document: %T", err)
 	}
 	if !result.Valid() {
-		t.Errorf("Got invalid validation result.")
+		t.Error("Got invalid validation result.")
 	}
 
 	result, err = schema.Validate(invalidDocument)
@@ -285,7 +285,7 @@ func TestFragmentLoader(t *testing.T) {
 		t.Errorf("Unexpected error while validating document: %T", err)
 	}
 	if len(result.Errors()) != 1 || result.Errors()[0].Type() != "invalid_type" {
-		t.Errorf("Got invalid validation result.")
+		t.Error("Got invalid validation result.")
 	}
 }
 
@@ -390,7 +390,7 @@ func TestLocationIndependentIdentifier(t *testing.T) {
 	}
 
 	if len(result.Errors()) != 2 || result.Errors()[0].Type() != "false" || result.Errors()[1].Type() != "number_all_of" {
-		t.Errorf("Got invalid validation result.")
+		t.Error("Got invalid validation result.")
 	}
 }
 
@@ -404,9 +404,63 @@ func TestIncorrectRef(t *testing.T) {
 	s, err := NewSchema(schemaLoader)
 
 	if s != nil {
-		t.Errorf("Expected nil schema")
+		t.Error("Expected nil schema")
 	}
 	if err.Error() != "Object has no key 'fail'" {
 		t.Errorf("Expected error 'Object has no key 'fail'' but got '%s'", err.Error())
+	}
+}
+
+// Empty enum is unsatisfiable: every instance must fail validation.
+// Note: draft meta-schemas require minItems:1 on enum, so this is only
+// exercised when meta-schema validation is off (the default for NewSchema
+// and for OPA's json.match_schema builtin).
+// https://github.com/open-policy-agent/opa/issues/8910
+func TestEmptyEnumUnsatisfiable(t *testing.T) {
+	type tc struct {
+		name   string
+		schema string
+		data   string
+		valid  bool
+	}
+	cases := []tc{
+		// empty enum rejects every instance type
+		{"empty enum rejects string", `{"enum": []}`, `"a"`, false},
+		{"empty enum rejects number", `{"enum": []}`, `1`, false},
+		{"empty enum rejects null", `{"enum": []}`, `null`, false},
+		{"empty enum rejects bool", `{"enum": []}`, `true`, false},
+		{"empty enum rejects array", `{"enum": []}`, `[]`, false},
+		{"empty enum rejects object", `{"enum": []}`, `{}`, false},
+		// missing enum is unrestricted
+		{"missing enum accepts string", `{}`, `"a"`, true},
+		{"missing enum accepts number", `{}`, `1`, true},
+		{"missing enum accepts null", `{}`, `null`, true},
+		{"missing enum accepts bool", `{}`, `true`, true},
+		{"missing enum accepts array", `{}`, `[]`, true},
+		{"missing enum accepts object", `{}`, `{}`, true},
+		// non-empty enum control cases
+		{"non-empty enum accepts listed value", `{"enum": ["a", "b", "c"]}`, `"a"`, true},
+		{"non-empty enum rejects unlisted value", `{"enum": ["a", "b", "c"]}`, `"z"`, false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			schema, err := NewSchema(NewStringLoader(c.schema))
+			if err != nil {
+				t.Fatalf("unexpected schema compile error: %v", err)
+			}
+			result, err := schema.Validate(NewStringLoader(c.data))
+			if err != nil {
+				t.Fatalf("unexpected validate error: %v", err)
+			}
+			if result.Valid() != c.valid {
+				t.Errorf("valid=%v, want %v (errors=%v)", result.Valid(), c.valid, result.Errors())
+			}
+			if !c.valid {
+				if len(result.Errors()) == 0 || result.Errors()[0].Type() != "enum" {
+					t.Errorf("expected enum error, got %v", result.Errors())
+				}
+			}
+		})
 	}
 }

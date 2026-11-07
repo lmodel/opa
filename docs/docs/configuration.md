@@ -84,6 +84,8 @@ distributed_tracing:
   service_name: opa
   sample_percentage: 50
   encryption: "off"
+  exclude_paths:
+    - /health**
   resource:
     service_namespace: "my-namespace"
     service_version: "1.1"
@@ -441,7 +443,7 @@ request OPA will re-read the credentials from the file and use them for authenti
 #### Using SSO Profile Credentials
 
 If specifying `sso_credentials`, OPA will expect to find an sso profile configured as explained in [SSO Profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) and stored in the [config](https://docs.aws.amazon.com/sdkref/latest/guide/file-format.html) file on disk.
-On each request, Opa will try to use cached token acquired credentials using the SSO credentials. In case the current token has expired, OPA will try to refresh the token using the SSO refresh token, assuming the SSO session is still valid. New token will be cached in memory.
+On each request, OPA will try to use cached token acquired credentials using the SSO credentials. In case the current token has expired, OPA will try to refresh the token using the SSO refresh token, assuming the SSO session is still valid. New token will be cached in memory.
 
 | Field                                                           | Type     | Required | Description                                                                                                                                                                                                                                                    |
 | --------------------------------------------------------------- | -------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -657,7 +659,7 @@ signing requests to other AWS services.
 
 A special case is that bearer authentication works differently to normal service authentication. The OCI downloader base64-encodes the credentials for you so that they need to be supplied in plain text.
 
-For _GHCR_ (Github Container Registry) you can use a developer PAT (personal access token) when downloading a private image. These can be supplied as:
+For _GHCR_ (GitHub Container Registry) you can use a developer PAT (personal access token) when downloading a private image. These can be supplied as:
 
 ```yaml
 credentials:
@@ -691,6 +693,11 @@ the layers of the downloaded repository. This storage path should be maintained
 by the user. If persistence is not configured the OCI downloader will store the
 layers in the system's temporary directory to allow automatic cleanup on system
 restart.
+
+The `resource` may point either at an image manifest or at an image index (a
+multi-platform "manifest list"). See
+[OCI Registry](./management-bundles/#oci-registry) for how to build and publish
+a bundle image.
 
 ### Custom Plugin
 
@@ -800,31 +807,38 @@ one of the keys listed under the [keys](#keys) entry. When using bundle services
 Signature verification fails if the `bundles[_].signing` field is configured on a bundle but no `.signatures.json` file is
 included in the actual bundle gzipped tarball.
 
-| Field                                             | Type                           | Required                       | Description                                                                                                                                                                                                                                             |
-| ------------------------------------------------- | ------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bundles[_].resource`                             | `string`                       | No (default: `bundles/<name>`) | Resource path to use to download bundle from configured service.                                                                                                                                                                                        |
-| `bundles[_].service`                              | `string`                       | Yes                            | Name of service to use to contact remote server.                                                                                                                                                                                                        |
-| `bundles[_].polling.min_delay_seconds`            | `int64`                        | No (default: `60`)             | Minimum amount of time to wait between bundle downloads.                                                                                                                                                                                                |
-| `bundles[_].polling.max_delay_seconds`            | `int64`                        | No (default: `120`)            | Maximum amount of time to wait between bundle downloads.                                                                                                                                                                                                |
-| `bundles[_].trigger`                              | `string` (default: `periodic`) | No                             | Controls how bundle is downloaded from the remote server. Allowed values are `periodic` and `manual` ([`manual` triggers](./integration/#manually-triggering-bundle-reloads) are only possible when running OPA as a SDK instance from the Go package). |
-| `bundles[_].polling.long_polling_timeout_seconds` | `int64`                        | No                             | Maximum amount of time the server should wait before issuing a timeout if there's no update available.                                                                                                                                                  |
-| `bundles[_].persist`                              | `bool`                         | No                             | Persist activated bundles to disk.                                                                                                                                                                                                                      |
-| `bundles[_].signing.keyid`                        | `string`                       | No                             | Name of the key to use for bundle signature verification.                                                                                                                                                                                               |
-| `bundles[_].signing.scope`                        | `string`                       | No                             | Scope to use for bundle signature verification.                                                                                                                                                                                                         |
-| `bundles[_].signing.exclude_files`                | `array`                        | No                             | Files in the bundle to exclude during verification.                                                                                                                                                                                                     |
-| `bundles[_].size_limit_bytes`                     | `int64`                        | No (default: `1073741824`)     | Size limit for individual files contained in the bundle.                                                                                                                                                                                                |
+:::info
+Configuring top-level `keys` **without** a `bundles[_].signing` does not enforce bundle verification. In this case, only bundles with a `.signatures.json` file are verified. A bundle without one is always activated. OPA
+logs a warning at startup for bundles in this state. Add a `signing` block to enforce signature verification.
+:::
+
+| Field                                             | Type                           | Required                       | Description                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------- | ------------------------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bundles[_].resource`                             | `string`                       | No (default: `bundles/<name>`) | Resource path to use to download bundle from configured service.                                                                                                                                                                                                                                                                   |
+| `bundles[_].service`                              | `string`                       | Yes                            | Name of service to use to contact remote server.                                                                                                                                                                                                                                                                                   |
+| `bundles[_].polling.min_delay_seconds`            | `int64`                        | No (default: `60`)             | Minimum amount of time to wait between bundle downloads.                                                                                                                                                                                                                                                                           |
+| `bundles[_].polling.max_delay_seconds`            | `int64`                        | No (default: `120`)            | Maximum amount of time to wait between bundle downloads.                                                                                                                                                                                                                                                                           |
+| `bundles[_].trigger`                              | `string` (default: `periodic`) | No                             | Controls how bundle is downloaded from the remote server. Allowed values are `periodic` and `manual` ([`manual` triggers](./integration/#manually-triggering-bundle-reloads) are only possible when running OPA as a SDK instance from the Go package).                                                                            |
+| `bundles[_].polling.long_polling_timeout_seconds` | `int64`                        | No                             | Maximum amount of time the server should wait before issuing a timeout if there's no update available.                                                                                                                                                                                                                             |
+| `bundles[_].polling.superseded_etag_ttl_seconds`  | `int64`                        | No                             | For how long to keep sending the `Etag` values of replaced bundles in the `If-None-Match` request header, so that a server lagging behind answers `304 Not Modified` instead of serving an older bundle. Requires the server to support multiple values in `If-None-Match`. See [Caching](./management-bundles#caching).           |
+| `bundles[_].persist`                              | `bool`                         | No                             | Persist activated bundles to disk.                                                                                                                                                                                                                                                                                                 |
+| `bundles[_].signing.keyid`                        | `string`                       | No                             | Name of the key to use for bundle signature verification. If omitted, the key is chosen from the signature's JWT `kid` header; a signature is still required.                                                                                                                                                                      |
+| `bundles[_].signing.scope`                        | `string`                       | No                             | Scope to use for bundle signature verification.                                                                                                                                                                                                                                                                                    |
+| `bundles[_].signing.exclude_files`                | `array`                        | No                             | Files in the bundle to exclude during verification.                                                                                                                                                                                                                                                                                |
+| `bundles[_].signing.allow_unsigned_delta_bundles` | `bool`                         | No (default: `false`)          | Accept unsigned [_delta_ bundles](./management-bundles/#delta-bundles), which cannot carry a signature, on a bundle configured to verify signatures. _Snapshot_ bundles must still be signed. **caution:** allowing unsigned delta bundles can open up for an attacker with bundle location access to inject tampered bundle data. |
+| `bundles[_].size_limit_bytes`                     | `int64`                        | No (default: `1073741824`)     | Size limit for individual files contained in the bundle.                                                                                                                                                                                                                                                                           |
 
 ## Status
 
-| Field                                                                    | Type        | Required                                                                                                                                                                                                                                                | Description                                                                                                                                                                                                                                                       |
-| ------------------------------------------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `status.service`                                                         | `string`    | Yes                                                                                                                                                                                                                                                     | Name of service to use to contact remote server.                                                                                                                                                                                                                  |
-| `status.partition_name`                                                  | `string`    | No                                                                                                                                                                                                                                                      | Path segment to include in status updates.                                                                                                                                                                                                                        |
-| `status.console`                                                         | `boolean`   | No (default: `false`)                                                                                                                                                                                                                                   | Log the status updates locally to the console. When enabled alongside a remote status update API the `service` must be configured, the default `service` selection will be disabled.                                                                              |
-| `status.prometheus`                                                      | `boolean`   | No (default: `false`)                                                                                                                                                                                                                                   | Export the status (bundle and plugin) metrics to prometheus (see [the monitoring documentation](./monitoring/#prometheus)). When enabled alongside a remote status update API the `service` must be configured, the default `service` selection will be disabled. |
-| `status.prometheus_config.collectors.bundle_loading_duration_ns.buckets` | `[]float64` | No, (Only use when status.prometheus true, default: [1000, 2000, 4000, 8000, 16_000, 32_000, 64_000, 128_000, 256_000, 512_000, 1_024_000, 2_048_000, 4_096_000, 8_192_000, 16_384_000, 32_768_000, 65_536_000, 131_072_000, 262_144_000, 524_288_000]) | Specifies the buckets for the `bundle_loading_duration_ns` metric. Each value is a float, it is expressed in nanoseconds.                                                                                                                                         |
-| `status.plugin`                                                          | `string`    | No                                                                                                                                                                                                                                                      | Use the named plugin for status updates. If this field exists, the other configuration fields are not required.                                                                                                                                                   |
-| `status.trigger`                                                         | `string`    | No (default: `periodic`)                                                                                                                                                                                                                                | Controls how status updates are reported to the remote server. Allowed values are `periodic` and `manual` (`manual` triggers are only possible when using OPA as a Go package).                                                                                   |
+| Field                                                                    | Type        | Required                                                                                                                                                                                                                                                | Description                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `status.service`                                                         | `string`    | Yes                                                                                                                                                                                                                                                     | Name of service to use to contact remote server.                                                                                                                                                                                                                                |
+| `status.partition_name`                                                  | `string`    | No                                                                                                                                                                                                                                                      | Path segment to include in status updates.                                                                                                                                                                                                                                      |
+| `status.console`                                                         | `boolean`   | No (default: `false`)                                                                                                                                                                                                                                   | Log the status updates locally to the console. When enabled alongside a remote status update API the `service` must be configured, the default `service` selection will be disabled.                                                                                            |
+| `status.prometheus`                                                      | `boolean`   | No (default: `false`)                                                                                                                                                                                                                                   | Export the status (bundle, plugin and decision log) metrics to prometheus (see [the monitoring documentation](./monitoring/#prometheus)). When enabled alongside a remote status update API the `service` must be configured, the default `service` selection will be disabled. |
+| `status.prometheus_config.collectors.bundle_loading_duration_ns.buckets` | `[]float64` | No, (Only use when status.prometheus true, default: [1000, 2000, 4000, 8000, 16_000, 32_000, 64_000, 128_000, 256_000, 512_000, 1_024_000, 2_048_000, 4_096_000, 8_192_000, 16_384_000, 32_768_000, 65_536_000, 131_072_000, 262_144_000, 524_288_000]) | Specifies the buckets for the `bundle_loading_duration_ns` metric. Each value is a float, it is expressed in nanoseconds.                                                                                                                                                       |
+| `status.plugin`                                                          | `string`    | No                                                                                                                                                                                                                                                      | Use the named plugin for status updates. If this field exists, the other configuration fields are not required.                                                                                                                                                                 |
+| `status.trigger`                                                         | `string`    | No (default: `periodic`)                                                                                                                                                                                                                                | Controls how status updates are reported to the remote server. Allowed values are `periodic` and `manual` (`manual` triggers are only possible when using OPA as a Go package).                                                                                                 |
 
 ## Decision Logs
 
@@ -834,7 +848,7 @@ included in the actual bundle gzipped tarball.
 | `decision_logs.partition_name`                     | `string`  | No                               | Deprecated: Use `resource` instead. Path segment to include in status updates.                                                                                                                                                                           |
 | `decision_logs.resource`                           | `string`  | No (default: `/logs`)            | Full path to use for sending decision logs to a remote server.                                                                                                                                                                                           |
 | `decision_logs.reporting.buffer_type`              | `string`  | No (default: `size`)             | Toggles the type of buffer to use. The two available options are "size" or "event". Refer to the [Decision Log Plugin README](https://github.com/open-policy-agent/opa/blob/main/v1/plugins/logs/README.md) for a detailed comparison.                   |
-| `decision_logs.reporting.buffer_size_limit_events` | `int64`   | No (default: `10000`)            | Decision log buffer size limit by events. OPA will drop old events from the log if this limit is exceeded. By default, 100 events are held. This number has to be greater than zero. Only works with "event" buffer type.                                |
+| `decision_logs.reporting.buffer_size_limit_events` | `int64`   | No (default: `10000`)            | Decision log buffer size limit by events. OPA will drop old events from the log if this limit is exceeded. By default, 10000 events are held. This number has to be greater than zero. Only works with "event" buffer type.                              |
 | `decision_logs.reporting.buffer_size_limit_bytes`  | `int64`   | No (default: `unlimited`)        | Decision log buffer size limit in bytes. OPA will drop old events from the log if this limit is exceeded. By default, no limit is set. Only one of `buffer_size_limit_bytes`, `max_decisions_per_second` may be set. Only works with "size" buffer type. |
 | `decision_logs.reporting.max_decisions_per_second` | `float64` | No                               | Maximum number of decision log events to buffer per second. OPA will drop events if the rate limit is exceeded. Only one of `buffer_size_limit_bytes`, `max_decisions_per_second` may be set.                                                            |
 | `decision_logs.reporting.upload_size_limit_bytes`  | `int64`   | No (default: `32768`)            | Decision log upload size limit in bytes. This limit enforces the maximum size of a gzip compressed payload of events within the message body.                                                                                                            |
@@ -849,24 +863,27 @@ included in the actual bundle gzipped tarball.
 
 ## Discovery
 
-| Field                                            | Type                           | Required            | Description                                                                                                                                                                |
-| ------------------------------------------------ | ------------------------------ | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `discovery.resource`                             | `string`                       | Yes                 | Resource path to use to download bundle from configured service.                                                                                                           |
-| `discovery.service`                              | `string`                       | No                  | Name of the service to use to contact remote server. If omitted, the configuration must contain exactly one service. Discovery will default to this service.               |
-| `discovery.decision`                             | `string`                       | No                  | The path of the decision to evaluate in the discovery bundle. By default, OPA will evaluate `data` in the discovery bundle to produce the configuration.                   |
-| `discovery.polling.min_delay_seconds`            | `int64`                        | No (default: `60`)  | Minimum amount of time to wait between configuration downloads.                                                                                                            |
-| `discovery.polling.max_delay_seconds`            | `int64`                        | No (default: `120`) | Maximum amount of time to wait between configuration downloads.                                                                                                            |
-| `discovery.trigger`                              | `string` (default: `periodic`) | No                  | Controls how bundle is downloaded from the remote server. Allowed values are `periodic` and `manual` (`manual` triggers are only possible when using OPA as a Go package). |
-| `discovery.polling.long_polling_timeout_seconds` | `int64`                        | No                  | Maximum amount of time the server should wait before issuing a timeout if there's no update available.                                                                     |
-| `discovery.signing.keyid`                        | `string`                       | No                  | Name of the key to use for bundle signature verification.                                                                                                                  |
-| `discovery.signing.scope`                        | `string`                       | No                  | Scope to use for bundle signature verification.                                                                                                                            |
-| `discovery.signing.exclude_files`                | `array`                        | No                  | Files in the bundle to exclude during verification.                                                                                                                        |
-| `discovery.persist`                              | `bool`                         | No                  | Persist activated discovery bundle to disk.                                                                                                                                |
+| Field                                            | Type                           | Required              | Description                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------ | ------------------------------ | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `discovery.resource`                             | `string`                       | Yes                   | Resource path to use to download bundle from configured service.                                                                                                                                                                                                                                    |
+| `discovery.service`                              | `string`                       | No                    | Name of the service to use to contact remote server. If omitted, the configuration must contain exactly one service. Discovery will default to this service.                                                                                                                                        |
+| `discovery.decision`                             | `string`                       | No                    | The path of the decision to evaluate in the discovery bundle. By default, OPA will evaluate `data` in the discovery bundle to produce the configuration.                                                                                                                                            |
+| `discovery.polling.min_delay_seconds`            | `int64`                        | No (default: `60`)    | Minimum amount of time to wait between configuration downloads.                                                                                                                                                                                                                                     |
+| `discovery.polling.max_delay_seconds`            | `int64`                        | No (default: `120`)   | Maximum amount of time to wait between configuration downloads.                                                                                                                                                                                                                                     |
+| `discovery.trigger`                              | `string` (default: `periodic`) | No                    | Controls how bundle is downloaded from the remote server. Allowed values are `periodic` and `manual` (`manual` triggers are only possible when using OPA as a Go package).                                                                                                                          |
+| `discovery.polling.long_polling_timeout_seconds` | `int64`                        | No                    | Maximum amount of time the server should wait before issuing a timeout if there's no update available.                                                                                                                                                                                              |
+| `discovery.signing.keyid`                        | `string`                       | No                    | Name of the key to use for verification. If omitted, the key is chosen from the signature's JWT `kid` header; a signature is still required.                                                                                                                                                        |
+| `discovery.signing.scope`                        | `string`                       | No                    | Scope to use for bundle signature verification.                                                                                                                                                                                                                                                     |
+| `discovery.signing.exclude_files`                | `array`                        | No                    | Files in the bundle to exclude during verification.                                                                                                                                                                                                                                                 |
+| `discovery.signing.allow_unsigned_delta_bundles` | `bool`                         | No (default: `false`) | Accept unsigned [_delta_ bundles](./management-bundles/#delta-bundles), which cannot carry a signature, on a discovery bundle configured to verify signatures. **caution:** allowing unsigned delta bundles can open up for an attacker with bundle location access to inject tampered bundle data. |
+| `discovery.persist`                              | `bool`                         | No                    | Persist activated discovery bundle to disk.                                                                                                                                                                                                                                                         |
 
-> ⚠️ The plugin trigger mode configured on the discovery plugin will be inherited by the bundle, decision log
-> and status plugins. For example, if the discovery plugin is configured to use the manual trigger mode, all other
-> plugins will use manual triggering as well. If any of the plugins explicitly specify a different mode (for ex. periodic),
-> OPA will generate a configuration error.
+:::warning
+The plugin trigger mode configured on the discovery plugin will be inherited by the bundle, decision log
+and status plugins. For example, if the discovery plugin is configured to use the manual trigger mode, all other
+plugins will use manual triggering as well. If any of the plugins explicitly specify a different mode (for ex. periodic),
+OPA will generate a configuration error.
+:::
 
 The following `discovery` configuration fields are supported but deprecated:
 
@@ -914,44 +931,57 @@ on the [http.send built-in function](./policy-reference/builtins/http) for infor
 
 It also represents the configuration of the inter-query _value_ cache that built-in functions can utilize. Currently,
 this cache is utilized by the `regex` and `glob` built-in functions for compiled regex and glob match patterns
-respectively, the `json.schema_match` built-in function for compiled JSON schemas, and any `graphql` built-in function
-that requires GraphQL schemas.
+respectively, the `json.schema_match` built-in function for compiled JSON schemas, any `graphql` built-in function
+that requires GraphQL schemas, the `io.jwt` token verification built-in functions for parsed certificates and keys,
+and the `strings.any_prefix_match` and `strings.any_suffix_match` built-in functions for the tries they build over
+their base strings.
 
-| Field                                                                    | Type    | Required | Description                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------------------------------ | ------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `caching.inter_query_builtin_cache.max_size_bytes`                       | `int64` | No       | Inter-query cache size limit in bytes. OPA will drop old items from the cache if this limit is exceeded. By default, no limit is set.                                                                                                                                                              |
-| `caching.inter_query_builtin_cache.forced_eviction_threshold_percentage` | `int64` | No       | Threshold limit configured as percentage of `caching.inter_query_builtin_cache.max_size_bytes`, when exceeded OPA will start dropping old items prematurely. By default, set to `100`.                                                                                                             |
-| `caching.inter_query_builtin_cache.stale_entry_eviction_period_seconds`  | `int64` | No       | Stale entry eviction period in seconds. OPA will drop expired items from the cache every `stale_entry_eviction_period_seconds`. By default, set to `0` indicating stale entry eviction is disabled.                                                                                                |
-| `caching.inter_query_builtin_value_cache.max_num_entries`                | `int`   | No       | Maximum number of entries in the Inter-query value cache. OPA will drop random items from the cache if this limit is exceeded. By default, set to `0` indicating unlimited size.                                                                                                                   |
-| `caching.inter_query_builtin_value_cache.named.io_jwt.max_num_entries`   | `int`   | No       | Maximum number of entries in the `io_jwt` cache, used by the [`io.jwt` token verification](./policy-reference/builtins/tokens) built-in functions. OPA will drop random items from the cache if this limit is exceeded. By default, this cache is disabled.                                        |
-| `caching.inter_query_builtin_value_cache.named.io_jwt.disabled`          | `bool`  | No       | Explicitly disable `io_jwt`, by default this is `true`. Setting this to `false` will enable `io_jwt` and set `max_num_entries` to `0` unless configured otherwise.                                                                                                                                 |
-| `caching.inter_query_builtin_value_cache.named.graphql.max_num_entries`  | `int`   | No       | Maximum number of entries in the `graphql` cache, used by the [`graphql` builtins](./policy-reference/builtins/graphql) built-in functions to cache parsed schemas. OPA will drop random items from the cache if this limit is exceeded. By default, this cache is set to a maximum of 10 entries. |
-| `caching.inter_query_builtin_value_cache.named.graphql.disabled`         | `bool`  | No       | Explicitly disable `graphql`, by default this is `false`. Setting this to `true` will disable `graphql`.                                                                                                                                                                                           |
+| Field                                                                                 | Type    | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------------------------------------------------- | ------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `caching.inter_query_builtin_cache.max_size_bytes`                                    | `int64` | No       | Inter-query cache size limit in bytes. OPA will drop old items from the cache if this limit is exceeded. By default, no limit is set.                                                                                                                                                                                                                                                                                                                                            |
+| `caching.inter_query_builtin_cache.forced_eviction_threshold_percentage`              | `int64` | No       | Threshold limit configured as percentage of `caching.inter_query_builtin_cache.max_size_bytes`, when exceeded OPA will start dropping old items prematurely. By default, set to `100`.                                                                                                                                                                                                                                                                                           |
+| `caching.inter_query_builtin_cache.stale_entry_eviction_period_seconds`               | `int64` | No       | Stale entry eviction period in seconds. OPA will drop expired items from the cache every `stale_entry_eviction_period_seconds`. By default, set to `0` indicating stale entry eviction is disabled.                                                                                                                                                                                                                                                                              |
+| `caching.inter_query_builtin_value_cache.max_num_entries`                             | `int`   | No       | Maximum number of entries in the Inter-query value cache. OPA will drop random items from the cache if this limit is exceeded. By default, set to `0` indicating unlimited size.                                                                                                                                                                                                                                                                                                 |
+| `caching.inter_query_builtin_value_cache.named.io_jwt.max_num_entries`                | `int`   | No       | Maximum number of entries in the `io_jwt` cache, used by the [`io.jwt` token verification](./policy-reference/builtins/tokens) built-in functions. OPA will drop random items from the cache if this limit is exceeded. By default, this cache is disabled.                                                                                                                                                                                                                      |
+| `caching.inter_query_builtin_value_cache.named.io_jwt.disabled`                       | `bool`  | No       | Explicitly disable `io_jwt`, by default this is `true`. Setting this to `false` will enable `io_jwt` and set `max_num_entries` to `0` unless configured otherwise.                                                                                                                                                                                                                                                                                                               |
+| `caching.inter_query_builtin_value_cache.named.io_jwt_keys.max_num_entries`           | `int`   | No       | Maximum number of entries in the `io_jwt_keys` cache, used by the [`io.jwt` token verification](./policy-reference/builtins/tokens) built-in functions to cache certificates and keys parsed from the `cert` argument. OPA will drop random items from the cache if this limit is exceeded. By default, this cache is set to a maximum of 100 entries.                                                                                                                           |
+| `caching.inter_query_builtin_value_cache.named.io_jwt_keys.disabled`                  | `bool`  | No       | Explicitly disable `io_jwt_keys`, by default this is `false`. Setting this to `true` will disable `io_jwt_keys`, and certificates and keys will be parsed on every call.                                                                                                                                                                                                                                                                                                         |
+| `caching.inter_query_builtin_value_cache.named.graphql.max_num_entries`               | `int`   | No       | Maximum number of entries in the `graphql` cache, used by the [`graphql` builtins](./policy-reference/builtins/graphql) built-in functions to cache parsed schemas. OPA will drop random items from the cache if this limit is exceeded. By default, this cache is set to a maximum of 10 entries.                                                                                                                                                                               |
+| `caching.inter_query_builtin_value_cache.named.graphql.disabled`                      | `bool`  | No       | Explicitly disable `graphql`, by default this is `false`. Setting this to `true` will disable `graphql`.                                                                                                                                                                                                                                                                                                                                                                         |
+| `caching.inter_query_builtin_value_cache.named.any_prefix_match.max_num_entries`      | `int`   | No       | Maximum number of entries in the `any_prefix_match` cache, used by the [`strings.any_prefix_match`](./policy-reference/builtins/strings) built-in function to keep the trie built over each collection of prefixes it is called with. OPA will drop random items from the cache if this limit is exceeded. By default, this cache is set to a maximum of 10 entries.                                                                                                             |
+| `caching.inter_query_builtin_value_cache.named.any_prefix_match.disabled`             | `bool`  | No       | Explicitly disable `any_prefix_match`, by default this is `false`. Setting this to `true` will disable `any_prefix_match`.                                                                                                                                                                                                                                                                                                                                                       |
+| `caching.inter_query_builtin_value_cache.named.any_prefix_match_seen.max_num_entries` | `int`   | No       | Maximum number of entries in the `any_prefix_match_seen` cache, used by the [`strings.any_prefix_match`](./policy-reference/builtins/strings) built-in function to record, by hash, each collection of prefixes it has been called with once. A collection's trie is only built and kept in the `any_prefix_match` cache when it is seen again. OPA will drop random items from the cache if this limit is exceeded. By default, this cache is set to a maximum of 1000 entries. |
+| `caching.inter_query_builtin_value_cache.named.any_prefix_match_seen.disabled`        | `bool`  | No       | Explicitly disable `any_prefix_match_seen`, by default this is `false`. Setting this to `true` will stop `strings.any_prefix_match` from building tries.                                                                                                                                                                                                                                                                                                                         |
+| `caching.inter_query_builtin_value_cache.named.any_suffix_match.max_num_entries`      | `int`   | No       | Maximum number of entries in the `any_suffix_match` cache, used by the [`strings.any_suffix_match`](./policy-reference/builtins/strings) built-in function to keep the trie built over each collection of suffixes it is called with. OPA will drop random items from the cache if this limit is exceeded. By default, this cache is set to a maximum of 10 entries.                                                                                                             |
+| `caching.inter_query_builtin_value_cache.named.any_suffix_match.disabled`             | `bool`  | No       | Explicitly disable `any_suffix_match`, by default this is `false`. Setting this to `true` will disable `any_suffix_match`.                                                                                                                                                                                                                                                                                                                                                       |
+| `caching.inter_query_builtin_value_cache.named.any_suffix_match_seen.max_num_entries` | `int`   | No       | Maximum number of entries in the `any_suffix_match_seen` cache, used by the [`strings.any_suffix_match`](./policy-reference/builtins/strings) built-in function to record, by hash, each collection of suffixes it has been called with once. A collection's trie is only built and kept in the `any_suffix_match` cache when it is seen again. OPA will drop random items from the cache if this limit is exceeded. By default, this cache is set to a maximum of 1000 entries. |
+| `caching.inter_query_builtin_value_cache.named.any_suffix_match_seen.disabled`        | `bool`  | No       | Explicitly disable `any_suffix_match_seen`, by default this is `false`. Setting this to `true` will stop `strings.any_suffix_match` from building tries.                                                                                                                                                                                                                                                                                                                         |
 
 ## Distributed tracing
 
 Distributed tracing represents the configuration of the OpenTelemetry Tracing.
 
-| Field                                                                    | Type      | Required                                                                                   | Description                                                                                                |
-| ------------------------------------------------------------------------ | --------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `distributed_tracing.type`                                               | `string`  | No                                                                                         | Setting this to "grpc" enables distributed tracing with an gRPC endpoint; or "http" with an HTTP endpoint. |
-| `distributed_tracing.address`                                            | `string`  | No (default: `localhost:4317` if `type` is `grpc` or `localhost:4318` if `type` is `http`) | Address of the OpenTelemetry Collector gRPC or HTTP endpoint.                                              |
-| `distributed_tracing.service_name`                                       | `string`  | No (default: `opa`)                                                                        | Logical name of the service.                                                                               |
-| `distributed_tracing.sample_percentage`                                  | `float64` | No (default: `100`)                                                                        | Percentage of traces that are sampled and exported.                                                        |
-| `distributed_tracing.encryption`                                         | `string`  | No (default: `off`)                                                                        | Configures TLS.                                                                                            |
-| `distributed_tracing.allow_insecure_tls`                                 | `bool`    | No (default: `false`)                                                                      | Allow insecure TLS.                                                                                        |
-| `distributed_tracing.tls_ca_cert_file`                                   | `string`  | No                                                                                         | The path to the root CA certificate.                                                                       |
-| `distributed_tracing.tls_cert_file`                                      | `string`  | No (unless `encryption` equals `mtls`)                                                     | The path to the client certificate to authenticate with.                                                   |
-| `distributed_tracing.tls_private_key_file`                               | `string`  | No (unless `tls_cert_file` provided)                                                       | The path to the private key of the client certificate.                                                     |
-| `distributed_tracing.resource.service_version`                           | `string`  | No                                                                                         | Service version                                                                                            |
-| `distributed_tracing.resource.service_instance_id`                       | `string`  | No                                                                                         | Service instance id                                                                                        |
-| `distributed_tracing.resource.service_namespace`                         | `string`  | No                                                                                         | Service namespace                                                                                          |
-| `distributed_tracing.resource.deployment_environment`                    | `string`  | No                                                                                         | Deployment environment name                                                                                |
-| `distributed_tracing.batch_span_processor_options.blocking`              | `bool`    | No (default: `false`)                                                                      | Wait for span batch enqueue operations to succeed instead of dropping data when the queue is full.         |
-| `distributed_tracing.batch_span_processor_options.batch_timeout_ms`      | `int`     | No (default: `5000`)                                                                       | The maximum duration for constructing a batch in milliseconds.                                             |
-| `distributed_tracing.batch_span_processor_options.export_timeout_ms`     | `int`     | No (default: `30000`)                                                                      | The maximum duration for exporting spans in milliseconds.                                                  |
-| `distributed_tracing.batch_span_processor_options.max_export_batch_size` | `int`     | No (default: `512`)                                                                        | The maximum number of spans to process in a single batch.                                                  |
-| `distributed_tracing.batch_span_processor_options.max_queue_size`        | `int`     | No (default: `2048`)                                                                       | The maximum queue size to buffer spans for delayed processing.                                             |
+| Field                                                                    | Type       | Required                                                                                   | Description                                                                                                |
+| ------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `distributed_tracing.type`                                               | `string`   | No                                                                                         | Setting this to "grpc" enables distributed tracing with an gRPC endpoint; or "http" with an HTTP endpoint. |
+| `distributed_tracing.address`                                            | `string`   | No (default: `localhost:4317` if `type` is `grpc` or `localhost:4318` if `type` is `http`) | Address of the OpenTelemetry Collector gRPC or HTTP endpoint.                                              |
+| `distributed_tracing.service_name`                                       | `string`   | No (default: `opa`)                                                                        | Logical name of the service.                                                                               |
+| `distributed_tracing.sample_percentage`                                  | `float64`  | No (default: `100`)                                                                        | Percentage of traces that are sampled and exported.                                                        |
+| `distributed_tracing.encryption`                                         | `string`   | No (default: `off`)                                                                        | Configures TLS.                                                                                            |
+| `distributed_tracing.allow_insecure_tls`                                 | `bool`     | No (default: `false`)                                                                      | Allow insecure TLS.                                                                                        |
+| `distributed_tracing.tls_ca_cert_file`                                   | `string`   | No                                                                                         | The path to the root CA certificate.                                                                       |
+| `distributed_tracing.tls_cert_file`                                      | `string`   | No (unless `encryption` equals `mtls`)                                                     | The path to the client certificate to authenticate with.                                                   |
+| `distributed_tracing.tls_private_key_file`                               | `string`   | No (unless `tls_cert_file` provided)                                                       | The path to the private key of the client certificate.                                                     |
+| `distributed_tracing.exclude_paths`                                      | `[]string` | No                                                                                         | Glob patterns matching the paths of incoming server requests that should not be traced.                    |
+| `distributed_tracing.resource.service_version`                           | `string`   | No                                                                                         | Service version                                                                                            |
+| `distributed_tracing.resource.service_instance_id`                       | `string`   | No                                                                                         | Service instance id                                                                                        |
+| `distributed_tracing.resource.service_namespace`                         | `string`   | No                                                                                         | Service namespace                                                                                          |
+| `distributed_tracing.resource.deployment_environment`                    | `string`   | No                                                                                         | Deployment environment name                                                                                |
+| `distributed_tracing.batch_span_processor_options.blocking`              | `bool`     | No (default: `false`)                                                                      | Wait for span batch enqueue operations to succeed instead of dropping data when the queue is full.         |
+| `distributed_tracing.batch_span_processor_options.batch_timeout_ms`      | `int`      | No (default: `5000`)                                                                       | The maximum duration for constructing a batch in milliseconds.                                             |
+| `distributed_tracing.batch_span_processor_options.export_timeout_ms`     | `int`      | No (default: `30000`)                                                                      | The maximum duration for exporting spans in milliseconds.                                                  |
+| `distributed_tracing.batch_span_processor_options.max_export_batch_size` | `int`      | No (default: `512`)                                                                        | The maximum number of spans to process in a single batch.                                                  |
+| `distributed_tracing.batch_span_processor_options.max_queue_size`        | `int`      | No (default: `2048`)                                                                       | The maximum queue size to buffer spans for delayed processing.                                             |
 
 The following encryption methods are supported:
 
@@ -960,6 +990,30 @@ The following encryption methods are supported:
 | `off`  | Disable TLS       |
 | `tls`  | Enable TLS        |
 | `mtls` | Enable mutual TLS |
+
+### Excluding endpoints from tracing
+
+Frequently polled endpoints such as the health check can make up the bulk of the
+spans OPA emits without saying much about how policy is being evaluated. List
+them under `exclude_paths` to keep OPA from creating a span for them:
+
+```yaml
+distributed_tracing:
+  type: grpc
+  exclude_paths:
+    - /health**
+    - /metrics
+```
+
+Patterns are [globs](https://github.com/gobwas/glob) matched against the path of
+the incoming request, with `/` as the separator: `*` stays within a single path
+segment, and `**` spans segments. `/health` on its own excludes only the
+`/health` endpoint; `/health**` also covers `/health/live`, `/health/ready`, and
+any other health policy endpoint.
+
+`exclude_paths` applies to OPA's own HTTP server. The requests OPA makes to
+other services — bundle downloads, status and decision log uploads, and
+`http.send` calls during evaluation — are unaffected.
 
 ## Metrics Export
 
@@ -976,19 +1030,30 @@ metrics_export:
   tls_ca_cert_file: /path/to/ca.pem
   tls_cert_file: /path/to/cert.pem
   tls_private_key_file: /path/to/key.pem
+  headers:
+    some-other: fancy-header
+    x-custom-header: custom-value
+  resource:
+    service_instance_id: opa-0
 ```
 
-| Field                                 | Type     | Required                                                                                           | Description                                                               |
-| ------------------------------------- | -------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `metrics_export.type`                 | `string` | No                                                                                                 | `"otlp/grpc"` or `"otlp/http"`. Omit (or `""`) to disable metrics export. |
-| `metrics_export.address`              | `string` | No (default: `localhost:4317` if `type` is `otlp/grpc`, `localhost:4318` if `type` is `otlp/http`) | Address of the OpenTelemetry Collector endpoint.                          |
-| `metrics_export.export_interval_ms`   | `int`    | No (default: `60000`)                                                                              | Interval between metric exports in milliseconds. Must be > 0.             |
-| `metrics_export.service_name`         | `string` | No (default: `opa`)                                                                                | Logical name of the service reported in exported metrics.                 |
-| `metrics_export.encryption`           | `string` | No (default: `off`)                                                                                | Configures TLS: `off`, `tls`, or `mtls`.                                  |
-| `metrics_export.allow_insecure_tls`   | `bool`   | No (default: `false`)                                                                              | Allow insecure TLS.                                                       |
-| `metrics_export.tls_ca_cert_file`     | `string` | No                                                                                                 | The path to the root CA certificate.                                      |
-| `metrics_export.tls_cert_file`        | `string` | No (unless `encryption` equals `mtls`)                                                             | The path to the client certificate to authenticate with.                  |
-| `metrics_export.tls_private_key_file` | `string` | No (unless `tls_cert_file` provided)                                                               | The path to the private key of the client certificate.                    |
+| Field                                            | Type                | Required                                                                                           | Description                                                                                                                             |
+| ------------------------------------------------ | ------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `metrics_export.type`                            | `string`            | No                                                                                                 | `"otlp/grpc"` or `"otlp/http"`. Omit (or `""`) to disable metrics export.                                                               |
+| `metrics_export.address`                         | `string`            | No (default: `localhost:4317` if `type` is `otlp/grpc`, `localhost:4318` if `type` is `otlp/http`) | Address of the OpenTelemetry Collector endpoint.                                                                                        |
+| `metrics_export.export_interval_ms`              | `int`               | No (default: `60000`)                                                                              | Interval between metric exports in milliseconds. Must be > 0.                                                                           |
+| `metrics_export.service_name`                    | `string`            | No (default: `opa`)                                                                                | Logical name of the service reported in exported metrics.                                                                               |
+| `metrics_export.encryption`                      | `string`            | No (default: `off`)                                                                                | Configures TLS: `off`, `tls`, or `mtls`.                                                                                                |
+| `metrics_export.allow_insecure_tls`              | `bool`              | No (default: `false`)                                                                              | Allow insecure TLS.                                                                                                                     |
+| `metrics_export.tls_ca_cert_file`                | `string`            | No                                                                                                 | The path to the root CA certificate.                                                                                                    |
+| `metrics_export.tls_cert_file`                   | `string`            | No (unless `encryption` equals `mtls`)                                                             | The path to the client certificate to authenticate with.                                                                                |
+| `metrics_export.tls_private_key_file`            | `string`            | No (unless `tls_cert_file` provided)                                                               | The path to the private key of the client certificate.                                                                                  |
+| `metrics_export.headers`                         | `map[string]string` | No                                                                                                 | Additional headers (OTLP/gRPC metadata, or OTLP/HTTP headers) sent with every export request, e.g. for collectors that route by header. |
+| `metrics_export.resource.service_instance_id`    | `string`            | No                                                                                                 | Service instance id                                                                                                                     |
+| `metrics_export.resource.service_namespace`      | `string`            | No                                                                                                 | Service namespace                                                                                                                       |
+| `metrics_export.resource.deployment_environment` | `string`            | No                                                                                                 | Deployment environment name                                                                                                             |
+
+The exported resource always carries `service.version`, set to the version of OPA.
 
 ## Disk Storage
 
@@ -1036,6 +1101,100 @@ The `server` configuration sets:
 | `persistence_directory`          | `string`  | No (default `$PWD/.opa`)            | Set directory to use for persistence with options like `bundles[_].persist`.                                                                                                                                                                                                            |
 | `plugins`                        | `object`  | No (default: `{}`)                  | Location for custom plugin configuration.                                                                                                                                                                                                                                               |
 | `nd_builtin_cache`               | `boolean` | No (default: `false`)               | Enable the non-deterministic builtins caching system during policy evaluation, and include the contents of the cache in decision logs. Note that decision logs that are larger than `upload_size_limit_bytes` will drop the `nd_builtin_cache` key from the log entry before uploading. |
+
+## Configuration Validation
+
+When OPA starts, it validates its configuration using a built-in Rego policy.
+Two things come out of this:
+
+- **Defaults** (such as `default_decision` and `labels`) are injected.
+- **Unrecognized options** are reported. If the configuration contains a key OPA
+  doesn't recognize — usually a typo, or a CLI flag mistaken for a config option —
+  OPA logs a warning at startup rather than silently ignoring it:
+
+  ```bash
+  # note the typo: "decision_log" instead of "decision_logs"
+  $ opa run --server --set decision_log.console=true
+  {"level":"warning","msg":"unknown configuration option \"decision_log\" encountered", ...}
+  ```
+
+  Warnings are non-fatal. Sections that accept arbitrary keys (for example
+  `labels`, `plugins`, and service `credentials`) are not checked, so extending
+  them never produces false positives. Custom plugins can opt in to having their
+  options under `plugins` checked; see
+  [Plugin Configuration Validation](./extensions#plugin-configuration-validation).
+
+Configuration loaded later via [discovery](#discovery) is validated the same way:
+defaults are injected and warnings are logged when the discovered configuration is
+applied.
+
+## Reloading Configuration
+
+> Only supported when OPA is run as a server (`opa run --server`).
+
+By default the configuration file is read once, at start-up. Running with the
+`--watch-config` flag makes `opa run` watch the file and bring OPA back up under
+the new configuration when it changes, without the process exiting.
+
+```bash
+opa run -s -c opa-config.yaml --watch-config
+```
+
+It is opt-in, and separate from `-w`/`--watch`, because the two are not
+comparable: `--watch` reloads policy and data into the store in place, whereas
+this restarts the server and everything the configuration drives.
+
+### When to use it
+
+Where something else can replace the process for you, let it. On Kubernetes,
+update the ConfigMap and roll the pods out: you get the restart with health
+gating, surge control and a record of what happened.
+
+`--watch-config` is for where that is not on offer:
+
+- OPA embedded in a host that is not orchestrated at all — a monolith, an
+  appliance, a vehicle.
+- A sidecar where restarting OPA means restarting the pod, taking the
+  application down with it.
+- Development and testing, where iterating on the configuration beats waiting
+  for a restart.
+
+Almost any option can be changed this way. OPA stops the server and everything
+the configuration drives, rebuilds them from the new file, and starts them
+again; only the store is kept. Two options still need the process restarted:
+`server.metrics` and `server.logger_plugin`.
+
+`--set` and `--set-file` overrides are re-applied on top of the file on each
+reload. The files named by `--set-file` are re-read too, but not watched: an
+edit to one is only picked up on the next change to the configuration file.
+
+### What a restart costs
+
+- **Listeners are re-bound.** Requests already being served are drained first,
+  but there is a brief window where the port is not accepting connections.
+- **Bundles are downloaded again**, unless [`persistence_directory`](#bundles)
+  is set, in which case the persisted copy is activated first. Until the first
+  activation, `/health?bundles` reports not-ready.
+- **Buffered decisions are flushed** when the decision log plugin has a
+  `service` configured. Decisions buffered for a console or plugin sink are
+  lost.
+
+### When a change is not applied
+
+- **Invalid configuration**: a file that fails to parse, fails the schema or a
+  [config hook](https://pkg.go.dev/github.com/open-policy-agent/opa/v1/hooks),
+  or has an invalid section (such as a `bundles` entry naming a service that
+  does not exist) is rejected before anything is torn down. The error is
+  logged and the running configuration keeps serving.
+- **Failed restart**: if OPA cannot come up under the new configuration, for
+  example because a port no longer binds, it falls back to the previous one and
+  logs the failure.
+- **Misspelled options** are not an error: unrecognized keys are logged as
+  warnings and ignored, as they are at start-up.
+- **Discovery**: the file is not watched when [discovery](#discovery) is
+  enabled. OPA logs a warning at start-up.
+- **Custom router**: the file is not watched when OPA is embedded and the
+  caller supplied its own HTTP router.
 
 ## Using Environment Variables in Configuration
 

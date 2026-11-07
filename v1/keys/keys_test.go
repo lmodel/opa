@@ -3,9 +3,10 @@ package keys
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
-	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/open-policy-agent/opa/v1/util/test"
@@ -56,27 +57,31 @@ func TestParseKeysConfig(t *testing.T) {
 		"invalid_raw_config": {
 			`[1,2,3]`,
 			nil,
-			true, errors.New("json: cannot unmarshal array into Go value of type map[string]json.RawMessage"),
+			true, errors.New("json: cannot unmarshal array into Go value of type"),
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-
 			kc, err := ParseKeysConfig([]byte(tc.input))
 			if tc.wantErr {
 				if err == nil {
 					t.Fatal("Expected error but got nil")
 				}
 
-				if tc.err != nil && tc.err.Error() != err.Error() {
-					t.Fatalf("Expected error message %v but got %v", tc.err.Error(), err.Error())
+				if tc.err != nil {
+					exp := tc.err.Error()
+					got := err.Error()
+
+					if !strings.HasPrefix(got, exp) {
+						t.Fatalf("Expected error message %v but got %v", exp, got)
+					}
 				}
 			} else if err != nil {
 				t.Fatalf("Unexpected error %v", err)
 			}
 
-			if !reflect.DeepEqual(kc, tc.result) {
+			if !maps.EqualFunc(kc, tc.result, (*Config).Equal) {
 				t.Fatalf("Expected key config %v but got %v", tc.result, kc)
 			}
 		})
@@ -111,7 +116,7 @@ ypZ/TdlnuGC1cOpAVyU7k32IJ9CRbt3nwEf5U54LRXLLQjFixWZHwKdDiMTF4ws0
 			Scope:     "read",
 		}
 
-		if !reflect.DeepEqual(kc, expected) {
+		if !kc.Equal(expected) {
 			t.Fatalf("Expected key config %v but got %v", expected, kc)
 		}
 
@@ -127,7 +132,7 @@ ypZ/TdlnuGC1cOpAVyU7k32IJ9CRbt3nwEf5U54LRXLLQjFixWZHwKdDiMTF4ws0
 			Scope:     "",
 		}
 
-		if !reflect.DeepEqual(kc, expected) {
+		if !kc.Equal(expected) {
 			t.Fatalf("Expected key config %v but got %v", expected, kc)
 		}
 	})

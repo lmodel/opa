@@ -5,12 +5,15 @@
 package bundle
 
 import (
-	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/open-policy-agent/opa/internal/storage/mock"
+	"github.com/open-policy-agent/opa/v1/ast"
+	"github.com/open-policy-agent/opa/v1/metrics"
 	"github.com/open-policy-agent/opa/v1/storage"
+	"github.com/open-policy-agent/opa/v1/storage/inmem"
 )
 
 // BenchmarkHasRootsOverlap covers a range of scenarios, each one
@@ -43,9 +46,9 @@ func BenchmarkHasRootsOverlap(b *testing.B) {
 		{"chain/100", func() map[string]*Bundle { return makeChainBundles(100) }, true},
 		{"chain/500", func() map[string]*Bundle { return makeChainBundles(500) }, true},
 
-		{"multi-root/10x10", func() map[string]*Bundle { return makeMultiRootBundles(10, 10) }, false},
-		{"multi-root/100x10", func() map[string]*Bundle { return makeMultiRootBundles(100, 10) }, false},
-		{"multi-root/1000x10", func() map[string]*Bundle { return makeMultiRootBundles(1000, 10) }, false},
+		{"multi-root/10x10", func() map[string]*Bundle { return makeMultiRootBundles(10) }, false},
+		{"multi-root/100x10", func() map[string]*Bundle { return makeMultiRootBundles(100) }, false},
+		{"multi-root/1000x10", func() map[string]*Bundle { return makeMultiRootBundles(1000) }, false},
 
 		{"wide-fanout/10", func() map[string]*Bundle { return makeWideFanoutBundles(10) }, true},
 		{"wide-fanout/100", func() map[string]*Bundle { return makeWideFanoutBundles(100) }, true},
@@ -62,7 +65,7 @@ func BenchmarkHasRootsOverlap(b *testing.B) {
 
 func benchHasRootsOverlap(b *testing.B, bundles map[string]*Bundle, wantErr bool) {
 	b.Helper()
-	ctx := context.Background()
+	ctx := b.Context()
 	store := mock.New()
 
 	b.ResetTimer()
@@ -89,7 +92,7 @@ func BenchmarkHasRootsOverlapWithStore(b *testing.B) {
 
 func benchHasRootsOverlapWithStore(b *testing.B, existingCount, newCount int, wantErr bool) {
 	b.Helper()
-	ctx := context.Background()
+	ctx := b.Context()
 	store := mock.New()
 
 	// Pre-populate the store with N disjoint, well-formed manifests.
@@ -166,9 +169,11 @@ func makeChainBundles(n int) map[string]*Bundle {
 	return out
 }
 
-// makeMultiRootBundles builds N bundles each declaring M disjoint
+// makeMultiRootBundles builds N bundles each declaring rootsPerBundle disjoint
 // roots. This exercises per-root scaling independent of bundle count.
-func makeMultiRootBundles(bundleCount, rootsPerBundle int) map[string]*Bundle {
+func makeMultiRootBundles(bundleCount int) map[string]*Bundle {
+	const rootsPerBundle = 10
+
 	out := make(map[string]*Bundle, bundleCount)
 	for i := range bundleCount {
 		roots := make([]string, rootsPerBundle)
@@ -194,4 +199,49 @@ func makeWideFanoutBundles(n int) map[string]*Bundle {
 		out[name] = &Bundle{Manifest: Manifest{Roots: &roots}}
 	}
 	return out
+}
+
+// BenchmarkActivateReplacing activates a bundle over its previous activation,
+// which erases the policies that one wrote. Rules carry METADATA, like those of
+// generated policies, in modules of 500 rules.
+func BenchmarkActivateReplacing(b *testing.B) {
+	for _, n := range []int{1000, 10000} {
+		b.Run(fmt.Sprintf("rules=%d", n), func(b *testing.B) {
+			var modules []ModuleFile
+			for f := range (n + 499) / 500 {
+				var sb strings.Builder
+				sb.WriteString("package test\n\n")
+				for i := f * 500; i < min(n, (f+1)*500); i++ {
+					fmt.Fprintf(&sb, "# METADATA\n# labels:\n#   id: \"rule-%d\"\n#   version: \"1\"\n", i)
+					fmt.Fprintf(&sb, "allow if { input.account == \"a%d\"; startswith(input.resource, \"r%d/\") }\n\n", i, i)
+				}
+				path := fmt.Sprintf("test/rules_%d.rego", f)
+				m, err := ast.ParseModuleWithOpts(path, sb.String(), ast.ParserOptions{ProcessAnnotation: true})
+				if err != nil {
+					b.Fatal(err)
+				}
+				modules = append(modules, ModuleFile{Path: path, Raw: []byte(sb.String()), Parsed: m})
+			}
+			bundles := map[string]*Bundle{"bundle": {Manifest: Manifest{Roots: &[]string{"test"}}, Modules: modules}}
+
+			ctx := b.Context()
+			store := inmem.NewWithOpts(inmem.OptRoundTripOnWrite(false))
+			activate := func() {
+				txn := storage.NewTransactionOrDie(ctx, store, storage.WriteParams)
+				err := Activate(&ActivateOpts{Ctx: ctx, Store: store, Txn: txn, Compiler: ast.NewCompiler(),
+					Metrics: metrics.NoOp(), Bundles: bundles})
+				if err != nil {
+					b.Fatal(err)
+				}
+				if err := store.Commit(ctx, txn); err != nil {
+					b.Fatal(err)
+				}
+			}
+			activate()
+
+			for b.Loop() {
+				activate()
+			}
+		})
+	}
 }

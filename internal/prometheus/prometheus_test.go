@@ -3,8 +3,10 @@
 // license that can be found in the LICENSE file.
 //
 // NOTE: Different go runtime metrics in pretty much
-// every Go version. Let's only test these on latest.
-//go:build go1.26
+// every Go version. The expected metrics below are those of Go 1.26, so pin
+// this test to exactly that version: it fails on both older and newer ones.
+
+//go:build go1.26 && !go1.27
 
 package prometheus
 
@@ -176,6 +178,7 @@ func TestJSONSerialization(t *testing.T) {
 			"go_gc_finalizers_executed_finalizers_total",
 			"go_sched_goroutines_created_goroutines_total",
 			"go_godebug_non_default_behavior_htmlmetacontenturlescape_events_total", // added in 1.26.1
+			"go_godebug_non_default_behavior_fips140ems_events_total",               // added in 1.26.6
 		},
 		"SUMMARY": {
 			"go_gc_duration_seconds",

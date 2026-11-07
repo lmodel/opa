@@ -5,10 +5,12 @@
 package cmd
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/signal"
 	goRuntime "runtime"
@@ -44,6 +46,7 @@ type testCommandParams struct {
 	errLimit     int
 	outputFormat *util.EnumFlag
 	coverage     bool
+	coverageRuns []string
 	threshold    float64
 	timeout      time.Duration
 	ignore       []string
@@ -80,6 +83,7 @@ func newTestCommandParams() testCommandParams {
 		errOutput:    os.Stderr,
 		stopChan:     make(chan os.Signal, 1),
 		parallel:     goRuntime.NumCPU(),
+		coverageRuns: []string{string(cover.KindIndexExcluded), string(cover.KindEarlyExit)},
 	}
 }
 
@@ -125,9 +129,7 @@ func opaTest(args []string, testParams testCommandParams) int {
 		if err == nil && testParams.coverage {
 			modules = make(map[string]*ast.Module)
 			for name, b := range bundles {
-				for k, v := range b.ParsedModules(name) {
-					modules[k] = v
-				}
+				maps.Copy(modules, b.ParsedModules(name))
 			}
 		}
 	} else {
@@ -235,8 +237,7 @@ func runTests(ctx context.Context, txn storage.Transaction, runner *tester.Runne
 	if err := reporter.Report(dup); err != nil {
 		_, _ = fmt.Fprintln(testParams.errOutput, err)
 		if !testParams.benchmark {
-			var coverageThresholdError *cover.CoverageThresholdError
-			if errors.As(err, &coverageThresholdError) {
+			if _, ok := errors.AsType[*cover.CoverageThresholdError](err); ok {
 				return 2, err
 			}
 		}
@@ -410,12 +411,14 @@ func compileAndSetupTests(ctx context.Context, testParams testCommandParams, sto
 		coverTracer = cov
 	}
 
-	timeout := testParams.timeout
-	if timeout == 0 { // unset
-		timeout = 5 * time.Second
-		if testParams.benchmark {
-			timeout = 30 * time.Second
-		}
+	coverageRuns := make([]cover.Kind, 0, len(testParams.coverageRuns))
+	for _, r := range testParams.coverageRuns {
+		coverageRuns = append(coverageRuns, cover.Kind(r))
+	}
+
+	timeout := cmp.Or(testParams.timeout, 5*time.Second)
+	if testParams.benchmark {
+		timeout = 30 * time.Second
 	}
 
 	runner := tester.NewRunner().
@@ -423,6 +426,8 @@ func compileAndSetupTests(ctx context.Context, testParams testCommandParams, sto
 		SetStore(store).
 		CapturePrintOutput(true).
 		EnableTracing(testParams.verbose || testParams.varValues).
+		StackTraces(true).
+		SetCoverageRuns(coverageRuns).
 		SetCoverageQueryTracer(coverTracer).
 		SetRuntime(runtimeInfo).
 		SetModules(modules).
@@ -564,6 +569,17 @@ recommended as some updates might cause them to be dropped by OPA.
 				testParams.verbose = true
 			}
 
+			if cmd.Flags().Changed("coverage-runs") {
+				testParams.coverage = true
+			}
+			for _, r := range testParams.coverageRuns {
+				switch cover.Kind(r) {
+				case cover.KindIndexExcluded, cover.KindEarlyExit:
+				default:
+					return fmt.Errorf("invalid --coverage-runs value %q (expected %q or %q)", r, cover.KindIndexExcluded, cover.KindEarlyExit)
+				}
+			}
+
 			return env.CmdFlags.CheckEnvironmentVariables(cmd)
 		},
 
@@ -584,6 +600,7 @@ recommended as some updates might cause them to be dropped by OPA.
 	testCommand.Flags().BoolVarP(&testParams.verbose, "verbose", "v", false, "set verbose reporting mode")
 	testCommand.Flags().DurationVar(&testParams.timeout, "timeout", 0, "set test timeout (default 5s, 30s when benchmarking)")
 	testCommand.Flags().BoolVarP(&testParams.coverage, "coverage", "c", false, "report coverage (overrides debug tracing)")
+	testCommand.Flags().StringSliceVar(&testParams.coverageRuns, "coverage-runs", []string{string(cover.KindIndexExcluded), string(cover.KindEarlyExit)}, "supplementary coverage passes that annotate not-covered ranges with a kind (requires --coverage); pass an empty list to disable")
 	testCommand.Flags().Float64VarP(&testParams.threshold, "threshold", "", 0, "set coverage threshold and exit with non-zero status if coverage is less than threshold %")
 	testCommand.Flags().BoolVar(&testParams.benchmark, "bench", false, "benchmark the unit tests")
 	testCommand.Flags().StringVarP(&testParams.runRegex, "run", "r", "", "run only test cases matching the regular expression")
@@ -595,7 +612,7 @@ recommended as some updates might cause them to be dropped by OPA.
 
 	// Shared flags
 	addOutputFormat(testCommand.Flags(), testParams.outputFormat)
-	addBundleModeFlag(testCommand.Flags(), &testParams.bundleMode, false)
+	addBundleModeFlag(testCommand.Flags(), &testParams.bundleMode)
 	addBenchmemFlag(testCommand.Flags(), &testParams.benchMem, true)
 	addCountFlag(testCommand.Flags(), &testParams.count, "test")
 	addMaxErrorsFlag(testCommand.Flags(), &testParams.errLimit)
@@ -604,8 +621,8 @@ recommended as some updates might cause them to be dropped by OPA.
 	addTargetFlag(testCommand.Flags(), testParams.target)
 	addCapabilitiesFlag(testCommand.Flags(), testParams.capabilities)
 	addSchemaFlags(testCommand.Flags(), testParams.schema)
-	addV0CompatibleFlag(testCommand.Flags(), &testParams.v0Compatible, false)
-	addV1CompatibleFlag(testCommand.Flags(), &testParams.v1Compatible, false)
+	addV0CompatibleFlag(testCommand.Flags(), &testParams.v0Compatible)
+	addV1CompatibleFlag(testCommand.Flags(), &testParams.v1Compatible)
 
 	root.AddCommand(testCommand)
 }

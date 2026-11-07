@@ -1,8 +1,11 @@
+//go:build !go1.27
+
 package cmd
 
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"maps"
@@ -15,9 +18,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
+	"github.com/open-policy-agent/opa/cmd/formats"
 	"github.com/open-policy-agent/opa/internal/file/archive"
 	"github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/bundle"
+	"github.com/open-policy-agent/opa/v1/cover"
 	"github.com/open-policy-agent/opa/v1/ir"
 	"github.com/open-policy-agent/opa/v1/rego"
 	"github.com/open-policy-agent/opa/v1/repl"
@@ -1322,6 +1329,65 @@ FAIL: 1/1
 `,
 		},
 		{
+			note: "object ref selection from local var",
+			files: map[string]string{
+				"/test.rego": `package test
+
+test_foo if {
+	tc := {"data": false, "expected": {"data": true}}
+	tc.data == tc.expected.data
+}`,
+			},
+			expected: `%ROOT%/test.rego:3:
+data.test.test_foo: FAIL (%TIME%)
+--------------------------------------------------------------------------------
+FAILURES
+--------------------------------------------------------------------------------
+data.test.test_foo: FAIL (%TIME%)
+
+  %ROOT%/test.rego:5:
+    	tc.data == tc.expected.data
+    	|          |
+    	|          true
+    	tc.data: false
+    	tc: {"data": false, "expected": {"data": true}}
+
+--------------------------------------------------------------------------------
+FAIL: 1/1
+`,
+		},
+		{
+			note: "object ref selection alongside function call",
+			files: map[string]string{
+				"/test.rego": `package test
+
+test_foo if {
+	tc := {"content": "big string value", "inp": {"foo": false}, "outp": {"foo": true}}
+	foo(tc.inp) == tc.outp
+}
+
+foo(inp) := {"foo": inp.foo}`,
+			},
+			expected: `%ROOT%/test.rego:3:
+data.test.test_foo: FAIL (%TIME%)
+--------------------------------------------------------------------------------
+FAILURES
+--------------------------------------------------------------------------------
+data.test.test_foo: FAIL (%TIME%)
+
+  %ROOT%/test.rego:5:
+    	foo(tc.inp) == tc.outp
+    	|   |          |
+    	|   |          {"foo": true}
+    	|   tc.inp: {"foo": false}
+    	|   tc: {"content": "big string value", "inp": {"foo": false}, "outp"...
+    	{"foo": false}
+
+--------------------------------------------------------------------------------
+FAIL: 1/1
+`,
+		},
+		{
 			note: "with, containing local vars",
 			files: map[string]string{
 				"/test.rego": `package test
@@ -1495,6 +1561,37 @@ test_p if {
 	}
 }
 
+func TestTestStackTrace(t *testing.T) {
+	files := map[string]string{
+		"/test.rego": `package test
+
+conflicting := 1
+
+conflicting := 2
+
+test_conflict if { conflicting }`,
+	}
+
+	test.WithTempFS(files, func(root string) {
+		buf := bytes.NewBuffer(nil)
+		testParams := newTestCommandParams()
+		testParams.count = 1
+		testParams.output = buf
+		testParams.errOutput = io.Discard
+
+		if code := opaTest([]string{root}, testParams); code == 0 {
+			t.Fatal("expected a non-zero exit code")
+		}
+
+		out := buf.String()
+		for _, expected := range []string{"Traceback:", "test.rego:5: 2", "test.rego:7: conflicting"} {
+			if !strings.Contains(out, expected) {
+				t.Fatalf("expected output to contain %q, got:\n%s", expected, out)
+			}
+		}
+	})
+}
+
 // Assert that ignore flag is correctly used when the bundle flag is activated
 func TestIgnoreFlagWithBundleFlag(t *testing.T) {
 	files := map[string]string{
@@ -1561,7 +1658,7 @@ test_p if {
 
 	exitCode, _ := testSchemasAnnotation(policyWithSchemaRef)
 	if exitCode > 0 {
-		t.Fatalf("unexpected error when schema ref is present")
+		t.Fatal("unexpected error when schema ref is present")
 	}
 }
 func TestSchemasAnnotationInline(t *testing.T) {
@@ -1583,7 +1680,7 @@ test_p if {
 	// We expect an error here, as inlined schemas are always used for type checking
 
 	if exitCode == 0 {
-		t.Fatalf("didn't get expected error when inlined schema is present")
+		t.Fatal("didn't get expected error when inlined schema is present")
 	}
 
 	if !strings.Contains(string(errOutput), "rego_type_error: match error") {
@@ -1594,8 +1691,8 @@ test_p if {
 func testSchemasAnnotationWithJSONFile(rego string, schema string) (int, []byte) {
 
 	files := map[string]string{
-		"test.rego":        rego,
-		"demo_schema.json": schema,
+		"test.rego":                rego,
+		"schemas/demo_schema.json": schema,
 	}
 
 	var exitCode int
@@ -1605,7 +1702,7 @@ func testSchemasAnnotationWithJSONFile(rego string, schema string) (int, []byte)
 
 		testParams := newTestCommandParams()
 		testParams.count = 1
-		testParams.schema.path = path
+		testParams.schema.path = filepath.Join(path, "schemas")
 		testParams.errOutput = &buf
 
 		exitCode = opaTest([]string{regoFilePath}, testParams)
@@ -1687,7 +1784,7 @@ test_p if {
 
 	exitCode, errOutput := testSchemasAnnotationWithJSONFile(regoContents, schema)
 	if exitCode == 0 {
-		t.Fatalf("didn't get expected error when schema is present and is defining a different type than being used.")
+		t.Fatal("didn't get expected error when schema is present and is defining a different type than being used.")
 	}
 
 	if !strings.Contains(string(errOutput), "rego_type_error: match error") {
@@ -2435,6 +2532,27 @@ Lines not covered:
 	%ROOT%/policy2.rego:8-9
 `,
 		},
+		{
+			note: "coverage threshold not met (verbose), rego.v2 import",
+			modules: map[string]string{
+				"test.rego": `package test
+
+					import rego.v2
+
+					p if {
+						input.a or input.b
+					}
+					q := 2 if not { input.c; input.d }
+					test_q if { q == 2 }`,
+			},
+			threshold:        100,
+			expectedExitCode: 2,
+			verbose:          true,
+			expectedErrOutput: `Code coverage threshold not met: got 50.00 instead of 100.00
+Lines not covered:
+	%ROOT%/test.rego:5-6
+`,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -2560,6 +2678,100 @@ test_get_another_user_denied if {
 	}
 }
 
+// TestTestWithCoverageRuns checks that --coverage-runs selects which
+// supplementary coverage passes run (and therefore which kinds are reported)
+// for the test command.
+func TestTestWithCoverageRuns(t *testing.T) {
+	files := map[string]string{
+		// early_exit's second definition is skipped once the first matches;
+		// index_excluded's body is index-excluded for input {"a": "z"}.
+		"policy.rego": `package p
+
+early_exit if { true }
+early_exit if { early_exit_dep }
+
+early_exit_dep if { true }
+
+index_excluded if { input.a == "read" }`,
+		"policy_test.rego": `package p
+
+test_early_exit if { early_exit }
+test_index_excluded if { not index_excluded with input as {"a": "z"} }`,
+	}
+
+	kindsFor := func(t *testing.T, root string, runs []string) map[string]int {
+		t.Helper()
+		var buf bytes.Buffer
+
+		testParams := newTestCommandParams()
+		testParams.coverage = true
+		testParams.coverageRuns = runs
+		testParams.count = 1
+		testParams.outputFormat = formats.Flag(formats.JSON)
+		testParams.output = &buf
+		testParams.errOutput = &buf
+
+		if code := opaTest([]string{root}, testParams); code != 0 {
+			t.Fatalf("unexpected exit code %d: %s", code, buf.String())
+		}
+
+		var report cover.Report
+		if err := json.Unmarshal(buf.Bytes(), &report); err != nil {
+			t.Fatalf("failed to decode coverage report: %v\noutput: %s", err, buf.String())
+		}
+		counts := map[string]int{}
+		for _, fr := range report.Files {
+			for _, rng := range fr.NotCovered {
+				for _, k := range rng.Kinds {
+					counts[string(k)]++
+				}
+			}
+		}
+		return counts
+	}
+
+	cases := map[string]struct {
+		runs      []string
+		wantIndex bool
+		wantEarly bool
+	}{
+		"default runs both": {
+			runs:      []string{"index_excluded", "early_exit"},
+			wantIndex: true,
+			wantEarly: true,
+		},
+		"index only": {
+			runs:      []string{"index_excluded"},
+			wantIndex: true,
+			wantEarly: false,
+		},
+		"early exit only": {
+			runs:      []string{"early_exit"},
+			wantIndex: false,
+			wantEarly: true,
+		},
+		"empty disables": {
+			runs:      []string{},
+			wantIndex: false,
+			wantEarly: false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			test.WithTempFS(files, func(root string) {
+				counts := kindsFor(t, root, tc.runs)
+				if got := counts["index_excluded"] > 0; got != tc.wantIndex {
+					t.Errorf("index_excluded present = %v, want %v (counts: %v)", got, tc.wantIndex, counts)
+				}
+				if got := counts["early_exit"] > 0; got != tc.wantEarly {
+					t.Errorf("early_exit present = %v, want %v (counts: %v)", got, tc.wantEarly, counts)
+				}
+			})
+		})
+	}
+}
+
 type loadType int
 
 const (
@@ -2665,7 +2877,7 @@ test_l if {
 					exitCode := opaTest(paths, testParams)
 					if len(tc.expErrs) > 0 {
 						if exitCode == 0 {
-							t.Fatalf("expected non-zero exit code")
+							t.Fatal("expected non-zero exit code")
 						}
 
 						for _, expErr := range tc.expErrs {
@@ -3014,7 +3226,7 @@ test_l if {
 					exitCode := opaTest(paths, testParams)
 					if len(tc.expErrs) > 0 {
 						if exitCode == 0 {
-							t.Fatalf("expected non-zero exit code")
+							t.Fatal("expected non-zero exit code")
 						}
 
 						for _, expErr := range tc.expErrs {
@@ -3078,6 +3290,44 @@ import rego.v1
 l1 := {1, 3, 5}
 l2 contains v if {
 	v := l1[_]
+}
+
+test_l if {
+	l1 == l2
+}`,
+			},
+		},
+		{
+			note:         "v0 module, rego.v2 imported",
+			v0Compatible: true,
+			files: map[string]string{
+				"/test.rego": `package test
+
+import rego.v2
+
+l1 := {1, 3, 5}
+l2 contains v if {
+	some v in l1
+	v > 0 or not { v < 10 }
+}
+
+test_l if {
+	l1 == l2
+}`,
+			},
+		},
+		{
+			note:         "v1 module, rego.v2 imported",
+			v1Compatible: true,
+			files: map[string]string{
+				"/test.rego": `package test
+
+import rego.v2
+
+l1 := {1, 3, 5}
+l2 contains v if {
+	some v in l1
+	v > 0 or not { v < 10 }
 }
 
 test_l if {
@@ -3268,7 +3518,7 @@ test_l if {
 					exitCode := opaTest(paths, testParams)
 					if tc.expErr != "" {
 						if exitCode == 0 {
-							t.Fatalf("expected non-zero exit code")
+							t.Fatal("expected non-zero exit code")
 						}
 
 						if actual := errBuf.String(); !strings.Contains(actual, tc.expErr) {
@@ -3598,7 +3848,7 @@ test_l if {
 						exitCode := opaTest([]string{p}, testParams)
 						if tc.expErr != "" {
 							if exitCode == 0 {
-								t.Fatalf("expected non-zero exit code")
+								t.Fatal("expected non-zero exit code")
 							}
 
 							if actual := errBuf.String(); !strings.Contains(actual, tc.expErr) {
@@ -3727,7 +3977,7 @@ func TestWithDefaultRegoPlugin(t *testing.T) {
 			t.Fatal("unexpected error", err)
 		}
 		if !defined {
-			t.Errorf("expected defined result")
+			t.Error("expected defined result")
 		}
 	})
 
@@ -3806,3 +4056,49 @@ func (*testPlugin) Eval(context.Context, *rego.EvalContext, ast.Value) (ast.Valu
 }
 
 const targetPlugin = "rego_test_default_plugin"
+
+var durationJSONRe = regexp.MustCompile(`"duration":\s*\d+`)
+
+func TestOpaTestJSONOutputBytes(t *testing.T) {
+	files := map[string]string{
+		"test.rego": `package test
+
+test_p if { true }
+`,
+	}
+
+	var stdout bytes.Buffer
+	var tempDirPath string
+	test.WithTempFS(files, func(root string) {
+		tempDirPath = root
+		testParams := newTestCommandParams()
+		testParams.count = 1
+		testParams.outputFormat = formats.Flag(formats.JSON, formats.Pretty)
+		testParams.output = &stdout
+		testParams.errOutput = io.Discard
+
+		if exitCode := opaTest([]string{root}, testParams); exitCode != 0 {
+			t.Fatalf("unexpected exit code: %d", exitCode)
+		}
+	})
+
+	normalized := durationJSONRe.ReplaceAll(stdout.Bytes(), []byte(`"duration":0`))
+
+	expectedOutput := strings.ReplaceAll(`[
+  {
+    "location": {
+      "file": "TEMPDIR/test.rego",
+      "row": 3,
+      "col": 1
+    },
+    "package": "data.test",
+    "name": "test_p",
+    "duration":0
+  }
+]
+`, "TEMPDIR", tempDirPath)
+
+	if diff := cmp.Diff(expectedOutput, string(normalized)); diff != "" {
+		t.Errorf("unexpected result (-want, +got):\n%s", diff)
+	}
+}

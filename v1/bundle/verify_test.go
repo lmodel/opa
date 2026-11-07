@@ -280,6 +280,18 @@ func TestVerifyBundleFile(t *testing.T) {
 			}},
 			true, errors.New("/.manifest: digest mismatch (want: 874984d68515ba2439c04dddf5b21574, got: a005c38a509dc2d5a7407b9494efb2ad)"),
 		},
+		"yml_structured_canonical_hash": {
+			// Reordered keys and extra whitespace: different bytes, same structure.
+			// data.yml is a structured doc, so it verifies against the hash of its
+			// canonical parsed form, independent of YAML formatting.
+			[][2]string{{"/a/b/data.yml", "foo:    1\nbar: 2"}},
+			map[string]FileInfo{"/a/b/data.yml": {
+				Name:      "/a/b/data.yml",
+				Hash:      "48c194fb31dbcbf03db282ef4bd9d0a05bb043f048174805438d4a11d4bd0e42",
+				Algorithm: SHA256.String(),
+			}},
+			false, nil,
+		},
 	}
 
 	for name, tc := range tests {
@@ -312,7 +324,7 @@ func TestCustomVerifier(t *testing.T) {
 	custom := &CustomVerifier{}
 	err := RegisterVerifier(defaultVerifierID, custom)
 	if err == nil {
-		t.Fatalf("Expected error when registering with default ID")
+		t.Fatal("Expected error when registering with default ID")
 	}
 	if err := RegisterVerifier("_test", custom); err != nil {
 		t.Fatal(err)
@@ -329,9 +341,9 @@ func TestCustomVerifier(t *testing.T) {
 		t.Fatalf("Unexpected error %v", err)
 	}
 	if _, isCustom := customVerifier.(*CustomVerifier); !isCustom {
-		t.Fatalf("Expected CustomVerifier to be registered at key _test")
+		t.Fatal("Expected CustomVerifier to be registered at key _test")
 	}
 	if _, err = GetVerifier("_unregistered"); err == nil {
-		t.Fatalf("Expected error when no Verifier exists at provided key")
+		t.Fatal("Expected error when no Verifier exists at provided key")
 	}
 }

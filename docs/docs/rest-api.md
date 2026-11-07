@@ -9,7 +9,7 @@ groups:
 - [Policy API](#policy-api) - manage policy loaded into the OPA instance.
 - [Data API](#data-api) - evaluate rules and retrieve data.
 - [Query API](#query-api) - execute ad hoc queries.
-- [Compile API](#compile-api) - access Rego's [Partial Evaluation](https://blog.openpolicyagent.org/partial-evaluation-162750eaf422) and data filtering functionality.
+- [Compile API](#compile-api) - access Rego's [Partial Evaluation](/blog/partial-evaluation-162750eaf422) and data filtering functionality.
 - [Health API](#health-api) - access instance operational health information.
 - [Config API](#config-api) - view instance configuration.
 - [Status API](#status-api) - view instance [status](./management-status) state.
@@ -789,7 +789,7 @@ The path separator is used to access values inside object and array documents. T
 - **metrics** - Return query performance metrics in addition to result. See [Performance Metrics](#performance-metrics) for more detail.
 - **instrument** - Instrument query evaluation and return a superset of performance metrics in addition to result. See [Performance Metrics](#performance-metrics) for more detail.
 - **strict-builtin-errors** - Treat built-in function call errors as fatal and return an error immediately.
-- **ids** - Include annotation `id` values of evaluated rules in the response. Rules must have `# METADATA` blocks with an `id` field.
+- **rule_labels** - If parameter is `true`, response will include the merged `# METADATA` `labels` of the rules evaluated to produce the result. See [Annotations](./policy-language/#annotations) for more detail.
 
 #### Status Codes
 
@@ -813,8 +813,8 @@ case, the response will not contain a `result` property.
   that uniquely identifies the decision. The identifier will be included in the
   decision log event for this decision. Callers can use the identifier for
   correlation purposes.
-- `ids` - If the `ids` query parameter is set, this field contains
-  an array of annotation `id` values for rules that were successfully evaluated.
+- `rule_labels` - If the `rule_labels` query parameter is set, this field contains
+  an array of merged `labels` maps for the rules that were successfully evaluated.
 
 #### Example Request
 
@@ -897,7 +897,7 @@ below.
 - **metrics** - Return query performance metrics in addition to result. See [Performance Metrics](#performance-metrics) for more detail.
 - **instrument** - Instrument query evaluation and return a superset of performance metrics in addition to result. See [Performance Metrics](#performance-metrics) for more detail.
 - **strict-builtin-errors** - Treat built-in function call errors as fatal and return an error immediately.
-- **ids** - Include annotation `id` values of evaluated rules in the response. Rules must have `# METADATA` blocks with an `id` field.
+- **rule_labels** - If parameter is `true`, response will include the merged `# METADATA` `labels` of the rules evaluated to produce the result. See [Annotations](./policy-language/#annotations) for more detail.
 
 #### Status Codes
 
@@ -1360,6 +1360,7 @@ GET /v1/query
 - **pretty** - If parameter is `true`, response will be formatted for humans.
 - **explain** - Return query explanation in addition to result. Values: **notes**, **fails**, **full**, **debug**.
 - **metrics** - Return query performance metrics in addition to result. See [Performance Metrics](#performance-metrics) for more detail.
+- **rule_labels** - If parameter is `true`, response will include the merged `# METADATA` `labels` of the rules evaluated to produce the result. See [Annotations](./policy-language/#annotations) for more detail.
 
 #### Status Codes
 
@@ -1430,10 +1431,10 @@ The [Compile API](#compile-api) allows you to partially evaluate Rego queries
 and obtain a simplified version of the policy. This is most useful when building
 integrations where policy logic is to be translated and evaluated in another
 environment. For example,
-[this post](https://blog.openpolicyagent.org/write-policy-in-opa-enforce-policy-in-sql-d9d24db93bf4)
+[this post](/blog/write-policy-in-opa-enforce-policy-in-sql-d9d24db93bf4)
 on the OPA blog shows how SQL can be generated based on Compile API output.
 For more details on Partial Evaluation in OPA, please refer to
-[this blog post](https://blog.openpolicyagent.org/partial-evaluation-162750eaf422).
+[this blog post](/blog/partial-evaluation-162750eaf422).
 
 Note that non-determinstic builtins (like `http.send`) are _not evaluated_ during PE.
 You can change that by providing `nondeterminsticBuiltins: true` in your payload options.
@@ -1657,7 +1658,7 @@ exceptions contains "bob"
 exceptions contains "alice"
 ```
 
-In this case, if we execute query on behalf of a user that does not
+In this case, if a query is executed on behalf of a user that does not
 have an exception (e.g., `"eve"`), the OPA response will not contain a
 `queries` field at all. This indicates there are NO conditions that
 could make the query true.
@@ -1729,7 +1730,7 @@ OPA uses the `Accept` header to denote the target response format.
 
 #### Example Request
 
-With OPA running with this policy, we'll compile the query `data.filters.include` into SQL filters:
+With OPA running with this policy, the following request compiles the query `data.filters.include` into SQL filters:
 
 ```rego
 package filters
@@ -1797,7 +1798,7 @@ An empty string `query` indicates **unconditional include**:
 
 #### Example: Mapping Table and Column Names
 
-For this example, let's assume OPA is running with this policy:
+For this example, assume OPA is running with this policy:
 
 ```rego
 package filters
@@ -1812,7 +1813,7 @@ include if input.price == "free"
 ```
 
 If there is no one-to-one correspondence between unknowns and table/column names, the target mapping comes into play.
-With this mapping, we would translate the policy into `WHERE fruit.display_name = E'pineapple' AND fruit.price_tag = E'free'`:
+With this mapping, the policy translates into `WHERE fruit.display_name = E'pineapple' AND fruit.price_tag = E'free'`:
 
 ```http
 POST /v1/compile/filters/include
@@ -1912,14 +1913,17 @@ Content-Type: application/json
 
 ```json
 {
-  "error": "not all plugins in OK state"
+  "error": "one or more bundles are not activated: authz, data"
 }
 ```
+
+When the `bundles` option is specified, the error lists the names of the
+configured bundles that have not been activated yet.
 
 Other error messages include:
 
 - `"unable to perform evaluation"`
-- `"not all configured bundles have been activated"`
+- `"one or more plugins are not up"`
 
 ### Custom Health Checks
 
@@ -2398,7 +2402,7 @@ faster to evaluate since OPA will not have to re-parse or compile it. Hence, whe
 OPA also supports query instrumentation. To enable query instrumentation,
 specify the `instrument=true` query parameter when executing the API call.
 Query instrumentation can help diagnose performance problems, however, it can
-add significant overhead to query evaluation. We recommend leaving query
+add significant overhead to query evaluation. It is recommended to leave query
 instrumentation off unless you are debugging a performance problem.
 
 When instrumentation is enabled there are several additional performance metrics

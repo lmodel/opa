@@ -15,24 +15,8 @@ code:
 inventors:
 - styra
 blogs:
-- https://blog.openpolicyagent.org/envoy-external-authorization-with-opa-578213ed567c
+- https://openpolicyagent.org/blog/envoy-external-authorization-with-opa-578213ed567c
 videos:
-- title: 'OPA at Scale: How Pinterest Manages Policy Distribution'
-  speakers:
-  - name: Will Fu
-    organization: pinterest
-  - name: Jeremy Krach
-    organization: pinterest
-  venue: OPA Summit at Kubecon San Diego 2019
-  link: https://www.youtube.com/watch?v=LhgxFICWsA8
-- title: Deploying Open Policy Agent at Atlassian
-  speakers:
-  - name: Chris Stivers
-    organization: atlassian
-  - name: Nicholas Higgins
-    organization: atlassian
-  venue: OPA Summit at Kubecon San Diego 2019
-  link: https://www.youtube.com/watch?v=nvRTO8xjmrg
 - title: How Yelp Moved Security From the App to the Mesh with Envoy and OPA
   speakers:
   - name: Daniel Popescu

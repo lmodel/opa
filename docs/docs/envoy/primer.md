@@ -8,7 +8,7 @@ This page covers how to write policies for the content of the requests that are 
 
 ## Writing Policies
 
-Let's start with an example policy that restricts access to an endpoint based on a user's role and permissions.
+Start with an example policy that restricts access to an endpoint based on a user's role and permissions.
 
 ```rego
 package envoy.authz
@@ -65,7 +65,7 @@ The above policy uses the `io.jwt.decode_verify` builtin function to parse and v
 information about the user making the request. It uses other builtins like `glob.match`, `lower`, `base64url.decode` etc.
 OPA has 150+ builtins detailed in the [policy reference](../policy-reference).
 
-The dot notation seen in multiple places in the policy for ex. `input.parsed_body.firstname` simply descends through
+The dot notation seen in multiple places in the policy for ex. `input.parsed_body.firstname` descends through
 the hierarchy to access the requested value. The dot (.) operator never throws any errors; if the path does not exist
 the value of the expression is `undefined`.
 
@@ -213,7 +213,7 @@ When Envoy receives a policy decision, it expects a JSON object with the followi
 - `query_parameters_to_remove` (optional): is an array containing the names of string query parameters to be removed.
 - `query_parameters_to_set` (optional): an object mapping parameter names to values (string) or arrays of values (for multiple values with the same key)
 
-To construct that output object using the policies demonstrated in the last section, you can use the following Rego snippet. Notice that we are using partial object rules so that any variables with undefined values simply have no key in the `result` object.
+To construct that output object using the policies demonstrated in the last section, you can use the following Rego snippet. Note that partial object rules are used so that any variables with undefined values have no key in the `result` object.
 
 ```rego
 result["allowed"] := allow
@@ -451,6 +451,24 @@ default allow := false
 
 allow if input.parsed_path == ["people"]
 ```
+
+:::warning
+`parsed_path` (and `parsed_query`) are derived from the request path exactly as Envoy
+forwards it: the path is percent-decoded but **not** otherwise normalized. Dot-segments
+(`.`, `..`) are not removed, and an encoded slash (`%2f`) is decoded to a `/` separator.
+As a result, `parsed_path` may not match the resource the upstream serves after it
+normalizes the path, and a policy that authorizes on path segments (e.g.
+`parsed_path[0] == "public"`) can be bypassed by requests such as `/public/../private` or
+`/public/..%2fprivate`.
+
+Path normalization is the proxy's responsibility. Follow Envoy's
+[best practices](https://www.envoyproxy.io/docs/envoy/latest/configuration/best_practices/edge)
+and enable `normalize_path` and `merge_slashes`, together with
+`path_with_escaped_slashes_action` (`REJECT_REQUEST`, `UNESCAPE_AND_REDIRECT`, or
+`UNESCAPE_AND_FORWARD`), so that OPA and the upstream evaluate the same path. Leaving
+`path_with_escaped_slashes_action` at `KEEP_UNCHANGED` is an explicit decision your policy
+must then account for.
+:::
 
 The `parsed_query` field in the input is also generated from the `path` field in the HTTP request. This field provides
 the HTTP URL query as a map of string array. The below sample policy allows anyone to access the path

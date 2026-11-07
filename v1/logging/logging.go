@@ -106,9 +106,7 @@ func (l *StandardLogger) getFields() map[string]any {
 func (l *StandardLogger) SetLevel(level Level) {
 	var logrusLevel logrus.Level
 	switch level {
-	case Error: // set logging level report Warn or higher (includes Error)
-		logrusLevel = logrus.WarnLevel
-	case Warn:
+	case Error, Warn: // set logging level report Warn or higher (includes Error)
 		logrusLevel = logrus.WarnLevel
 	case Info:
 		logrusLevel = logrus.InfoLevel
@@ -336,15 +334,13 @@ func (h *SlogHandler) Handle(ctx context.Context, record slog.Record) error {
 	msg := record.Message
 	switch record.Level {
 	case slog.LevelDebug:
-		logger.Debug(msg)
-	case slog.LevelInfo:
-		logger.Info(msg)
+		logger.Debug("%s", msg)
 	case slog.LevelWarn:
-		logger.Warn(msg)
+		logger.Warn("%s", msg)
 	case slog.LevelError:
-		logger.Error(msg)
+		logger.Error("%s", msg)
 	default:
-		logger.Info(msg)
+		logger.Info("%s", msg)
 	}
 	return nil
 }
@@ -359,7 +355,7 @@ func (h *SlogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	}
 }
 
-func (h *SlogHandler) WithGroup(name string) slog.Handler {
+func (h *SlogHandler) WithGroup(string) slog.Handler {
 	return h
 }
 

@@ -2234,7 +2234,15 @@
           }
         ],
         "result": {
-          "type": "any"
+          "dynamic": {
+            "key": {
+              "type": "any"
+            },
+            "value": {
+              "type": "any"
+            }
+          },
+          "type": "object"
         },
         "type": "function"
       }
@@ -2396,7 +2404,8 @@
           "type": "array"
         },
         "type": "function"
-      }
+      },
+      "nondeterministic": true
     },
     {
       "name": "json.patch",
@@ -2496,7 +2505,15 @@
           }
         ],
         "result": {
-          "type": "any"
+          "dynamic": {
+            "key": {
+              "type": "any"
+            },
+            "value": {
+              "type": "any"
+            }
+          },
+          "type": "object"
         },
         "type": "function"
       }
@@ -2559,7 +2576,8 @@
           "type": "array"
         },
         "type": "function"
-      }
+      },
+      "nondeterministic": true
     },
     {
       "name": "lower",
@@ -3129,7 +3147,15 @@
           }
         ],
         "result": {
-          "type": "any"
+          "dynamic": {
+            "key": {
+              "type": "any"
+            },
+            "value": {
+              "type": "any"
+            }
+          },
+          "type": "object"
         },
         "type": "function"
       }
@@ -3232,7 +3258,15 @@
           }
         ],
         "result": {
-          "type": "any"
+          "dynamic": {
+            "key": {
+              "type": "any"
+            },
+            "value": {
+              "type": "any"
+            }
+          },
+          "type": "object"
         },
         "type": "function"
       }
@@ -3299,7 +3333,7 @@
           }
         ],
         "result": {
-          "type": "any"
+          "type": "boolean"
         },
         "type": "function"
       }
@@ -3332,7 +3366,15 @@
           }
         ],
         "result": {
-          "type": "any"
+          "dynamic": {
+            "key": {
+              "type": "any"
+            },
+            "value": {
+              "type": "any"
+            }
+          },
+          "type": "object"
         },
         "type": "function"
       }
@@ -3357,7 +3399,15 @@
           }
         ],
         "result": {
-          "type": "any"
+          "dynamic": {
+            "key": {
+              "type": "any"
+            },
+            "value": {
+              "type": "any"
+            }
+          },
+          "type": "object"
         },
         "type": "function"
       }
@@ -4125,6 +4175,29 @@
         ],
         "result": {
           "type": "string"
+        },
+        "type": "function"
+      }
+    },
+    {
+      "name": "strings.split_n",
+      "decl": {
+        "args": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          }
+        ],
+        "result": {
+          "dynamic": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "type": "function"
       }
@@ -4935,7 +5008,9 @@
     }
   ],
   "future_keywords": [
-    "not"
+    "and",
+    "not",
+    "or"
   ],
   "wasm_abi_versions": [
     {
@@ -4950,6 +5025,8 @@
   "features": [
     "keywords_in_refs",
     "rego_v1",
+    "rego_v2",
+    "rego_v2_import",
     "template_strings"
   ]
 }

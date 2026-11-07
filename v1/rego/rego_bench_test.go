@@ -109,9 +109,10 @@ func BenchmarkAciTestBuildAndEval(b *testing.B) {
 	}
 }
 
-// BenchmarkAciTestOnlyEval-10    12752    92188 ns/op    50005 B/op    1062 allocs/op
-// BenchmarkAciTestOnlyEval-10    13521	   86647 ns/op	  47448 B/op	 967 allocs/op // ground-aware Copy
-// BenchmarkAciTestOnlyEval-12    21007	   57551 ns/op	  45323 B/op	 920 allocs/op
+// BenchmarkAciTestOnlyEval-10    12752    92188 ns/op   50005 B/op    1062 allocs/op
+// BenchmarkAciTestOnlyEval-10    13521	   86647 ns/op   47448 B/op     967 allocs/op // ground-aware Copy
+// BenchmarkAciTestOnlyEval-16    24430	   48475 ns/op   32337 B/op     781 allocs/op
+// BenchmarkAciTestOnlyEval-16    24780    47997 ns/op   32241 B/op     770 allocs/op // reuse tr.unordered
 func BenchmarkAciTestOnlyEval(b *testing.B) {
 	ctx := b.Context()
 
@@ -176,7 +177,7 @@ func BenchmarkArrayIteration(b *testing.B) {
 			b.Fatal("expected result")
 		}
 
-		if res[0].Bindings["x"].(bool) != true {
+		if !res[0].Bindings["x"].(bool) {
 			b.Fatalf("expected true, got %v", res[0].Bindings["x"])
 		}
 	}
@@ -217,7 +218,7 @@ func BenchmarkSetIteration(b *testing.B) {
 		if res == nil {
 			b.Fatal("expected result")
 		}
-		if res[0].Bindings["x"].(bool) != false {
+		if res[0].Bindings["x"].(bool) {
 			b.Fatalf("expected false, got %v", res[0].Bindings["x"])
 		}
 	}
@@ -259,7 +260,7 @@ func BenchmarkObjectIteration(b *testing.B) {
 		if res == nil {
 			b.Fatal("expected result")
 		}
-		if res[0].Bindings["x"].(bool) != false {
+		if res[0].Bindings["x"].(bool) {
 			b.Fatalf("expected false, got %v", res[0].Bindings["x"])
 		}
 	}

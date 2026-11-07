@@ -8,8 +8,144 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"math/rand"
+	"runtime"
+	"strings"
 	"testing"
+	"weak"
+
+	astJSON "github.com/open-policy-agent/opa/v1/ast/json"
 )
+
+func TestAttachRuleAnnotationsMatchesUnsorted(t *testing.T) {
+	rng := rand.New(rand.NewSource(1))
+	for n := range 500 {
+		var sb strings.Builder
+		sb.WriteString("package p\n\n")
+		for i := range rng.Intn(12) {
+			for range rng.Intn(3) {
+				scope := "rule"
+				if rng.Intn(4) == 0 {
+					scope = "document"
+				}
+				fmt.Fprintf(&sb, "# METADATA\n# scope: %s\n# title: a%d\n", scope, sb.Len())
+			}
+			if rng.Intn(5) == 0 {
+				sb.WriteString("x := 1\n\n")
+				continue
+			}
+			fmt.Fprintf(&sb, "r%d if input.x == %d\n\n", rng.Intn(3), i)
+		}
+		mod, err := ParseModuleWithOpts("test.rego", sb.String(), ParserOptions{ProcessAnnotation: true})
+		if err != nil {
+			continue // e.g. a document scope above a non-rule
+		}
+		got := map[*Rule][]string{}
+		for _, r := range mod.Rules {
+			for _, a := range r.Annotations {
+				got[r] = append(got[r], a.Title)
+			}
+			r.Annotations = nil
+		}
+		attachRuleAnnotationsUnsorted(mod)
+		for _, r := range mod.Rules {
+			var exp []string
+			for _, a := range r.Annotations {
+				exp = append(exp, a.Title)
+			}
+			if fmt.Sprint(got[r]) != fmt.Sprint(exp) {
+				t.Fatalf("module %d, rule %v: got %v, want %v\n%s", n, r.Head.Ref(), got[r], exp, sb.String())
+			}
+		}
+	}
+}
+
+func TestStatementBelow(t *testing.T) {
+	// A row of 0 is no location, a package row below 0 no package.
+	at := func(pkg int, imports []int, rules ...int) *Module {
+		loc := func(row int) *Location {
+			if row == 0 {
+				return nil
+			}
+			return &Location{Row: row}
+		}
+		mod := &Module{}
+		if pkg >= 0 {
+			mod.Package = &Package{Location: loc(pkg)}
+		}
+		for _, row := range imports {
+			mod.Imports = append(mod.Imports, &Import{Location: loc(row)})
+		}
+		for _, row := range rules {
+			mod.Rules = append(mod.Rules, &Rule{Location: loc(row)})
+		}
+		return mod
+	}
+	// The top-most statement below row, the first of those on its row.
+	scan := func(mod *Module, row int) Statement {
+		stmts := []Statement{mod.Package}
+		for _, imp := range mod.Imports {
+			stmts = append(stmts, imp)
+		}
+		for _, r := range mod.Rules {
+			stmts = append(stmts, r)
+		}
+		var found Statement
+		for _, stmt := range stmts {
+			if stmt.Loc() == nil || stmt.Loc().Row <= row {
+				continue
+			}
+			if found == nil || stmt.Loc().Row < found.Loc().Row {
+				found = stmt
+			}
+		}
+		return found
+	}
+	tests := map[string]*Module{
+		"sorted":              at(1, []int{3}, 5, 5, 8),
+		"unsorted":            at(1, nil, 9, 4, 4, 6),
+		"imports below rules": at(1, []int{7}, 3, 9),
+		"no package":          at(-1, nil, 2, 5),
+		"no locations":        at(0, []int{0}, 0, 3),
+		"empty":               at(-1, nil),
+	}
+	for note, mod := range tests {
+		t.Run(note, func(t *testing.T) {
+			next := statementBelow(mod)
+			for row := range 10 {
+				if got, exp := next(row), scan(mod, row); got != exp {
+					t.Errorf("row %d: got %v, want %v", row, got, exp)
+				}
+			}
+		})
+	}
+}
+
+// A module decoded from JSON has locations and METADATA comments, but no parsed
+// statements.
+func TestCompileMetadataOfDecodedModule(t *testing.T) {
+	opts := astJSON.Defaults()
+	opts.MarshalOptions.IncludeLocation = astJSON.NodeToggle{Package: true, Import: true, Rule: true, Comment: true}
+	astJSON.SetOptions(opts)
+	t.Cleanup(resetJSONOptions)
+
+	src := "package p\n\n# METADATA\n# title: hello\nallow if {\n\tm := rego.metadata.rule()\n\tm.title == \"hello\"\n}\n"
+	bs, err := json.Marshal(MustParseModule(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mod Module
+	if err := json.Unmarshal(bs, &mod); err != nil {
+		t.Fatal(err)
+	}
+	c := NewCompiler()
+	if c.Compile(map[string]*Module{"p.rego": &mod}); c.Failed() {
+		t.Fatal(c.Errors)
+	}
+	if a := c.Modules["p.rego"].Rules[0].Annotations; len(a) != 1 || a[0].Title != "hello" {
+		t.Fatalf("annotations: %v", a)
+	}
+}
 
 func TestEntrypointAnnotationScopeRequirements(t *testing.T) {
 	tests := []struct {
@@ -83,7 +219,7 @@ foo := true`,
 				return
 			}
 			if tc.expectError {
-				t.Fatalf("expected error")
+				t.Fatal("expected error")
 			}
 			if tc.expectScope != module.Annotations[0].Scope {
 				t.Fatalf("expected scope %q, got %q", tc.expectScope, module.Annotations[0].Scope)
@@ -524,7 +660,7 @@ a.b.c.p[v] if {v = 2}`,
 
 			as := compiler.GetAnnotationSet()
 			if as == nil {
-				t.Fatalf("Expected compiled AnnotationSet, got nil")
+				t.Fatal("Expected compiled AnnotationSet, got nil")
 			}
 
 			flattened := as.Flatten()
@@ -966,7 +1102,7 @@ p = true`,
 
 			as := compiler.GetAnnotationSet()
 			if as == nil {
-				t.Fatalf("Expected compiled AnnotationSet, got nil")
+				t.Fatal("Expected compiled AnnotationSet, got nil")
 			}
 
 			m := compiler.Modules[tc.moduleToAnalyze]
@@ -1282,14 +1418,13 @@ func TestAnnotations_toObject(t *testing.T) {
 		)),
 	)
 
-	obj, err := annotations.toObject()
+	term, err := annotations.toTerm()
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err.Error())
 	}
 
-	if Compare(*obj, expected) != 0 {
-		t.Fatalf("object generated from annotations\n\n%v\n\ndoesn't match expected\n\n%v",
-			*obj, expected)
+	if term.Value.Compare(expected) != 0 {
+		t.Fatalf("object generated from annotations\n\n%v\n\ndoesn't match expected\n\n%v", term, expected)
 	}
 }
 
@@ -1301,4 +1436,128 @@ func toJSON(v any) string {
 func schemaAnnotationFromMap(path string, def map[string]any) *SchemaAnnotation {
 	var p any = def
 	return &SchemaAnnotation{Path: MustParseRef(path), Definition: &p}
+}
+
+// TestAnnotationSet_MergedLabels_Collectable verifies that an AnnotationSet
+// can be garbage-collected after it goes out of scope, even when MergedLabels
+// has been called (which populates the internal mergedLabels cache).
+//
+// Regression test for a memory leak where the cleanup closure registered by
+// runtime.AddCleanup captured the AnnotationSet itself. The AnnotationSet
+// holds strong references to all modules (and their rules) via as.modules, so
+// the cleanup could never fire: rule → cleanup closure → AnnotationSet →
+// modules → rule. Each bundle reload left the old AnnotationSet permanently
+// alive, causing unbounded heap growth.
+func TestAnnotationSet_MergedLabels_Collectable(t *testing.T) {
+	const src = `package test
+
+# METADATA
+# labels:
+#   tier: fast
+allow if true
+`
+	var watch weak.Pointer[AnnotationSet]
+
+	func() {
+		mod := MustParseModuleWithOpts(src, ParserOptions{ProcessAnnotation: true})
+		as, errs := BuildAnnotationSet([]*Module{mod})
+		if len(errs) > 0 {
+			t.Fatalf("BuildAnnotationSet: %v", errs)
+		}
+		// Populate the mergedLabels cache for all rules.
+		for _, r := range mod.Rules {
+			as.MergedLabels(r)
+		}
+		watch = weak.Make(as)
+		// mod and as go out of scope here.
+	}()
+
+	// Two GC cycles: one to discover unreachable objects, one to collect them.
+	runtime.GC()
+	runtime.GC()
+
+	if watch.Value() != nil {
+		t.Fatal("AnnotationSet was not garbage-collected: mergedLabels cache likely holds a retaining cycle")
+	}
+}
+
+func TestAnnotations_StringDeterministic(t *testing.T) {
+	a := &Annotations{
+		Scope:       "rule",
+		Description: "<b>&</b>",
+		Custom: map[string]any{
+			"zeta": 1, "alpha": 2, "mu": 3, "beta": 4, "omega": 5,
+		},
+	}
+
+	exp := a.String()
+	for i := range 10 {
+		if got := a.String(); got != exp {
+			t.Fatalf("String() is not deterministic across calls:\ncall 0: %s\ncall %d: %s", exp, i+1, got)
+		}
+	}
+
+	if raw := "<b>&</b>"; strings.Contains(exp, raw) {
+		t.Fatalf("expected HTML characters to be escaped, but found raw %s in %s", raw, exp)
+	}
+	if escaped := `\u003cb\u003e\u0026\u003c/b\u003e`; !strings.Contains(exp, escaped) {
+		t.Fatalf("expected HTML characters to be escaped as %s, got %s", escaped, exp)
+	}
+}
+
+func BenchmarkAnnotationToTerm(b *testing.B) {
+	annotations := &Annotations{
+		Entrypoint:  true,
+		Scope:       annotationScopeRule,
+		Title:       "A title",
+		Description: "A description",
+		Organizations: []string{
+			"Acme Corp.",
+			"Tyrell Corp.",
+		},
+		RelatedResources: []*RelatedResourceAnnotation{
+			{
+				Ref:         mustParseURL("https://example.com"),
+				Description: "An example",
+			},
+			{
+				Ref: mustParseURL("https://another.example.com"),
+			},
+		},
+		Authors: []*AuthorAnnotation{
+			{
+				Name:  "John Doe",
+				Email: "john@example.com",
+			},
+			{
+				Name: "Jane Doe",
+			},
+			{
+				Email: "foo@example.com",
+			},
+		},
+		Custom: map[string]any{
+			"number": 42,
+			"float":  2.2,
+			"string": "a",
+			"bool":   true,
+			"list": []any{
+				"a", "b",
+			},
+		},
+		Labels: map[string]any{
+			"tier": "fast",
+			"foo":  "bar",
+		},
+		Location: &Location{
+			File: "module",
+			Row:  42,
+		},
+	}
+
+	for b.Loop() {
+		if _, err := annotations.toTerm(); err != nil {
+			b.Fatalf("unexpected error: %s", err.Error())
+		}
+	}
 }

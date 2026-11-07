@@ -5,6 +5,7 @@
 package bundle
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -12,7 +13,7 @@ import (
 	"fmt"
 	"maps"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 
@@ -479,7 +480,7 @@ func activateBundles(opts *ActivateOpts) error {
 			for _, item := range b.Raw {
 				path := filepath.ToSlash(item.Path)
 
-				if filepath.Base(path) == dataFile || filepath.Base(path) == yamlDataFile {
+				if filepath.Base(path) == dataFile || IsYAMLDataFile(path) {
 					var val map[string]json.RawMessage
 					err = util.Unmarshal(item.Value, &val)
 					if err == nil {
@@ -528,7 +529,7 @@ func activateBundles(opts *ActivateOpts) error {
 	}
 
 	// Compile the modules all at once to avoid having to re-do work.
-	remainingAndExtra := make(map[string]*ast.Module)
+	remainingAndExtra := make(map[string]*ast.Module, len(remaining)+len(opts.ExtraModules))
 	maps.Copy(remainingAndExtra, remaining)
 	maps.Copy(remainingAndExtra, opts.ExtraModules)
 
@@ -757,7 +758,11 @@ func readModuleInfoFromStore(ctx context.Context, store storage.Store, txn stora
 						if err != nil {
 							return nil, errors.New("corrupt rego version")
 						}
-						versions[k] = moduleInfo{RegoVersion: ast.RegoVersionFromInt(int(i))}
+						rv, err := ast.RegoVersionFromIntStrict(int(i))
+						if err != nil {
+							return nil, fmt.Errorf("corrupt rego version: %w", err)
+						}
+						versions[k] = moduleInfo{RegoVersion: rv}
 					}
 				}
 			}
@@ -779,12 +784,14 @@ func erasePolicies(ctx context.Context, store storage.Store, txn storage.Transac
 		return nil, nil, fmt.Errorf("failed to read module info from store: %w", err)
 	}
 
-	getRegoVersion := func(modId string) (ast.RegoVersion, bool) {
-		info, ok := modulesInfo[modId]
-		if !ok {
-			return ast.RegoUndefined, false
+	parserOptsFor := func(modID string) ast.ParserOptions {
+		info, ok := modulesInfo[strings.TrimPrefix(modID, "/")]
+		if !ok || info.RegoVersion == parserOpts.RegoVersion {
+			return parserOpts
 		}
-		return info.RegoVersion, true
+		opts := parserOpts
+		opts.RegoVersion = info.RegoVersion
+		return opts
 	}
 
 	remaining := map[string]*ast.Module{}
@@ -796,62 +803,84 @@ func erasePolicies(ctx context.Context, store storage.Store, txn storage.Transac
 			return nil, nil, err
 		}
 
-		parserOptsCpy := parserOpts
-		if regoVersion, ok := getRegoVersion(id); ok {
-			parserOptsCpy.RegoVersion = regoVersion
-		}
-
-		module, err := ast.ParseModuleWithOpts(id, string(bs), parserOptsCpy)
+		// Modules that are about to be deleted only need their package.
+		erase, err := underRoots(packageOnly(bs), roots)
 		if err != nil {
 			return nil, nil, err
 		}
-		path, err := module.Package.Path.Ptr()
-		if err != nil {
-			return nil, nil, err
-		}
-		deleted := false
-		for root := range roots {
-			if RootPathsContain([]string{root}, path) {
-				if err := store.DeletePolicy(ctx, txn, id); err != nil {
-					return nil, nil, err
-				}
-				deleted = true
-				break
+		var module *ast.Module
+		if !erase {
+			if module, err = ast.ParseModuleWithOpts(id, util.ByteSliceToString(bs), parserOptsFor(id)); err != nil {
+				return nil, nil, err
+			}
+			if erase, err = underRoots(module.Package, roots); err != nil {
+				return nil, nil, err
 			}
 		}
 
-		if deleted {
+		if erase {
+			if err := store.DeletePolicy(ctx, txn, id); err != nil {
+				return nil, nil, err
+			}
 			removed = append(removed, id)
-		} else {
-			remaining[id] = module
+			continue
 		}
+		remaining[id] = module
 	}
 
 	return remaining, removed, nil
 }
 
-func writeManifestToStore(opts *ActivateOpts, name string, manifest Manifest) error {
-	// Always write manifests to the named location. If the plugin is in the older style config
-	// then also write to the old legacy unnamed location.
-	if err := WriteManifestToStore(opts.Ctx, opts.Store, opts.Txn, name, manifest); err != nil {
-		return err
+// underRoots reports whether pkg is under one of roots, and false for pkg=nil.
+func underRoots(pkg *ast.Package, roots map[string]struct{}) (bool, error) {
+	if pkg == nil {
+		return false, nil
 	}
-
-	if opts.legacy {
-		if err := LegacyWriteManifestToStore(opts.Ctx, opts.Store, opts.Txn, manifest); err != nil {
-			return err
+	path, err := storage.NewPathForRef(pkg.Path)
+	if err != nil {
+		return false, err
+	}
+	for root := range roots {
+		if rootPathsContainSegments([]string{root}, path) {
+			return true, nil
 		}
 	}
+	return false, nil
+}
 
+// packageOnly parses the package statement of a module if it is the first
+// non-comment line, and returns nil if it is not or cannot be parsed alone.
+func packageOnly(bs []byte) *ast.Package {
+	for line := range bytes.Lines(bs) {
+		line = bytes.TrimSpace(line)
+		if len(line) == 0 || line[0] == '#' {
+			continue
+		}
+		if !bytes.HasPrefix(line, []byte("package ")) {
+			return nil
+		}
+		pkg, err := ast.ParsePackage(util.ByteSliceToString(line))
+		if err != nil {
+			return nil
+		}
+		return pkg
+	}
 	return nil
 }
 
-func writeEtagToStore(opts *ActivateOpts, name, etag string) error {
-	if err := WriteEtagToStore(opts.Ctx, opts.Store, opts.Txn, name, etag); err != nil {
-		return err
+func writeManifestToStore(opts *ActivateOpts, name string, manifest Manifest) error {
+	// Always write manifests to the named location. If the plugin is in the older style config
+	// then also write to the old legacy unnamed location.
+	err := WriteManifestToStore(opts.Ctx, opts.Store, opts.Txn, name, manifest)
+	if err == nil && opts.legacy {
+		err = LegacyWriteManifestToStore(opts.Ctx, opts.Store, opts.Txn, manifest)
 	}
 
-	return nil
+	return err
+}
+
+func writeEtagToStore(opts *ActivateOpts, name, etag string) error {
+	return WriteEtagToStore(opts.Ctx, opts.Store, opts.Txn, name, etag)
 }
 
 func writeModuleRegoVersionToStore(ctx context.Context, store storage.Store, txn storage.Transaction, b *Bundle,
@@ -859,7 +888,7 @@ func writeModuleRegoVersionToStore(ctx context.Context, store storage.Store, txn
 ) error {
 	var regoVersion ast.RegoVersion
 	if mf.Parsed != nil {
-		regoVersion = mf.Parsed.RegoVersion()
+		regoVersion = mf.Parsed.RegoVersionSpan().Min()
 	}
 
 	if regoVersion == ast.RegoUndefined {
@@ -870,7 +899,9 @@ func writeModuleRegoVersionToStore(ctx context.Context, store storage.Store, txn
 		}
 	}
 
-	if regoVersion != ast.RegoUndefined && regoVersion != runtimeRegoVersion {
+	// A module without a recorded rego-version is read back at the runtime's, so only record one
+	// whose integer form differs. An undefined runtime records every version.
+	if regoVersion != ast.RegoUndefined && (runtimeRegoVersion == ast.RegoUndefined || regoVersion.Int() != runtimeRegoVersion.Int()) {
 		if err := write(ctx, store, txn, moduleRegoVersionPath(storagePath), regoVersion.Int()); err != nil {
 			return fmt.Errorf("failed to write rego version for module '%s': %w", storagePath, err)
 		}
@@ -927,7 +958,7 @@ func writeDataAndModules(ctx context.Context, store storage.Store, txn storage.T
 					if m := f.module; m != nil {
 						// 'f.module.Path' contains the module's path as it relates to the bundle root, and can be used for looking up the rego-version.
 						// 'f.Path' can differ, based on how the bundle reader was initialized.
-						if err := writeModuleRegoVersionToStore(ctx, store, txn, b, *m, p.String(), runtimeRegoVersion); err != nil {
+						if err := writeModuleRegoVersionToStore(ctx, store, txn, b, *m, p.PolicyID(), runtimeRegoVersion); err != nil {
 							return err
 						}
 					}
@@ -994,65 +1025,11 @@ func compileModules(compiler *ast.Compiler, m metrics.Metrics, bundles map[strin
 		return compiler.Errors
 	}
 
-	if authorizationDecisionRef.Equal(ast.EmptyRef()) {
+	if authorizationDecisionRef.Equal(ast.InternedEmptyRefValue) {
 		return nil
 	}
 
 	return iCompiler.VerifyAuthorizationPolicySchema(compiler, authorizationDecisionRef)
-}
-
-func writeModules(ctx context.Context, store storage.Store, txn storage.Transaction, compiler *ast.Compiler, m metrics.Metrics, bundles map[string]*Bundle, extraModules map[string]*ast.Module, legacy bool, externalSources *util.HasherMap[ast.Ref, ast.ExternalRuleSource]) error {
-	m.Timer(metrics.RegoModuleCompile).Start()
-	defer m.Timer(metrics.RegoModuleCompile).Stop()
-
-	// Apply external sources before compilation
-	if externalSources != nil {
-		externalSources.Iter(func(ref ast.Ref, source ast.ExternalRuleSource) bool {
-			compiler = compiler.WithExternalSource(ref, source)
-			return false
-		})
-	}
-
-	modules := map[string]*ast.Module{}
-
-	// preserve any modules already on the compiler
-	maps.Copy(modules, compiler.Modules)
-
-	// preserve any modules passed in from the store
-	maps.Copy(modules, extraModules)
-
-	// include all the new bundle modules
-	for bundleName, b := range bundles {
-		if legacy {
-			for _, mf := range b.Modules {
-				modules[mf.Path] = mf.Parsed
-			}
-		} else {
-			maps.Copy(modules, b.ParsedModules(bundleName))
-		}
-	}
-
-	if compiler.Compile(modules); compiler.Failed() {
-		return compiler.Errors
-	}
-	for bundleName, b := range bundles {
-		for _, mf := range b.Modules {
-			var path string
-
-			// For backwards compatibility, in legacy mode, upsert policies to
-			// the unprefixed path.
-			if legacy {
-				path = mf.Path
-			} else {
-				path = modulePathWithPrefix(bundleName, mf.Path)
-			}
-
-			if err := store.UpsertPolicy(ctx, txn, path, mf.Raw); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 func lookup(path storage.Path, data map[string]any) (any, bool) {
@@ -1163,11 +1140,11 @@ func hasRootsOverlap(ctx context.Context, store storage.Store, txn storage.Trans
 	}
 
 	// Sort the bundle roots list.
-	sort.Slice(entries, func(i, j int) bool {
-		if entries[i].canonical != entries[j].canonical {
-			return entries[i].canonical < entries[j].canonical
+	slices.SortFunc(entries, func(a, b rootEntry) int {
+		if c := strings.Compare(a.canonical, b.canonical); c != 0 {
+			return c
 		}
-		return entries[i].bundle < entries[j].bundle
+		return strings.Compare(a.bundle, b.bundle)
 	})
 
 	collidingBundles := map[string]bool{}
@@ -1226,8 +1203,7 @@ func hasRootsOverlap(ctx context.Context, store storage.Store, txn storage.Trans
 			// is allowed to declare overlapping roots in its own manifest.
 			if sawCrossBundleConflict {
 				collidingBundles[entries[d].bundle] = true
-				paths := []string{groupDisplay, entries[d].displayRoot()}
-				sort.Strings(paths)
+				paths := util.Sorted([]string{groupDisplay, entries[d].displayRoot()})
 				conflictSet[fmt.Sprintf("%s overlaps %s", paths[0], paths[1])] = true
 			}
 		}
@@ -1314,11 +1290,7 @@ func LegacyWriteManifestToStore(ctx context.Context, store storage.Store, txn st
 //
 // Deprecated: Use WriteManifestToStore and named bundles instead.
 func LegacyEraseManifestFromStore(ctx context.Context, store storage.Store, txn storage.Transaction) error {
-	err := store.Write(ctx, txn, storage.RemoveOp, legacyManifestStoragePath, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return store.Write(ctx, txn, storage.RemoveOp, legacyManifestStoragePath, nil)
 }
 
 // LegacyReadRevisionFromStore will read the bundle manifest revision from the older single (unnamed) bundle manifest location.

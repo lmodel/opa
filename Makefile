@@ -4,15 +4,13 @@
 
 VERSION := $(shell ./build/get-build-version.sh)
 
-CGO_ENABLED ?= 1
-WASM_ENABLED ?= 1
 GOFLAGS ?= "-buildmode=exe"
 
 # See https://golang.org/cmd/go/#hdr-Build_modes:
 # > -buildmode=exe
 # > Build the listed main packages and everything they import into
 # > executables. Packages not named main are ignored.
-GO := CGO_ENABLED=$(CGO_ENABLED) GOFLAGS="$(GOFLAGS)" go
+GO := CGO_ENABLED=0 GOFLAGS="$(GOFLAGS)" go
 GO_TEST_TIMEOUT := -timeout 30m
 
 GOVERSION ?= $(shell cat ./.go-version)
@@ -20,21 +18,15 @@ GOARCH := $(shell go env GOARCH)
 GOOS := $(shell go env GOOS)
 
 GO_TAGS ?=
-CONDITIONAL_WASM_TAG :=
-ifeq ($(WASM_ENABLED),1)
-CONDITIONAL_WASM_TAG := -tags=opa_wasm
-endif
-override GO_TAGS := $(GO_TAGS) $(CONDITIONAL_WASM_TAG)
+override GO_TAGS := $(GO_TAGS) -tags=opa_wasm
 
-GOLANGCI_LINT_VERSION := v2.12.2
+GOLANGCI_LINT_VERSION := v2.14.0
 YAML_LINT_VERSION := 0.29.0
 YAML_LINT_FORMAT ?= auto
 
 export DOCKER_RUNNING ?= $(shell docker ps >/dev/null 2>&1 && echo 1 || echo 0)
 
-# We use root because the windows build, invoked through the ci-go-build-windows
-# target, installs the gcc mingw32 cross-compiler.
-# For image, it's overridden, so that the built binary isn't root-owned.
+# For image, the UID/GID is overridden so that the built binary isn't root-owned.
 DOCKER_UID ?= 0
 DOCKER_GID ?= 0
 
@@ -99,6 +91,15 @@ ifeq ($(GOOS),windows)
 endif
 	$(GO) generate
 
+.PHONY: generate-proto
+generate-proto:
+	cd build/tools && $(GO) build -o $(CURDIR)/build/tools/bin/protoc-gen-go google.golang.org/protobuf/cmd/protoc-gen-go
+	PATH="$(CURDIR)/build/tools/bin:$$PATH" protoc \
+		--go_out=. \
+		--go_opt=module=github.com/open-policy-agent/opa \
+		v1/ir/plan.proto \
+		v1/bundle/manifest.proto
+
 .PHONY: build
 build: go-build
 
@@ -137,9 +138,13 @@ go-test: generate
 go-test-short: generate
 	$(GO) test $(GO_TAGS) -short ./...
 
+.PHONY: rego-test
+rego-test: go-build
+	OPA=$(CURDIR)/$(BIN) ./build/run-rego-tests.sh
+
 .PHONY: race-detector
 race-detector: generate
-	$(GO) test $(GO_TAGS),slow -race -vet=off ./...
+	CGO_ENABLED=1 GOFLAGS="$(GOFLAGS)" go test $(GO_TAGS),slow -race -vet=off ./...
 
 .PHONY: test-coverage
 test-coverage: generate
@@ -152,6 +157,46 @@ perf: generate
 .PHONY: perf-noisy
 perf-noisy: generate
 	$(GO) test $(GO_TAGS),slow,noisy $(GO_TEST_TIMEOUT) -run=- -bench=. -benchmem ./...
+
+# Compare two commits over one package's curated benchlab set
+# (build/bench-nightly/set.json), with the tool the nightly job and the
+# per-merge PR comment both use, so a local read and a published one are the
+# same measurement. Lighter than either -- fewer reps, shorter benchtime -- to
+# answer "did I move this" in minutes rather than precisely; the nightly run is
+# the precise one.
+#
+#   make benchlab BENCHLAB_PKG=./v1/ast
+#   make benchlab BENCHLAB_PKG=./v1/rego BENCHLAB_COMMITS=HEAD~2,HEAD
+#
+# benchlab builds each commit in its own worktree, so this measures committed
+# work, not the working copy.
+#
+# Six reps is a floor, not a preference: benchstat needs six samples per arm
+# before it will report a verdict, and below that the run finishes having told
+# you nothing.
+BENCHLAB_PKG ?=
+BENCHLAB_COMMITS ?= main,HEAD
+BENCHLAB_REPS ?= 6
+BENCHLAB_BENCHTIME ?= 300ms
+
+.PHONY: benchlab
+benchlab:
+ifeq ($(strip $(BENCHLAB_PKG)),)
+	@echo "BENCHLAB_PKG is required, e.g. make benchlab BENCHLAB_PKG=./v1/ast" >&2
+	@echo "packages carrying a curated set:" >&2
+	@grep -o '"pkg": "[^"]*"' build/bench-nightly/set.json | cut -d'"' -f4 | sed 's/^/  /' >&2
+	@exit 1
+else
+	go tool -modfile=build/tools/go.mod benchlab \
+		-commit $(BENCHLAB_COMMITS) \
+		-pkg $(BENCHLAB_PKG) \
+		-host local:tags=opa_wasm \
+		-bench '^BenchmarkBenchlab' \
+		-run '^$$' \
+		-reps $(BENCHLAB_REPS) \
+		-count 1 \
+		-benchtime $(BENCHLAB_BENCHTIME)
+endif
 
 .PHONY: wasm-sdk-e2e-test
 wasm-sdk-e2e-test: generate
@@ -169,6 +214,17 @@ endif
 fmt:
 ifeq ($(DOCKER_RUNNING), 1)
 	$(DOCKER) run --rm -v $(shell pwd):/app:Z -w /app golangci/golangci-lint:${GOLANGCI_LINT_VERSION} golangci-lint run -v --fix
+else
+	@echo "Docker not installed or running. Skipping golangci run."
+endif
+
+# build/release is a separate module, so the root `test` and `check` targets do
+# not reach it.
+.PHONY: check-release-tool
+check-release-tool:
+	cd build/release && $(GO) vet ./... && $(GO) test ./...
+ifeq ($(DOCKER_RUNNING), 1)
+	$(DOCKER) run --rm -v $(shell pwd):/app:ro,Z -w /app/build/release golangci/golangci-lint:${GOLANGCI_LINT_VERSION} golangci-lint run -v
 else
 	@echo "Docker not installed or running. Skipping golangci run."
 endif
@@ -263,8 +319,6 @@ CI_GOLANG_DOCKER_MAKE := $(DOCKER) run \
 	-w /src \
 	-e GOCACHE=/src/.go/cache \
 	-e GOARCH=$(GOARCH) \
-	-e CGO_ENABLED=$(CGO_ENABLED) \
-	-e WASM_ENABLED=$(WASM_ENABLED) \
 	-e FUZZ_TIME=$(FUZZ_TIME) \
 	-e VERSION_CHECK_URL=$(VERSION_CHECK_URL) \
 	$(RELEASE_BUILD_IMAGE)
@@ -285,7 +339,7 @@ ci-check-working-copy: generate
 ci-wasm: wasm-test
 
 .PHONY: ci-build-linux
-ci-build-linux: ensure-release-dir ensure-linux-toolchain
+ci-build-linux: ensure-release-dir
 	@$(MAKE) build GOOS=linux
 	chmod +x opa_linux_$(GOARCH)
 	mv opa_linux_$(GOARCH) $(RELEASE_DIR)/
@@ -293,7 +347,7 @@ ci-build-linux: ensure-release-dir ensure-linux-toolchain
 
 .PHONY: ci-build-linux-static
 ci-build-linux-static: ensure-release-dir
-	@$(MAKE) build GOOS=linux WASM_ENABLED=0 CGO_ENABLED=0
+	@$(MAKE) build GOOS=linux
 	chmod +x opa_linux_$(GOARCH)
 	mv opa_linux_$(GOARCH) $(RELEASE_DIR)/opa_linux_$(GOARCH)_static
 	cd $(RELEASE_DIR)/ && shasum -a 256 opa_linux_$(GOARCH)_static > opa_linux_$(GOARCH)_static.sha256
@@ -307,7 +361,7 @@ ci-build-darwin: ensure-release-dir
 
 .PHONY: ci-build-darwin-arm64-static
 ci-build-darwin-arm64-static: ensure-release-dir
-	@$(MAKE) build GOOS=darwin GOARCH=arm64 WASM_ENABLED=0 CGO_ENABLED=0
+	@$(MAKE) build GOOS=darwin GOARCH=arm64
 	chmod +x opa_darwin_arm64
 	mv opa_darwin_arm64 $(RELEASE_DIR)/opa_darwin_arm64_static
 	cd $(RELEASE_DIR)/ && shasum -a 256 opa_darwin_arm64_static > opa_darwin_arm64_static.sha256
@@ -327,14 +381,6 @@ ensure-release-dir:
 ensure-executable-bin:
 	find $(RELEASE_DIR) -type f ! -name "*.sha256" | xargs chmod +x
 
-.PHONY: ensure-linux-toolchain
-ensure-linux-toolchain:
-ifeq ($(CGO_ENABLED),1)
-	$(eval export CC = $(shell GOARCH=$(GOARCH) build/ensure-linux-toolchain.sh))
-else
-	@echo "CGO_ENABLED=$(CGO_ENABLED). No need to check gcc toolchain."
-endif
-
 .PHONY: build-all-platforms
 build-all-platforms: ci-build-linux ci-build-linux-static ci-build-darwin ci-build-darwin-arm64-static ci-build-windows
 
@@ -346,13 +392,13 @@ image-quick: image-quick-$(GOARCH)
 image-quick-%: ensure-executable-bin
 	$(DOCKER) build \
 		-t $(DOCKER_IMAGE):$(VERSION) \
-		--build-arg BASE=chainguard/glibc-dynamic \
+		--build-arg BASE=chainguard/static:latest \
 		--build-arg BIN_DIR=$(RELEASE_DIR) \
 		--platform linux/$* \
 		.
 	$(DOCKER) build \
 		-t $(DOCKER_IMAGE):$(VERSION)-debug \
-		--build-arg BASE=chainguard/glibc-dynamic:latest-dev \
+		--build-arg BASE=chainguard/busybox:latest \
 		--build-arg BIN_DIR=$(RELEASE_DIR) \
 		--platform linux/$* \
 		.
@@ -366,7 +412,7 @@ image-quick-%: ensure-executable-bin
 
 	$(DOCKER) build \
 		-t $(DOCKER_IMAGE):$(VERSION)-static-debug \
-		--build-arg BASE=chainguard/busybox:latest-glibc \
+		--build-arg BASE=chainguard/busybox:latest \
 		--build-arg BIN_DIR=$(RELEASE_DIR) \
 		--build-arg BIN_SUFFIX=_static \
 		--platform linux/$* \
@@ -377,7 +423,7 @@ image-quick-%: ensure-executable-bin
 push-manifest-list-%: ensure-executable-bin
 	$(DOCKER) buildx build \
 		--tag $(DOCKER_IMAGE):$* \
-		--build-arg BASE=chainguard/glibc-dynamic:latest \
+		--build-arg BASE=chainguard/static:latest \
 		--build-arg BIN_DIR=$(RELEASE_DIR) \
 		--platform $(DOCKER_PLATFORMS) \
 		--provenance=false \
@@ -385,7 +431,7 @@ push-manifest-list-%: ensure-executable-bin
 		.
 	$(DOCKER) buildx build \
 		--tag $(DOCKER_IMAGE):$*-debug \
-		--build-arg BASE=chainguard/glibc-dynamic:latest-dev \
+		--build-arg BASE=chainguard/busybox:latest \
 		--build-arg BIN_DIR=$(RELEASE_DIR) \
 		--platform $(DOCKER_PLATFORMS) \
 		--provenance=false \
@@ -404,7 +450,7 @@ push-manifest-list-%: ensure-executable-bin
 
 	$(DOCKER) buildx build \
 		--tag $(DOCKER_IMAGE):$*-static-debug \
-		--build-arg BASE=chainguard/busybox:latest-glibc \
+		--build-arg BASE=chainguard/busybox:latest \
 		--build-arg BIN_DIR=$(RELEASE_DIR) \
 		--build-arg BIN_SUFFIX=_static \
 		--platform $(DOCKER_PLATFORMS) \
@@ -489,34 +535,48 @@ endif
 #
 ######################################################
 
-PATCH_CONTAINER_LABEL ?= opa-release-patcher
+# Fills in the CHANGELOG section for the release range and updates the version
+# artefacts.
+#
+#   make release-prepare VERSION=1.19.0
+#   make release-prepare VERSION=1.19.0 LAST_VERSION=v1.18.2
+#
+# To update changelog or artefacts in isolation, or with flags this target doesn't expose
+# (--dry-run, --out, --include-local, --record):
+#
+#   cd build/release && go run . changelog --help
+#   cd build/release && go run . artefacts --help
+.PHONY: release-prepare
+release-prepare:
+	@case "$(VERSION)" in \
+		*-dev) \
+			echo "error: VERSION is '$(VERSION)', read from v1/version/version.go."; \
+			echo "       Pass the release version explicitly, e.g. make release-prepare VERSION=1.19.0"; \
+			exit 1;; \
+	esac
+	@cd build/release && $(GO) run . changelog \
+		--version=$(VERSION) \
+		--update=$(CURDIR)/CHANGELOG.md \
+		$(if $(LAST_VERSION),--from=$(LAST_VERSION),) \
+		$(if $(REL_TO),--to=$(REL_TO),) \
+		$(if $(REL_REPO),--repo=$(REL_REPO),)
+	@cd build/release && $(GO) run . artefacts \
+		--version=$(VERSION) \
+		$(if $(REL_SKIP_GENERATE),--skip-generate,)
 
-.PHONY: patch-container
-patch-container:
-ifeq ($(shell docker images -q $(PATCH_CONTAINER_LABEL) 2> /dev/null),)
-	@$(DOCKER) build \
-		-t $(PATCH_CONTAINER_LABEL) \
-		-f build/release-patcher-Dockerfile .
-endif
-
-.PHONY: release-patch
-release-patch: patch-container
-ifeq ($(GITHUB_TOKEN),)
-	@echo "\033[0;31mGITHUB_TOKEN environment variable missing.\033[33m Provide a GitHub Personal Access Token (PAT) with the 'read:org' scope.\033[0m"
-endif
-	@$(DOCKER) run $(DOCKER_FLAGS) \
-		-e GITHUB_TOKEN=$(GITHUB_TOKEN) \
-		-e LAST_VERSION=$(LAST_VERSION) \
-		-v $(PWD):/_src:Z \
-		$(PATCH_CONTAINER_LABEL):latest \
-		/_src/build/gen-release-patch.sh --version=$(VERSION) --source-url=/_src
-
-.PHONY: dev-patch
-dev-patch: patch-container
-	@$(DOCKER) run $(DOCKER_FLAGS) \
-		-v $(PWD):/_src:Z \
-		$(PATCH_CONTAINER_LABEL):latest \
-		/_src/build/gen-dev-patch.sh --version=$(VERSION) --source-url=/_src
+# Reopens development after a release.
+#
+#   make dev-prepare VERSION=1.19.1
+.PHONY: dev-prepare
+dev-prepare:
+	@if [ "$(origin VERSION)" != "command line" ]; then \
+		echo "error: pass the next release version explicitly, e.g. make dev-prepare VERSION=1.19.1"; \
+		exit 1; \
+	fi
+	@cd build/release && $(GO) run . dev \
+		--version=$(VERSION) \
+		$(if $(REL_DRY_RUN),--dry-run,) \
+		$(if $(REL_ALLOW_EXISTING_UNRELEASED),--allow-existing-unreleased,)
 
 # Deprecated targets. To be removed.
 .PHONY: build-linux depr-build-linux build-windows depr-build-windows build-darwin depr-build-darwin release release-local
@@ -537,15 +597,15 @@ deprecation-%:
 	@$(MAKE) depr-$*
 
 depr-build-linux: ensure-release-dir
-	@$(MAKE) build GOOS=linux CGO_ENABLED=0 WASM_ENABLED=0
+	@$(MAKE) build GOOS=linux
 	mv opa_linux_$(GOARCH) $(RELEASE_DIR)/
 
 depr-build-darwin: ensure-release-dir
-	@$(MAKE) build GOOS=darwin CGO_ENABLED=0 WASM_ENABLED=0
+	@$(MAKE) build GOOS=darwin
 	mv opa_darwin_$(GOARCH) $(RELEASE_DIR)/
 
 depr-build-windows: ensure-release-dir
-	@$(MAKE) build GOOS=windows CGO_ENABLED=0 WASM_ENABLED=0
+	@$(MAKE) build GOOS=windows
 	mv opa_windows_$(GOARCH) $(RELEASE_DIR)/opa_windows_$(GOARCH).exe
 	rm resource.syso
 

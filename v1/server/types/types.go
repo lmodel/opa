@@ -26,13 +26,12 @@ var jsonFields = map[reflect.Type]map[string]bool{}
 // UnmarshalExtras and MarshalExtras can distinguish known fields from extras.
 // Call from an init() function in the package that defines T.
 func RegisterJSONFields[T any]() {
-	t := reflect.TypeOf((*T)(nil)).Elem()
+	t := reflect.TypeFor[T]()
 	if t.Kind() != reflect.Struct {
 		panic(fmt.Sprintf("types: RegisterJSONFields[%s]: not a struct", t))
 	}
 	f := make(map[string]bool, t.NumField())
-	for i := range t.NumField() {
-		sf := t.Field(i)
+	for sf := range t.Fields() {
 		tag := sf.Tag.Get("json")
 		if tag == "-" {
 			continue
@@ -47,12 +46,29 @@ func RegisterJSONFields[T any]() {
 }
 
 func knownJSONFields[T any]() map[string]bool {
-	t := reflect.TypeOf((*T)(nil)).Elem()
+	t := reflect.TypeFor[T]()
 	f, ok := jsonFields[t]
 	if !ok {
 		panic(fmt.Sprintf("types: %s not registered with RegisterJSONFields", t))
 	}
 	return f
+}
+
+// Extras returns the top-level keys of m not declared on T, or nil if there are
+// none. T must have been registered with RegisterJSONFields.
+func Extras[T any](m map[string]any) map[string]any {
+	known := knownJSONFields[T]()
+	var extra map[string]any
+	for k, v := range m {
+		if known[k] {
+			continue
+		}
+		if extra == nil {
+			extra = make(map[string]any)
+		}
+		extra[k] = v
+	}
+	return extra
 }
 
 // UnmarshalExtras decodes data into into (typically a *alias of T to avoid
@@ -62,11 +78,15 @@ func UnmarshalExtras[T any](data []byte, into any) (map[string]any, error) {
 	if err := util.UnmarshalJSON(data, into); err != nil {
 		return nil, err
 	}
+	known := knownJSONFields[T]()
+	// Only decode data a second time if there are extras to collect.
+	if topLevelKeysKnown(data, known) {
+		return nil, nil
+	}
 	var raw map[string]json.RawMessage
 	if err := util.UnmarshalJSON(data, &raw); err != nil {
 		return nil, err
 	}
-	known := knownJSONFields[T]()
 	var extra map[string]any
 	for k, val := range raw {
 		if known[k] {
@@ -82,6 +102,46 @@ func UnmarshalExtras[T any](data []byte, into any) (map[string]any, error) {
 		extra[k] = v
 	}
 	return extra, nil
+}
+
+// topLevelKeysKnown reports whether every top-level key of the JSON object in
+// data is in known, without decoding values. It returns false for keys with
+// escape sequences and for malformed input, leaving those to a full decode.
+func topLevelKeysKnown(data []byte, known map[string]bool) bool {
+	depth := 0
+	expectKey := false
+	for i := 0; i < len(data); i++ {
+		switch data[i] {
+		case '{':
+			depth++
+			expectKey = depth == 1
+		case '[':
+			depth++
+		case '}', ']':
+			depth--
+		case ',':
+			expectKey = depth == 1
+		case '"':
+			start := i + 1
+			escaped := false
+			for i++; i < len(data) && data[i] != '"'; i++ {
+				if data[i] == '\\' {
+					escaped = true
+					i++
+				}
+			}
+			if i >= len(data) {
+				return false
+			}
+			if expectKey {
+				if escaped || !known[string(data[start:i])] {
+					return false
+				}
+				expectKey = false
+			}
+		}
+	}
+	return true
 }
 
 // MarshalExtras marshals v (typically an alias of T to avoid recursing through
@@ -155,10 +215,7 @@ func (e *ErrorV1) WithError(err error) *ErrorV1 {
 
 // WithASTErrors updates e to include detailed AST errors.
 func (e *ErrorV1) WithASTErrors(errors []*ast.Error) *ErrorV1 {
-	e.Errors = make([]error, len(errors))
-	for i := range e.Errors {
-		e.Errors[i] = errors[i]
-	}
+	e.Errors = util.ToSliceOf[error](errors)
 	return e
 }
 
@@ -265,12 +322,13 @@ func (r DataRequestV1) MarshalJSON() ([]byte, error) {
 
 // DataResponseV1 models the response message for Data API read operations.
 type DataResponseV1 struct {
-	DecisionID  string        `json:"decision_id,omitempty"`
-	Provenance  *ProvenanceV1 `json:"provenance,omitempty"`
-	Explanation TraceV1       `json:"explanation,omitempty"`
-	Metrics     MetricsV1     `json:"metrics,omitempty"`
-	Result      *any          `json:"result,omitempty"`
-	Warning     *Warning      `json:"warning,omitempty"`
+	DecisionID  string           `json:"decision_id,omitempty"`
+	Provenance  *ProvenanceV1    `json:"provenance,omitempty"`
+	Explanation TraceV1          `json:"explanation,omitempty"`
+	Metrics     MetricsV1        `json:"metrics,omitempty"`
+	Result      *any             `json:"result,omitempty"`
+	RuleLabels  []map[string]any `json:"rule_labels,omitempty"`
+	Warning     *Warning         `json:"warning,omitempty"`
 
 	// Metadata holds any additional top-level fields not defined in this struct.
 	// These fields are preserved during JSON marshaling/unmarshaling, allowing
@@ -318,6 +376,7 @@ type QueryResponseV1 struct {
 	Explanation TraceV1               `json:"explanation,omitempty"`
 	Metrics     MetricsV1             `json:"metrics,omitempty"`
 	Result      AdhocQueryResultSetV1 `json:"result,omitempty"`
+	RuleLabels  []map[string]any      `json:"rule_labels,omitempty"`
 }
 
 // AdhocQueryResultSetV1 models the result of a Query API query.
@@ -609,6 +668,11 @@ const (
 	// ParamStrictBuiltinErrors names the HTTP URL parameter that indicates the client
 	// wants built-in function errors to be treated as fatal.
 	ParamStrictBuiltinErrors = "strict-builtin-errors"
+
+	// ParamRuleLabelsV1 defines the name of the HTTP URL parameter that indicates
+	// the client wants to receive the metadata labels of the rules evaluated to
+	// produce the result, in addition to the result.
+	ParamRuleLabelsV1 = "rule_labels"
 )
 
 // BadRequestErr represents an error condition raised if the caller passes
@@ -618,12 +682,12 @@ type BadRequestErr string
 // BadPatchOperationErr returns BadRequestErr indicating the patch operation was
 // invalid.
 func BadPatchOperationErr(op string) error {
-	return BadRequestErr(fmt.Sprintf("bad patch operation: %v", op))
+	return BadRequestErr("bad patch operation: " + op)
 }
 
 // BadPatchPathErr returns BadRequestErr indicating the patch path was invalid.
 func BadPatchPathErr(path string) error {
-	return BadRequestErr(fmt.Sprintf("bad patch path: %v", path))
+	return BadRequestErr("bad patch path: " + path)
 }
 
 func (err BadRequestErr) Error() string {

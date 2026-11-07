@@ -33,6 +33,11 @@ func TestConfigValidation(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			note:    "negative superseded etag ttl",
+			input:   `{"polling": {"superseded_etag_ttl_seconds": -1}}`,
+			wantErr: true,
+		},
+		{
 			note:         "empty",
 			input:        `{}`,
 			expMin:       nil,
@@ -136,12 +141,12 @@ func TestConfigValidationUpdate(t *testing.T) {
 	expParsedMax := time.Second * time.Duration(expMax)
 	var config Config
 
-	if err := json.Unmarshal([]byte(fmt.Sprintf(`{
+	if err := json.Unmarshal(fmt.Appendf(nil, `{
 				"polling": {
 					"min_delay_seconds": %d,
 					"max_delay_seconds": %d
 				}
-			}`, expMin, expMax)), &config); err != nil {
+			}`, expMin, expMax), &config); err != nil {
 		t.Fatal(err)
 	}
 

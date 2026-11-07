@@ -9,6 +9,7 @@ package compile
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/open-policy-agent/opa/internal/compile"
@@ -90,11 +91,19 @@ func MaskRule(rule ast.Ref) CompileOption {
 //	      }
 //	   }
 //	}
+//
+// Table and column names must be strings; anything else is rejected with
+// [ErrInvalidMappings] when the filters are compiled.
 func Mappings(m map[string]any) CompileOption {
 	return func(c *Compile) {
 		c.mappings = m
 	}
 }
+
+// ErrInvalidMappings is returned when the mappings passed to [Mappings] don't
+// match the structure documented there. It's a caller error, not an internal
+// one: the server turns it into a 400.
+var ErrInvalidMappings = errors.New("invalid mappings")
 
 // Metrics allows passing the `metrics.Metrics` to use for recording timers.
 // It's passed along to the underlying `rego.Rego` evals, too.
@@ -284,7 +293,7 @@ func (p *Prepared) Compile(ctx context.Context, eo ...rego.EvalOption) (*Filters
 			if err != nil {
 				return nil, fmt.Errorf("convert masks: %w", err)
 			}
-			if err := util.Unmarshal([]byte(maskResultValue.String()), &maskResult); err != nil {
+			if err := util.Unmarshal(util.StringToByteSlice(maskResultValue.String()), &maskResult); err != nil {
 				return nil, fmt.Errorf("convert masks: %w", err)
 			}
 		}
@@ -305,7 +314,7 @@ func (p *Prepared) Compile(ctx context.Context, eo ...rego.EvalOption) (*Filters
 	}
 
 	p.compile.timer(metrics.CompileTranslateQueries).Start()
-	defer p.compile.timer(metrics.CompileTranslateQueries).Start()
+	defer p.compile.timer(metrics.CompileTranslateQueries).Stop()
 
 	ret := Filters{}
 	for i := range p.compile.targets {
@@ -325,7 +334,7 @@ func (p *Prepared) Compile(ctx context.Context, eo ...rego.EvalOption) (*Filters
 		case "sql":
 			sql, err := compile.QueriesToSQL(pq.Queries, mappings, dialect)
 			if err != nil {
-				return nil, fmt.Errorf("convert to queries: %w", err)
+				return nil, compile.TranslationErrors(err)
 			}
 			ret.push(target, dialect, sql, maskResult)
 		}
@@ -342,19 +351,43 @@ func lookupMappings(mappings map[string]any, target, dialect string) (map[string
 	if md := mappings[dialect]; md != nil {
 		m, ok := md.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("invalid mappings for dialect %s", dialect)
+			return nil, fmt.Errorf("%w for dialect %s", ErrInvalidMappings, dialect)
 		}
 		if m != nil {
-			return m, nil
+			return m, validateMappings(m)
 		}
 	}
 
 	if mt := mappings[target]; mt != nil {
 		n, ok := mt.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("invalid mappings for target %s", target)
+			return nil, fmt.Errorf("%w for target %s", ErrInvalidMappings, target)
 		}
-		return n, nil
+		return n, validateMappings(n)
 	}
-	return mappings, nil
+	return mappings, validateMappings(mappings)
+}
+
+// validateMappings checks that every table and column name is a string. A
+// nested map is allowed, but not for "$self" or "$table": it's a per-target or
+// per-dialect map that lookupMappings didn't select.
+func validateMappings(mappings map[string]any) error {
+	for _, table := range util.KeysSorted(mappings) {
+		tm, ok := mappings[table].(map[string]any)
+		if !ok {
+			continue // not a table mapping, the translation ignores it
+		}
+		for _, key := range util.KeysSorted(tm) {
+			switch v := tm[key].(type) {
+			case string:
+			case map[string]any:
+				if key == "$self" || key == "$table" {
+					return fmt.Errorf("%w: %s.%s: expected string, got %T", ErrInvalidMappings, table, key, v)
+				}
+			default:
+				return fmt.Errorf("%w: %s.%s: expected string, got %T", ErrInvalidMappings, table, key, v)
+			}
+		}
+	}
+	return nil
 }

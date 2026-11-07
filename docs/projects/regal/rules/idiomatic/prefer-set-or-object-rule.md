@@ -44,7 +44,8 @@ user_roles_mapping[user] := roles if {
 
 ## Rationale
 
-Comprehensions are [awesome](https://web.archive.org/web/https://www.styra.com/blog/five-things-you-didnt-know-about-opa/), and should be part of
+Comprehensions are [awesome](https://web.archive.org/web/https://www.styra.com/blog/five-things-you-didnt-know-about-opa/),
+and should be part of
 any policy author's toolbox. Using comprehensions inside of rule bodies allow for a wide variety of elegant solutions to
 otherwise hard problems. However, when used as the value directly (and unconditionally) assigned to a rule, it is almost
 always better to use a rule that generates a set or object in the rule body rather than having a comprehension do so in
@@ -130,9 +131,9 @@ my_set := {item | some item in arr}
 
 ## Configuration Options
 
-This linter rule provides the following configuration options:
+This linter rule provides the following [configuration options](https://www.openpolicyagent.org/projects/regal/configuration):
 
-```yaml
+```yaml title=".regal/config.yaml or .regal.yaml"
 rules:
   idiomatic:
     prefer-set-or-object-rule:

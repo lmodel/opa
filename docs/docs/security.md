@@ -58,7 +58,7 @@ openssl genrsa -out private.key 2048
 openssl req -new -x509 -sha256 -key private.key -out public.crt -days 1
 ```
 
-> We have generated a self-signed certificate for example purposes here. DO NOT
+> A self-signed certificate has been generated for example purposes here. DO NOT
 > rely on self-signed certificates outside of development without understanding
 > the risks.
 
@@ -83,7 +83,7 @@ curl -k https://localhost:8181/v1/data
 ```
 
 :::info
-We have to use cURL's `-k/--insecure` flag because we are using a self-signed certificate.
+cURL's `-k/--insecure` flag is required because a self-signed certificate is used.
 :::
 
 ## Interface Binding
@@ -171,8 +171,10 @@ are surfaced via the performance metrics in the [Status](./management-status) in
 
 OPA provides the following `input` document when executing the authorization
 policy. Since the schema for the `input` document is known to OPA, it performs automatic type checking of this document
-and reports any errors resulting from the schema check. The `--skip-known-schema-check` flag can be passed to `opa run`
-to disable automatic type checking of this `input` document.
+and reports any errors resulting from the schema check. The check covers the rules in the package holding the
+authorization decision (`system.authz` by default) and any of its sub-packages, so helper rules shared with ordinary
+policies — which see a different `input` document — are left out. The `--skip-known-schema-check` flag can be passed to
+`opa run` to disable automatic type checking of this `input` document.
 
 <!-- TODO(sr): check if "jsonc" looks alright on netlify -->
 
@@ -199,6 +201,12 @@ to disable automatic type checking of this `input` document.
     # URL path represented as an array.
     # For example: /v1/data/exempli-gratia
     # is represented as ["v1", "data", "exampli-gratia"]
+    # Path segments are split the same way as the API that serves the
+    # request: an encoded slash (%2F) stays inside a segment, so
+    # /v1/data/a%2Fb is represented as ["v1", "data", "a/b"]. The
+    # exceptions are /v1/policies and /v1/compile, which treat an encoded
+    # slash as a separator, so /v1/compile/a%2Fb is represented as
+    # ["v1", "compile", "a", "b"].
     "path": [...],
 
     # URL parameters represented as an object of string arrays.
@@ -248,10 +256,24 @@ to disable automatic type checking of this `input` document.
     #
     #   * POST v1/data
     #   * POST v0/data
+    #   * POST v1/compile and v1/compile/<path>
+    #   * POST v1/query
     #   * POST /
     "body": ...,
 }
 ```
+
+The body is the request as the API receives it. For `POST /v1/compile/<path>`,
+that means policies can restrict the request's `options`, for example
+`input.body.options.maskRule`. The values are what the client sent: a relative
+`maskRule` is resolved against the package of `<path>` only after authorization,
+and an omitted one falls back to the policy's annotations.
+
+Restricting `/v1/data/<path>` does not restrict the Query and Compile APIs, which
+can evaluate any document. Authorization policies should allow those endpoints
+only where needed. For `GET /v1/query` the query text is in `input.params.q`,
+and for `POST` it is in `input.body.query`. Query text is Rego, so compare it
+for equality rather than matching parts of it.
 
 At a minimum, the authorization policy should grant access to a special root
 identity:
@@ -411,17 +433,17 @@ identity_rights contains right if {  # Right is in the identity_rights set if...
 
 ### TLS-based Authentication Example
 
-To set up authentication based on mutual TLS, we will need three certificates:
+To set up authentication based on mutual TLS, three certificates are needed:
 
 1. the CA cert (self-signed),
 2. the server cert (signed by the CA), and
 3. the client cert (signed by the CA).
 
-We use `openssl` to create the example certificates and keys used in this demo. In production, creation of certificates
+`openssl` is used to create the example certificates and keys in this demo. In production, creation of certificates
 and keys should be handled by an automated process out of scope for this tutorial.
 
-Note that we also create an extra client cert (client-2). While this certificate is signed by the same CA, it's identity
-is different. We'll use this to show our authorization policy in action.
+Note that an extra client cert (client-2) is also created. While this certificate is signed by the same CA, its identity
+is different. This cert demonstrates the authorization policy in action.
 
 ```bash
 # CA
@@ -489,7 +511,7 @@ openssl req -new -key server-key.pem -out csr.pem -subj "/CN=server" -config req
 openssl x509 -req -in csr.pem -CA ca.pem -CAkey ca-key.pem -CAcreateserial -out server-cert.pem -days 10 -extensions v3_req -extfile req.cnf -sha256
 ```
 
-We also create an example authorization policy file, called `check.rego`. This example `system.authz` policy will check
+An example authorization policy file, `check.rego`, is also created. This example `system.authz` policy will check
 the certificate ID against a list of allowed paths as defined in a simple Access Control List.
 
 :::danger
@@ -522,7 +544,7 @@ allow := {"allowed": true} if {
 }
 ```
 
-Now, we're ready to starting the server with `-authentication=tls` and the
+Start the server with `-authentication=tls` and the
 certificate-related parameters:
 
 ```console
@@ -537,10 +559,10 @@ $ opa run -s \
 {"addrs":["https://127.0.0.1:8181"],"diagnostic-addrs":[],"level":"info","msg":"Initializing server.","time":"2023-01-04T10:31:12Z"}
 ```
 
-We can use `curl` to validate our TLS-based authentication setup:
+Use `curl` to validate the TLS-based authentication setup:
 
-First, we use the client certificate that was signed by the CA, and has a subject
-matching our authorization policy:
+First, use the client certificate that was signed by the CA, with a subject
+matching the authorization policy:
 
 ```console
 $ curl --key client-key-1.pem \
@@ -551,13 +573,13 @@ $ curl --key client-key-1.pem \
 {"result":{}}
 ```
 
-Note that we're passing the CA cert to curl -- this is done to have curl accept
-the server's certificate, which has been signed by our CA cert.
+Note that the CA cert is passed to curl -- this is done to have curl accept
+the server's certificate, which has been signed by the CA cert.
 
-Since we've set up an IP SAN, we may also `curl https://127.0.0.1:8181/v1/data`
-directly. (To keep our examples focused, we'll do that from here on.)
+Since an IP SAN is configured, `curl https://127.0.0.1:8181/v1/data`
+also works directly. The remaining examples use this shorter form to stay focused.
 
-Using a valid certificate whose subject will be declined by our authorization
+Using a valid certificate whose subject will be declined by the authorization
 policy:
 
 ```console
@@ -571,7 +593,7 @@ $ curl --key client-key-2.pem \
 }
 ```
 
-Finally, we'll attempt to query without a client certificate:
+Finally, query without a client certificate:
 
 ```console
 $ curl --cacert ca.pem https://127.0.0.1:8181/v1/data

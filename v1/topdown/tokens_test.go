@@ -32,7 +32,7 @@ func TestParseTokenConstraints(t *testing.T) {
 		t.Parallel()
 
 		c := ast.NewObject()
-		constraints, err := parseTokenConstraints(c, wallclock)
+		constraints, err := parseTokenConstraints(BuiltinContext{Time: wallclock}, c)
 		if err != nil {
 			t.Fatalf("parseTokenConstraints: %v", err)
 		}
@@ -48,7 +48,7 @@ func TestParseTokenConstraints(t *testing.T) {
 
 		c := ast.NewObject()
 		c.Insert(ast.StringTerm("alg"), ast.StringTerm("RS256"))
-		constraints, err := parseTokenConstraints(c, wallclock)
+		constraints, err := parseTokenConstraints(BuiltinContext{Time: wallclock}, c)
 		if err != nil {
 			t.Fatalf("parseTokenConstraints: %v", err)
 		}
@@ -70,7 +70,7 @@ VR0jBBgwFoAUElRjSoVgKjUqY5AXz2o74cLzzS8wDwYDVR0TAQH/BAUwAwEB/zAK
 BggqhkjOPQQDAgNIADBFAiEA4yQ/88ZrUX68c6kOe9G11u8NUaUzd8pLOtkKhniN
 OHoCIHmNX37JOqTcTzGn2u9+c8NlnvZ0uDvsd1BmKPaUmjmm
 -----END CERTIFICATE-----`))
-		constraints, err := parseTokenConstraints(c, wallclock)
+		constraints, err := parseTokenConstraints(BuiltinContext{Time: wallclock}, c)
 		if err != nil {
 			t.Fatalf("parseTokenConstraints: %v", err)
 		}
@@ -111,7 +111,7 @@ OHoCIHmNX37JOqTcTzGn2u9+c8NlnvZ0uDvsd1BmKPaUmjmm
 	]
 }
 `))
-		constraints, err := parseTokenConstraints(c, wallclock)
+		constraints, err := parseTokenConstraints(BuiltinContext{Time: wallclock}, c)
 		if err != nil {
 			t.Fatalf("parseTokenConstraints: %v", err)
 		}
@@ -134,7 +134,7 @@ OHoCIHmNX37JOqTcTzGn2u9+c8NlnvZ0uDvsd1BmKPaUmjmm
 		t.Run("if provided, is parsed properly", func(t *testing.T) {
 			c := ast.NewObject()
 			c.Insert(ast.StringTerm("time"), wallclock)
-			constraints, err := parseTokenConstraints(c, ast.NumberTerm("12134"))
+			constraints, err := parseTokenConstraints(BuiltinContext{Time: ast.NumberTerm("12134")}, c)
 			if err != nil {
 				t.Fatalf("parseTokenConstraints: %v", err)
 			}
@@ -147,7 +147,7 @@ OHoCIHmNX37JOqTcTzGn2u9+c8NlnvZ0uDvsd1BmKPaUmjmm
 			t.Parallel()
 
 			c := ast.NewObject() // 'time' constraint is unset
-			constraints, err := parseTokenConstraints(c, wallclock)
+			constraints, err := parseTokenConstraints(BuiltinContext{Time: wallclock}, c)
 			if err != nil {
 				t.Fatalf("parseTokenConstraints: %v", err)
 			}
@@ -162,7 +162,7 @@ OHoCIHmNX37JOqTcTzGn2u9+c8NlnvZ0uDvsd1BmKPaUmjmm
 
 		c := ast.NewObject()
 		c.Insert(ast.StringTerm("whatever"), ast.StringTerm("junk"))
-		_, err := parseTokenConstraints(c, wallclock)
+		_, err := parseTokenConstraints(BuiltinContext{Time: wallclock}, c)
 		if err == nil {
 			t.Fatalf("parseTokenConstraints: %v", err)
 		}
@@ -198,7 +198,7 @@ func TestParseTokenHeader(t *testing.T) {
 			t.Fatalf("parseTokenHeader: %v", err)
 		}
 		if header.valid() {
-			t.Fatalf("tokenHeader valid")
+			t.Fatal("tokenHeader valid")
 		}
 	})
 	t.Run("Alg", func(t *testing.T) {
@@ -215,7 +215,7 @@ func TestParseTokenHeader(t *testing.T) {
 			t.Fatalf("parseTokenHeader: %v", err)
 		}
 		if !header.valid() {
-			t.Fatalf("tokenHeader !valid")
+			t.Fatal("tokenHeader !valid")
 		}
 		if header.alg != "RS256" {
 			t.Fatalf("alg: %s", header.alg)
@@ -271,10 +271,8 @@ func TestTopDownJWTEncodeSignES256(t *testing.T) {
 
 	defer store.Abort(ctx, txn)
 
-	var lhs *ast.Term
-	if len(path) == 0 {
-		lhs = ast.NewTerm(ast.DefaultRootRef)
-	} else {
+	lhs := ast.DefaultRootRefTerm
+	if len(path) != 0 {
 		lhs = ast.MustParseTerm("data." + strings.Join(path, "."))
 	}
 
@@ -409,10 +407,8 @@ func TestTopDownJWTEncodeSignES512(t *testing.T) {
 
 	defer store.Abort(ctx, txn)
 
-	var lhs *ast.Term
-	if len(path) == 0 {
-		lhs = ast.NewTerm(ast.DefaultRootRef)
-	} else {
+	lhs := ast.DefaultRootRefTerm
+	if len(path) != 0 {
 		lhs = ast.MustParseTerm("data." + strings.Join(path, "."))
 	}
 
@@ -512,7 +508,13 @@ func (*cng) Read(p []byte) (int, error) {
 }
 
 func TestTopdownJWTEncodeSignECWithSeedReturnsSameSignature(t *testing.T) {
-	t.Parallel()
+	// NOTE(sr): Since Go 1.26, crypto/ecdsa ignores the io.Reader passed via WithSeed
+	// and always mixes in OS randomness, unless GODEBUG=cryptocustomrand=1 is set. This
+	// restores the old, fully-seeded behaviour so the assertions below stay meaningful.
+	// See https://go.dev/doc/go1.26#crypto-ecdsa. This GODEBUG setting is expected to be
+	// removed in a future Go release, at which point this test needs to be revisited.
+	// t.Setenv can't be combined with t.Parallel, so this test doesn't call t.Parallel.
+	t.Setenv("GODEBUG", "cryptocustomrand=1")
 
 	query := `io.jwt.encode_sign({"alg": "ES256"},{"pay": "load"},
 	  {"kty":"EC",
@@ -577,18 +579,155 @@ func TestTopdownJWTUnknownAlgTypesDiscardedFromJWKS(t *testing.T) {
 	]
 }
 `
-	keys, err := getKeysFromCertOrJWK(cert)
+	keys, err := getKeysFromCertOrJWK(BuiltinContext{}, cert)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if len(keys) != 1 {
-		t.Errorf("expected only one key as inavlid one should have been discarded")
+		t.Error("expected only one key as inavlid one should have been discarded")
 	}
 
 	if keys[0].alg != "RS256" {
-		t.Errorf("expected key with RS256 alg")
+		t.Error("expected key with RS256 alg")
 	}
+}
+
+func TestGetKeysFromCertOrJWKNamedCache(t *testing.T) {
+	t.Parallel()
+
+	t.Run("enabled by default", func(t *testing.T) {
+		t.Parallel()
+
+		cert := strings.Replace(publicKey, `"kty"`, `"kid":"named-default","kty"`, 1)
+		bctx := BuiltinContext{
+			InterQueryBuiltinValueCache: cache.NewInterQueryValueCache(t.Context(), &cache.Config{}),
+		}
+
+		first, err := getKeysFromCertOrJWK(bctx, cert)
+		if err != nil {
+			t.Fatal(err)
+		}
+		second, err := getKeysFromCertOrJWK(bctx, cert)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if &first[0] != &second[0] {
+			t.Fatal("expected second lookup to return the cached keys")
+		}
+		if _, ok := bctx.InterQueryBuiltinValueCache.GetCache(tokenKeysCacheName).Get(ast.String(cert)); !ok {
+			t.Fatalf("expected keys in the %s cache", tokenKeysCacheName)
+		}
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		t.Parallel()
+
+		cert := strings.Replace(publicKey, `"kty"`, `"kid":"named-disabled","kty"`, 1)
+		disabled := true
+		bctx := BuiltinContext{
+			InterQueryBuiltinValueCache: cache.NewInterQueryValueCache(t.Context(), &cache.Config{
+				InterQueryBuiltinValueCache: cache.InterQueryBuiltinValueCacheConfig{
+					NamedCacheConfigs: map[string]*cache.NamedValueCacheConfig{
+						tokenKeysCacheName: {Disabled: &disabled},
+					},
+				},
+			}),
+		}
+
+		first, err := getKeysFromCertOrJWK(bctx, cert)
+		if err != nil {
+			t.Fatal(err)
+		}
+		second, err := getKeysFromCertOrJWK(bctx, cert)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if &first[0] == &second[0] {
+			t.Fatal("expected keys to be parsed on every lookup")
+		}
+	})
+
+	t.Run("no inter-query cache", func(t *testing.T) {
+		t.Parallel()
+
+		cert := strings.Replace(publicKey, `"kty"`, `"kid":"named-none","kty"`, 1)
+
+		first, err := getKeysFromCertOrJWK(BuiltinContext{}, cert)
+		if err != nil {
+			t.Fatal(err)
+		}
+		second, err := getKeysFromCertOrJWK(BuiltinContext{}, cert)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if &first[0] == &second[0] {
+			t.Fatal("expected keys to be parsed on every lookup")
+		}
+	})
+
+	t.Run("errors are not cached", func(t *testing.T) {
+		t.Parallel()
+
+		cert := `{"kty":"named-invalid"}`
+		bctx := BuiltinContext{
+			InterQueryBuiltinValueCache: cache.NewInterQueryValueCache(t.Context(), &cache.Config{}),
+		}
+
+		if _, err := getKeysFromCertOrJWK(bctx, cert); err == nil {
+			t.Fatal("expected error")
+		}
+		if _, ok := bctx.InterQueryBuiltinValueCache.GetCache(tokenKeysCacheName).Get(ast.String(cert)); ok {
+			t.Fatal("expected invalid certificate not to be cached")
+		}
+	})
+
+	t.Run("explicitly enabled", func(t *testing.T) {
+		t.Parallel()
+
+		cert := strings.Replace(publicKey, `"kty"`, `"kid":"named-enabled","kty"`, 1)
+		config, err := cache.ParseCachingConfig([]byte(`{"inter_query_builtin_value_cache": {"named": {"` + tokenKeysCacheName + `": {"disabled": false}}}}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		bctx := BuiltinContext{
+			InterQueryBuiltinValueCache: cache.NewInterQueryValueCache(t.Context(), config),
+		}
+
+		if _, err := getKeysFromCertOrJWK(bctx, cert); err != nil {
+			t.Fatal(err)
+		}
+		if _, ok := bctx.InterQueryBuiltinValueCache.GetCache(tokenKeysCacheName).Get(ast.String(cert)); !ok {
+			t.Fatalf("expected keys in the %s cache", tokenKeysCacheName)
+		}
+	})
+
+	t.Run("used by io.jwt.decode_verify", func(t *testing.T) {
+		t.Parallel()
+
+		cert := `{"keys": [` + strings.Replace(publicKey, `"kty"`, `"kid":"named-decode-verify","kty"`, 1) + `]}`
+		jwt, err := createJwt(`{"sub": "alice"}`, privateKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+		bctx := BuiltinContext{
+			Context:                     t.Context(),
+			Time:                        ast.NumberTerm(int64ToJSONNumber(time.Now().UnixNano())),
+			InterQueryBuiltinValueCache: cache.NewInterQueryValueCache(t.Context(), &cache.Config{}),
+		}
+		constraints := ast.ObjectTerm(ast.Item(ast.StringTerm("cert"), ast.StringTerm(cert)))
+
+		if err := builtinJWTDecodeVerify(bctx, []*ast.Term{ast.StringTerm(jwt), constraints}, func(*ast.Term) error { return nil }); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, ok := bctx.InterQueryBuiltinValueCache.GetCache(tokenKeysCacheName).Get(ast.String(cert)); !ok {
+			t.Fatalf("expected keys in the %s cache", tokenKeysCacheName)
+		}
+	})
 }
 
 func TestTopdownJWTVerifyOnlyVerifiesUsingApplicableKeys(t *testing.T) {
@@ -734,7 +873,7 @@ func TestTopdownJWTDecodeVerifyIgnoresKeysOfUnknownAlgInJWKS(t *testing.T) {
 `))
 
 	wallclock := ast.NumberTerm(int64ToJSONNumber(time.Now().UnixNano()))
-	constraints, err := parseTokenConstraints(c, wallclock)
+	constraints, err := parseTokenConstraints(BuiltinContext{Time: wallclock}, c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -745,7 +884,7 @@ func TestTopdownJWTDecodeVerifyIgnoresKeysOfUnknownAlgInJWKS(t *testing.T) {
 
 	for _, key := range constraints.keys {
 		if key.alg == "RSA-OAEP" {
-			t.Errorf("expected alg: RSA-OAEP to be removed from key set")
+			t.Error("expected alg: RSA-OAEP to be removed from key set")
 		}
 	}
 }
@@ -753,50 +892,42 @@ func TestTopdownJWTDecodeVerifyIgnoresKeysOfUnknownAlgInJWKS(t *testing.T) {
 func TestBuiltinJWTDecodeVerify_TokenCache(t *testing.T) {
 	ctx := t.Context()
 
-	const privateKey = `{
-		"kty":"RSA",
-		"n":"ofgWCuLjybRlzo0tZWJjNiuSfb4p4fAkd_wWJcyQoTbji9k0l8W26mPddxHmfHQp-Vaw-4qPCJrcS2mJPMEzP1Pt0Bm4d4QlL-yRT-SFd2lZS-pCgNMsD1W_YpRPEwOWvG6b32690r2jZ47soMZo9wGzjb_7OMg0LOL-bSf63kpaSHSXndS5z5rexMdbBYUsLA9e-KXBdQOS-UTo7WTBEMa2R2CapHg665xsmtdVMTBQY4uDZlxvb3qCo5ZwKh9kG4LT6_I5IhlJH7aGhyxXFvUK-DWNmoudF8NAco9_h9iaGNj8q2ethFkMLs91kzk2PAcDTW9gb54h4FRWyuXpoQ",
-		"e":"AQAB",
-		"d":"Eq5xpGnNCivDflJsRQBXHx1hdR1k6Ulwe2JZD50LpXyWPEAeP88vLNO97IjlA7_GQ5sLKMgvfTeXZx9SE-7YwVol2NXOoAJe46sui395IW_GO-pWJ1O0BkTGoVEn2bKVRUCgu-GjBVaYLU6f3l9kJfFNS3E0QbVdxzubSu3Mkqzjkn439X0M_V51gfpRLI9JYanrC4D4qAdGcopV_0ZHHzQlBjudU2QvXt4ehNYTCBr6XCLQUShb1juUO1ZdiYoFaFQT5Tw8bGUl_x_jTj3ccPDVZFD9pIuhLhBOneufuBiB4cS98l2SR_RQyGWSeWjnczT0QU91p1DhOVRuOopznQ",
-		"p":"4BzEEOtIpmVdVEZNCqS7baC4crd0pqnRH_5IB3jw3bcxGn6QLvnEtfdUdiYrqBdss1l58BQ3KhooKeQTa9AB0Hw_Py5PJdTJNPY8cQn7ouZ2KKDcmnPGBY5t7yLc1QlQ5xHdwW1VhvKn-nXqhJTBgIPgtldC-KDV5z-y2XDwGUc",
-		"q":"uQPEfgmVtjL0Uyyx88GZFF1fOunH3-7cepKmtH4pxhtCoHqpWmT8YAmZxaewHgHAjLYsp1ZSe7zFYHj7C6ul7TjeLQeZD_YwD66t62wDmpe_HlB-TnBA-njbglfIsRLtXlnDzQkv5dTltRJ11BKBBypeeF6689rjcJIDEz9RWdc",
-		"dp":"BwKfV3Akq5_MFZDFZCnW-wzl-CCo83WoZvnLQwCTeDv8uzluRSnm71I3QCLdhrqE2e9YkxvuxdBfpT_PI7Yz-FOKnu1R6HsJeDCjn12Sk3vmAktV2zb34MCdy7cpdTh_YVr7tss2u6vneTwrA86rZtu5Mbr1C1XsmvkxHQAdYo0",
-		"dq":"h_96-mK1R_7glhsum81dZxjTnYynPbZpHziZjeeHcXYsXaaMwkOlODsWa7I9xXDoRwbKgB719rrmI2oKr6N3Do9U0ajaHF-NKJnwgjMd2w9cjz3_-kyNlxAr2v4IKhGNpmM5iIgOS1VZnOZ68m6_pbLBSp3nssTdlqvd0tIiTHU",
-		"qi":"IYd7DHOhrWvxkwPQsRM2tOgrjbcrfvtQJipd-DlcxyVuuM9sQLdgjVk2oy26F0EmpScGLq2MowX7fhd_QJQ3ydy5cY7YIBi87w93IKLEdfnbJtoOPLUW0ITrJReOgo1cq9SbsxYawBgfp_gh6A5603k2-ZQwVK0JKSHuLFkuQ3U"
-	}`
-
-	const publicKey = `{
+	const (
+		publicKey = `{
 		"kty":"RSA",
 		"n":"ofgWCuLjybRlzo0tZWJjNiuSfb4p4fAkd_wWJcyQoTbji9k0l8W26mPddxHmfHQp-Vaw-4qPCJrcS2mJPMEzP1Pt0Bm4d4QlL-yRT-SFd2lZS-pCgNMsD1W_YpRPEwOWvG6b32690r2jZ47soMZo9wGzjb_7OMg0LOL-bSf63kpaSHSXndS5z5rexMdbBYUsLA9e-KXBdQOS-UTo7WTBEMa2R2CapHg665xsmtdVMTBQY4uDZlxvb3qCo5ZwKh9kG4LT6_I5IhlJH7aGhyxXFvUK-DWNmoudF8NAco9_h9iaGNj8q2ethFkMLs91kzk2PAcDTW9gb54h4FRWyuXpoQ",
 		"e":"AQAB"
 	}`
-
-	const keys = `{"keys": [` + publicKey + `]}`
+		keys = `{"keys": [` + publicKey + `]}`
+	)
 
 	keysTerm := ast.ObjectTerm(ast.Item(ast.StringTerm("cert"), ast.StringTerm(keys)))
 
-	jwt := createJwtT(t, `{"i": "foo"}`, privateKey)
+	jwt := createJwtT(t, `{"i": "foo"}`)
 	jwtTerm := ast.NewTerm(ast.String(jwt))
 
-	t.Run("no cache", func(t *testing.T) {
-		var verified bool
-		iter := func(r *ast.Term) error {
-			verified = bool(r.Value.(*ast.Array).Get(ast.NumberTerm("0")).Value.(ast.Boolean))
+	expectVerified := func(t *testing.T, exp bool) func(term *ast.Term) error {
+		t.Helper()
+		return func(term *ast.Term) error {
+			t.Helper()
+
+			got := bool(term.Value.(*ast.Array).Get(ast.InternedTerm(0)).Value.(ast.Boolean))
+			if got != exp {
+				t.Fatalf("expected token verification to be %v but got %v", exp, got)
+			}
 			return nil
 		}
+	}
 
+	t.Run("no cache", func(t *testing.T) {
 		bctx := BuiltinContext{
 			Context: ctx,
 			Time:    ast.NumberTerm(int64ToJSONNumber(time.Now().UnixNano())),
 		}
 
-		err := builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, keysTerm}, iter)
+		err := builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, keysTerm}, expectVerified(t, true))
 		if err != nil {
 			t.Fatalf("unexpected error: %q", err)
-		}
-
-		if !verified {
-			t.Fatal("expected token to be successfully verified")
 		}
 	})
 
@@ -811,12 +942,6 @@ func TestBuiltinJWTDecodeVerify_TokenCache(t *testing.T) {
 	}
 
 	t.Run("cache", func(t *testing.T) {
-		var verified bool
-		iter := func(r *ast.Term) error {
-			verified = bool(r.Value.(*ast.Array).Get(ast.NumberTerm("0")).Value.(ast.Boolean))
-			return nil
-		}
-
 		bctx := BuiltinContext{
 			Context:                     ctx,
 			Time:                        ast.NumberTerm(int64ToJSONNumber(time.Now().UnixNano())),
@@ -824,13 +949,9 @@ func TestBuiltinJWTDecodeVerify_TokenCache(t *testing.T) {
 		}
 
 		t.Run("successful verification", func(t *testing.T) {
-			err := builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, keysTerm}, iter)
+			err := builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, keysTerm}, expectVerified(t, true))
 			if err != nil {
 				t.Fatalf("unexpected error: %q", err)
-			}
-
-			if !verified {
-				t.Fatal("expected token to be successfully verified")
 			}
 
 			k := createTokenCacheKey(ast.String(jwt), keysTerm.Value)
@@ -843,13 +964,9 @@ func TestBuiltinJWTDecodeVerify_TokenCache(t *testing.T) {
 			badJwt := createBadJwt(t, `{"i": "foo"}`)
 			badJwtTerm := ast.NewTerm(ast.String(badJwt))
 
-			err := builtinJWTDecodeVerify(bctx, []*ast.Term{badJwtTerm, keysTerm}, iter)
+			err := builtinJWTDecodeVerify(bctx, []*ast.Term{badJwtTerm, keysTerm}, expectVerified(t, false))
 			if err != nil {
 				t.Fatalf("unexpected error: %q", err)
-			}
-
-			if verified {
-				t.Fatal("expected token to fail verification")
 			}
 
 			k := createTokenCacheKey(ast.String(badJwt), keysTerm.Value)
@@ -859,21 +976,17 @@ func TestBuiltinJWTDecodeVerify_TokenCache(t *testing.T) {
 		})
 
 		t.Run("iss constraint check", func(t *testing.T) {
-			jwt := createJwtT(t, `{"i": "foo", "iss": "foo"}`, privateKey)
+			jwt := createJwtT(t, `{"i": "foo", "iss": "foo"}`)
 			jwtTerm := ast.NewTerm(ast.String(jwt))
 
 			constraints := ast.ObjectTerm(
-				ast.Item(ast.StringTerm("cert"), ast.StringTerm(keys)),
-				ast.Item(ast.StringTerm("iss"), ast.StringTerm("bar")),
+				ast.Item(ast.InternedTerm("cert"), ast.StringTerm(keys)),
+				ast.Item(ast.InternedTerm("iss"), ast.InternedTerm("bar")),
 			)
 
-			err := builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, constraints}, iter)
+			err := builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, constraints}, expectVerified(t, false))
 			if err != nil {
 				t.Fatalf("unexpected error: %q", err)
-			}
-
-			if verified {
-				t.Fatal("expected token to fail verification")
 			}
 
 			k := createTokenCacheKey(ast.String(jwt), keysTerm.Value)
@@ -886,19 +999,15 @@ func TestBuiltinJWTDecodeVerify_TokenCache(t *testing.T) {
 			now := time.Second * 0
 
 			// Token's nbf is 1 sec in the future.
-			jwt := createJwtT(t, fmt.Sprintf(`{"i": "foo", "nbf": %d}`, 1), privateKey)
+			jwt := createJwtT(t, fmt.Sprintf(`{"i": "foo", "nbf": %d}`, 1))
 			jwtTerm := ast.NewTerm(ast.String(jwt))
 
 			bctx.Time = ast.NumberTerm(int64ToJSONNumber(int64(now)))
 
-			err := builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, keysTerm}, iter)
+			// Token's nbf is in the future, so it should not be verified.
+			err := builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, keysTerm}, expectVerified(t, false))
 			if err != nil {
 				t.Fatalf("unexpected error: %q", err)
-			}
-
-			// Token's nbf is in the future, so it should not be verified.
-			if verified {
-				t.Fatal("expected token to fail verification")
 			}
 
 			k := createTokenCacheKey(ast.String(jwt), keysTerm.Value)
@@ -910,13 +1019,9 @@ func TestBuiltinJWTDecodeVerify_TokenCache(t *testing.T) {
 			now = time.Second * 2
 			bctx.Time = ast.NumberTerm(int64ToJSONNumber(int64(now)))
 
-			err = builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, keysTerm}, iter)
+			err = builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, keysTerm}, expectVerified(t, true))
 			if err != nil {
 				t.Fatalf("unexpected error: %q", err)
-			}
-
-			if !verified {
-				t.Fatal("expected token to be successfully verified")
 			}
 		})
 
@@ -924,19 +1029,15 @@ func TestBuiltinJWTDecodeVerify_TokenCache(t *testing.T) {
 			now := time.Second * 0
 
 			// Token's exp is 1 sec in the future.
-			jwt := createJwtT(t, fmt.Sprintf(`{"i": "foo", "exp": %d}`, 1), privateKey)
+			jwt := createJwtT(t, fmt.Sprintf(`{"i": "foo", "exp": %d}`, 1))
 			jwtTerm := ast.NewTerm(ast.String(jwt))
 
 			bctx.Time = ast.NumberTerm(int64ToJSONNumber(int64(now)))
 
-			err := builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, keysTerm}, iter)
+			// Token's exp is in the future, so it should be verified.
+			err := builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, keysTerm}, expectVerified(t, true))
 			if err != nil {
 				t.Fatalf("unexpected error: %q", err)
-			}
-
-			// Token's exp is in the future, so it should be verified.
-			if !verified {
-				t.Fatal("expected token to be successfully verified")
 			}
 
 			k := createTokenCacheKey(ast.String(jwt), keysTerm.Value)
@@ -948,19 +1049,15 @@ func TestBuiltinJWTDecodeVerify_TokenCache(t *testing.T) {
 			now = time.Second * 2
 			bctx.Time = ast.NumberTerm(int64ToJSONNumber(int64(now)))
 
-			err = builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, keysTerm}, iter)
+			err = builtinJWTDecodeVerify(bctx, []*ast.Term{jwtTerm, keysTerm}, expectVerified(t, false))
 			if err != nil {
 				t.Fatalf("unexpected error: %q", err)
-			}
-
-			if verified {
-				t.Fatal("expected token to fail verification")
 			}
 		})
 	})
 }
 
-func createJwtT(t *testing.T, payload string, privateKey string) string {
+func createJwtT(t *testing.T, payload string) string {
 	t.Helper()
 
 	jwt, err := createJwt(payload, privateKey)
@@ -1128,14 +1225,19 @@ func TestBuiltinJWTVerify_TokenCache(t *testing.T) {
 		},
 	}
 
+	expectVerified := func(t *testing.T, exp bool) func(term *ast.Term) error {
+		t.Helper()
+		return func(term *ast.Term) error {
+			t.Helper()
+			if got := bool(term.Value.(ast.Boolean)); got != exp {
+				t.Fatalf("expected token verification to be %v but got %v", exp, got)
+			}
+			return nil
+		}
+	}
+
 	for _, tc := range tests {
 		t.Run(tc.note, func(t *testing.T) {
-			var verified bool
-			iter := func(r *ast.Term) error {
-				verified = bool(r.Value.(ast.Boolean))
-				return nil
-			}
-
 			bctx := BuiltinContext{
 				Context:                     ctx,
 				Time:                        ast.NumberTerm(int64ToJSONNumber(time.Now().UnixNano())),
@@ -1144,13 +1246,9 @@ func TestBuiltinJWTVerify_TokenCache(t *testing.T) {
 
 			t.Run("successful verification", func(t *testing.T) {
 				operands := []*ast.Term{ast.StringTerm(tc.jwt), ast.StringTerm(tc.key)}
-				err := tc.builtin(bctx, operands, iter)
+				err := tc.builtin(bctx, operands, expectVerified(t, true))
 				if err != nil {
 					t.Fatalf("unexpected error: %q", err)
-				}
-
-				if !verified {
-					t.Fatal("expected token to be successfully verified")
 				}
 
 				k := createTokenCacheKey(ast.String(tc.jwt), ast.String(tc.key))
@@ -1161,13 +1259,9 @@ func TestBuiltinJWTVerify_TokenCache(t *testing.T) {
 
 			t.Run("failed verification", func(t *testing.T) {
 				operands := []*ast.Term{ast.StringTerm(tc.jwt), ast.StringTerm(tc.badKey)}
-				err := tc.builtin(bctx, operands, iter)
+				err := tc.builtin(bctx, operands, expectVerified(t, false))
 				if err != nil {
 					t.Fatalf("unexpected error: %q", err)
-				}
-
-				if verified {
-					t.Fatal("expected token to fail verification")
 				}
 
 				k := createTokenCacheKey(ast.String(tc.jwt), ast.String(tc.badKey))

@@ -270,7 +270,22 @@ red_herring if true
 		{
 			note:   "happy path, comparison, reversed",
 			rego:   `include if 10 <= input.fruits.price`,
+			result: map[string]any{"type": "field", "field": "fruits.price", "operator": "gte", "value": float64(10)},
+		},
+		{
+			note:   "happy path, comparison, reversed, exclusive",
+			rego:   `include if 10 < input.fruits.price`,
 			result: map[string]any{"type": "field", "field": "fruits.price", "operator": "gt", "value": float64(10)},
+		},
+		{
+			note:   "happy path, comparison, reversed, greater",
+			rego:   `include if 10 >= input.fruits.price`,
+			result: map[string]any{"type": "field", "field": "fruits.price", "operator": "lte", "value": float64(10)},
+		},
+		{
+			note:   "happy path, comparison, reversed, greater, exclusive",
+			rego:   `include if 10 > input.fruits.price`,
+			result: map[string]any{"type": "field", "field": "fruits.price", "operator": "lt", "value": float64(10)},
 		},
 		{
 			note:   "happy path, not-equal",
@@ -574,6 +589,13 @@ include if user == input.fruits.user`,
 			rego:   `include if _ = input.fruits.colour`,
 			target: "application/vnd.opa.sql.mysql+json",
 			result: "WHERE fruits.colour IS NOT NULL",
+		},
+		{
+			note:   "dynamic field key with SQL syntax is quoted",
+			rego:   `include if input.fruits[input.column] == "allowed"`,
+			input:  map[string]any{"column": `name = 'allowed' OR 1=1 --`},
+			target: "application/vnd.opa.sql.sqlite+json",
+			result: `WHERE fruits."name = 'allowed' OR 1=1 --" = 'allowed'`,
 		},
 		{
 			note:   "equality with var (prisma)",

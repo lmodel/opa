@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/open-policy-agent/opa/v1/ast"
@@ -21,27 +22,41 @@ import (
 	"github.com/open-policy-agent/opa/v1/util"
 )
 
+type partialEvalTestCase struct {
+	note                     string
+	unknowns                 []string
+	disableInlining          []string
+	nondeterministicBuiltins bool
+	shallow                  bool
+	skipPartialNamespace     bool
+	query                    string
+	modules                  []string
+	moduleASTs               []*ast.Module
+	data                     string
+	input                    string
+	wantQueries              []string
+	wantQueryASTs            []ast.Body
+	wantSupport              []string
+	wantSupportASTs          []*ast.Module
+	ignoreOrder              bool
+	logicalKeywords          bool // opt in to the and/or keywords
+}
+
 func TestTopDownPartialEval(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		note                     string
-		unknowns                 []string
-		disableInlining          []string
-		nondeterministicBuiltins bool
-		shallow                  bool
-		skipPartialNamespace     bool
-		query                    string
-		modules                  []string
-		moduleASTs               []*ast.Module
-		data                     string
-		input                    string
-		wantQueries              []string
-		wantQueryASTs            []ast.Body
-		wantSupport              []string
-		wantSupportASTs          []*ast.Module
-		ignoreOrder              bool
-	}{
+	var domain, unrolled []string
+	for i := 1; i <= everyUnrollLimit+1; i++ {
+		domain = append(domain, strconv.Itoa(i))
+		if i <= everyUnrollLimit {
+			unrolled = append(unrolled, fmt.Sprintf("%d > input", i))
+		}
+	}
+	everyUnrolled := strings.Join(unrolled, "; ")
+	nested := "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]"
+	everyKept := "every __local0__1, __local1__1 in [" + strings.Join(domain, ", ") + "] { __local4__1 = input; __local1__1 > __local4__1 }"
+
+	tests := []partialEvalTestCase{
 		{
 			note:        "empty",
 			query:       "true = true",
@@ -304,8 +319,8 @@ func TestTopDownPartialEval(t *testing.T) {
 			},
 			wantSupport: []string{
 				`package partial.test
-				p[a2].q = {"foo": 1} if { a2 = input.a }
-				p[a1].q = {"bar": 2} if { a1 = input.b }`,
+				p[a1].q = {"foo": 1} if { a1 = input.a }
+				p[a2].q = {"bar": 2} if { a2 = input.b }`,
 			},
 		},
 		{
@@ -336,11 +351,11 @@ func TestTopDownPartialEval(t *testing.T) {
 			},
 			wantSupport: []string{
 				`package partial.test
-				p[a4].q = {"foo": 1} if { a4 = input.a }
-				p[a3].q = {"bar": 2} if { a3 = input.b }`,
+				p[a1].q = {"foo": 1} if { a1 = input.a }
+				p[a2].q = {"bar": 2} if { a2 = input.b }`,
 				`package partial.test.p.foo
 				r = "baz" if { true }
-				s = a2 if { a2 = input.c }`,
+				s = a4 if { a4 = input.c }`,
 			},
 		},
 		{
@@ -1430,8 +1445,8 @@ func TestTopDownPartialEval(t *testing.T) {
 			wantSupport: []string{`package partial.test
 
 			q if { __local6__2 = input; data.partial.test.mock_concat(["foo"], __local6__2, __local5__2); __local4__2 = __local5__2 }
-			mock_concat(__local0__4, __local1__4) = ["foo", "bar"] if { input.foo = x_term_4_04; x_term_4_04 }
-			mock_concat(__local2__3, __local3__3) = ["bar", "baz"] if { input.bar = x_term_3_03; x_term_3_03 }`,
+			mock_concat(__local0__3, __local1__3) = ["foo", "bar"] if { input.foo = x_term_3_03; x_term_3_03 }
+			mock_concat(__local2__4, __local3__4) = ["bar", "baz"] if { input.bar = x_term_4_04; x_term_4_04 }`,
 			},
 		},
 		{
@@ -1453,8 +1468,8 @@ func TestTopDownPartialEval(t *testing.T) {
 			wantSupport: []string{`package partial.test
 
 			q if { __local9__2 = input; data.partial.test.mock_concat(",", __local9__2, __local8__2); __local6__2 = __local8__2 }
-			mock_concat(__local2__4, __local3__4) = "foo,bar" if { input.foo = x_term_4_04; x_term_4_04 }
-			mock_concat(__local4__3, __local5__3) = "bar,baz" if { input.bar = x_term_3_03; x_term_3_03 }`,
+			mock_concat(__local2__3, __local3__3) = "foo,bar" if { input.foo = x_term_3_03; x_term_3_03 }
+			mock_concat(__local4__4, __local5__4) = "bar,baz" if { input.bar = x_term_4_04; x_term_4_04 }`,
 			},
 		},
 		{
@@ -1486,6 +1501,28 @@ func TestTopDownPartialEval(t *testing.T) {
 			},
 		},
 		{
+			note: "save: enumerate unknown base doc via dynamic ref operand (#5471)",
+			// The ref operand plugs to an unknown base document, so the save set
+			// cannot match it as written. Enumeration must still save the ref
+			// instead of failing with "unknown value".
+			query: "data.test.p",
+			input: `{"type": "project", "name": "jared"}`,
+			modules: []string{
+				`package test
+				p if {
+					some i
+					role := data[input.type].user_roles[i]
+					role.user_name == input.name
+				}`,
+			},
+			wantQueries: []string{
+				`"jared" = data.project.user_roles[__local0__1].user_name`,
+			},
+			unknowns: []string{
+				"data.project.user_roles",
+			},
+		},
+		{
 			note:  "automatic shallow inlining: full extent: partial set",
 			query: "data.test.p = x",
 			modules: []string{
@@ -1496,8 +1533,8 @@ func TestTopDownPartialEval(t *testing.T) {
 			wantQueries: []string{`data.partial.test.p = x`},
 			wantSupport: []string{`
 				package partial.test
-				p contains x1 if { input.y = x1 }
-				p contains x2 if { input.x = x2 }
+				p contains x1 if { input.x = x1 }
+				p contains x2 if { input.y = x2 }
 			`},
 		},
 		{
@@ -1506,14 +1543,12 @@ func TestTopDownPartialEval(t *testing.T) {
 			modules: []string{
 				`package test
 				import future.keywords.contains
-				p.q contains x if { input.x = x }
 				p.q[r].s contains t if { input.r = r; input.t = t }`,
 			},
 			wantQueries: []string{`data.partial.test.p.q = x`},
 			wantSupport: []string{`
 				package partial.test.p
 				import future.keywords.contains
-				q contains x2 if  { input.x = x2 }
 				q[r1].s contains t1 if { input.r = r1; input.t = t1 }
 			`},
 		},
@@ -1528,8 +1563,8 @@ func TestTopDownPartialEval(t *testing.T) {
 			wantQueries: []string{`data.partial.test.p = x`},
 			wantSupport: []string{`
 				package partial.test
-				p[x1] = y1 if { x1 = input.z; y1 = input.a }
-				p[x2] = y2 if { x2 = input.x; y2 = input.y }
+				p[x1] = y1 if { x1 = input.x; y1 = input.y }
+				p[x2] = y2 if { x2 = input.z; y2 = input.a }
 			`},
 		},
 		{
@@ -1543,8 +1578,8 @@ func TestTopDownPartialEval(t *testing.T) {
 			wantQueries: []string{`data.partial.test.p.q = x`},
 			wantSupport: []string{`
 				package partial.test.p
-				q[x2] = y2 if { x2 = input.x; y2 = input.y }
-				q[r1].s[t1] = y1 if { r1 = input.r; t1 = input.t; y1 = input.y }
+				q[r2].s[t2] = y2 if { r2 = input.r; t2 = input.t; y2 = input.y }
+				q[x1] = y1 if { x1 = input.x; y1 = input.y }
 			`},
 		},
 		{
@@ -1791,9 +1826,9 @@ func TestTopDownPartialEval(t *testing.T) {
 			},
 			wantSupport: []string{
 				`package partial.test
-				p = 1 if { input.x = 1 }
-				p = x1 if { input.x = x1 }
 				default p = 0
+				p = 1 if { input.x = 1 }
+				p = x2 if { input.x = x2 }
 				`,
 			},
 		},
@@ -2104,11 +2139,7 @@ func TestTopDownPartialEval(t *testing.T) {
 			wantQueryASTs: []ast.Body{
 				ast.NewBody(
 					ast.NewExpr(
-						ast.CallTerm(
-							ast.NewTerm(ast.Equal.Ref()),
-							ast.NewTerm(ast.InputRootRef),
-							ast.InternedTerm(1),
-						),
+						ast.Equal.Call(ast.NewTerm(ast.InputRootRef.Copy()), ast.InternedTerm(1)),
 					),
 				),
 			},
@@ -2142,6 +2173,18 @@ func TestTopDownPartialEval(t *testing.T) {
 			`},
 		},
 		{
+			note:  "copy propagation: circular reference, intersection call (bug 6428)",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if {
+					bt = {tag | some i; tag = input.book.tags[i]}
+					ut = {tag | some j; tag = input.user.tags[j]}
+					bt & ut == bt
+				}`,
+			},
+			wantQueries: []string{`bt1 = {tag1 | tag1 = input.book.tags[__local0__1]}; ut1 = {tag1 | tag1 = input.user.tags[__local1__1]}; bt1 = and(bt1, ut1)`},
+		},
+		{
 			note:        "copy propagation: tautology in query, input ref",
 			query:       "input.a == input.a",
 			wantQueries: []string{`__localq1__ = input.a`},
@@ -2159,7 +2202,7 @@ func TestTopDownPartialEval(t *testing.T) {
 					input.a == input.a
 				}`,
 			},
-			wantQueries: []string{`__localcp0__ = input.a`},
+			wantQueries: []string{`input.a`},
 		},
 		{
 			note:  "copy propagation: tautology, var ref, ref is input",
@@ -2170,7 +2213,7 @@ func TestTopDownPartialEval(t *testing.T) {
 					x.a == x.a
 				}`,
 			},
-			wantQueries: []string{`__localcp0__ = input.a`},
+			wantQueries: []string{`input.a`},
 		},
 		{
 			note:     "copy propagation: tautology, var ref, ref is unknown data",
@@ -2181,7 +2224,7 @@ func TestTopDownPartialEval(t *testing.T) {
 					data.bar.foo.a == data.bar.foo.a
 				}`,
 			},
-			wantQueries: []string{`__localcp0__ = data.bar.foo.a`},
+			wantQueries: []string{`data.bar.foo.a`},
 		},
 		{
 			note: "copy propagation: tautology, var ref, ref is input, via unknown",
@@ -2195,7 +2238,7 @@ func TestTopDownPartialEval(t *testing.T) {
 					input.foo.a == input.foo.a
 				}`,
 			},
-			wantQueries: []string{`__localcp0__ = input.foo.a`},
+			wantQueries: []string{`input.foo.a`},
 		},
 		{
 			note:  "copy propagation: tautology, var ref, ref is head var",
@@ -2205,7 +2248,19 @@ func TestTopDownPartialEval(t *testing.T) {
 					x.a == x.a
 				}`,
 			},
-			wantQueries: []string{`__localcp1__ = input.a`},
+			wantQueries: []string{`input.a`},
+		},
+		{
+			note:  "copy propagation: unused function argument, unknown ref (#6378)",
+			query: "data.test.allow == true",
+			// Calling a function with an unknown arg it ignores must not leak the
+			// internal placeholder var; the residual only requires the arg defined.
+			unknowns: []string{"input.project"},
+			modules: []string{`package test
+				allowed(_) if { input.subject.on_duty }
+				allow if { allowed(input.project) }`},
+			input:       `{"subject": {"on_duty": true}}`,
+			wantQueries: []string{`input.project`},
 		},
 		{
 			note:  "save set vars are namespaced",
@@ -2234,11 +2289,7 @@ func TestTopDownPartialEval(t *testing.T) {
 			wantQueryASTs: []ast.Body{
 				ast.NewBody(
 					ast.NewExpr(
-						ast.CallTerm(
-							ast.NewTerm(ast.Equal.Ref()),
-							ast.NewTerm(ast.InputRootRef),
-							ast.IntNumberTerm(1),
-						),
+						ast.Equal.Call(ast.NewTerm(ast.InputRootRef.Copy()), ast.InternedTerm(1)),
 					),
 				),
 			},
@@ -2534,8 +2585,8 @@ func TestTopDownPartialEval(t *testing.T) {
 			wantQueries: []string{`data.partial.test.f(1, x)`},
 			wantSupport: []string{
 				`package partial.test
-				f(__local0__2) = true if { input.x = __local0__2 }
-				f(__local1__1) = false if { input.y = __local1__1 }`,
+				f(__local0__1) = true if { input.x = __local0__1 }
+				f(__local1__2) = false if { input.y = __local1__2 }`,
 			},
 		},
 		{
@@ -2823,6 +2874,25 @@ func TestTopDownPartialEval(t *testing.T) {
 			`},
 		},
 		{
+			// Regression test for https://github.com/open-policy-agent/opa/issues/5226,
+			// fixed by https://github.com/open-policy-agent/opa/pull/5913.
+			note:  "comprehensions: head var bound to unknown, used in comprehension",
+			query: `data.test.p`,
+			modules: []string{
+				`package test
+
+				p contains a if { q[a] }
+				q contains a if {
+					a = input
+					f = [1 | a]
+				}
+			`},
+			wantQueries: []string{`data.partial.test.p`},
+			wantSupport: []string{`package partial.test
+				p contains a2 if { a2 = input; f2 = [1 | a2]; a2 }
+			`},
+		},
+		{
 			note:        "comprehensions: ref heads (with live vars)",
 			query:       "x = [0]; y = {true | x[0]; input.y = 1}", // include an unknown in the comprehension to force saving
 			wantQueries: []string{`y = {true | x[0]; input.y = 1; x = [0]}; x = [0]`},
@@ -2941,10 +3011,7 @@ func TestTopDownPartialEval(t *testing.T) {
 				p if {
 					every x in [] { x > input }
 				}`},
-			wantQueries: []string{`every __local0__1, __local1__1 in [] {
-				__local3__1 = input
-				__local1__1 > __local3__1
-			}`},
+			wantQueries: []string{``},
 		},
 		{
 			note:  "every: known domain, unknowns in body",
@@ -2953,10 +3020,7 @@ func TestTopDownPartialEval(t *testing.T) {
 				p if {
 					every x in [1, 2, 3] { x > input }
 				}`},
-			wantQueries: []string{`every __local0__1, __local1__1 in [1, 2, 3] {
-				__local3__1 = input
-				__local1__1 > __local3__1
-			}`},
+			wantQueries: []string{`1 > input; 2 > input; 3 > input`},
 		},
 		{
 			note:  "every: known domain, unknowns in body (with call+assignment)",
@@ -2965,12 +3029,7 @@ func TestTopDownPartialEval(t *testing.T) {
 				p if {
 					every x in [1, 2, 3] { y := x+10; y > input }
 				}`},
-			wantQueries: []string{`every __local0__1, __local1__1 in [1, 2, 3] {
-				plus(__local1__1, 10, __local4__1)
-				__local2__1 = __local4__1
-				__local5__1 = input
-				__local2__1 > __local5__1
-			}`},
+			wantQueries: []string{`11 > input; 12 > input; 13 > input`},
 		},
 		{
 			note:  "every: known domain, unknowns in body, body impossible",
@@ -2979,11 +3038,151 @@ func TestTopDownPartialEval(t *testing.T) {
 				p if {
 					every x in [1, 2, 3] { false; x > input }
 				}`},
-			wantQueries: []string{`every __local0__1, __local1__1 in [1, 2, 3] {
-				false
-				__local3__1 = input
-				__local1__1 > __local3__1
-			}`},
+			wantQueries: []string{},
+		},
+		{
+			note:  "every: unrolled, known domain, unknowns in body",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every x in [1, 2, 3] { x > input } }`},
+			wantQueries: []string{`1 > input; 2 > input; 3 > input`},
+		},
+		{
+			note:  "every: unrolled, empty domain",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every x in [] { x > input } }`},
+			wantQueries: []string{``},
+		},
+		{
+			note:  "every: unrolled, key and value",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every i, x in ["a", "b"] { i < input; x != input } }`},
+			wantQueries: []string{`0 < input; "a" != input; 1 < input; "b" != input`},
+		},
+		{
+			note:  "every: unrolled, object domain",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every k, v in {"a": 1, "b": 2} { v > input[k] } }`},
+			wantQueries: []string{`1 > input.a; 2 > input.b`},
+		},
+		{
+			note:  "every: unrolled, object domain, value only",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every v in {"a": 1, "b": 2} { v > input } }`},
+			wantQueries: []string{`1 > input; 2 > input`},
+		},
+		{
+			note:  "every: unrolled, object domain, key only",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every k, _ in {"a": 1, "b": 2} { input[k] > 0 } }`},
+			wantQueries: []string{`input.a > 0; input.b > 0`},
+		},
+		{
+			note:  "every: unrolled, array domain, key only",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every i, _ in [10, 20] { i < input } }`},
+			wantQueries: []string{`0 < input; 1 < input`},
+		},
+		{
+			note:  "every: unrolled, set domain, key and value",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every k, v in {1, 2} { k < input; v > input } }`},
+			wantQueries: []string{`1 < input; 1 > input; 2 < input; 2 > input`},
+		},
+		{
+			note:  "every: unrolled, set domain",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every x in {1, 2} { x > input } }`},
+			wantQueries: []string{`1 > input; 2 > input`},
+		},
+		{
+			note:  "every: unrolled, body with a local",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every x in [1, 2] { y := x + 10; y > input } }`},
+			wantQueries: []string{`11 > input; 12 > input`},
+		},
+		{
+			note:  "every: unrolled, body false for one element",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every x in [1, 2] { x != 1; x > input } }`},
+			wantQueries: []string{},
+		},
+		{
+			note:  "every: unrolled, outer variable",
+			query: "data.test.p",
+			modules: []string{`package test
+				import future.keywords.not
+				p if {
+					y := 3
+					every x in [1, 2] { x != 0; input > y }
+				}`},
+			wantQueries: []string{`input > 3; input > 3`},
+		},
+		{
+			note:  "every: unrolled, body with alternatives",
+			query: "data.test.p",
+			modules: []string{`package test
+				import future.keywords.not
+				ok(x) if x > input
+				ok(x) if x < input
+				p if { every x in [1, 2] { ok(x) } }`},
+			wantQueries: []string{`1 > input; 2 > input`, `1 > input; 2 < input`, `1 < input; 2 > input`, `1 < input; 2 < input`},
+			ignoreOrder: true,
+		},
+		{
+			note:  "every: unrolled, domain at the limit",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every x in numbers.range(1, 32) { x > input } }`},
+			wantQueries: []string{everyUnrolled},
+		},
+		{
+			note:  "every: unrolled, object element used as ref head",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every x in [{"a": 1}] { x.a == input.y } }`},
+			wantQueries: []string{`1 = input.y`},
+		},
+		{
+			note:  "every: unrolled, array element used as ref head",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every x in [[1, 2], [3, 4]] { x[1] > input } }`},
+			wantQueries: []string{`2 > input; 4 > input`},
+		},
+		{
+			note:  "every: unrolled, nested within the limit",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every x in [1, 2] { every y in [3, 4] { x < input; y < input } } }`},
+			wantQueries: []string{`1 < input; 3 < input; 1 < input; 4 < input; 2 < input; 3 < input; 2 < input; 4 < input`},
+		},
+		{
+			note:  "every: unrolled, nested over the limit",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every x in [1, 2] { every y in numbers.range(1, 17) { y > input; x > 0 } } }`},
+			wantQueries: []string{
+				"every __local2____e11, __local3____e11 in " + nested + " { __local7____e11 = input; __local3____e11 > __local7____e11; 1 > 0}; " +
+					"every __local2____e21, __local3____e21 in " + nested + " { __local7____e21 = input; __local3____e21 > __local7____e21; 2 > 0}",
+			},
+		},
+		{
+			note:  "every: unrolled, domain over the limit",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if { every x in numbers.range(1, 33) { x > input } }`},
+			wantQueries: []string{everyKept},
 		},
 		{
 			note:  "every: unknown domain",
@@ -3002,7 +3201,7 @@ func TestTopDownPartialEval(t *testing.T) {
 					y := 3
 					every x in [1, 2] { x != 0; input > y }
 				}`},
-			wantQueries: []string{`every __local1__1, __local2__1 in [1, 2] { __local2__1 != 0; __local4__1 = input; __local4__1 > 3 }`},
+			wantQueries: []string{`input > 3; input > 3`},
 		},
 		{
 			note:  "every: unknown domain, call in body",
@@ -3028,7 +3227,7 @@ func TestTopDownPartialEval(t *testing.T) {
 						1 == y
 					}
 				}`},
-			wantQueries: []string{`every __local1__2, __local2__2 in [1] { a2 = input; 1 = __local2__2 }`},
+			wantQueries: []string{``},
 		},
 		{
 			note:  "every: nested and closing over function args",
@@ -3045,10 +3244,142 @@ func TestTopDownPartialEval(t *testing.T) {
 						}
 					}
 				}`},
-			wantQueries: []string{`every __local1__2, __local2__2 in [1] {
-				__local6__2 = [2]
-				every __local3__2, __local4__2 in __local6__2 {
-					a2 = input; __local4__2 > __local2__2 }
+			wantQueries: []string{``},
+		},
+		{
+			note:  "every: in-scope var in set comprehension",
+			query: "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					every a in input.z {
+						a == 1
+						x := input.x
+						{y | y := input.y; y < x}
+					}
+				}`},
+			wantQueries: []string{`every __local0__1, __local1__1 in input.z {
+					__local1__1 = 1
+					__local2__1 = input.x
+					{__local3__1 | __local3__1 = input.y; lt(__local3__1, __local2__1)}
+				}`},
+		},
+		{
+			note:  "every: in-scope var in nested set comprehensions",
+			query: "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					every x in input.x {
+						{y | 
+							y := input.y
+							y < x
+							{z | 
+								z := input.z
+								z < x
+								z > y
+							}
+						}
+					}
+				}`},
+			wantQueries: []string{`every __local0__1, __local1__1 in input.x { 
+				{__local2__1 |
+					__local2__1 = input.y
+					lt(__local2__1, __local1__1)
+					{__local3__1 |
+						__local3__1 = input.z
+						lt(__local3__1, __local1__1)
+						gt(__local3__1, __local2__1)}
+					}
+				}`},
+		},
+		{
+			note:  "every: in-scope var in set comprehension, assigned",
+			query: "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					every a in input.z {
+						a == 1
+						x := input.x
+						z := {y | y := input.y; y < x}
+						z != {x}
+					}
+				}`},
+			wantQueries: []string{`every __local0__1, __local1__1 in input.z {
+					__local1__1 = 1
+					__local2__1 = input.x
+					__local4__1 = {__local3__1 | __local3__1 = input.y; lt(__local3__1, __local2__1)}
+					neq(__local4__1, {__local2__1})
+				}`},
+		},
+		{
+			note:  "every: in-scope var in array comprehension",
+			query: "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					every a in input.z {
+						a == 1
+						x := input.x
+						[y | y := input.y; y < x]
+					}
+				}`},
+			wantQueries: []string{`every __local0__1, __local1__1 in input.z {
+					__local1__1 = 1
+					__local2__1 = input.x
+					[__local3__1 | __local3__1 = input.y; lt(__local3__1, __local2__1)]
+				}`},
+		},
+		{
+			note:  "every: in-scope var in array comprehension, assigned",
+			query: "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					every a in input.z {
+						a == 1
+						x := input.x
+						z := [y | y := input.y; y < x]
+						z != [x]
+					}
+				}`},
+			wantQueries: []string{`every __local0__1, __local1__1 in input.z {
+					__local1__1 = 1
+					__local2__1 = input.x
+					__local4__1 = [__local3__1 | __local3__1 = input.y; lt(__local3__1, __local2__1)]
+					neq(__local4__1, [__local2__1])
+				}`},
+		},
+		{
+			note:  "every: in-scope var in object comprehension",
+			query: "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					every a in input.z {
+						a == 1
+						x := input.x
+						{k: v | k := input.k; v := x}
+					}
+				}`},
+			wantQueries: []string{`every __local0__1, __local1__1 in input.z {
+					__local1__1 = 1
+					__local2__1 = input.x
+					{__local3__1: __local4__1 | __local3__1 = input.k; __local4__1 = __local2__1}
+				}`},
+		},
+		{
+			note:  "every: in-scope var in object comprehension, assigned",
+			query: "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					every a in input.z {
+						a == 1
+						x := input.x
+						z := {k: v | k := input.k; v := x}
+						z != {"_": x}
+					}
+				}`},
+			wantQueries: []string{`every __local0__1, __local1__1 in input.z {
+					__local1__1 = 1
+					__local2__1 = input.x
+					__local5__1 = {__local3__1: __local4__1 | __local3__1 = input.k; __local4__1 = __local2__1}
+					neq(__local5__1, {"_": __local2__1})
 				}`},
 		},
 		{ // https://github.com/open-policy-agent/opa/issues/5367
@@ -3257,17 +3588,6 @@ func TestTopDownPartialEval(t *testing.T) {
 			q["do/re"]["mi/fa"].baz = true if {
 				input.x = input.y
 			}`},
-		},
-		{
-			note:                     "nondeterministic builtin evaluated in PE",
-			query:                    "data.test.p",
-			unknowns:                 []string{"input.x"},
-			input:                    `{"a": 2}`,
-			nondeterministicBuiltins: true,
-			modules: []string{fmt.Sprintf(`package test
-			p if input.x == http.send({"method": "POST", "url": "%s", "body": input.a}).body.p`, testserver.URL),
-			},
-			wantQueries: []string{`"x" = input.x`},
 		},
 		{
 			note:                     "nondeterministic builtin time.now_ns() properly initiated",
@@ -4157,12 +4477,738 @@ default q := false
 q if { input.x = 7 }`},
 			wantQueries: []string{"input.x = 7"},
 		},
+
+		// and/or baseline (no unknowns: truth-table)
+
+		{
+			note:            "and: no unknowns, both true",
+			logicalKeywords: true,
+			query:           "data.test.p",
+			modules: []string{`package test
+				p if {
+					true and true
+				}`},
+			wantQueries: []string{""}, // unconditionally true
+		},
+		{
+			note:            "and: no unknowns, lhs false",
+			logicalKeywords: true,
+			query:           "data.test.p",
+			modules: []string{`package test
+				p if {
+					false and true
+				}`},
+			wantQueries: []string{}, // unconditionally false
+		},
+		{
+			note:            "and: no unknowns, rhs false",
+			logicalKeywords: true,
+			query:           "data.test.p",
+			modules: []string{`package test
+				p if {
+					true and false
+				}`},
+			wantQueries: []string{}, // unconditionally false
+		},
+		{
+			note:            "or: no unknowns, lhs true",
+			logicalKeywords: true,
+			query:           "data.test.p",
+			modules: []string{`package test
+				p if {
+					true or false
+				}`},
+			wantQueries: []string{""}, // unconditionally true
+		},
+		{
+			note:            "or: no unknowns, rhs true",
+			logicalKeywords: true,
+			query:           "data.test.p",
+			modules: []string{`package test
+				p if {
+					false or true
+				}`},
+			wantQueries: []string{""}, // unconditionally true
+		},
+		{
+			note:            "or: no unknowns, both true (single result)",
+			logicalKeywords: true,
+			query:           "data.test.p",
+			modules: []string{`package test
+				p if {
+					true or true
+				}`},
+			wantQueries: []string{""}, // unconditionally true
+		},
+		{
+			note:            "or: no unknowns, both false",
+			logicalKeywords: true,
+			query:           "data.test.p",
+			modules: []string{`package test
+				p if {
+					false or false
+				}`},
+			wantQueries: []string{}, // unconditionally false
+		},
+
+		// and/or baseline (simple unknowns: save the whole expression)
+		// TODO: PE optimization in #8680
+
+		{
+			note:            "and: unknown lhs only",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					input.x > 0 and true
+				}`},
+			wantQueries: []string{`{__local0__1 = input.x; gt(__local0__1, 0)} and true`},
+		},
+		{
+			note:            "and: unknown rhs only",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					true and input.y > 0
+				}`},
+			wantQueries: []string{`true and {__local0__1 = input.y; gt(__local0__1, 0)}`},
+		},
+		{
+			note:            "and: unknowns in both",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					input.x > 0 and input.y > 0
+				}`},
+			wantQueries: []string{`{__local0__1 = input.x; gt(__local0__1, 0)} and {__local1__1 = input.y; gt(__local1__1, 0)}`},
+		},
+		{
+			note:            "or: unknown lhs only",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					input.x > 0 or false
+				}`},
+			wantQueries: []string{`{__local0__1 = input.x; gt(__local0__1, 0)} or false`},
+		},
+		{
+			note:            "or: unknown rhs only",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					false or input.y > 0
+				}`},
+			wantQueries: []string{`false or {__local0__1 = input.y; gt(__local0__1, 0)}`},
+		},
+		{
+			note:            "or: unknowns in both",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					input.x > 0 or input.y > 0
+				}`},
+			wantQueries: []string{`{__local0__1 = input.x; gt(__local0__1, 0)} or {__local1__1 = input.y; gt(__local1__1, 0)}`},
+		},
+		// Baseline does NOT simplify even when one operand is statically true
+		{
+			note:            "or: unknown lhs, rhs known-true (no simplification at this layer)",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					input.x > 0 or true
+				}`},
+			wantQueries: []string{`{__local0__1 = input.x; gt(__local0__1, 0)} or true`},
+		},
+		{
+			note:            "and: unknown lhs, rhs known-true (no simplification at this layer)",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					input.x > 0 and true
+				}`},
+			wantQueries: []string{`{__local0__1 = input.x; gt(__local0__1, 0)} and true`},
+		},
+
+		// nested chains, data-ref unknowns, multi-expr explicit bodies
+		{
+			note:            "and: nested left-leaning, all unknown",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					input.a > 0 and input.b > 0 and input.c > 0
+				}`},
+			wantQueries: []string{`{
+					__local0__1 = input.a
+					gt(__local0__1, 0)
+				} and {
+					__local1__1 = input.b
+					gt(__local1__1, 0)
+				} and {
+					__local2__1 = input.c
+					gt(__local2__1, 0)
+				}`},
+		},
+		{
+			note:            "or: nested left-leaning, all unknown",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					input.a > 0 or input.b > 0 or input.c > 0
+				}`},
+			wantQueries: []string{`{
+					__local0__1 = input.a
+					gt(__local0__1, 0)
+				} or {
+					__local1__1 = input.b
+					gt(__local1__1, 0)
+				} or {
+					__local2__1 = input.c
+					gt(__local2__1, 0)
+				}`},
+		},
+		{
+			note:            "and: mixed data and input unknowns",
+			logicalKeywords: true,
+			unknowns:        []string{"input", "data.foo"},
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					data.foo.x > 0 and input.y > 0
+				}`},
+			wantQueries: []string{`{
+					__local0__1 = data.foo.x
+					gt(__local0__1, 0)
+				} and {
+					__local1__1 = input.y
+					gt(__local1__1, 0)
+				}`},
+		},
+		{
+			note:            "and: explicit body multi-expr, unknowns inside",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					{ input.x > 0; input.x < 10 } and true
+				}`},
+			wantQueries: []string{`{__local0__1 = input.x; gt(__local0__1, 0); __local1__1 = input.x; lt(__local1__1, 10)} and true`},
+		},
+
+		{
+			note:            "and (every): unknown inside",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					{ x := input.x; every i in x { i in x; i < input.y } } and true 
+				}`},
+			wantQueries: []string{`{ 
+					__local0__1 = input.x
+					__local3__1 = __local0__1
+					every __local1__1, __local2__1 in __local3__1 {
+						internal.member_2(__local2__1, __local0__1)
+						__local4__1 = input.y
+						lt(__local2__1, __local4__1)
+					}
+				} and true`},
+		},
+		{
+			note:            "or (every): unknown inside",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					{ x := input.x; every i in x { i in x; i < input.y } } or true 
+				}`},
+			wantQueries: []string{`{ 
+					__local0__1 = input.x
+					__local3__1 = __local0__1
+					every __local1__1, __local2__1 in __local3__1 {
+						internal.member_2(__local2__1, __local0__1)
+						__local4__1 = input.y
+						lt(__local2__1, __local4__1)
+					}
+				} or true`},
+		},
+
+		// comprehensions inside and/or operand bodies
+		{
+			note:            "and: rhs set comp, cross-scope vars",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					x := input.x
+					true and { y := input.y; {z | z := input.z; z < x; z > y} }
+				}`},
+			wantQueries: []string{`true and {
+					__local1__1 = input.y
+					{__local2__1 |
+						__local2__1 = input.z
+						lt(__local2__1, input.x)
+						gt(__local2__1, __local1__1)
+					}
+				}
+				__local0__1 = input.x`},
+		},
+		{
+			note:            "and: lhs set comp, cross-scope vars",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					x := input.x
+					{ y := input.y; {z | z := input.z; z < x; z > y} } and true
+				}`},
+			wantQueries: []string{`{
+					__local1__1 = input.y
+					{__local2__1 |
+						__local2__1 = input.z
+						lt(__local2__1, input.x)
+						gt(__local2__1, __local1__1)
+					}
+				} and true
+				__local0__1 = input.x`},
+		},
+		{
+			note:            "or: rhs set comp, cross-scope vars",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					x := input.x
+					false or { y := input.y; {z | z := input.z; z < x; z > y} }
+				}`},
+			wantQueries: []string{`false or {
+					__local1__1 = input.y
+					{__local2__1 |
+						__local2__1 = input.z
+						lt(__local2__1, input.x)
+						gt(__local2__1, __local1__1)
+					}
+				}
+				__local0__1 = input.x`},
+		},
+		{
+			note:            "or: lhs set comp, cross-scope vars",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					x := input.x
+					{ y := input.y; {z | z := input.z; z < x; z > y} } or false
+				}`},
+			wantQueries: []string{`{
+					__local1__1 = input.y
+					{__local2__1 |
+						__local2__1 = input.z
+						lt(__local2__1, input.x)
+						gt(__local2__1, __local1__1)
+					}
+				} or false
+				__local0__1 = input.x`},
+		},
+		{
+			note:            "and: rhs array comp, cross-scope vars",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					x := input.x
+					true and { y := input.y; [z | z := input.z; z < x; z > y] }
+				}`},
+			wantQueries: []string{`true and {
+					__local1__1 = input.y
+					[__local2__1 |
+						__local2__1 = input.z
+						lt(__local2__1, input.x)
+						gt(__local2__1, __local1__1)
+					]
+				}
+				__local0__1 = input.x`},
+		},
+		{
+			note:            "or: lhs object comp, cross-scope vars",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					x := input.x
+					{ y := input.y; {k: v | k := input.k; v := x; v != y} } or false
+				}`},
+			wantQueries: []string{`{
+					__local1__1 = input.y
+					{__local2__1: __local3__1 |
+						__local2__1 = input.k
+						__local3__1 = input.x
+						neq(__local3__1, __local1__1)
+					}
+				} or false
+				__local0__1 = input.x`},
+		},
+
+		// and/or nested inside other outer constructs
+		{
+			note:            "every: body contains and with unknowns",
+			logicalKeywords: true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					every x in [1, 2, 3] { x > 0 and x > input }
+				}`},
+			wantQueries: []string{`gt(1, 0) and { __local3____e11 = input; gt(1, __local3____e11) }; gt(2, 0) and { __local3____e21 = input; gt(2, __local3____e21) }; gt(3, 0) and { __local3____e31 = input; gt(3, __local3____e31) }`},
+		},
+		{
+			note:            "array comprehension: body contains or with unknowns",
+			logicalKeywords: true,
+			query:           "data.test.p = x",
+			modules: []string{`package test
+				p := [n | n = input.xs[i]; n > 0 or n < 0]`},
+			wantQueries: []string{`x = [n1 | n1 = input.xs[i1]; gt(n1, 0) or lt(n1, 0)]`},
+		},
+		{
+			note:            "set comprehension: body contains or with unknowns",
+			logicalKeywords: true,
+			query:           "data.test.p = x",
+			modules: []string{`package test
+				p := {n | n = input.xs[i]; n > 0 or n < 0}`},
+			wantQueries: []string{`x = {n1 | n1 = input.xs[i1]; gt(n1, 0) or lt(n1, 0)}`},
+		},
+		{
+			note:            "object comprehension: body contains and with unknowns",
+			logicalKeywords: true,
+			query:           "data.test.p = x",
+			modules: []string{`package test
+				p := {k: v | v := input[k]; v > 0 and v < 10}`},
+			wantQueries: []string{`x = {k1: __local0__1 | __local0__1 = input[k1]; gt(__local0__1, 0) and lt(__local0__1, 10)}`},
+		},
+
+		// copy-propagation
+		{
+			note:            "copy propagation: and safety needs extra expr",
+			logicalKeywords: true,
+			query:           `data.test.p = true`,
+			modules: []string{
+				`package test
+
+				p if {
+				  x = data.y[c]
+				  x.z = 1 and x.z != 2
+				}
+				`,
+			},
+			unknowns: []string{`data.y`},
+			wantQueries: []string{
+				`data.y[c1].z = 1 and {__local0__1 = data.y[c1].z; neq(__local0__1, 2)}; x1 = data.y[c1]`,
+			},
+		},
+		{
+			note:            "copy propagation: or safety needs extra expr",
+			logicalKeywords: true,
+			query:           `data.test.p = true`,
+			modules: []string{
+				`package test
+
+				p if {
+				  x = data.y[c]
+				  x.z = 1 or x.z = 2
+				}
+				`,
+			},
+			unknowns: []string{`data.y`},
+			// Copy-prop inlines x1 into both operand bodies — unlike the `and`
+			// case above, both operands are plain `=` so there's no rewrite
+			// barrier — but still re-adds the binding at body level.
+			wantQueries: []string{
+				`data.y[c1].z = 1 or data.y[c1].z = 2; x1 = data.y[c1]`,
+			},
+		},
+		{
+			note:            "copy propagation: and safety needs extra expr - no live var overlap",
+			logicalKeywords: true,
+			query:           `data.test.p = true`,
+			modules: []string{
+				`package test
+
+				p if {
+				  x = input.y[c]
+				  x.z = 1 and x.z != 2
+				}
+				`,
+			},
+			unknowns: []string{`input.y`},
+			wantQueries: []string{
+				`input.y[c1].z = 1 and {__local0__1 = input.y[c1].z; neq(__local0__1, 2)}; x1 = input.y[c1]`,
+			},
+		},
+		{
+			note:     "unknown sub-path: enumerating input may hit the unknown key",
+			query:    `data.test.p = true`,
+			input:    `{"y": 2}`,
+			unknowns: []string{`input.x`},
+			modules: []string{
+				`package test
+
+				p if {
+				  some k
+				  input[k] == 1
+				}
+				`,
+			},
+			wantQueries: []string{`input.x = 1`},
+		},
+		{
+			// Control for the case above: a known key already satisfies the body, so
+			// p holds whatever input.x is -- an empty (true) disjunct beside the saved one.
+			note:     "unknown sub-path: known key satisfies the body",
+			query:    `data.test.p = true`,
+			input:    `{"y": 2}`,
+			unknowns: []string{`input.x`},
+			modules: []string{
+				`package test
+
+				p if {
+				  some k
+				  input[k] > 0
+				}
+				`,
+			},
+			wantQueries: []string{``, `input.x > 0`},
+		},
+		{
+			// The unknown key is present in the concrete input: its value must be
+			// ignored, and the branch saved once, not twice.
+			note:     "unknown sub-path: concrete input carries the unknown key",
+			query:    `data.test.p = true`,
+			input:    `{"x": 5, "y": 2}`,
+			unknowns: []string{`input.x`},
+			modules: []string{
+				`package test
+
+				p if {
+				  some k
+				  input[k] == 5
+				}
+				`,
+			},
+			wantQueries: []string{`input.x = 5`},
+		},
+		{
+			// Two unknowns below the same key contribute "x" once, not twice.
+			note:     "unknown sub-path: two unknowns share a parent key",
+			query:    `data.test.p = true`,
+			input:    `{"y": 2}`,
+			unknowns: []string{`input.x.a`, `input.x.b`},
+			modules: []string{
+				`package test
+
+				p if {
+				  some k
+				  input[k].a == 1
+				}
+				`,
+			},
+			wantQueries: []string{`input.x.a = 1`},
+		},
+		{
+			note:     "unknown sub-path: ground key that misses the unknown is still evaluated",
+			query:    `data.test.p = true`,
+			input:    `{"y": 2}`,
+			unknowns: []string{`input.x`},
+			modules: []string{
+				`package test
+
+				p if input.y == 2
+				`,
+			},
+			wantQueries: []string{``},
+		},
+		{
+			// A bound key is as good as a constant: k = "y" cannot hit input.x.
+			note:     "unknown sub-path: key bound to a constant that misses the unknown",
+			query:    `data.test.p = true`,
+			input:    `{"y": 2}`,
+			unknowns: []string{`input.x`},
+			modules: []string{
+				`package test
+
+				p if {
+				  k := "y"
+				  input[k] == 2
+				}
+				`,
+			},
+			wantQueries: []string{``},
+		},
+		{
+			// Wildcard at position 1 matches, but ground "b" and "a" at position 2 differ.
+			note:     "unknown sub-path: ground position past the wildcard rules out the overlap",
+			query:    `data.test.p = true`,
+			input:    `{"y": {"b": 2}}`,
+			unknowns: []string{`input.x.a`},
+			modules: []string{
+				`package test
+
+				p if input[k].b == 1
+				`,
+			},
+			wantQueries: []string{},
+		},
+		{
+			// Nested unknown, wildcard at the same depth as the unknown leaf.
+			note:     "unknown sub-path: nested, wildcard at the depth of the unknown leaf",
+			query:    `data.test.p = true`,
+			input:    `{"x": {"z": 3}}`,
+			unknowns: []string{`input.x.y`},
+			modules: []string{
+				`package test
+
+				p if {
+				  some k
+				  input.x[k] == 1
+				}
+				`,
+			},
+			wantQueries: []string{`input.x.y = 1`},
+		},
+		{
+			// Wildcard above the unknown: the walk must continue past it to decide.
+			note:     "unknown sub-path: nested, wildcard above a matching ground position",
+			query:    `data.test.p = true`,
+			input:    `{"x": {"z": 3}}`,
+			unknowns: []string{`input.x.y`},
+			modules: []string{
+				`package test
+
+				p if {
+				  some k
+				  input[k].y == 1
+				}
+				`,
+			},
+			wantQueries: []string{`input.x.y = 1`},
+		},
+		{
+			// Ground sibling of the unknown leaf: input.x.z is fully known.
+			note:     "unknown sub-path: nested, ground sibling of the unknown leaf",
+			query:    `data.test.p = true`,
+			input:    `{"x": {"z": 3}}`,
+			unknowns: []string{`input.x.y`},
+			modules: []string{
+				`package test
+
+				p if input.x.z == 1
+				`,
+			},
+			wantQueries: []string{},
+		},
+		{
+			note:     "unknown sub-path: enumerating data may hit the unknown key",
+			query:    `data.test.p = true`,
+			data:     `{"foo": {"y": 2}}`,
+			unknowns: []string{`data.foo.x`},
+			modules: []string{
+				`package test
+
+				p if {
+				  some k
+				  data.foo[k] == 1
+				}
+				`,
+			},
+			wantQueries: []string{`data.foo[__local0__1] = 1`},
+		},
+		{
+			// The with value rebuilds input by iterating it, so it cannot be evaluated
+			// to a document here: input_copy becomes a support module instead.
+			note:     "unknown sub-path: with value reconstructed by enumeration",
+			query:    `data.test.p = true`,
+			input:    `{"y": 2}`,
+			unknowns: []string{`input.x`},
+			modules: []string{
+				`package test
+
+				input_copy[k] := v if some k, v in input
+
+				p if data.inner.q == true with input as input_copy
+				`,
+				`package inner
+
+				q if input.x == 1
+				`,
+			},
+			wantQueries: []string{`data.inner.q = true with input as data.partial.test.input_copy`},
+			wantSupport: []string{
+				`package partial.test.input_copy
+
+				x = __local1__2 if input.x = __local1__2
+
+				y = 2
+				`,
+			},
+		},
 	}
+
+	runPartialEvalTests(t, tests)
+}
+
+// TestTopDownPartialEvalLoopback holds the cases that need a loopback listener,
+// so the rest of the partial evaluation tests run where binding a port is not allowed.
+func TestTopDownPartialEvalLoopback(t *testing.T) {
+	t.Parallel()
+
+	tests := []partialEvalTestCase{
+		{
+			note:                     "nondeterministic builtin evaluated in PE",
+			query:                    "data.test.p",
+			unknowns:                 []string{"input.x"},
+			input:                    `{"a": 2}`,
+			nondeterministicBuiltins: true,
+			modules: []string{fmt.Sprintf(`package test
+			p if input.x == http.send({"method": "POST", "url": "%s", "body": input.a}).body.p`, testserver().URL),
+			},
+			wantQueries: []string{`"x" = input.x`},
+		},
+		{
+			// $ref is dereferenced at evaluation time, so folding this during PE
+			// would bake a remote answer into the residual. The URL is the local
+			// test server so a regression fails here instead of hitting the network.
+			note:     "nondeterministic builtin json.match_schema saved during PE",
+			query:    "data.test.p",
+			unknowns: []string{"input.x"},
+			modules: []string{fmt.Sprintf(`package test
+			p if {
+				input.x == 1
+				json.match_schema({"user": "jsmith"}, {"$ref": "%s"})
+			}`, testserver().URL),
+			},
+			wantQueries: []string{fmt.Sprintf(`input.x = 1; json.match_schema({"user": "jsmith"}, {"$ref": "%s"})`, testserver().URL)},
+		},
+	}
+
+	runPartialEvalTests(t, tests)
+}
+
+func runPartialEvalTests(t *testing.T, tests []partialEvalTestCase) {
+	t.Helper()
 
 	ctx := t.Context()
 
-	for _, tc := range tests {
+	for i := range tests {
+		tc := &tests[i]
 		popts := ast.ParserOptions{}
+		if tc.logicalKeywords {
+			popts.FutureKeywords = []string{"and", "or"}
+		}
 
 		params := fixtureParams{
 			note:          tc.note,
@@ -4237,6 +5283,9 @@ q if { input.x = 7 }`},
 				missing := queriesB.Diff(queriesA, tc.ignoreOrder)
 				extra := queriesA.Diff(queriesB, tc.ignoreOrder)
 				t.Errorf("Partial evaluation results differ. Expected %d queries but got %d queries:\nMissing:\n%v\nExtra:\n%v", len(queriesB), len(queriesA), missing, extra)
+			} else if len(partials) != len(expectedQueries) {
+				// Equal() compares as sets, so it cannot see a query emitted twice.
+				t.Errorf("Expected %d queries but got %d:\n%v", len(expectedQueries), len(partials), bodySet(partials))
 			}
 
 			var expectedSupport []*ast.Module
@@ -4255,6 +5304,56 @@ q if { input.x = 7 }`},
 			}
 		})
 	}
+}
+
+func TestTopDownPartialEvalEnumerateBaseAndVirtualDocKeyOnce(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+
+	params := fixtureParams{
+		note:  "enumerate base doc key shadowed by rule tree node once (#4787)",
+		query: "data.test.p = x",
+		data:  `{"x": {"a": {"n": 1}, "b": {"n": 2}}}`,
+		modules: []string{
+			`package test
+			p contains k if { data.x[k] = input.y }`,
+			`package x.a
+			unrelated := 1`,
+		},
+	}
+
+	prepareTest(ctx, t, params, func(ctx context.Context, t *testing.T, f fixture) {
+		query := NewQuery(f.query).
+			WithCompiler(f.compiler).
+			WithStore(f.store).
+			WithTransaction(f.txn).
+			WithUnknowns([]*ast.Term{ast.MustParseTerm("input")})
+
+		_, support, err := query.PartialRun(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(support) != 1 {
+			t.Fatalf("expected 1 support module, got %d: %v", len(support), support)
+		}
+
+		exp := ast.MustParseModule(`package partial.test
+
+		p contains "a" if input.y = {"n": 1, "unrelated": 1}
+		p contains "b" if input.y = {"n": 2}`)
+
+		if len(support[0].Rules) != len(exp.Rules) {
+			t.Fatalf("expected %d support rules, got %d:\n%v", len(exp.Rules), len(support[0].Rules), support[0])
+		}
+
+		for i := range exp.Rules {
+			if !exp.Rules[i].Equal(support[0].Rules[i]) {
+				t.Fatalf("expected support module:\n%v\n\ngot:\n%v", exp, support[0])
+			}
+		}
+	})
 }
 
 func TestTopDownPartialEvalNegation(t *testing.T) {
@@ -4278,6 +5377,7 @@ func TestTopDownPartialEvalNegation(t *testing.T) {
 		wantSupportASTs          []*ast.Module
 		ignoreOrder              bool
 		notBodyOnly              bool
+		logicalKeywords          bool // opt in to the and/or keywords
 	}{
 		{
 			note:  "with+builtin+negation: when replacement has no unknowns (args, defs), save negated expr without replacement",
@@ -4390,8 +5490,8 @@ func TestTopDownPartialEvalNegation(t *testing.T) {
 				package partial.test
 
 				q if { data.partial.test.mock_count([1], __local2__3); __local2__3 = input.x }
-				mock_count(__local0__5) = 100 if { input.y = x_term_5_05; x_term_5_05 }
-				mock_count(__local1__4) = 101 if { input.z = x_term_4_04; x_term_4_04 }
+				mock_count(__local0__4) = 100 if { input.y = x_term_4_04; x_term_4_04 }
+				mock_count(__local1__5) = 101 if { input.z = x_term_5_05; x_term_5_05 }
 			`},
 		},
 		{
@@ -4415,8 +5515,8 @@ func TestTopDownPartialEvalNegation(t *testing.T) {
 				package partial.test
 
 				q if { data.partial.test.mock_count([1], __local4__3); __local4__3 = input.x }
-				mock_count(__local1__5) = 100 if { input.y = x_term_5_05; x_term_5_05 }
-				mock_count(__local2__4) = 101 if { input.z = x_term_4_04; x_term_4_04 }
+				mock_count(__local1__4) = 100 if { input.y = x_term_4_04; x_term_4_04 }
+				mock_count(__local2__5) = 101 if { input.z = x_term_5_05; x_term_5_05 }
 			`},
 		},
 
@@ -4530,6 +5630,33 @@ func TestTopDownPartialEvalNegation(t *testing.T) {
 
 				__not1_0_2__ if {
 					((input.x + 7) / input.y) > 100
+				}`,
+			},
+		},
+		{
+			note:  "negation: every over unknown domain saved as support rule",
+			query: "data.test.p = true",
+			modules: []string{
+				`package test
+
+				p if { not blocked }
+
+				blocked if {
+					every x in input.xs {
+						x == 1
+					}
+				}`,
+			},
+			wantQueries: []string{
+				`not data.partial.__not1_0_2__`,
+			},
+			wantSupport: []string{
+				`package partial
+
+				__not1_0_2__ = true if {
+					every __local0__3, __local1__3 in input.xs {
+						__local1__3 = 1
+					}
 				}`,
 			},
 		},
@@ -5829,8 +6956,8 @@ func TestTopDownPartialEvalNegation(t *testing.T) {
 							Negated: true,
 							Terms: []*ast.Term{
 								{Value: ast.Equality.Ref()},
-								ast.RefTerm(ast.VarTerm("input"), ast.StringTerm("x")),
-								ast.NumberTerm("1"),
+								ast.NewTerm(ast.InputRootRef.Append(ast.InternedTerm("x"))),
+								ast.InternedTerm(1),
 							},
 						},
 					),
@@ -5883,20 +7010,175 @@ func TestTopDownPartialEvalNegation(t *testing.T) {
 				ast.NewBody(
 					ast.NotExpr(
 						ast.Equality.Expr(
-							ast.RefTerm(ast.VarTerm("input"), ast.StringTerm("x")),
-							ast.NumberTerm("1"),
+							ast.RefTerm(ast.InputRootDocument, ast.InternedTerm("x")),
+							ast.InternedTerm(1),
 						),
 						&ast.Expr{ // legacy negation (equivalent to implicit not-body when serialized to Rego).
 							Negated: true,
 							Terms: []*ast.Term{
 								{Value: ast.Equality.Ref()},
-								ast.RefTerm(ast.VarTerm("input"), ast.StringTerm("y")),
-								ast.NumberTerm("2"),
+								ast.RefTerm(ast.InputRootDocument, ast.InternedTerm("y")),
+								ast.InternedTerm(2),
 							},
 						},
 					),
 				),
 			},
+		},
+
+		// Nesting inside every-body
+		{
+			note:        "every+negation: implicit body, concrete-bound outer var",
+			notBodyOnly: true,
+			query:       "data.test.p",
+			modules: []string{`package test
+				p if {
+					z = 42
+					every y in input.xs {
+						not f(z, y)
+					}
+				}
+				f(_, _) := true`},
+			wantQueries: []string{
+				`every __local0__1, __local1__1 in input.xs { 
+					not data.test.f(42, __local1__1)
+				}`,
+			},
+		},
+		{
+			note:  "every+negation: implicit body, unknown-bound outer var",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if {
+					x = input.foo
+					every y in [1, 2] {
+						not f(x, y)
+					}
+				}
+				f(_, _) := false`},
+			wantQueries: []string{`x1 = input.foo`},
+		},
+		{
+			note:        "every+negation: explicit body, concrete-bound outer var",
+			notBodyOnly: true,
+			query:       "data.test.p",
+			modules: []string{`package test
+				p if {
+					z = 42
+					every y in input.xs {
+						not { f(z, y) }
+					}
+				}
+				f(_, _) := true`},
+			wantQueries: []string{
+				`every __local0__1, __local1__1 in input.xs { 
+					not { data.test.f(42, __local1__1) } 
+				}`,
+			},
+		},
+		{
+			note:        "every+negation: explicit body, unknown-bound outer var",
+			notBodyOnly: true,
+			query:       "data.test.p",
+			modules: []string{`package test
+				p if {
+					x = input.foo
+					every y in [1, 2] {
+						not { f(x, y) }
+					}
+				}
+				f(_, _) := false`},
+			wantQueries: []string{`x1 = input.foo`},
+		},
+		{
+			note:  "every+negation: implicit body, comparison expression",
+			query: "data.test.p",
+			modules: []string{`package test
+				p if {
+					v = input.threshold
+					every y in [1, 2] {
+						not v == y
+					}
+				}`},
+			wantQueries: []string{`not input.threshold = 1; not input.threshold = 2`},
+		},
+
+		// inner and/or, with unknowns
+		// TODO: PE optimization in #8680
+
+		{
+			note:            "not (and): unknown inside",
+			logicalKeywords: true,
+			notBodyOnly:     true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					not { input.x > 0 and true }
+				}`},
+			wantQueries: []string{`not {
+					{ __local0__1 = input.x; gt(__local0__1, 0) } and true
+				}`},
+		},
+		{
+			note:            "not (or): unknowns in both operands",
+			logicalKeywords: true,
+			notBodyOnly:     true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					not { input.x > 0 or input.y > 0 }
+				}`},
+			wantQueries: []string{`not {
+					{ __local0__1 = input.x; gt(__local0__1, 0) } or { __local1__1 = input.y; gt(__local1__1, 0) }
+				}`},
+		},
+		{
+			note:            "not (and): unknown lhs, rhs static false ",
+			logicalKeywords: true,
+			notBodyOnly:     true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					not { input.x > 0 and false }
+				}`},
+			wantQueries: []string{`not {
+					{__local0__1 = input.x; gt(__local0__1, 0)} and false
+				}`},
+		},
+		{
+			note:            "not (or): unknown rhs, lhs static true",
+			logicalKeywords: true,
+			notBodyOnly:     true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					not {true or input.y > 0}
+				}`},
+			wantQueries: []string{`not {
+					true or {__local0__1 = input.y; gt(__local0__1, 0)}
+				}`},
+		},
+		{
+			note:            "and (not): unknown inside",
+			logicalKeywords: true,
+			notBodyOnly:     true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					{ x := input.x; not x > 0 } and true 
+				}`},
+			wantQueries: []string{`{ __local0__1 = input.x; not gt(__local0__1, 0) } and true`},
+		},
+		{
+			note:            "or (not): unknown inside",
+			logicalKeywords: true,
+			notBodyOnly:     true,
+			query:           "data.test.p = true",
+			modules: []string{`package test
+				p if {
+					{ x := input.x; not x > 0 } or true 
+				}`},
+			wantQueries: []string{`{ __local0__1 = input.x; not gt(__local0__1, 0) } or true`},
 		},
 	}
 
@@ -5918,6 +7200,11 @@ func TestTopDownPartialEvalNegation(t *testing.T) {
 					continue
 				}
 
+				casePopts := popts
+				if tc.logicalKeywords {
+					casePopts.FutureKeywords = append(append([]string{}, popts.FutureKeywords...), "and", "or")
+				}
+
 				params := fixtureParams{
 					note:          tc.note,
 					query:         tc.query,
@@ -5925,7 +7212,7 @@ func TestTopDownPartialEvalNegation(t *testing.T) {
 					moduleASTs:    tc.moduleASTs,
 					data:          tc.data,
 					input:         tc.input,
-					parserOptions: popts,
+					parserOptions: casePopts,
 				}
 
 				prepareTest(ctx, t, params, func(ctx context.Context, t *testing.T, f fixture) {
@@ -5982,7 +7269,7 @@ func TestTopDownPartialEvalNegation(t *testing.T) {
 					}
 
 					for i := range tc.wantQueries {
-						expectedQueries = append(expectedQueries, ast.MustParseBodyWithOpts(tc.wantQueries[i], popts))
+						expectedQueries = append(expectedQueries, ast.MustParseBodyWithOpts(tc.wantQueries[i], casePopts))
 					}
 
 					queriesA, queriesB := bodySet(partials), bodySet(expectedQueries)
@@ -6000,7 +7287,7 @@ func TestTopDownPartialEvalNegation(t *testing.T) {
 						expectedSupport = tc.wantSupportASTs
 					} else {
 						for i := range tc.wantSupport {
-							expectedSupport = append(expectedSupport, ast.MustParseModuleWithOpts(tc.wantSupport[i], popts))
+							expectedSupport = append(expectedSupport, ast.MustParseModuleWithOpts(tc.wantSupport[i], casePopts))
 						}
 					}
 					supportA, supportB := moduleSet(support), moduleSet(expectedSupport)
@@ -6018,9 +7305,217 @@ func TestTopDownPartialEvalNegation(t *testing.T) {
 	}
 }
 
+// TestTopDownPartialEvalLogicalRoundTrip verifies semantic equivalence between
+// the original and/or modules and their residuals.
+func TestTopDownPartialEvalLogicalRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	popts := ast.ParserOptions{
+		FutureKeywords: []string{"and", "or"},
+	}
+
+	cases := []struct {
+		note   string
+		module string
+		inputs []string
+	}{
+		{
+			note: "and: both unknowns",
+			module: `package test
+				p if {
+					input.x > 0 and input.y > 0
+				}`,
+			inputs: []string{
+				`{"x": 1, "y": 2}`,   // both true -> defined
+				`{"x": -1, "y": 2}`,  // lhs false -> undefined
+				`{"x": 1, "y": -2}`,  // rhs false -> undefined
+				`{"x": -1, "y": -2}`, // both false -> undefined
+			},
+		},
+		{
+			note: "or: both unknowns",
+			module: `package test
+				p if {
+					input.x > 0 or input.y > 0
+				}`,
+			inputs: []string{
+				`{"x": 1, "y": 2}`,   // both true -> defined (single result)
+				`{"x": -1, "y": 2}`,  // lhs false -> defined via rhs
+				`{"x": 1, "y": -2}`,  // rhs false -> defined via lhs
+				`{"x": -1, "y": -2}`, // both false -> undefined
+			},
+		},
+		{
+			note: "and: explicit body operands",
+			module: `package test
+				p if {
+					{ a := input.x; a > 0} and {b := input.y; b > 0 }
+				}`,
+			inputs: []string{
+				`{"x": 1, "y": 2}`,
+				`{"x": -1, "y": 2}`,
+				`{"x": 1, "y": -2}`,
+				`{"x": -1, "y": -2}`,
+			},
+		},
+		{
+			note: "or: explicit body operands",
+			module: `package test
+				p if {
+					{ a := input.x; a > 0 } or { b := input.y; b > 0 }
+				}`,
+			inputs: []string{
+				`{"x": 1, "y": 2}`,
+				`{"x": -1, "y": 2}`,
+				`{"x": 1, "y": -2}`,
+				`{"x": -1, "y": -2}`,
+			},
+		},
+		{
+			note: "and: rhs comp, cross-scope vars",
+			module: `package test
+				p if {
+					x := input.x
+					true and {
+						y := input.threshold
+						s := {z | z := input.y[_]; z < x; z > y}
+						count(s) > 0
+					}
+				}`,
+			inputs: []string{
+				`{"x": 10, "threshold": 2, "y": [3, 5, 7]}`, // s={3,5,7} -> defined
+				`{"x": 0, "threshold": 5, "y": [3, 5, 7]}`,  // none < 0 -> undefined
+				`{"x": 10, "threshold": 2, "y": [1, 2]}`,    // none > 2 -> undefined
+			},
+		},
+		{
+			note: "or: lhs comp, cross-scope vars",
+			module: `package test
+				p if {
+					x := input.x
+					{
+						y := input.threshold
+						s := {z | z := input.y[_]; z < x; z > y}
+						count(s) > 0
+					} or false
+				}`,
+			inputs: []string{
+				`{"x": 10, "threshold": 2, "y": [3, 5, 7]}`,
+				`{"x": 0, "threshold": 5, "y": [3, 5, 7]}`,
+				`{"x": 10, "threshold": 2, "y": [1, 2]}`,
+			},
+		},
+	}
+
+	ctx := t.Context()
+
+	for _, tc := range cases {
+		t.Run(tc.note, func(t *testing.T) {
+			t.Parallel()
+
+			residualModule := residualModuleFor(t, ctx, tc.module, popts)
+
+			for _, inp := range tc.inputs {
+				t.Run("input="+inp, func(t *testing.T) {
+					orig := pIsDefined(t, ctx, tc.module, "test", inp, popts)
+					residual := pIsDefined(t, ctx, residualModule, "test_residual", inp, popts)
+					if orig != residual {
+						t.Errorf("round-trip mismatch for input %s: orig=%v residual=%v\nresidual module:\n%s",
+							inp, orig, residual, residualModule)
+					}
+				})
+			}
+		})
+	}
+}
+
+func residualModuleFor(t *testing.T, ctx context.Context, module string, popts ast.ParserOptions) string {
+	t.Helper()
+
+	compiler, err := ast.CompileModulesWithOpt(
+		map[string]string{"test.rego": module},
+		ast.CompileOpts{ParserOptions: popts})
+	if err != nil {
+		t.Fatalf("compile: %v", err)
+	}
+
+	queryBody, err := compiler.QueryCompiler().Compile(
+		ast.MustParseBodyWithOpts("data.test.p = true", popts))
+	if err != nil {
+		t.Fatalf("compile query: %v", err)
+	}
+
+	store := inmem.New()
+	txn := storage.NewTransactionOrDie(ctx, store)
+	defer store.Abort(ctx, txn)
+
+	partials, _, err := NewQuery(queryBody).
+		WithCompiler(compiler).
+		WithStore(store).
+		WithTransaction(txn).
+		WithUnknowns([]*ast.Term{ast.MustParseTerm("input")}).
+		PartialRun(ctx)
+	if err != nil {
+		t.Fatalf("PartialRun: %v", err)
+	}
+
+	var sb strings.Builder
+	sb.WriteString("package test_residual\n\n")
+	for _, body := range partials {
+		sb.WriteString("p if {\n")
+		for _, expr := range body {
+			sb.WriteByte('\t')
+			sb.WriteString(expr.String())
+			sb.WriteByte('\n')
+		}
+		sb.WriteString("}\n")
+	}
+	return sb.String()
+}
+
+func pIsDefined(t *testing.T, ctx context.Context, module, pkg, inputJSON string, popts ast.ParserOptions) bool {
+	t.Helper()
+
+	// An empty residual module (no `p` rule) means PE proved p is unconditionally
+	// undefined; short-circuit to false without going through the compiler
+	if pkg == "test_residual" && !strings.Contains(module, "p if") {
+		return false
+	}
+
+	compiler, err := ast.CompileModulesWithOpt(
+		map[string]string{pkg + ".rego": module},
+		ast.CompileOpts{ParserOptions: popts})
+	if err != nil {
+		t.Fatalf("compile %s: %v\nmodule:\n%s", pkg, err, module)
+	}
+
+	queryBody, err := compiler.QueryCompiler().Compile(
+		ast.MustParseBodyWithOpts("data."+pkg+".p", popts))
+	if err != nil {
+		t.Fatalf("compile query: %v", err)
+	}
+
+	store := inmem.New()
+	txn := storage.NewTransactionOrDie(ctx, store)
+	defer store.Abort(ctx, txn)
+
+	rs, err := NewQuery(queryBody).
+		WithCompiler(compiler).
+		WithStore(store).
+		WithTransaction(txn).
+		WithInput(ast.MustParseTerm(inputJSON)).
+		Run(ctx)
+	if err != nil {
+		t.Fatalf("query Run: %v", err)
+	}
+	return len(rs) > 0
+}
+
+// Transformed on copies, as ast.Transform rewrites refs in place.
+
 func replaceWildcardsInBodySet(s bodySet) {
 	for i := range s {
-		x, _ := ast.TransformVars(s[i], func(v ast.Var) (ast.Value, error) {
+		x, _ := ast.TransformVars(s[i].Copy(), func(v ast.Var) (ast.Value, error) {
 			if v.IsWildcard() {
 				return ast.WildcardValue, nil
 			}
@@ -6032,7 +7527,7 @@ func replaceWildcardsInBodySet(s bodySet) {
 
 func replaceWildcardsInModuleSet(s moduleSet) {
 	for i := range s {
-		x, _ := ast.TransformVars(s[i], func(v ast.Var) (ast.Value, error) {
+		x, _ := ast.TransformVars(s[i].Copy(), func(v ast.Var) (ast.Value, error) {
 			if v.IsWildcard() {
 				return ast.WildcardValue, nil
 			}
@@ -6215,10 +7710,15 @@ func (s moduleSet) Equal(other moduleSet) bool {
 	return len(s.Diff(other)) == 0 && len(other.Diff(s)) == 0
 }
 
-var testserver = srv(func(w http.ResponseWriter, _ *http.Request) error {
-	w.Header().Set("Content-Type", "application/json")
-	return json.NewEncoder(w).Encode(map[string]any{
-		"p": "x",
+// testserver is started on first use rather than at init: as a package-level
+// variable it bound a port for every run of this package's tests and
+// benchmarks, one test being the only thing that asks for it.
+var testserver = sync.OnceValue(func() *httptest.Server {
+	return srv(func(w http.ResponseWriter, _ *http.Request) error {
+		w.Header().Set("Content-Type", "application/json")
+		return json.NewEncoder(w).Encode(map[string]any{
+			"p": "x",
+		})
 	})
 })
 

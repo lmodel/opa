@@ -16,8 +16,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
+
+	"google.golang.org/protobuf/proto"
 
 	"github.com/open-policy-agent/opa/internal/compiler/wasm"
 	"github.com/open-policy-agent/opa/internal/debug"
@@ -50,6 +51,22 @@ const (
 	TargetPlan = "plan"
 )
 
+// Plan output formats. Only meaningful when Target == TargetPlan.
+const (
+	PlanFormatJSON  = "json"
+	PlanFormatProto = "proto"
+)
+
+// PlanFormats contains the list of plan output formats supported by the compiler.
+var PlanFormats = []string{PlanFormatJSON, PlanFormatProto}
+
+// PlanAddonUnplannedRules is a plan addon that also includes a list of locations for
+// unplanned rules for coverage reporting.
+const PlanAddonUnplannedRules = "unplanned_rules"
+
+// PlanAddons contains the list of plan addons supported by the compiler.
+var PlanAddons = []string{PlanAddonUnplannedRules}
+
 // Targets contains the list of targets supported by the compiler.
 var Targets = []string{
 	TargetRego,
@@ -73,6 +90,7 @@ type Compiler struct {
 	useRegoAnnotationEntrypoints bool                       // allow compiler to late-bind entrypoints from annotated rules in policies.
 	optimizationLevel            int                        // how aggressive should optimization be
 	target                       string                     // target type (wasm, rego, etc.)
+	planFormat                   string                     // plan output format (json or proto)
 	output                       *io.Writer                 // output stream to write bundle to
 	entrypointrefs               []*ast.Term                // validated entrypoints computed from default decision or manually supplied entrypoints
 	compiler                     *ast.Compiler              // rego ast compiler used for semantic checks and rewriting
@@ -89,6 +107,7 @@ type Compiler struct {
 	regoVersion                  ast.RegoVersion
 	followSymlinks               bool      // optionally follow symlinks in the bundle directory when building the bundle
 	externalRefs                 []ast.Ref // external entrypoints provided dynamically
+	planAddons                   []string  // optional extra contents to include in the plan (e.g. unplanned_rules)
 }
 
 // New returns a new compiler instance that can be invoked.
@@ -97,6 +116,7 @@ func New() *Compiler {
 		asBundle:          false,
 		optimizationLevel: 0,
 		target:            TargetRego,
+		planFormat:        PlanFormatJSON,
 		debug:             debug.Discard(),
 		regoVersion:       ast.DefaultRegoVersion,
 	}
@@ -155,6 +175,12 @@ func (c *Compiler) WithOptimizationLevel(n int) *Compiler {
 // WithTarget sets the output target type to use.
 func (c *Compiler) WithTarget(t string) *Compiler {
 	c.target = t
+	return c
+}
+
+// WithPlanFormat sets the wire-format (json or proto) for plan-target builds.
+func (c *Compiler) WithPlanFormat(f string) *Compiler {
+	c.planFormat = f
 	return c
 }
 
@@ -272,6 +298,13 @@ func (c *Compiler) WithRegoVersion(v ast.RegoVersion) *Compiler {
 	return c
 }
 
+// WithPlanAddons sets optional extra data to include in the generated plan.
+// The only supported value is "unplanned_rules".
+func (c *Compiler) WithPlanAddons(contents []string) *Compiler {
+	c.planAddons = contents
+	return c
+}
+
 func addEntrypointsFromAnnotations(c *Compiler, arefs []*ast.AnnotationsRef) error {
 	for _, aref := range arefs {
 		var entrypoint ast.Ref
@@ -292,15 +325,19 @@ func addEntrypointsFromAnnotations(c *Compiler, arefs []*ast.AnnotationsRef) err
 				continue // Wrong scope type. Bail out early.
 			}
 
-			// Get a slash-based path, as with a CLI-provided entrypoint.
+			// Get a slash-based path, as with a CLI-provided entrypoint. Segments
+			// are percent-encoded so a "/" within a segment can be told apart from
+			// a path separator.
 			escapedPath, err := storage.NewPathForRef(entrypoint)
 			if err != nil {
 				return err
 			}
-			slashPath := strings.Join(escapedPath, "/")
+			slashPath := escapedPath.String()[1:]
 
-			// Add new entrypoints to the appropriate places.
-			c.entrypoints = c.entrypoints.Append(slashPath)
+			// Add new entrypoints to the appropriate places. Names are not
+			// deduplicated here: CLI names are unescaped while these are escaped,
+			// so dedupEntrypointRefs drops duplicates by ref to keep both slices aligned.
+			c.entrypoints = append(c.entrypoints, slashPath)
 			c.entrypointrefs = append(c.entrypointrefs, ast.NewTerm(entrypoint))
 		}
 	}
@@ -313,6 +350,22 @@ func (c *Compiler) Build(ctx context.Context) error {
 
 	if c.regoVersion == ast.RegoUndefined {
 		return errors.New("rego-version not set")
+	}
+
+	if !slices.Contains(PlanFormats, c.planFormat) {
+		return fmt.Errorf("unsupported plan format %q (want one of %v)", c.planFormat, PlanFormats)
+	}
+	if c.planFormat != PlanFormatJSON && c.target != TargetPlan {
+		return fmt.Errorf("plan format %q is only valid with target %q", c.planFormat, TargetPlan)
+	}
+
+	for _, addon := range c.planAddons {
+		if !slices.Contains(PlanAddons, addon) {
+			return fmt.Errorf("unsupported plan addon %q (want one of %v)", addon, PlanAddons)
+		}
+	}
+	if len(c.planAddons) > 0 && c.target != TargetPlan {
+		return fmt.Errorf("plan addons are only valid with target %q", TargetPlan)
 	}
 
 	if err := c.init(); err != nil {
@@ -374,14 +427,31 @@ func (c *Compiler) Build(ctx context.Context) error {
 			return err
 		}
 
-		bs, err := json.Marshal(c.policy)
+		var (
+			bs       []byte
+			planPath string
+			err      error
+		)
+		switch c.planFormat {
+		case PlanFormatProto:
+			// Deterministic for byte-identical plan.pb across builds.
+			pbPolicy, perr := ir.PolicyToProto(c.policy)
+			if perr != nil {
+				return perr
+			}
+			bs, err = proto.MarshalOptions{Deterministic: true}.Marshal(pbPolicy)
+			planPath = bundle.PlanProtoFile
+		case PlanFormatJSON:
+			bs, err = json.Marshal(c.policy)
+			planPath = bundle.PlanFile
+		}
 		if err != nil {
 			return err
 		}
 
 		c.bundle.PlanModules = append(c.bundle.PlanModules, bundle.PlanModuleFile{
-			Path: bundle.PlanFile,
-			URL:  bundle.PlanFile,
+			Path: planPath,
+			URL:  planPath,
 			Raw:  bs,
 		})
 	case TargetRego:
@@ -395,6 +465,8 @@ func (c *Compiler) Build(ctx context.Context) error {
 	if c.metadata != nil {
 		c.bundle.Manifest.Metadata = *c.metadata
 	}
+
+	c.bundle.SetManifestProto(c.target == TargetPlan && c.planFormat == PlanFormatProto)
 
 	if err := c.bundle.FormatModulesWithOptions(bundle.BundleFormatOptions{
 		RegoVersion:               c.regoVersion,
@@ -456,9 +528,9 @@ func (c *Compiler) checkNumEntrypoints() error {
 // entrypoint annotation, it can lead to duplicates in the slice of
 // entrypoint refs. This can cause panics down the line due to c.entrypoints
 // being a different length than c.entrypointrefs. As a result, we have to
-// trim out the duplicates.
+// trim out the duplicates, from the names and refs together so they stay aligned.
 func (c *Compiler) dedupEntrypointRefs() error {
-	// Build list of entrypoint refs, without duplicates.
+	newEntrypoints := make(orderedStringSet, 0, len(c.entrypoints))
 	newEntrypointRefs := make([]*ast.Term, 0, len(c.entrypointrefs))
 	entrypointRefSet := make(map[string]struct{}, len(c.entrypointrefs))
 	for i, r := range c.entrypointrefs {
@@ -466,9 +538,11 @@ func (c *Compiler) dedupEntrypointRefs() error {
 		// Store only the first index in the list that matches.
 		if _, ok := entrypointRefSet[refString]; !ok {
 			entrypointRefSet[refString] = struct{}{}
+			newEntrypoints = append(newEntrypoints, c.entrypoints[i])
 			newEntrypointRefs = append(newEntrypointRefs, c.entrypointrefs[i])
 		}
 	}
+	c.entrypoints = newEntrypoints
 	c.entrypointrefs = newEntrypointRefs
 	return nil
 }
@@ -507,15 +581,9 @@ func (c *Compiler) initBundle(usePath bool) error {
 	}
 
 	if c.asBundle {
-		var names []string
+		names := util.KeysSorted(load.Bundles)
 
-		for k := range load.Bundles {
-			names = append(names, k)
-		}
-
-		sort.Strings(names)
-		var bundles []*bundle.Bundle
-
+		bundles := make([]*bundle.Bundle, 0, len(names))
 		for _, k := range names {
 			bundles = append(bundles, load.Bundles[k])
 		}
@@ -541,14 +609,7 @@ func (c *Compiler) initBundle(usePath bool) error {
 	result.Manifest.Init()
 	result.Data = load.Files.Documents
 
-	modules := make([]string, 0, len(load.Files.Modules))
-	for k := range load.Files.Modules {
-		modules = append(modules, k)
-	}
-
-	sort.Strings(modules)
-
-	for _, module := range modules {
+	for _, module := range util.KeysSorted(load.Files.Modules) {
 		path := filepath.ToSlash(load.Files.Modules[module].Name)
 		result.Modules = append(result.Modules, bundle.ModuleFile{
 			URL:    path,
@@ -680,7 +741,8 @@ func (c *Compiler) compilePlan(context.Context) error {
 		WithQueries(queries).
 		WithModules(modules).
 		WithBuiltinDecls(builtins).
-		WithDebug(c.debug.Writer())
+		WithDebug(c.debug.Writer()).
+		WithUnplannedRules(slices.Contains(c.planAddons, PlanAddonUnplannedRules))
 	policy, err := p.Plan()
 	if err != nil {
 		return err
@@ -848,9 +910,11 @@ func pruneBundleEntrypoints(b *bundle.Bundle, entrypointrefs []*ast.Term) error 
 				}
 			}
 
-			// Prune annotations and comments for entrypoint rules
+			// Prune annotations and comments for entrypoint rules, but not for
+			// packages: the package is always retained in the bundle.
 			annotations, comments := pruneAnnotationsAndComments(mf.Parsed, func(annotation *ast.Annotations) bool {
-				return annotation.GetTargetPath().Equal(entrypoint.Value)
+				return annotation.GetTargetPath().Equal(entrypoint.Value) &&
+					!mf.Parsed.Package.Path.Equal(entrypoint.Value)
 			})
 
 			// If any rules or annotations were dropped update the module accordingly
@@ -1056,8 +1120,8 @@ func (o *optimizer) Do(ctx context.Context) error {
 		o.bundle.Modules = o.merge(o.bundle.Modules, modules)
 	}
 
-	sort.Slice(o.bundle.Modules, func(i, j int) bool {
-		return o.bundle.Modules[i].URL < o.bundle.Modules[j].URL
+	slices.SortFunc(o.bundle.Modules, func(a, b bundle.ModuleFile) int {
+		return strings.Compare(a.URL, b.URL)
 	})
 
 	// NOTE(tsandall): prune out rules and data that are not referenced in the bundle
@@ -1073,7 +1137,6 @@ func (o *optimizer) Bundle() *bundle.Bundle {
 }
 
 func (o *optimizer) findRequiredDocuments(ref *ast.Term) []string {
-
 	keep := map[string]*ast.Location{}
 	deps := map[*ast.Rule]struct{}{}
 
@@ -1093,13 +1156,7 @@ func (o *optimizer) findRequiredDocuments(ref *ast.Term) []string {
 		})
 	}
 
-	result := make([]string, 0, len(keep))
-
-	for k := range keep {
-		result = append(result, k)
-	}
-
-	sort.Strings(result)
+	result := util.KeysSorted(keep)
 
 	for _, k := range result {
 		o.debug.Printf("%s: disables inlining of %v", keep[k], k)
@@ -1138,7 +1195,7 @@ func (o *optimizer) getSupportForEntrypoint(queries []ast.Body, entrypoint *ast.
 	path := entrypoint.Value.(ast.Ref)
 	name := ast.Var(path[len(path)-1].Value.(ast.String))
 	module := &ast.Module{Package: &ast.Package{Path: path[:len(path)-1]}}
-	module.SetRegoVersion(o.regoVersion)
+	module.SetRegoVersionSpan(ast.RegoVersionSpanOf(o.regoVersion))
 
 	for _, query := range queries {
 		// NOTE(tsandall): when the query refers to the original entrypoint, throw it
@@ -1307,13 +1364,7 @@ type orderedStringSet []string
 
 func (ss orderedStringSet) Append(s ...string) orderedStringSet {
 	for _, x := range s {
-		var found bool
-		for _, other := range ss {
-			if x == other {
-				found = true
-			}
-		}
-		if !found {
+		if !slices.Contains(ss, x) {
 			ss = append(ss, x)
 		}
 	}
@@ -1371,8 +1422,5 @@ func (rs *refSet) Sorted() []*ast.Term {
 	for i := range rs.s {
 		terms[i] = ast.NewTerm(rs.s[i])
 	}
-	sort.Slice(terms, func(i, j int) bool {
-		return terms[i].Value.Compare(terms[j].Value) < 0
-	})
-	return terms
+	return util.SortedFunc(terms, ast.TermValueCompare)
 }

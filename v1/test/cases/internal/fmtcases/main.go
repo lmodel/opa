@@ -36,8 +36,16 @@ func main() {
 		fmt.Println("Version must be an integer")
 		os.Exit(1)
 	}
-	sourceRegoVersion := ast.RegoVersionFromInt(sv)
-	targetRegoVersion := ast.RegoVersionFromInt(tv)
+	sourceRegoVersion, err := ast.RegoVersionFromIntStrict(sv)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	targetRegoVersion, err := ast.RegoVersionFromIntStrict(tv)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	fmt.Printf("Formatting test cases '%s'->'%s' to rego-version %s\n", s, t, targetRegoVersion)
 
@@ -89,19 +97,17 @@ func copyEntry(sourceRoot string, sourceRegoVersion ast.RegoVersion, e os.DirEnt
 		}
 
 		// Format test modules
-		for _, testCase := range testCases.Cases { //nolint:gocritic
-			for i, module := range testCase.Modules {
-				bs, err := format.SourceWithOpts(fmt.Sprintf("mod%d.rego", i), []byte(module),
+		for i := range testCases.Cases {
+			for j, module := range testCases.Cases[i].Modules {
+				bs, err := format.SourceWithOpts(fmt.Sprintf("mod%d.rego", j), util.StringToByteSlice(module),
 					format.Opts{
-						ParserOptions: &ast.ParserOptions{
-							RegoVersion: sourceRegoVersion,
-						},
-						RegoVersion: targetRegoVersion,
+						ParserOptions: &ast.ParserOptions{RegoVersion: sourceRegoVersion},
+						RegoVersion:   targetRegoVersion,
 					})
 				if err != nil {
-					fmt.Printf("Error formatting module %s %s:%d: %v\n", path, testCase.Note, i, err)
+					fmt.Printf("Error formatting module %s %s:%d: %v\n", path, testCases.Cases[i].Note, j, err)
 				} else {
-					testCase.Modules[i] = string(bs)
+					testCases.Cases[i].Modules[j] = util.ByteSliceToString(bs)
 				}
 			}
 		}
@@ -115,8 +121,8 @@ func copyEntry(sourceRoot string, sourceRegoVersion ast.RegoVersion, e os.DirEnt
 			return err
 		}
 
-		text := "---\n" + buf.String()
-		if err := os.WriteFile(targetPath, []byte(text), i.Mode()); err != nil {
+		text := append([]byte("---\n"), buf.Bytes()...)
+		if err := os.WriteFile(targetPath, text, i.Mode()); err != nil {
 			return err
 		}
 	}

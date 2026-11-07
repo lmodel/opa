@@ -1,6 +1,6 @@
 ---
 sidebar_label: not
-title: 'Rego Keyword Examples: not'
+title: 'Rego Keyword: not'
 ---
 
 The `not` keyword is the primary means of expressing
@@ -23,7 +23,7 @@ allow if {
 ## Improved Negation Semantics
 
 The `future.keywords.not` import fixes a long-standing semantic issue with
-negation in Rego.
+negation in Rego. The [rego.v2 import](./import#importing-regov2) enables it too.
 
 ### The problem with legacy negation
 
@@ -89,7 +89,7 @@ admin(group) if group in ["admin", "sudo"]
 <RunSnippet files="#input.negation1.json" command="data.negation.restricted"/>
 
 :::important
-Notice how if we remove the `future.keywords.not` import in the above policy, the `restricted` rule starts failing.
+Notice that removing the `future.keywords.not` import in the above policy causes the `restricted` rule to start failing.
 This is a consequence of the `lookup()` function failing with an `undefined` value.
 :::
 
@@ -152,3 +152,31 @@ variable bindings makes every expression in the body true.
 
 Variables declared inside the body (`listener` above) are scoped locally and are not
 visible outside the `not` block.
+
+Assignments are only allowed in an explicit body. Since the binding never escapes the
+negation, assigning in the single-expression form (`not listener := server.listener`)
+is rejected at compile-time:
+
+```
+rego_compile_error: cannot assign vars inside negated expression
+```
+
+## Combining with `and` and `or`
+
+`not` binds tighter than the [`and` and `or` keywords](./logical), so `not a and b`
+negates only `a`. To negate a whole conjunction or disjunction, group it:
+
+```rego
+package negation
+
+import future.keywords.not
+import future.keywords.or
+
+p if {
+    not (input.a or input.b)
+}
+```
+
+Grouping with `not (...)` or `not { ... }` requires the `future.keywords.not` import in
+addition to the `and`/`or` import, or the `rego.v2` import, which enables all three. Without it the parentheses are read as an ordinary
+grouped expression, which cannot contain `and` or `or`.

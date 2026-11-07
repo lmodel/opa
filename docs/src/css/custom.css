@@ -2,6 +2,10 @@
 	display: none;
 }
 
+.navbar__items--right {
+	--ifm-navbar-item-padding-horizontal: 0.5rem;
+}
+
 /* This is done to show more of a code example on mobile/tablet */
 pre {
 	tab-size: 4;
@@ -48,4 +52,8 @@ pre {
 [data-theme='dark'] {
 	--docusaurus-highlighted-code-line-bg: rgb(88, 102, 18);
 	--ifm-link-color: var(--ifm-color-primary-light);
+}
+
+body.hide-announcement-bar .theme-announcement-bar {
+  display: none;
 }

@@ -1,3 +1,5 @@
+//go:build !go1.27
+
 // Copyright 2020 The OPA Authors.  All rights reserved.
 // Use of this source code is governed by an Apache2
 // license that can be found in the LICENSE file.
@@ -16,12 +18,49 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
 	internal_logging "github.com/open-policy-agent/opa/internal/logging"
 	"github.com/open-policy-agent/opa/v1/logging"
+	"github.com/open-policy-agent/opa/v1/repl"
+	"github.com/open-policy-agent/opa/v1/storage/inmem"
 	"github.com/open-policy-agent/opa/v1/test/e2e"
 	"github.com/open-policy-agent/opa/v1/util/test"
 	"github.com/spf13/cobra"
 )
+
+func TestREPLJSONOutputBytes(t *testing.T) {
+	store := inmem.New()
+	var buf bytes.Buffer
+	r := repl.New(store, "", &buf, "json", 0, "")
+
+	ctx := t.Context()
+	if err := r.OneShot(ctx, "1 == 1"); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	expected := `{
+  "result": [
+    {
+      "expressions": [
+        {
+          "value": true,
+          "text": "1 == 1",
+          "location": {
+            "row": 1,
+            "col": 1
+          }
+        }
+      ]
+    }
+  ]
+}
+`
+
+	if diff := cmp.Diff(expected, buf.String()); diff != "" {
+		t.Errorf("unexpected result (-want, +got):\n%s", diff)
+	}
+}
 
 func TestRunServerBase(t *testing.T) {
 	params := newTestRunParams()
@@ -87,8 +126,8 @@ func TestRunServerBaseListenOnLocalhost(t *testing.T) {
 		t.Fatalf("Expected 1 listening address but got %v", len(rt.Addrs()))
 	}
 
-	expected := "127.0.0.1:8181"
-	if rt.Addrs()[0] != expected {
+	expected := "127.0.0.1:"
+	if !strings.HasPrefix(rt.Addrs()[0], expected) {
 		t.Fatalf("Expected listening address %v but got %v", expected, rt.Addrs()[0])
 	}
 
@@ -238,6 +277,43 @@ func TestInitRuntimeSkipKnownSchemaCheck(t *testing.T) {
 	})
 }
 
+func TestInitRuntimeSharedAuthzDependencyNotSchemaChecked(t *testing.T) {
+
+	fs := map[string]string{
+		"test/authz.rego": `package system.authz
+		import rego.v1
+
+		import data.utils.jwt
+
+		default allow := false
+
+		allow if {
+		  jwt.bearer_token != ""
+		}`,
+		"test/jwt.rego": `package utils.jwt
+		import rego.v1
+
+		bearer_token := t if {
+		  v := input.other_token
+		  startswith(v, "Bearer ")
+		  t := substring(v, count("Bearer "), -1)
+		}`,
+	}
+
+	test.WithTempFS(fs, func(rootDir string) {
+		rootDir = filepath.Join(rootDir, "test")
+
+		params := newTestRunParams()
+		if err := params.authorization.Set("basic"); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := initRuntime(t.Context(), params, []string{rootDir}, false); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
 func TestRunServerUploadPolicy(t *testing.T) {
 	v0Policy := `package test
 	p { q["a"] }
@@ -314,7 +390,7 @@ func TestRunServerUploadPolicy(t *testing.T) {
 
 			if tc.expErr {
 				if err == nil {
-					t.Fatalf("Expected error but got nil")
+					t.Fatal("Expected error but got nil")
 				}
 			} else {
 				if err != nil {
@@ -443,7 +519,7 @@ func TestInitRuntimeAddrSetByUser(t *testing.T) {
 func newTestRunParams() runCmdParams {
 	params := newRunParams()
 	params.rt.GracefulShutdownPeriod = 1
-	params.rt.Addrs = &[]string{"localhost:8181"}
+	params.rt.Addrs = &[]string{"localhost:0"}
 	params.rt.DiagnosticAddrs = &[]string{}
 	params.serverMode = true
 	return params

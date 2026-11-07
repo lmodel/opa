@@ -19,22 +19,25 @@ import (
 	"github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/topdown/builtins"
 	"github.com/open-policy-agent/opa/v1/topdown/durationparser"
+	"github.com/open-policy-agent/opa/v1/util"
 )
 
-var tzCache map[string]*time.Location
-var tzCacheMutex *sync.Mutex
+var (
+	tzCache      = make(map[string]*time.Location)
+	tzCacheMutex = &sync.Mutex{}
 
-// 1677-09-21T00:12:43.145224192-00:00
-var minDateAllowedForNsConversion = time.Unix(0, math.MinInt64)
+	// 1677-09-21T00:12:43.145224192-00:00
+	minDateAllowedForNsConversion = time.Unix(0, math.MinInt64)
 
-// 2262-04-11T23:47:16.854775807-00:00
-var maxDateAllowedForNsConversion = time.Unix(0, math.MaxInt64)
+	// 2262-04-11T23:47:16.854775807-00:00
+	maxDateAllowedForNsConversion = time.Unix(0, math.MaxInt64)
 
-var durationCoefficients = map[string]int{
-	"d": 24,
-	"w": 7 * 24,
-	"y": 365 * 24,
-}
+	durationCoefficients = map[string]int{
+		"d": 24,
+		"w": 7 * 24,
+		"y": 365 * 24,
+	}
+)
 
 // parseExtendedDuration parses a duration string that may contain extended
 // units (d, w, y) mixed with standard Go duration units (h, m, s, ms, us, ns).
@@ -46,13 +49,10 @@ func parseExtendedDuration(s string) (int64, error) {
 
 	if !strings.ContainsAny(s, "dwy") {
 		v, err := time.ParseDuration(s)
-		if err != nil {
-			return 0, err
-		}
-		return int64(v), nil
+		return int64(v), err
 	}
 
-	result, err := durationparser.Parse("", []byte(s))
+	result, err := durationparser.Parse("", util.StringToByteSlice(s))
 	if err != nil {
 		return 0, fmt.Errorf("time: invalid duration %q", s)
 	}
@@ -312,7 +312,7 @@ func builtinDiff(_ BuiltinContext, operands []*ast.Term, iter func(*ast.Term) er
 	}
 	if day < 0 {
 		// Days in month:
-		t := time.Date(y1, M1, 32, 0, 0, 0, 0, time.UTC)
+		t := time.Date(y1, M1, 32, 0, 0, 0, 0, time.UTC) //nolint:revive // 'day argument should be between 1 and 31'
 		day += 32 - t.Day()
 		month--
 	}
@@ -420,6 +420,4 @@ func init() {
 	RegisterBuiltinFunc(ast.Weekday.Name, builtinWeekday)
 	RegisterBuiltinFunc(ast.AddDate.Name, builtinAddDate)
 	RegisterBuiltinFunc(ast.Diff.Name, builtinDiff)
-	tzCacheMutex = &sync.Mutex{}
-	tzCache = make(map[string]*time.Location)
 }

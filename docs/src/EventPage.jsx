@@ -1,3 +1,4 @@
+import Head from "@docusaurus/Head";
 import Heading from "@theme/Heading";
 import Layout from "@theme/Layout";
 import React, { useEffect, useState } from "react";
@@ -43,14 +44,28 @@ const EventPage = (props) => {
   }, [eventStart, eventEnd]);
 
   const bannerUrl = `/img/event-banners/${event.banner}`;
+  const hasAgendaItems = event.agenda.some((dayAgenda) => dayAgenda.items.length > 0);
 
   return (
     <Layout title={event.title}>
-      {eventStatus === "after" && (
-        <div className={styles.eventPassedBanner}>
-          This event has now passed but you can still browse session links
-        </div>
+      {event.callout && (
+        <Head>
+          <body className="hide-announcement-bar" />
+        </Head>
       )}
+      {eventStatus === "after"
+        ? (
+          <div className={styles.eventWarningBanner}>
+            This event has now passed but you can still browse session links
+          </div>
+        )
+        : (
+          !hasAgendaItems && (
+            <div className={styles.eventWarningBanner}>
+              Schedule TBC, check back nearer the event
+            </div>
+          )
+        )}
 
       <div className={styles.pageLayout}>
         <div className={styles.sidebar}>
@@ -82,25 +97,35 @@ const EventPage = (props) => {
         </div>
 
         <div className={styles.mainContent}>
+          {event.callout && (
+            <div className={styles.eventCallout}>
+              {event.callout.text} <a href={event.callout.url}>{event.callout.linkText}</a>
+            </div>
+          )}
+
           <div className={styles.section}>
             <Heading as="h2" className={styles.sectionTitle}>
               Agenda
             </Heading>
-            {event.agenda.map((dayAgenda, dayIndex) => (
-              <div key={dayIndex} className={styles.daySection}>
-                <h3 className={styles.dayTitle}>
-                  {dayAgenda.day}, {dayAgenda.date}
-                </h3>
-                <div className={styles.dayItems}>
-                  {dayAgenda.items.map((item, itemIndex) => (
-                    <AgendaItem
-                      key={itemIndex}
-                      item={item}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+            {hasAgendaItems
+              ? (
+                event.agenda.map((dayAgenda, dayIndex) => (
+                  <div key={dayIndex} className={styles.daySection}>
+                    <h3 className={styles.dayTitle}>
+                      {dayAgenda.day}, {dayAgenda.date}
+                    </h3>
+                    <div className={styles.dayItems}>
+                      {dayAgenda.items.map((item, itemIndex) => (
+                        <AgendaItem
+                          key={itemIndex}
+                          item={item}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )
+              : <p>TBC</p>}
           </div>
         </div>
       </div>

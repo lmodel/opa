@@ -128,7 +128,7 @@ func TestCmdFlagsImpl_CheckEnvironmentVariables_ChildCommandReturnsSingleErr(t *
 	t.Setenv("OPA_CHILD_SECOND_BOOL", "7")
 	err := child.PreRunE(child, []string{})
 	if err == nil {
-		t.Fatalf("expected error, found none")
+		t.Fatal("expected error, found none")
 	}
 	expectedString := "invalid argument \"7\""
 	if !strings.Contains(err.Error(), expectedString) {
@@ -145,16 +145,16 @@ func TestCmdFlagsImpl_CheckEnvironmentVariables_ChildCommandReturnsMultipleErr(t
 	err := child.PreRunE(child, []string{"child"})
 	expectedString := "invalid argument"
 	if err == nil {
-		t.Fatalf("expected error, found none")
+		t.Fatal("expected error, found none")
 	}
 	if !strings.Contains(err.Error(), expectedString) {
 		t.Fatalf("expected error to include %q, instead got %q", expectedString, err.Error())
 	}
 	if !strings.Contains(err.Error(), "7") {
-		t.Fatalf("expected error for invalid int 7 as argument for boolean flag")
+		t.Fatal("expected error for invalid int 7 as argument for boolean flag")
 	}
 	if !strings.Contains(err.Error(), "true") {
-		t.Fatalf("expected error for invalid int 7 as argument for int flag")
+		t.Fatal("expected error for invalid int 7 as argument for int flag")
 	}
 }
 
@@ -171,5 +171,36 @@ func TestCmdFlagsImpl_CheckEnvironmentVariables_ConfirmCommandFlagPrecedence(t *
 	expectation := "42; ; true"
 	if out != expectation {
 		t.Fatalf("expected flag values %q, got %q", expectation, out)
+	}
+}
+
+func TestCmdFlagsImpl_CheckEnvironmentVariables_EmptyEnvVarIgnored(t *testing.T) {
+	rootWriter := bytes.NewBuffer([]byte{})
+	root := mockRootCmd(rootWriter)
+	t.Setenv("OPA_INT", "")
+	if err := root.PreRunE(root, []string{}); err != nil {
+		t.Fatalf("unexpected error: %s", err.Error())
+	}
+	root.Run(root, []string{})
+	out := rootWriter.String()
+	expectation := "0; ; false"
+	if out != expectation {
+		t.Fatalf("expected default flag values %q, got %q", expectation, out)
+	}
+}
+
+func TestCmdFlagsImpl_CheckEnvironmentVariables_NonUppercaseEnvVarIgnored(t *testing.T) {
+	rootWriter := bytes.NewBuffer([]byte{})
+	root := mockRootCmd(rootWriter)
+	t.Setenv("OPA_Int", "3")
+	t.Setenv("opa_bool", "true")
+	if err := root.PreRunE(root, []string{}); err != nil {
+		t.Fatalf("unexpected error: %s", err.Error())
+	}
+	root.Run(root, []string{})
+	out := rootWriter.String()
+	expectation := "0; ; false"
+	if out != expectation {
+		t.Fatalf("expected default flag values %q, got %q", expectation, out)
 	}
 }
