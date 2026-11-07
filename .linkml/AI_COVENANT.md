@@ -19,14 +19,14 @@ Do not submit anything you cannot fully stand behind.
 
 ## A note specific to this project
 
-This repository is a fork of Open Policy Agent (OPA). OPA's tree sits unchanged at the repository's root, and this project adds a LinkML schema of the JSON formats OPA defines under `.linkml/`.
+This repository is a fork of Open Policy Agent (OPA). OPA's tree is unchanged at the repository's root, and this project adds a LinkML schema of the JSON formats OPA defines under `.linkml/`.
 
 Two failure modes are worse here than elsewhere. One is a rule that a model produced, presented as OPA's: a reader cannot tell it from the real thing, and a tool built on the schema enforces it. The other is a mapping guessed rather than read, which a reader takes as an equivalence.
 
 So:
 
 - **OPA's files stay OPA's.** A change to a file `.linkml/tests/upstream_tree.tsv` lists goes to [OPA](https://github.com/open-policy-agent/opa) first, and `.linkml/tests/test_upstream.py` fails on an edit here.
-- **An element says what OPA's files say.** Every module under `.linkml/src/opa/schema/` is written by `.linkml/scripts/opa_to_linkml.py` from OPA's JSON Schemas, data files and Go types, and `.linkml/tests/test_parity.py` holds the schema's verdicts to OPA's own.
+- **An element says what OPA's files say.** Every module under `.linkml/src/opa/schema/` is written by `.linkml/scripts/opa_to_linkml.py` from OPA's JSON Schemas, data files and Go types, and `.linkml/tests/test_parity.py` checks the schema's verdicts against OPA's own.
 - **A difference from OPA is listed with its reason.** `.linkml/parity/structural.yaml` names each, and a fault of OPA's own goes to OPA.
 - **A mapping is read at its source first.** Open the target term before you state a mapping, and leave out what you cannot confirm.
 - **Quoted text keeps its owners' rights.** Where OPA's Go comments describe an element, the description is OPA's words, under OPA's licence; [NOTICE](NOTICE) states the terms.

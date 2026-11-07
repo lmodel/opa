@@ -19,7 +19,7 @@ This page says where each module of the schema comes from, how the model differs
 
 The plan's `{type, stmt}` statements and `{type, value}` operands become one class per kind under an abstract class. A range over the abstract class admits each kind, as OPA's `oneOf` does. The capabilities' type declarations follow the same pattern: one class per Rego type, picked by `type`.
 
-The enumerations of future keywords and features take every value that a capabilities file OPA ships uses, so each shipped file validates.
+The enumerations of future keywords and features take every value that the capabilities files included with OPA use, so each of those files validates.
 
 ## How the model differs from OPA's JSON Schemas
 
@@ -31,4 +31,4 @@ The enumerations of future keywords and features take every value that a capabil
 
 ## What it leaves out
 
-The first release covers the formats OPA publishes a JSON Schema for or ships as a data file. OPA documents more formats in prose: the decision log event, the status report, the discovery bundle and the configuration file. Their shapes live in Go types under `plugins/` and `config/`, and OPA publishes no schema for them. Each can follow as a module that the converter reads from those types.
+The first release covers the formats OPA publishes a JSON Schema for or includes as a data file. OPA documents more formats in prose: the decision log event, the status report, the discovery bundle and the configuration file. Their shapes are defined by Go types under `plugins/` and `config/`, and OPA publishes no schema for them. Each can follow as a module that the converter reads from those types.

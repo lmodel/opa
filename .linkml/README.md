@@ -14,13 +14,13 @@ Open Policy Agent (OPA) v1.22.2 (LinkML)
 
 ## What it models
 
-The schema models the JSON formats [Open Policy Agent](https://www.openpolicyagent.org/) defines, at release [v1.22.2](https://github.com/open-policy-agent/opa/releases/tag/v1.22.2): the IR plan that `opa build -t plan` writes, the bundle manifest, the input of the authorization policy, the capabilities document, the built-in function metadata and the version index. [scripts/opa_to_linkml.py](scripts/opa_to_linkml.py) writes one module per format from OPA's JSON Schemas, data files and Go types, and [tests/test_parity.py](tests/test_parity.py) holds the schema's verdicts to OPA's own JSON Schemas.
+The schema models the JSON formats [Open Policy Agent](https://www.openpolicyagent.org/) defines, at release [v1.22.2](https://github.com/open-policy-agent/opa/releases/tag/v1.22.2): the IR plan that `opa build -t plan` writes, the bundle manifest, the input of the authorization policy, the capabilities document, the built-in function metadata and the version index. [scripts/opa_to_linkml.py](scripts/opa_to_linkml.py) writes one module per format from OPA's JSON Schemas, data files and Go types, and [tests/test_parity.py](tests/test_parity.py) checks the schema's verdicts against OPA's own JSON Schemas.
 
-This repository is a fork of [open-policy-agent/opa](https://github.com/open-policy-agent/opa). OPA's tree sits unchanged at the repository's root, and this project sits beside it, in this folder, `.lokf/` and `website/`. A weekly workflow opens an issue when OPA publishes a release.
+This repository is a fork of [open-policy-agent/opa](https://github.com/open-policy-agent/opa). OPA's tree is unchanged at the repository's root, and this project's folders are beside it: this folder, `.lokf/` and `website/`. A weekly workflow opens an issue when OPA publishes a release.
 
 ## Mappings
 
-* **OPA's JSON Schemas**: each class of the plan and the manifest names the definition it renders in `exact_mappings`, such as `opa_plan:CallStmt`. `tests/test_parity.py` resolves each one in OPA's file.
+* **OPA's JSON Schemas**: the `exact_mappings` of each class of the plan and the manifest name the definition it renders, such as `opa_plan:CallStmt`. `tests/test_parity.py` resolves each one in OPA's file.
 
 ## Repository Structure
 
@@ -48,7 +48,7 @@ In Obsidian, add these to the *Known LOKF types* setting of the KTL Registrar an
 OpaBuiltin, OpaCapabilities, OpaManifest, OpaPolicy
 ```
 
-The copy roots `OpaManifest`, `OpaCapabilities`, `OpaBuiltin` and `OpaPolicy` on LOKF's `Concept`, and folds `description` into LOKF's. Each `name` keeps its key. Six of OPA's keys are words LOKF defines with another meaning: `body`, `revision`, `source`, `target`, `type` and `version`. Each is a top-level slot with an IRI of this schema's, so a document OPA writes keeps the key, and the copy renames them `openpolicyagent_body`, `openpolicyagent_revision`, `openpolicyagent_source`, `openpolicyagent_target`, `openpolicyagent_type` and `openpolicyagent_version`. Every class carries the `Opa` prefix, so none is a neighbour's. OPA's keys are ordinary words, so the copy shares some with other lmodel copies, which `tests/test_schema_rules.py` lists.
+In the copy, `OpaManifest`, `OpaCapabilities`, `OpaBuiltin` and `OpaPolicy` descend from LOKF's `Concept`, and `description` folds into LOKF's. Each `name` keeps its key. Six of OPA's keys are words LOKF defines with another meaning: `body`, `revision`, `source`, `target`, `type` and `version`. Each is a top-level slot with an IRI of this schema's, so a document OPA writes keeps the key. The copy renames them `openpolicyagent_body`, `openpolicyagent_revision`, `openpolicyagent_source`, `openpolicyagent_target`, `openpolicyagent_type` and `openpolicyagent_version`. Every class carries the `Opa` prefix, so no class name is also a neighbour's. OPA's keys are ordinary words, so the copy shares some with other lmodel copies, which `tests/test_schema_rules.py` lists.
 
 ## Credits
 

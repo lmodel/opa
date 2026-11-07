@@ -9,6 +9,6 @@ Each file is a document in one of OPA's formats, or a broken copy of one, named
 
 The examples use OPA's keys, such as `_categories`, `Major` and `return`, which
 differ from the slot names. The example runner reads keys by slot name, so the
-examples sit under `problem/`, where it does not look, and `tests/test_data.py`
+examples are kept under `problem/`, where it does not look, and `tests/test_data.py`
 validates them against the JSON Schema the schema generates. `valid/` and
 `invalid/` stay empty.

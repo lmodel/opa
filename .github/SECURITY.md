@@ -14,11 +14,11 @@ Use GitHub's [private vulnerability reporting](https://github.com/lmodel/opa/sec
 
 It releases a LinkML schema of OPA's JSON formats and the Python datamodel generated from it. Nothing is published to PyPI or npm. When the bundle or the schema has changed, `knowledge-release.yaml` attaches three assets to the release, each with its `.sha256` and a build-provenance attestation: the schema's `lokf adapt` copy, the knowledge bundle as a zip, and a Microsoft 365 Copilot skill zip. A schema is data: loading one from an untrusted source with any LinkML tool is that tool's risk, not this repository's.
 
-`.linkml/scripts/check_upstream_release.py` runs only in `upstream-watch.yaml`. It reads open-policy-agent/opa through the GitHub API, sending its token there alone and reading at most 5 MB an answer, and writes nothing but its report. `.linkml/scripts/opa_to_linkml.py` reads OPA's files in the checkout and runs no network. A test holds each of OPA's files to its pinned hash.
+`.linkml/scripts/check_upstream_release.py` runs only in `upstream-watch.yaml`. It reads open-policy-agent/opa through the GitHub API, sending its token there alone and reading at most 5 MB an answer, and writes nothing but its report. `.linkml/scripts/opa_to_linkml.py` reads OPA's files in the checkout and runs no network. A test checks each of OPA's files against its pinned hash.
 
 The tests read OPA's JSON Schemas and data files as data, validate documents against them, and run none of OPA's code. The schema describes the shape of OPA's documents and takes no position on whether a policy is sound.
 
-OPA's code sits at the repository's root, unchanged, with OPA's own workflows and Dependabot configuration. This project's workflows build and run none of it. OPA's workflows are OPA's to run: disable them in this fork's Actions settings, and leave Dependabot version updates off.
+OPA's code is at the repository's root, unchanged, with OPA's own workflows and Dependabot configuration. This project's workflows build and run none of it. OPA's workflows are OPA's to run: disable them in this fork's Actions settings, and leave Dependabot version updates off.
 
 ## What executes here
 
