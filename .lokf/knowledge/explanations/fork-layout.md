@@ -15,7 +15,7 @@ sources:
     title: What this project is
 generated:
   by: process:ktl-librarian
-  at: "2026-11-07T10:43:46Z"
+  at: "2026-11-15T21:00:06Z"
 status: draft
 ---
 
@@ -28,7 +28,7 @@ This project's parts of the tree are these:[^notice]
 - the site, under `website/`;
 - the doorways `knowledge_bundle` and `linkml_schema`;
 - `llms.txt` and `.releaserc.json`;
-- `.github/SECURITY.md`, `.github/PULL_REQUEST_TEMPLATE/`, `.github/scripts/` and `.github/release/`;
+- `.github/SECURITY.md`, `.github/PULL_REQUEST_TEMPLATE/`, `.github/scripts/` and `.release/`;
 - the project's own workflows.
 
 Everything else is OPA's.[^contributing.md]
