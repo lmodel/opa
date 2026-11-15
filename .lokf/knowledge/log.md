@@ -1,5 +1,9 @@
 # Change Log
 
+## 2026-11-15
+
+* **Changed**: The concepts that cite the knowledge website describe the Hugo site that replaced the Astro one, set by `website/site.toml`.
+
 ## 2026-11-07
 
 * **Changed**: Licence and attribution says only the plan classes that match a type in `v1/ir/ir.go` take its doc comment, as NOTICE now does.
