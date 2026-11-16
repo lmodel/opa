@@ -31,7 +31,7 @@ exclude: >-
     \.linkml/tests/data/captured/|
     \.lokf/(scripts|m365)/|
     \.lokf/schema/(lokf|opa)\.yaml$|
-    \.github/release/package-lock\.json$
+    \.release/package-lock\.json$
   )
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks

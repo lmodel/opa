@@ -10,6 +10,10 @@ The `v0.0.0` tag is a baseline, not a release: it marks where versioning starts 
 
 - **Each GitHub release carries its changelog section as its body**: semantic-release asks for the notes again after the changelog commit, and `changelog-release.mjs notes` now answers with the promoted section instead of the empty Unreleased one.
 
+### Changed
+
+- **The release tools are in `.release/`**, outside `.github/`, where Dependabot's pull requests for them were refused.
+
 ## [0.3.0] - 2026-11-15
 
 ### Changed

@@ -63,7 +63,7 @@ def test_nothing_but_the_sidecars_sits_beside_opas_tree():
     tracked = subprocess.run(
         ["git", "-C", str(TREE), "ls-files", "-z"], capture_output=True, check=True
     ).stdout.decode("utf-8")
-    own = (".linkml/", ".lokf/", "website/", ".github/")
+    own = (".linkml/", ".lokf/", "website/", ".github/", ".release/")
     extra = sorted(
         path
         for path in filter(None, tracked.split("\0"))
