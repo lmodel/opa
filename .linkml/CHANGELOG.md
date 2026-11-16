@@ -6,6 +6,8 @@ The `v0.0.0` tag is a baseline, not a release: it marks where versioning starts 
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-16
+
 ### Changed
 
 - **OPA's tree is at release [v1.22.4](https://github.com/open-policy-agent/opa/releases/tag/v1.22.4)** (commit `ba39415`), merged unchanged, and the schema, its pins and the knowledge bundle name it. None of the eight formats the schema renders changed between v1.22.2 and v1.22.4.
