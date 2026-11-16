@@ -8,7 +8,7 @@
 # - just works fine with quoted variables of dot-env files like this one
 LINKML_SCHEMA_NAME="opa"
 LINKML_SCHEMA_AUTHOR="Noel McLoughlin <noel.mcloughlin@gmail.com>"
-LINKML_SCHEMA_DESCRIPTION="Open Policy Agent (OPA) v1.22.2 (LinkML)"
+LINKML_SCHEMA_DESCRIPTION="Open Policy Agent (OPA) v1.22.4 (LinkML)"
 LINKML_SCHEMA_SOURCE_DIR="src/opa/schema"
 
 ###### linkml generator variables, used by justfile

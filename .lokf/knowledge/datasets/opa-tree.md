@@ -2,8 +2,8 @@
 type: Dataset
 id: https://w3id.org/lmodel/opa/knowledge/datasets/opa-tree
 genre: reference
-title: OPA's tree at v1.22.2
-description: Every file of OPA's release v1.22.2, listed with its git object hash in `.linkml/tests/upstream_tree.tsv`, which a test holds the checkout to.
+title: OPA's tree at v1.22.4
+description: Every file of OPA's release v1.22.4, listed with its git object hash in `.linkml/tests/upstream_tree.tsv`, which a test holds the checkout to.
 resource: .linkml/tests/upstream_tree.tsv
 derivedFrom:
   - https://w3id.org/lmodel/opa/knowledge/references/opa
@@ -20,7 +20,7 @@ generated:
 status: draft
 ---
 
-# OPA's tree at v1.22.2
+# OPA's tree at v1.22.4
 
 `tests/upstream_tree.tsv` lists each file of OPA's tree at the merged release with its git object hash, and a test fails when a file differs.[^test_upstream.py] `just pin-opa-tree <commit>` writes the list again after a merge of another release.[^pin_opa_tree.py]
 

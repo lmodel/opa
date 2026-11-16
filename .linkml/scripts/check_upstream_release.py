@@ -53,10 +53,10 @@ MAX_BYTES = 5_000_000
 # schema headers, the converter and these pins agree. Move them together, with
 # tests/upstream_tree.tsv, after a merge of another release.
 EDITION = {
-    "label": "OPA v1.22.2",
-    "version": "1.22.2",
-    "tag": "v1.22.2",
-    "commit": "482d9e368c2ddfed67ced59259fa6a247bb5f1e5",
+    "label": "OPA v1.22.4",
+    "version": "1.22.4",
+    "tag": "v1.22.4",
+    "commit": "ba39415db4b3c90cd68942a74b3cc2223ec2b23c",
 }
 
 # The files compared on OPA's default branch: its licence, which fails the check when it

@@ -65,7 +65,7 @@ def test_unchanged_upstream_passes(watch, capsys):
     code, out = _run(watch, capsys)
     assert code == 0
     assert "latest release is the merged" in out
-    assert "holds v1.22.2's format files" in out
+    assert "holds v1.22.4's format files" in out
 
 
 def test_a_later_release_fails(watch, capsys):
@@ -74,12 +74,12 @@ def test_a_later_release_fails(watch, capsys):
     _stub(watch, answers)
     code, out = _run(watch, capsys)
     assert code == 1
-    assert "`v1.23.0`, not v1.22.2" in out
+    assert "`v1.23.0`, not v1.22.4" in out
 
 
 def test_a_moved_tag_fails(watch, capsys):
     answers = _answers(watch)
-    answers["/git/ref/tags/v1.22.2"] = {"object": {"type": "commit", "sha": "f" * 40}}
+    answers["/git/ref/tags/v1.22.4"] = {"object": {"type": "commit", "sha": "f" * 40}}
     _stub(watch, answers)
     code, out = _run(watch, capsys)
     assert code == 1
@@ -88,7 +88,7 @@ def test_a_moved_tag_fails(watch, capsys):
 
 def test_an_annotated_tag_is_followed(watch, capsys):
     answers = _answers(watch)
-    answers["/git/ref/tags/v1.22.2"] = {"object": {"type": "tag", "sha": "a" * 40}}
+    answers["/git/ref/tags/v1.22.4"] = {"object": {"type": "tag", "sha": "a" * 40}}
     answers[f"/git/tags/{'a' * 40}"] = {
         "object": {"type": "commit", "sha": watch.EDITION["commit"]}
     }

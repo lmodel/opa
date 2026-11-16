@@ -1,7 +1,7 @@
 package example;
 
 /* metamodel_version: 1.12.0 */
-/* version: 1.22.2 */
+/* version: 1.22.4 */
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.LocalTime;

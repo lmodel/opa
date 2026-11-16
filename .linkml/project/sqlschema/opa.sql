@@ -1291,19 +1291,19 @@ CREATE TABLE "OpaBundleStatus" (
 	FOREIGN KEY(metrics_id) REFERENCES "OpaObject" (id)
 );
 CREATE INDEX "ix_OpaBundleStatus_active_revision" ON "OpaBundleStatus" (active_revision);
-CREATE INDEX "ix_OpaBundleStatus_last_successful_download" ON "OpaBundleStatus" (last_successful_download);
-CREATE INDEX "ix_OpaBundleStatus_code" ON "OpaBundleStatus" (code);
+CREATE INDEX "ix_OpaBundleStatus_size" ON "OpaBundleStatus" (size);
+CREATE INDEX "ix_OpaBundleStatus_last_request" ON "OpaBundleStatus" (last_request);
 CREATE INDEX "ix_OpaBundleStatus_http_code" ON "OpaBundleStatus" (http_code);
 CREATE INDEX "ix_OpaBundleStatus_metrics_id" ON "OpaBundleStatus" (metrics_id);
+CREATE INDEX "ix_OpaBundleStatus_type" ON "OpaBundleStatus" (type);
 CREATE INDEX "ix_OpaBundleStatus_name" ON "OpaBundleStatus" (name);
-CREATE INDEX "ix_OpaBundleStatus_size" ON "OpaBundleStatus" (size);
-CREATE INDEX "ix_OpaBundleStatus_last_successful_request" ON "OpaBundleStatus" (last_successful_request);
-CREATE INDEX "ix_OpaBundleStatus_message" ON "OpaBundleStatus" (message);
+CREATE INDEX "ix_OpaBundleStatus_last_successful_download" ON "OpaBundleStatus" (last_successful_download);
+CREATE INDEX "ix_OpaBundleStatus_code" ON "OpaBundleStatus" (code);
 CREATE INDEX "ix_OpaBundleStatus_OpaStatusReport_id" ON "OpaBundleStatus" ("OpaStatusReport_id");
 CREATE INDEX "OpaBundleStatus_OpaStatusReport_id_name_idx" ON "OpaBundleStatus" ("OpaStatusReport_id", name);
-CREATE INDEX "ix_OpaBundleStatus_type" ON "OpaBundleStatus" (type);
 CREATE INDEX "ix_OpaBundleStatus_last_successful_activation" ON "OpaBundleStatus" (last_successful_activation);
-CREATE INDEX "ix_OpaBundleStatus_last_request" ON "OpaBundleStatus" (last_request);
+CREATE INDEX "ix_OpaBundleStatus_last_successful_request" ON "OpaBundleStatus" (last_successful_request);
+CREATE INDEX "ix_OpaBundleStatus_message" ON "OpaBundleStatus" (message);
 
 CREATE TABLE "OpaDecisionLogStatus" (
 	id INTEGER NOT NULL,
@@ -1370,9 +1370,9 @@ CREATE TABLE "OpaBuiltinCategory" (
 	UNIQUE ("OpaBuiltinMetadataCatalog_id", name),
 	FOREIGN KEY("OpaBuiltinMetadataCatalog_id") REFERENCES "OpaBuiltinMetadataCatalog" (id)
 );
-CREATE INDEX "OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id_name_idx" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id", name);
 CREATE INDEX "ix_OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id");
 CREATE INDEX "ix_OpaBuiltinCategory_name" ON "OpaBuiltinCategory" (name);
+CREATE INDEX "OpaBuiltinCategory_OpaBuiltinMetadataCatalog_id_name_idx" ON "OpaBuiltinCategory" ("OpaBuiltinMetadataCatalog_id", name);
 
 CREATE TABLE "OpaImplementation" (
 	uid INTEGER NOT NULL,
@@ -1412,14 +1412,14 @@ CREATE TABLE "OpaVersionEntry" (
 	UNIQUE ("OpaVersionIndex_id", name),
 	FOREIGN KEY("OpaVersionIndex_id") REFERENCES "OpaVersionIndex" (id)
 );
+CREATE INDEX "ix_OpaVersionEntry_Major" ON "OpaVersionEntry" ("Major");
+CREATE INDEX "ix_OpaVersionEntry_OpaVersionIndex_id" ON "OpaVersionEntry" ("OpaVersionIndex_id");
 CREATE INDEX "ix_OpaVersionEntry_name" ON "OpaVersionEntry" (name);
-CREATE INDEX "ix_OpaVersionEntry_Patch" ON "OpaVersionEntry" ("Patch");
+CREATE INDEX "ix_OpaVersionEntry_Metadata" ON "OpaVersionEntry" ("Metadata");
+CREATE INDEX "ix_OpaVersionEntry_PreRelease" ON "OpaVersionEntry" ("PreRelease");
 CREATE INDEX "OpaVersionEntry_OpaVersionIndex_id_name_idx" ON "OpaVersionEntry" ("OpaVersionIndex_id", name);
 CREATE INDEX "ix_OpaVersionEntry_Minor" ON "OpaVersionEntry" ("Minor");
-CREATE INDEX "ix_OpaVersionEntry_Major" ON "OpaVersionEntry" ("Major");
-CREATE INDEX "ix_OpaVersionEntry_PreRelease" ON "OpaVersionEntry" ("PreRelease");
-CREATE INDEX "ix_OpaVersionEntry_OpaVersionIndex_id" ON "OpaVersionEntry" ("OpaVersionIndex_id");
-CREATE INDEX "ix_OpaVersionEntry_Metadata" ON "OpaVersionEntry" ("Metadata");
+CREATE INDEX "ix_OpaVersionEntry_Patch" ON "OpaVersionEntry" ("Patch");
 
 CREATE TABLE "OpaAuthorizationInput" (
 	id INTEGER NOT NULL,
@@ -1442,9 +1442,9 @@ CREATE TABLE "OpaFileRegoVersion" (
 	PRIMARY KEY (version, path, "OpaManifest_id"),
 	FOREIGN KEY("OpaManifest_id") REFERENCES "OpaManifest" (id)
 );
+CREATE INDEX "ix_OpaFileRegoVersion_path" ON "OpaFileRegoVersion" (path);
 CREATE INDEX "ix_OpaFileRegoVersion_version" ON "OpaFileRegoVersion" (version);
 CREATE INDEX "ix_OpaFileRegoVersion_OpaManifest_id" ON "OpaFileRegoVersion" ("OpaManifest_id");
-CREATE INDEX "ix_OpaFileRegoVersion_path" ON "OpaFileRegoVersion" (path);
 
 CREATE TABLE "OpaPolicy" (
 	id INTEGER NOT NULL,
@@ -1677,9 +1677,9 @@ CREATE TABLE "OpaDecisionBundle" (
 	UNIQUE ("OpaDecisionLogEvent_id", name),
 	FOREIGN KEY("OpaDecisionLogEvent_id") REFERENCES "OpaDecisionLogEvent" (id)
 );
-CREATE INDEX "OpaDecisionBundle_OpaDecisionLogEvent_id_name_idx" ON "OpaDecisionBundle" ("OpaDecisionLogEvent_id", name);
-CREATE INDEX "ix_OpaDecisionBundle_OpaDecisionLogEvent_id" ON "OpaDecisionBundle" ("OpaDecisionLogEvent_id");
 CREATE INDEX "ix_OpaDecisionBundle_name" ON "OpaDecisionBundle" (name);
+CREATE INDEX "ix_OpaDecisionBundle_OpaDecisionLogEvent_id" ON "OpaDecisionBundle" ("OpaDecisionLogEvent_id");
+CREATE INDEX "OpaDecisionBundle_OpaDecisionLogEvent_id_name_idx" ON "OpaDecisionBundle" ("OpaDecisionLogEvent_id", name);
 CREATE INDEX "ix_OpaDecisionBundle_revision" ON "OpaDecisionBundle" (revision);
 
 CREATE TABLE "OpaHttpRequestContext" (
@@ -1699,11 +1699,11 @@ CREATE TABLE "OpaPluginStatus" (
 	UNIQUE ("OpaStatusReport_id", name),
 	FOREIGN KEY("OpaStatusReport_id") REFERENCES "OpaStatusReport" (id)
 );
+CREATE INDEX "ix_OpaPluginStatus_OpaStatusReport_id" ON "OpaPluginStatus" ("OpaStatusReport_id");
 CREATE INDEX "ix_OpaPluginStatus_state" ON "OpaPluginStatus" (state);
 CREATE INDEX "ix_OpaPluginStatus_name" ON "OpaPluginStatus" (name);
 CREATE INDEX "ix_OpaPluginStatus_message" ON "OpaPluginStatus" (message);
 CREATE INDEX "OpaPluginStatus_OpaStatusReport_id_name_idx" ON "OpaPluginStatus" ("OpaStatusReport_id", name);
-CREATE INDEX "ix_OpaPluginStatus_OpaStatusReport_id" ON "OpaPluginStatus" ("OpaStatusReport_id");
 
 CREATE TABLE "OpaCapabilities_future_keywords" (
 	"OpaCapabilities_id" INTEGER,
@@ -1711,8 +1711,8 @@ CREATE TABLE "OpaCapabilities_future_keywords" (
 	PRIMARY KEY ("OpaCapabilities_id", future_keywords),
 	FOREIGN KEY("OpaCapabilities_id") REFERENCES "OpaCapabilities" (id)
 );
-CREATE INDEX "ix_OpaCapabilities_future_keywords_OpaCapabilities_id" ON "OpaCapabilities_future_keywords" ("OpaCapabilities_id");
 CREATE INDEX "ix_OpaCapabilities_future_keywords_future_keywords" ON "OpaCapabilities_future_keywords" (future_keywords);
+CREATE INDEX "ix_OpaCapabilities_future_keywords_OpaCapabilities_id" ON "OpaCapabilities_future_keywords" ("OpaCapabilities_id");
 
 CREATE TABLE "OpaCapabilities_features" (
 	"OpaCapabilities_id" INTEGER,
@@ -1747,8 +1747,8 @@ CREATE TABLE "OpaCallDynamicStmtBody_args" (
 	PRIMARY KEY ("OpaCallDynamicStmtBody_id", args),
 	FOREIGN KEY("OpaCallDynamicStmtBody_id") REFERENCES "OpaCallDynamicStmtBody" (id)
 );
-CREATE INDEX "ix_OpaCallDynamicStmtBody_args_OpaCallDynamicStmtBody_id" ON "OpaCallDynamicStmtBody_args" ("OpaCallDynamicStmtBody_id");
 CREATE INDEX "ix_OpaCallDynamicStmtBody_args_args" ON "OpaCallDynamicStmtBody_args" (args);
+CREATE INDEX "ix_OpaCallDynamicStmtBody_args_OpaCallDynamicStmtBody_id" ON "OpaCallDynamicStmtBody_args" ("OpaCallDynamicStmtBody_id");
 
 CREATE TABLE "OpaDecisionLogEvent_erased" (
 	"OpaDecisionLogEvent_id" INTEGER,
@@ -1798,10 +1798,10 @@ CREATE TABLE "OpaImplementationSupport" (
 	UNIQUE ("OpaBuiltinMetadata_id", implementation),
 	FOREIGN KEY("OpaBuiltinMetadata_id") REFERENCES "OpaBuiltinMetadata" (id)
 );
-CREATE INDEX "ix_OpaImplementationSupport_OpaBuiltinMetadata_id" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id");
-CREATE INDEX "ix_OpaImplementationSupport_version" ON "OpaImplementationSupport" (version);
-CREATE INDEX "ix_OpaImplementationSupport_implementation" ON "OpaImplementationSupport" (implementation);
 CREATE INDEX "OpaImplementationSupport_OpaBuiltinMetadata_id_implementation_idx" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id", implementation);
+CREATE INDEX "ix_OpaImplementationSupport_version" ON "OpaImplementationSupport" (version);
+CREATE INDEX "ix_OpaImplementationSupport_OpaBuiltinMetadata_id" ON "OpaImplementationSupport" ("OpaBuiltinMetadata_id");
+CREATE INDEX "ix_OpaImplementationSupport_implementation" ON "OpaImplementationSupport" (implementation);
 
 CREATE TABLE "OpaBlock" (
 	id INTEGER NOT NULL,
@@ -2054,8 +2054,8 @@ CREATE TABLE "OpaAuthorizationInput_path" (
 	PRIMARY KEY ("OpaAuthorizationInput_id", path),
 	FOREIGN KEY("OpaAuthorizationInput_id") REFERENCES "OpaAuthorizationInput" (id)
 );
-CREATE INDEX "ix_OpaAuthorizationInput_path_OpaAuthorizationInput_id" ON "OpaAuthorizationInput_path" ("OpaAuthorizationInput_id");
 CREATE INDEX "ix_OpaAuthorizationInput_path_path" ON "OpaAuthorizationInput_path" (path);
+CREATE INDEX "ix_OpaAuthorizationInput_path_OpaAuthorizationInput_id" ON "OpaAuthorizationInput_path" ("OpaAuthorizationInput_id");
 
 CREATE TABLE "OpaFunc_params" (
 	"OpaFunc_id" INTEGER,
@@ -2072,8 +2072,8 @@ CREATE TABLE "OpaFunc_path" (
 	PRIMARY KEY ("OpaFunc_id", path),
 	FOREIGN KEY("OpaFunc_id") REFERENCES "OpaFunc" (id)
 );
-CREATE INDEX "ix_OpaFunc_path_OpaFunc_id" ON "OpaFunc_path" ("OpaFunc_id");
 CREATE INDEX "ix_OpaFunc_path_path" ON "OpaFunc_path" (path);
+CREATE INDEX "ix_OpaFunc_path_OpaFunc_id" ON "OpaFunc_path" ("OpaFunc_id");
 
 CREATE TABLE "OpaStaticProperty" (
 	id INTEGER NOT NULL,

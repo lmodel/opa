@@ -28,7 +28,7 @@ status: draft
 | `.linkml/` | The schema project: the converter, the schema, its tests and docs |
 | `.github/workflows/` | This project's workflows beside OPA's |
 | `website/` | The knowledge website |
-| The rest of the tree | OPA's release v1.22.2, unchanged |
+| The rest of the tree | OPA's release v1.22.4, unchanged |
 
 The schema project's README gives its structure.[^linkml-readme.md] NOTICE lists what this project adds beside OPA's tree.[^notice]
 

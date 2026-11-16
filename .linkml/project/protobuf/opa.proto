@@ -1,7 +1,7 @@
 syntax = "proto3";
 package opa;
 // metamodel_version: 1.12.0
-// version: 1.22.2
+// version: 1.22.4
 // A union of the types it lists in `of`, or any value when it lists none.
 message OpaAnyType {
   // The argument's or result's name, on a named type.

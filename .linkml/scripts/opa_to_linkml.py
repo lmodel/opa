@@ -39,8 +39,8 @@ PROJECT = HERE.parent
 OPA = PROJECT.parent
 SCHEMA_DIR = PROJECT / "src" / "opa" / "schema"
 
-TAG = "v1.22.2"
-COMMIT = "482d9e368c2ddfed67ced59259fa6a247bb5f1e5"
+TAG = "v1.22.4"
+COMMIT = "ba39415db4b3c90cd68942a74b3cc2223ec2b23c"
 RELEASE_DATE = "2026-11-05"
 BLOB = f"https://github.com/open-policy-agent/opa/blob/{COMMIT}/"
 NAMESPACE = "https://w3id.org/lmodel/opa/"

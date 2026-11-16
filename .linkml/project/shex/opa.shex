@@ -1,5 +1,5 @@
 # metamodel_version: 1.12.0
-# version: 1.22.2
+# version: 1.22.4
 BASE <https://w3id.org/lmodel/opa/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
