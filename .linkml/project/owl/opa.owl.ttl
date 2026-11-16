@@ -9,18 +9,18 @@
 @prefix pav: <http://purl.org/pav/> .
 @prefix schema1: <http://schema.org/> .
 <https://w3id.org/lmodel/opa.owl.ttl> dcterms:license "Apache-2.0" ;
-	dcterms:source <https://github.com/open-policy-agent/opa/tree/482d9e368c2ddfed67ced59259fa6a247bb5f1e5> ;
+	dcterms:source <https://github.com/open-policy-agent/opa/tree/ba39415db4b3c90cd68942a74b3cc2223ec2b23c> ;
 	dcterms:title "Open Policy Agent (OPA)" ;
-	pav:version "1.22.2" ;
+	pav:version "1.22.4" ;
 	schema1:keywords "CNCF" , "Open Policy Agent" , "Rego" , "policy as code" ;
 	a owl:Ontology ;
 	rdfs:label "opa" ;
 	rdfs:seeAlso <https://lmodel.github.io/opa> , <https://www.openpolicyagent.org/docs> ;
 	skos:definition "A LinkML model of eight of the JSON formats Open Policy Agent defines: the IR plan, the bundle manifest, the authorization policy input, the capabilities document, the built-in function metadata, the version index, the decision log event and the status report. Each module renders one format and keeps OPA's keys, so the schema checks a document OPA writes as it is, with no key renamed. The lokf adapt copy renames seven keys LOKF defines with another meaning." ;
-	openpolicyagent:upstream_commit "482d9e368c2ddfed67ced59259fa6a247bb5f1e5" ;
+	openpolicyagent:upstream_commit "ba39415db4b3c90cd68942a74b3cc2223ec2b23c" ;
 	openpolicyagent:upstream_license "Apache-2.0" ;
 	openpolicyagent:upstream_release_date "2026-11-05" ;
-	openpolicyagent:upstream_tag "v1.22.2" .
+	openpolicyagent:upstream_tag "v1.22.4" .
 openpolicyagent:OpaAnyType a owl:Class ;
 	rdfs:label "OpaAnyType" ;
 	rdfs:subClassOf openpolicyagent:OpaType , _:c14n1054 , _:c14n358 , _:c14n392 , _:c14n526 , _:c14n730 ;

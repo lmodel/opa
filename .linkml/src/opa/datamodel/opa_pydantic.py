@@ -30,7 +30,7 @@ from pydantic import (
 
 
 metamodel_version = "1.12.0"
-version = "1.22.2"
+version = "1.22.4"
 
 
 class ConfiguredBaseModel(BaseModel):
@@ -67,12 +67,12 @@ class LinkMLMeta(RootModel):
 
 
 linkml_meta = LinkMLMeta({'annotations': {'upstream_commit': {'tag': 'upstream_commit',
-                                         'value': '482d9e368c2ddfed67ced59259fa6a247bb5f1e5'},
+                                         'value': 'ba39415db4b3c90cd68942a74b3cc2223ec2b23c'},
                      'upstream_license': {'tag': 'upstream_license',
                                           'value': 'Apache-2.0'},
                      'upstream_release_date': {'tag': 'upstream_release_date',
                                                'value': '2026-11-05'},
-                     'upstream_tag': {'tag': 'upstream_tag', 'value': 'v1.22.2'}},
+                     'upstream_tag': {'tag': 'upstream_tag', 'value': 'v1.22.4'}},
      'default_prefix': 'openpolicyagent',
      'default_range': 'string',
      'description': 'A LinkML model of eight of the JSON formats Open Policy Agent '
@@ -105,7 +105,7 @@ linkml_meta = LinkMLMeta({'annotations': {'upstream_commit': {'tag': 'upstream_c
                              'prefix_reference': 'http://schema.org/'}},
      'see_also': ['https://lmodel.github.io/opa',
                   'https://www.openpolicyagent.org/docs'],
-     'source': 'https://github.com/open-policy-agent/opa/tree/482d9e368c2ddfed67ced59259fa6a247bb5f1e5',
+     'source': 'https://github.com/open-policy-agent/opa/tree/ba39415db4b3c90cd68942a74b3cc2223ec2b23c',
      'source_file': 'src/opa/schema/opa.yaml',
      'title': 'Open Policy Agent (OPA)'} )
 

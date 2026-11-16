@@ -10,7 +10,7 @@ gh_action_docs_preview: false
 gh_action_pypi: false
 github_org: lmodel
 license: Apache-2.0
-project_description: Open Policy Agent (OPA) v1.22.2 (LinkML)
+project_description: Open Policy Agent (OPA) v1.22.4 (LinkML)
 project_name: opa
 project_slug: opa
 

@@ -2,7 +2,7 @@
 
 # opa
 
-Open Policy Agent (OPA) v1.22.2 (LinkML)
+Open Policy Agent (OPA) v1.22.4 (LinkML)
 
 > **Only want to ask?** Install `ktl-docent` into any agent you use, by a route from [the install page](https://w3id.org/ktl/docs/install/), and ask it about this project. It answers from the bundle and says how far each answer has been checked.
 >
@@ -14,7 +14,7 @@ Open Policy Agent (OPA) v1.22.2 (LinkML)
 
 ## What it models
 
-The schema models eight of the JSON formats [Open Policy Agent](https://www.openpolicyagent.org/) defines, at release [v1.22.2](https://github.com/open-policy-agent/opa/releases/tag/v1.22.2). They are the IR plan that `opa build -t plan` writes, the bundle manifest, the input of the authorization policy, the capabilities document, the built-in function metadata, the version index, the decision log event and the status report. [scripts/opa_to_linkml.py](scripts/opa_to_linkml.py) writes one module per format from OPA's JSON Schemas, data files and Go types. [tests/test_parity.py](tests/test_parity.py) checks the schema's verdicts against OPA's own JSON Schemas, and [tests/test_data.py](tests/test_data.py) validates documents OPA's own binary wrote.
+The schema models eight of the JSON formats [Open Policy Agent](https://www.openpolicyagent.org/) defines, at release [v1.22.4](https://github.com/open-policy-agent/opa/releases/tag/v1.22.4). They are the IR plan that `opa build -t plan` writes, the bundle manifest, the input of the authorization policy, the capabilities document, the built-in function metadata, the version index, the decision log event and the status report. [scripts/opa_to_linkml.py](scripts/opa_to_linkml.py) writes one module per format from OPA's JSON Schemas, data files and Go types. [tests/test_parity.py](tests/test_parity.py) checks the schema's verdicts against OPA's own JSON Schemas, and [tests/test_data.py](tests/test_data.py) validates documents OPA's own binary wrote.
 
 This repository is a fork of [open-policy-agent/opa](https://github.com/open-policy-agent/opa). OPA's tree is unchanged at the repository's root, and this project's folders are beside it: this folder, `.lokf/` and `website/`. A weekly workflow opens an issue when OPA publishes a release.
 
