@@ -7,17 +7,17 @@ description: >-
   The intermediate representation that `opa build -t plan` writes: query plans and functions
   as blocks of statements over numbered locals, for an evaluator outside OPA to run. It renders
   OPA's JSON Schema for the plan, generated from v1/ir/ir.go.
-version: 1.22.2
+version: 1.22.4
 source: >-
-  https://github.com/open-policy-agent/opa/blob/482d9e368c2ddfed67ced59259fa6a247bb5f1e5/v1/ir/plan.schema.json
+  https://github.com/open-policy-agent/opa/blob/ba39415db4b3c90cd68942a74b3cc2223ec2b23c/v1/ir/plan.schema.json
 license: Apache-2.0
 see_also:
   - https://lmodel.github.io/opa
   - https://www.openpolicyagent.org/docs
   - https://openpolicyagent.org/schemas/ir/v1/plan.schema.json
 annotations:
-  upstream_tag: v1.22.2
-  upstream_commit: 482d9e368c2ddfed67ced59259fa6a247bb5f1e5
+  upstream_tag: v1.22.4
+  upstream_commit: ba39415db4b3c90cd68942a74b3cc2223ec2b23c
   upstream_release_date: '2026-11-05'
   upstream_license: Apache-2.0
 prefixes:

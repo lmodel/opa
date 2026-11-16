@@ -10,16 +10,16 @@ description: >-
   module renders one format and keeps OPA's keys, so the schema checks a document OPA writes
   as it is, with no key renamed. The lokf adapt copy renames seven keys LOKF defines with
   another meaning.
-version: 1.22.2
+version: 1.22.4
 source: >-
-  https://github.com/open-policy-agent/opa/tree/482d9e368c2ddfed67ced59259fa6a247bb5f1e5
+  https://github.com/open-policy-agent/opa/tree/ba39415db4b3c90cd68942a74b3cc2223ec2b23c
 license: Apache-2.0
 see_also:
   - https://lmodel.github.io/opa
   - https://www.openpolicyagent.org/docs
 annotations:
-  upstream_tag: v1.22.2
-  upstream_commit: 482d9e368c2ddfed67ced59259fa6a247bb5f1e5
+  upstream_tag: v1.22.4
+  upstream_commit: ba39415db4b3c90cd68942a74b3cc2223ec2b23c
   upstream_release_date: '2026-11-05'
   upstream_license: Apache-2.0
 prefixes:
